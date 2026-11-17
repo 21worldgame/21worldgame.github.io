@@ -240,3 +240,6 @@ begin
 end $$;
 revoke all on function public.admin_decide_password(bigint, boolean) from public;
 grant execute on function public.admin_decide_password(bigint, boolean) to authenticated;
+
+-- ---------- ranking em tempo real ----------
+do $$ begin alter publication supabase_realtime add table public.public_profiles; exception when others then null; end $$;

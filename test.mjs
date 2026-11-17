@@ -453,3 +453,41 @@ import * as CH from './chat.js';
   assert.equal(CH.accept({ text: 'merda', name: '<b>x' }).text, '*****');
 }
 console.log('chat ok');
+// arrendamento: reajuste, plantio só com trator, parte do dono e compra com abatimento
+{
+  const mk = () => { const s = L.newState(); s.lands.push({ id: 900, own: false, leasedOut: false, region: 'x', ha: 10, value: 1000000, use: 'lavoura', cap: 1 }); return s; };
+  let s = mk();
+  assert.ok(L.plant(s, s.lands[0], 'soja').includes('trator'));
+  s.cars.push({ id: 1, model: 'deere', value: 650000 });
+  const c1 = L.plantCost(s, 'soja', 10, true), c0 = L.plantCost(s, 'soja', 10, false);
+  assert.equal(Math.round(c1 / c0 * 100), 120);
+  const m0 = s.money; assert.equal(L.plant(s, s.lands[0], 'soja'), null); assert.equal(s.money, m0 - c1);
+  for (let i = 0; i < 12; i++) L.tick(s, () => 0.5);
+  assert.equal(L.rentNow(s.lands[0]), Math.round(s.lands[0].value * L.RENT_PAY * 1.08));
+  assert.ok(s.lands[0].paid > 0);
+  // abatimento: metade do aluguel pago, com teto de 40% do valor
+  const l = s.lands[0]; assert.equal(L.rentCredit(l), Math.min(l.paid * 0.5, l.value * 0.4));
+  assert.equal(L.buyRentedPrice(l), Math.round(l.value - L.rentCredit(l)));
+  s.money = 10; assert.ok(L.buyRented(s, l).includes('insuficiente'));
+  s.money = 1e8; assert.equal(L.buyRented(s, l), null); assert.equal(l.own, true); assert.equal(l.paid, undefined);
+  // dono fica com 15% da safra (sem sorteio: rng fixo)
+  const s2 = mk(); s2.cars.push({ id: 1, model: 'deere', value: 1 }); s2.lands[0].crop = { type: 'soja', left: 1 };
+  const before = s2.stock.soja; L.tick(s2, () => 0.5);
+  const bruto = 10 * 60; assert.equal(s2.stock.soja - before, bruto - Math.round(bruto * 0.15));
+}
+console.log('arrendamento ok');
+// tempo de mundo: mesmo mês para todos, recuperação limitada, aceleração sem voltar no tempo
+import * as WD from './world.js';
+{
+  const w = { epoch: 1000, base: 1, monthMs: 60000 };
+  assert.equal(WD.current(w, 1000), 1); assert.equal(WD.current(w, 1000 + 59999), 1); assert.equal(WD.current(w, 1000 + 60000), 2); assert.equal(WD.current(w, 1000 + 600000), 11);
+  assert.equal(WD.msLeft(w, 1000 + 15000), 45000); assert.ok(Math.abs(WD.progress(w, 1000 + 15000) - 0.25) < 1e-9);
+  assert.deepEqual(WD.plan(5, 5), { ticks: 0, skipped: 0 }); assert.deepEqual(WD.plan(9, 5), { ticks: 0, skipped: 0 });
+  assert.deepEqual(WD.plan(5, 8), { ticks: 3, skipped: 0 }); assert.deepEqual(WD.plan(1, 100), { ticks: 6, skipped: 93 });
+  const now = 1000 + 600000, f = WD.setSpeed(w, 10000, now);
+  assert.equal(WD.current(f, now), 11); assert.equal(WD.current(f, now + 10000), 12);          // acelerar não muda o mês atual
+  assert.equal(WD.current(WD.advance(f, 5), now), 16);
+  assert.equal(WD.sanitize({ monthMs: 5 }).monthMs, WD.MIN_MONTH_MS); assert.equal(WD.sanitize(null).base, 1);
+  assert.equal(WD.fmt(61000), '1:01'); assert.equal(WD.fmt(3700000), '1h01');
+}
+console.log('mundo ok');

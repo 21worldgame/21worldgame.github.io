@@ -1,5 +1,6 @@
 // Painel administrativo. Tudo o que ele faz passa pelas regras do banco (supabase/admin.sql): sem ser admin, nada funciona.
 import { SUPABASE } from './supabase-config.js';
+import * as W from './world.js';
 
 const LIB = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/+esm';
 const $ = s => document.querySelector(s);
@@ -215,11 +216,38 @@ async function loadConfig() {
   const f = $('#ad-config');
   for (const k of ['xp_mult', 'daily_mult', 'job_mult', 'prize_mult']) f[k].value = String(cfg[k] ?? 1);
   f.event.value = cfg.event || ''; f.maintenance.checked = !!cfg.maintenance; f.maintenance_msg.value = cfg.maintenance_msg || '';
+  showWorld();
 }
+// ---------- tempo de mundo ----------
+const world = () => W.sanitize(cfg.world || W.DEFAULT);
+function showWorld() {
+  const w = world(), f = $('#ad-world');
+  f.min.value = +(w.monthMs / 60000).toFixed(2);
+  $('#ad-world-now').textContent = `Mês ${W.current(w)} do mundo. Cada mês dura ${+(w.monthMs / 60000).toFixed(2)} min reais; o próximo chega em ${W.fmt(W.msLeft(w))}.`;
+}
+async function saveWorld(next, what) {
+  const data = { ...cfg, world: next };
+  const { error } = await sb.from('game_config').update({ data, updated_at: new Date().toISOString() }).eq('id', 1);
+  if (error) return fail(error, 'salvar o tempo de mundo');
+  cfg = data; await log('world', null, { ...next, what }); showWorld(); toast('Tempo de mundo salvo. Todos os jogadores acompanham em até 1 minuto.');
+}
+$('#ad-world').addEventListener('submit', e => {
+  e.preventDefault();
+  const min = Number(e.target.min.value);
+  if (!(min >= W.MIN_MONTH_MS / 60000 && min <= W.MAX_MONTH_MS / 60000)) return toast('Use entre 0,2 e 1440 minutos.', true);
+  saveWorld(W.setSpeed(world(), Math.round(min * 60000)), `velocidade ${min} min/mês`);
+});
+document.querySelectorAll('[data-world-speed]').forEach(b => b.addEventListener('click', () => saveWorld(W.setSpeed(world(), Number(b.dataset.worldSpeed) * 60000), `velocidade ${b.dataset.worldSpeed} min/mês`)));
+$('#ad-world-adv').addEventListener('click', () => {
+  const n = Math.floor(Number($('#ad-world').adv.value));
+  if (!(n >= 1 && n <= 24)) return toast('Avançar de 1 a 24 meses.', true);
+  if (confirm(`Avançar o mundo ${n} mês(es) para TODOS os jogadores? Cobranças, safras e parcelas rodam para todos.`)) saveWorld(W.advance(world(), n), `avanço de ${n} meses`);
+});
+setInterval(() => { if (!$('#ad-world').closest('[data-panel]').hidden) showWorld(); }, 1000);
 $('#ad-config').addEventListener('submit', async e => {
   e.preventDefault();
   const f = e.target;
-  const data = { xp_mult: Number(f.xp_mult.value), daily_mult: Number(f.daily_mult.value), job_mult: Number(f.job_mult.value), prize_mult: Number(f.prize_mult.value),
+  const data = { ...cfg, xp_mult: Number(f.xp_mult.value), daily_mult: Number(f.daily_mult.value), job_mult: Number(f.job_mult.value), prize_mult: Number(f.prize_mult.value),
     event: f.event.value.trim(), maintenance: f.maintenance.checked, maintenance_msg: f.maintenance_msg.value.trim() };
   if (data.maintenance && !confirm('Colocar o jogo em manutenção? Todos os jogadores ficam bloqueados até você desligar.')) return;
   const { error } = await sb.from('game_config').update({ data, updated_at: new Date().toISOString() }).eq('id', 1);

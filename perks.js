@@ -2,7 +2,7 @@
 // Cada efeito é um multiplicador somado: dois itens de +10% dão +20%.
 export const EFFECTS = {
   job: 'pagamento das entregas', tip: 'gorjetas', jobTime: 'tempo para aceitar pedidos', xp: 'XP ganho', daily: 'roleta do dia',
-  loan: 'juros do banco', race: 'prêmios das provas', ticket: 'bilheteria do clube', cattle: 'preço de venda do gado',
+  loan: 'juros do banco', race: 'prêmios das provas', ticket: 'bilheteria do clube', cattle: 'preço de venda do gado', plant: 'custo do plantio',
 };
 // carros (chave = modelo em logic.CARS); trator e caminhão já têm vantagem própria em logic.js
 export const CAR_PERKS = {
@@ -28,10 +28,35 @@ export const ACC_PERKS = {
   'grillz de ouro': { xp: 0.06, daily: 0.1 },
 };
 
+// terras próprias: cada tipo de lote dá uma vantagem, com teto
+const cap = (v, m) => Math.min(m, v);
+export function landBonuses(lands) {
+  const own = (lands || []).filter(l => l.own);
+  if (!own.length) return {};
+  const ha = own.reduce((t, l) => t + (Number(l.ha) || 0), 0);
+  const n = u => own.filter(l => l.use === u).length;
+  const out = { xp: cap(own.length * 0.01, 0.1) };
+  if (n('pasto')) out.cattle = cap(n('pasto') * 0.02, 0.1);
+  if (n('lavoura') + n('café')) out.plant = -cap((n('lavoura') + n('café')) * 0.03, 0.15);
+  if (ha >= 100) out.loan = ha >= 500 ? -0.2 : -0.1;
+  const sede = own.filter(l => (l.improv || []).includes('casa sede')).length;
+  if (sede) out.daily = cap(sede * 0.05, 0.1);
+  return out;
+}
+// o que UM lote à venda acrescenta (para mostrar antes de comprar)
+export const landPerk = l => {
+  const p = { xp: 0.01 };
+  if (l.use === 'pasto') p.cattle = 0.02;
+  if (l.use === 'lavoura' || l.use === 'café') p.plant = -0.03;
+  if ((l.improv || []).includes('casa sede')) p.daily = 0.05;
+  if (Number(l.ha) >= 100) p.loan = -0.1;
+  return p;
+};
 const add = (out, p) => { for (const [k, v] of Object.entries(p || {})) out[k] = (out[k] || 0) + v; };
 export function bonuses(s) {
   const out = {};
   for (const c of new Set((s.cars || []).map(c => c.model))) add(out, CAR_PERKS[c]);        // dois carros iguais não somam
+  add(out, landBonuses(s.lands));
   for (const tag of s.owned || []) if (tag.startsWith('acc:')) add(out, ACC_PERKS[tag.slice(4)]);
   return out;
 }

@@ -1,4 +1,5 @@
 import { value as cardValue } from './cards.js';
+import * as PK from './perks.js';
 // Regras puras do 21 World (sem DOM) — usadas pelo jogo e pelo test.mjs.
 import { animalsValue } from './stable.js';
 export const CHIP = 10;           // 1 ficha = R$ 10
@@ -7,6 +8,11 @@ export const MARKET_FEE = 0.01;   // taxa do mercado sobre vendas
 export const BANK_RATE = 0.018;   // juros do banco ao mês
 export const KG_ARROBA = 15;
 export const RENT_PAY = 0.004;    // arrendamento pago ao mês, sobre o valor da terra
+export const RENT_RAISE = 0.08;      // reajuste do aluguel a cada 12 meses de contrato
+export const RENT_SHARE = 0.15;      // parte da safra que vai para o dono em terra arrendada
+export const RENT_INPUTS = 1.2;      // plantar em terra arrendada custa 20% mais (insumos e máquina por conta do arrendatário)
+export const RENT_CREDIT = 0.5;     // metade do aluguel já pago abate o preço se o arrendatário comprar
+export const RENT_CREDIT_CAP = 0.4; // o abatimento nunca passa de 40% do valor da terra
 export const RENT_GET = 0.0035;   // arrendamento recebido (o arrendatário NPC negocia um pouco abaixo)
 
 const SUITS = ['♠', '♥', '♦', '♣'];
@@ -72,10 +78,23 @@ export const CROPS = {
   cafe: { label: 'café', cost: 12000, months: 8, yield: 30, good: 'cafe' },
 };
 export const hasVehicle = (s, type) => (s.cars || []).some(c => CARS[c.model]?.type === type);
-export const plantCost = (s, crop, ha) => Math.round(CROPS[crop].cost * ha * (hasVehicle(s, 'trator') ? 0.85 : 1));
+export const rentNow = l => Math.round(l.value * RENT_PAY * (1 + RENT_RAISE * Math.floor((l.age || 0) / 12)));
+export const rentCredit = l => Math.min((l.paid || 0) * RENT_CREDIT, l.value * RENT_CREDIT_CAP);
+export const buyRentedPrice = l => Math.round(l.value - rentCredit(l));
+export const plantCost = (s, crop, ha, rented = false) => Math.round(CROPS[crop].cost * ha * (hasVehicle(s, 'trator') ? 0.85 : 1) * PK.mult(s, 'plant') * (rented ? RENT_INPUTS : 1));
+// compra da terra que você arrendava: o aluguel pago vira desconto
+export function buyRented(s, land) {
+  if (!land || land.own) return 'essa terra já é sua.';
+  const price = buyRentedPrice(land);
+  if (price > s.money) return 'dinheiro insuficiente para comprar essa terra.';
+  s.money -= price;
+  land.own = true; land.leasedOut = false; delete land.age; delete land.paid;
+  return null;
+}
 export function plant(s, land, crop) {
   if (land.crop || land.leasedOut) return 'esta terra já está ocupada.';
-  const cost = plantCost(s, crop, land.ha);
+  if (!land.own && !hasVehicle(s, 'trator')) return 'terra arrendada só aceita lavoura de quem tem trator (a máquina e os insumos ficam por sua conta).';
+  const cost = plantCost(s, crop, land.ha, !land.own);
   if (cost > s.money) return 'dinheiro insuficiente para o plantio.';
   s.money -= cost;
   land.crop = { type: crop, left: CROPS[crop].months };
@@ -181,15 +200,15 @@ export function tick(s, rng = Math.random) {
   for (const l of s.lands) {
     if (l.own && l.leasedOut) add(`arrendamento recebido, ${l.region}`, l.value * RENT_GET);
     if (l.own) add(`manutenção e ITR, ${l.region}`, -l.value * 0.001);
-    if (!l.own) add(`arrendamento pago, ${l.region}`, -l.value * RENT_PAY);
+    if (!l.own) { const r = rentNow(l); l.age = (l.age || 0) + 1; l.paid = (l.paid || 0) + r; add(`arrendamento pago, ${l.region}`, -r); }
   }
 
   // lavoura: cresce e colhe; a safra varia ±25% com o clima
   for (const l of s.lands) {
     if (!l.crop || --l.crop.left > 0) continue;
-    const c = CROPS[l.crop.type], sacas = Math.round(l.ha * c.yield * (0.75 + rng() * 0.5));
+    const c = CROPS[l.crop.type], bruto = Math.round(l.ha * c.yield * (0.75 + rng() * 0.5)), dono = l.own ? 0 : Math.round(bruto * RENT_SHARE), sacas = bruto - dono;
     s.stock[c.good] += sacas;
-    add(`colheita de ${c.label}: ${sacas} sacas, ${l.region}`);
+    add(`colheita de ${c.label}: ${sacas} sacas, ${l.region}${dono ? ` (${dono} ficaram com o dono da terra)` : ''}`);
     delete l.crop;
   }
 

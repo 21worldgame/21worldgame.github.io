@@ -220,6 +220,7 @@ export async function playRace(spec, order, T) {
 // a mesma pista pode aparecer numa janela (provas dos seus animais): empresta o palco e devolve depois
 export function borrowStage(host) {
   const el = $('#track');
+  if (borrowed) return el;                       // já emprestada (janela fechada sem devolver): não perde o lugar de origem
   borrowed = { parent: el.parentNode, next: el.nextSibling };
   host.append(el);
   return el;

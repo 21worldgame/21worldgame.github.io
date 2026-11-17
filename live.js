@@ -3,15 +3,31 @@
 import { G, $, esc, brl, int, say, save, note, badge, levelUp, blankState } from './store.js';
 import * as P from './progress.js';
 import * as Auth from './auth.js';
+import * as W from './world.js';
 
 export const CFG = { xp_mult: 1, daily_mult: 1, job_mult: 1, prize_mult: 1, maintenance: false, maintenance_msg: '', event: '' };
 const num = (v, d) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Math.min(10, Number(v)) : d);
-let isAdmin = false, timer = 0, anns = [];
+let isAdmin = false, timer = 0, anns = [], clockOffset = 0;
+CFG.world = { ...W.DEFAULT };
+// só no seu computador (localhost) dá para simular o mundo em testes; no site publicado vale sempre a config do servidor
+const LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
+export const world = () => { if (LOCAL) { try { const t = localStorage.getItem('21world.worldTest'); if (t) return W.sanitize(JSON.parse(t)); } catch {} } return CFG.world; };
+export const now = () => Date.now() + clockOffset;       // hora do servidor (corrige relógio errado do aparelho)
+export let worldReady = false;
 
+async function syncClock() {
+  try {
+    const r = await fetch(`${location.origin}${location.pathname}`, { method: 'HEAD', cache: 'no-store' });   // a própria hospedagem informa a hora certa
+    const t = Date.parse(r.headers.get('date') || '');
+    if (Number.isFinite(t)) clockOffset = t - Date.now();
+  } catch {}
+}
 export async function start() {
+  await syncClock();
   const sb = Auth.sbClient();
-  if (!sb) return 'off';
+  if (!sb) { worldReady = true; return 'off'; }
   await loadConfig(sb);
+  worldReady = true;
   await loadAnnouncements(sb);
   if (Auth.account()) {
     try { const { data } = await sb.rpc('is_admin'); isAdmin = data === true; } catch {}
@@ -32,6 +48,7 @@ async function loadConfig(sb) {
   const { data, error } = await sb.from('game_config').select('data').eq('id', 1).maybeSingle();
   if (error || !data) return;
   const d = data.data || {};
+  CFG.world = W.sanitize(d.world || W.DEFAULT);
   Object.assign(CFG, { xp_mult: num(d.xp_mult, 1), daily_mult: num(d.daily_mult, 1), job_mult: num(d.job_mult, 1), prize_mult: num(d.prize_mult, 1),
     maintenance: !!d.maintenance, maintenance_msg: String(d.maintenance_msg || '').slice(0, 280), event: String(d.event || '').slice(0, 120) });
   P.setXpMult(CFG.xp_mult);

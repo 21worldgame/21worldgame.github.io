@@ -107,7 +107,7 @@ export function treat(s, id) {
 export function train(s, id, stat, rng = Math.random, quality = 1) {
   const a = s.stable.animals.find(x => x.id === id);
   if (!a) return { err: 'animal não encontrado.' };
-  if (!ready(a)) return { err: a.inj ? 'está lesionado.' : retired(a) ? 'está aposentado.' : 'sem semanas livres neste mês.' };
+  if (!ready(a)) return { err: a.inj ? 'está lesionado.' : retired(a) ? 'está aposentado.' : 'sem semanas livres neste mês do mundo (o relógio no topo mostra quando o próximo mês chega).' };
   const cost = trainCost(a);
   if (cost > s.money) return { err: 'dinheiro insuficiente para o treino.' };
   s.money -= cost;

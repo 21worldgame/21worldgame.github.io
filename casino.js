@@ -6,6 +6,9 @@ import { NPC_LOOKS, avatarSVG } from './avatar.js';
 import { G, $, esc, int, ms, sleep, say, save, award, profileOf, confetti } from './store.js';
 import * as sfx from './sfx.js';
 import * as Auth from './auth.js';
+import * as Live from './live.js';
+import * as W from './world.js';
+import * as RV from './rivals.js';
 import * as BJ from './bj.js';
 
 const SOLO = [
@@ -57,16 +60,19 @@ export async function initCasino() {
   lobby = await openLobby(() => { renderLobby(); G.onPeers?.(); });
   if (lobby) G.onLobby?.(lobby);
   selfId = lobby?.selfId || (await net())?.selfId || 'me';
-  $('#online').innerHTML = lobby ? '<i class="is-on"></i>salão online' : '<i></i>sem conexão: só mesas com bots';
+  $('#online').innerHTML = lobby ? '<i class="is-on"></i>salão online' : '<i></i>sem conexão: só mesas da casa';
   announce();
   renderLobby();
-  G.onLogin = loadGlobalRanking; loadGlobalRanking(); setInterval(loadGlobalRanking, 90000);
+  G.onLogin = loadGlobalRanking; loadGlobalRanking(); setInterval(loadGlobalRanking, 12000);
+  Auth.onRankChange(loadGlobalRanking);
+  setInterval(renderRanking, 4000);               // os números do mundo andam sozinhos
+  G.onRender = renderRanking;
   const code = new URLSearchParams(location.search).get('mesa');
   if (code) { G.goto('mesa'); joinOnline(code); }
 }
 
 let globalRows = null;
-function loadGlobalRanking() { if (!Auth.account()) return; Auth.ranking().then(rows => { if (rows) { globalRows = rows; renderLobby(); } }).catch(() => {}); }
+function loadGlobalRanking() { if (!Auth.account()) return; Auth.ranking(8000).then(rows => { if (rows) { globalRows = rows; renderRanking(); } }).catch(() => {}); }
 let annTimer;
 export function announce() {
   clearTimeout(annTimer);
@@ -83,7 +89,7 @@ function tableCard(t, kind, host) {
   const seats = t.seats || [0, 1, 2, 3].map(i => ({ kind: 'bot', name: ['Dorival', 'Rosa', 'Tião', 'Neide'][i] }));
   const humans = seats.filter(s => s.kind === 'human').length;
   return `<article class="tcard2 ${kind === 'online' ? 'is-online' : ''}">
-    <div class="tcard2__felt"><span class="tag ${kind === 'online' ? 'tag--green' : 'tag--dark'}">${kind === 'online' ? `online, ${humans} ${humans === 1 ? 'jogador' : 'jogadores'}` : 'com bots'}</span>
+    <div class="tcard2__felt"><span class="tag ${kind === 'online' ? 'tag--green' : 'tag--dark'}">${kind === 'online' ? `online, ${humans} ${humans === 1 ? 'jogador' : 'jogadores'}` : 'mesa da casa'}</span>
       <span class="tag tag--gold">mínima ${int(t.minBet)}</span></div>
     <div class="tcard2__body">
       <h4>${esc(t.name)}</h4>
@@ -101,15 +107,27 @@ export function renderLobby() {
     ...SOLO.map(t => tableCard(t, 'solo')),
   ].join('');
   if (lobby) $('#online').innerHTML = `<i class="is-on"></i>${peers.length + 1} ${peers.length ? 'jogadores' : 'jogador'} no salão`;
-  const people = [{ pid: 'me', p: profileOf() }, ...peers.filter(([, p]) => p.profile).map(([pid, p]) => ({ pid, p: p.profile }))]
-    .sort((a, b) => b.p.worth - a.p.worth).slice(0, 8);
-  const cloud = Auth.account() ? globalRows : null;
-  const list = cloud ? cloud.map(r => ({ pid: r.user_id === Auth.account().id ? 'me' : '', p: { name: r.name, level: r.level, rank: r.rank || '', worth: Number(r.worth), look: r.look || {} } })) : people;
-  $('#ranking-title').textContent = cloud ? 'ranking global (não oficial)' : 'ranking do salão';
-  $('#ranking').innerHTML = list.map((x, i) => `<li><button class="rk" ${x.pid ? `data-profile="${x.pid}"` : 'disabled'}>
-    <span class="rk__pos">${i + 1}</span><span class="rk__av">${avatarSVG(x.p.look, { label: x.p.name })}</span>
-    <span class="rk__name">${esc(x.p.name)}${x.pid === 'me' ? ' <small>você</small>' : ''}<small>nível ${x.p.level}, ${esc(x.p.rank)}</small></span>
-    <span class="rk__worth">${new Intl.NumberFormat('pt-BR', { notation: 'compact', style: 'currency', currency: 'BRL' }).format(x.p.worth)}</span></button></li>`).join('');
+  renderRanking();
+}
+let lastRank = new Map();
+// ranking global ao vivo: jogadores da nuvem + quem está no salão + o seu valor de agora + concorrentes do mundo
+export function renderRanking() {
+  const el = $('#ranking'); if (!el) return;
+  const peers = lobby ? [...lobby.peers.entries()].filter(([, p]) => p.profile).map(([pid, p]) => ({ pid, ...p.profile, worth: Number(p.profile.worth) || 0 })) : [];
+  const w = Live.world(), t = Live.now(), month = W.current(w, t) + W.progress(w, t);
+  const meP = profileOf(), myId = Auth.account()?.id;
+  const cloud = (Auth.account() ? globalRows || [] : []).filter(r => r.user_id !== myId).map(r => ({ name: r.name, level: r.level, rank: r.rank || '', worth: Number(r.worth), look: r.look || {} }));
+  const list = RV.merge({ cloud, me: { ...meP, pid: 'me' }, peers, rivalRows: RV.rivals(month), limit: 10 });
+  $('#ranking-title').textContent = 'ranking global ao vivo (não oficial)';
+  const now = new Map(list.map((x, i) => [x.name, i]));
+  el.innerHTML = list.map((x, i) => {
+    const was = lastRank.get(x.name), mv = was === undefined ? '' : was > i ? '<i class="rk__mv is-up" title="subiu">▲</i>' : was < i ? '<i class="rk__mv is-down" title="caiu">▼</i>' : '';
+    return `<li><button class="rk${x.pid === 'me' ? ' is-me' : ''}" ${x.pid ? `data-profile="${x.pid}"` : 'disabled'}>
+    <span class="rk__pos">${i + 1}</span><span class="rk__av">${avatarSVG(x.look || {}, { label: x.name })}</span>
+    <span class="rk__name">${esc(x.name)}${x.pid === 'me' ? ' <small>você</small>' : ''}${mv}<small>nível ${x.level}, ${esc(x.rank || '')}</small></span>
+    <span class="rk__worth">${new Intl.NumberFormat('pt-BR', { notation: 'compact', style: 'currency', currency: 'BRL' }).format(x.worth)}</span></button></li>`;
+  }).join('');
+  lastRank = now;
 }
 
 export function findProfile(pid) {
@@ -131,7 +149,7 @@ function openRoom(name, tag, invite) {
 export function sitSolo(id) {
   const def = SOLO.find(t => t.id === id);
   cur = { id, local: true, name: def.name };
-  openRoom(def.name, 'com bots', false);
+  openRoom(def.name, 'mesa da casa', false);
   cur.table = new Table({ ...def, onChange: v => applyView(v) });
   cur.table.join('me', seatInfo());
 }
@@ -139,7 +157,7 @@ export function sitSolo(id) {
 export async function hostOnline({ name, minBet, pub }) {
   const tid = rid();
   const conn = await openTableRoom(tid);
-  if (!conn) return say('Sem conexão com a internet. Jogue numa mesa com bots.', true);
+  if (!conn) return say('Sem conexão com a internet. Jogue numa mesa da casa.', true);
   leaveTable(true);
   cur = { id: tid, host: true, pub, name, conn };
   const { state, act, room } = conn;

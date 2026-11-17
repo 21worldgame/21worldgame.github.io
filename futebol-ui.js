@@ -93,7 +93,7 @@ function renderOffers() {
     return `<article class="glass offer"><div>${crest(colorsOf(o.club))}<strong>${esc(o.club)}</strong> quer <strong>${esc(o.name)}</strong>${p ? ` (${p.pos}, nota ${p.ovr})` : ''}</div>
       <p>Oferta: <b class="good">${brl(o.amount)}</b> <span class="muted small">valor de mercado ${p ? brl(FT.value(p)) : '?'}. Vale até a rodada ${o.until}.</span></p>
       <div class="row"><button class="btn btn--gold btn--sm" data-act="ft-offer-yes" data-id="${o.id}">aceitar</button><button class="btn btn--glass btn--sm" data-act="ft-offer-no" data-id="${o.id}">recusar</button></div></article>`;
-  }).join('') : '<p class="empty glass">Nenhuma proposta agora. Clubes-bot fazem ofertas pelos seus melhores jogadores durante a temporada. Para negociar com outros jogadores de verdade, use a aba inventário (troca ao vivo).</p>';
+  }).join('') : '<p class="empty glass">Nenhuma proposta agora. Clubes fazem ofertas pelos seus melhores jogadores durante a temporada. Para negociar com outros jogadores, use a aba inventário (troca ao vivo).</p>';
 }
 
 export function take(name) {
@@ -113,7 +113,7 @@ export function buy(id, price) {
 }
 export function haggle(id) {
   const c = f(), p = c.market.find(x => x.id === id); if (!p) return;
-  openDeal({ title: `${p.name}, ${FT.POS[p.pos]} nota ${p.ovr}`, sub: `Dono do passe: ${p.club}. Preço pedido ${brl(p.price)}.`, who: `${p.club} (bot)`, deal: FT.dealFor(c, id),
+  openDeal({ title: `${p.name}, ${FT.POS[p.pos]} nota ${p.ovr}`, sub: `Dono do passe: ${p.club}. Preço pedido ${brl(p.price)}.`, who: p.club, deal: FT.dealFor(c, id),
     onDone: price => { if (price) { buy(id, price); save(); G.render(); } } });
 }
 export function sell(id) {

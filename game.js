@@ -12,6 +12,7 @@ import * as TR from './trader.js';
 import * as Auth from './auth.js';
 import * as PK from './perks.js';
 import * as FE from './feira.js';
+import * as W from './world.js';
 import * as CD from './cards.js';
 import * as CHUI from './chat-ui.js';
 import { openDeal } from './deal-ui.js';
@@ -187,6 +188,7 @@ const KIND_COLOR = { offer: '--print-gold', own: '--money', rent: '--violet' };
 function landCard(l, kind) {
   const s = S();
   const badge = { offer: ['à venda', 'gold'], own: [l.leasedOut ? 'arrendada a terceiros' : 'sua', l.leasedOut ? 'violet' : 'green'], rent: ['arrendada de terceiros', 'violet'] }[kind];
+  const benefit = kind === 'own' && !l.leasedOut ? `<p class="small good">dá: ${esc(PK.label(PK.landPerk(l)))}</p>` : kind === 'offer' ? `<p class="small good">ao comprar: ${esc(PK.label(PK.landPerk(l)))}</p>` : '';
   const facts = [`${l.use}`, l.water, ...(l.improv || [])].map(t => `<span class="tag tag--dark">${esc(t)}</span>`).join('');
   let crop = '';
   if (kind !== 'offer' && !l.leasedOut) {
@@ -195,17 +197,17 @@ function landCard(l, kind) {
       crop = `<div class="crop"><span class="small">${c.label} plantada, colhe em ${l.crop.left} ${l.crop.left === 1 ? 'mês' : 'meses'}</span><span class="bar"><i style="transform:scaleX(${k})"></i></span></div>`;
     } else {
       crop = `<div class="crop row"><label class="visually-hidden" for="crop-${l.id}">lavoura</label>
-        <select class="input input--crop" id="crop-${l.id}">${Object.entries(L.CROPS).map(([k, c]) => `<option value="${k}">${c.label}: ${brl(L.plantCost(s, k, l.ha))}</option>`).join('')}</select>
-        <button class="btn btn--glass btn--sm" data-act="plant" data-id="${l.id}">plantar</button></div>`;
+        ${kind === 'rent' && !L.hasVehicle(s, 'trator') ? '<span class="small muted">Terra arrendada: só pasto. Para plantar aqui você precisa de um trator (concessionária).</span>' : `<select class="input input--crop" id="crop-${l.id}">${Object.entries(L.CROPS).map(([k, c]) => `<option value="${k}">${c.label}: ${brl(L.plantCost(s, k, l.ha, kind === 'rent'))}</option>`).join('')}</select>
+        <button class="btn btn--glass btn--sm" data-act="plant" data-id="${l.id}">plantar</button>`}</div>`;
     }
   }
   const acts = kind === 'offer'
     ? `<button class="btn btn--gold" data-act="buy-land" data-id="${l.id}">comprar</button><button class="btn btn--glass" data-act="rent-land" data-id="${l.id}">arrendar</button>${(S().cards || []).length ? `<button class="btn btn--glass btn--sm" data-act="buy-land-cards" data-id="${l.id}">pagar com cartas</button>` : ''}`
     : kind === 'own'
       ? `<button class="btn btn--glass" data-act="lease" data-id="${l.id}" ${l.crop ? 'disabled' : ''}>${l.leasedOut ? 'retomar' : 'arrendar a terceiros'}</button><button class="btn btn--glass" data-act="sell-land" data-id="${l.id}">vender</button>`
-      : `<button class="btn btn--glass" data-act="return-land" data-id="${l.id}" ${l.crop ? 'disabled' : ''}>devolver</button>`;
+      : `<button class="btn btn--gold" data-act="buy-rented" data-id="${l.id}">comprar por ${brl(L.buyRentedPrice(l))}</button><button class="btn btn--glass" data-act="return-land" data-id="${l.id}" ${l.crop ? 'disabled' : ''}>devolver</button>`;
   const money = kind === 'rent' ? `${brl(l.value * L.RENT_PAY)}<small>/mês</small>` : brl(l.value);
-  const sub = kind === 'own' && l.leasedOut ? `recebe ${brl(l.value * L.RENT_GET)}/mês` : kind === 'offer' ? `arrendamento ${brl(l.value * L.RENT_PAY)}/mês, ${brl(l.value / l.ha)}/ha` : `lotação ${L.landCap(l)} cabeças`;
+  const sub = kind === 'own' && l.leasedOut ? `recebe ${brl(l.value * L.RENT_GET)}/mês` : kind === 'offer' ? `arrendamento ${brl(l.value * L.RENT_PAY)}/mês, ${brl(l.value / l.ha)}/ha` : `aluguel ${brl(L.rentNow(l))}/mês (+${Math.round(L.RENT_RAISE * 100)}% a cada ano), já pagou ${brl(l.paid || 0)}, abate ${brl(L.rentCredit(l))} se comprar. Lavoura: só com trator, +20% de custo e ${Math.round(L.RENT_SHARE * 100)}% da safra vai para o dono.`;
   const t = satThumb(l), reg = L.region(l.region);
   return `<article class="lcard" data-pin="${l.id}">
     <button class="scene sat" data-act="map-lot" data-id="${l.id}" aria-label="ver o lote no mapa" style="background-image:url('${t.url}')">
@@ -216,6 +218,7 @@ function landCard(l, kind) {
       <h4>${esc(l.region)}</h4><p class="muted small">perto de ${esc(reg.city)}</p>
       <p class="price">${money}</p>
       <p class="muted small">${sub}</p>
+      ${benefit}
       <div class="facts">${facts}</div>
       ${crop}
       <div class="lcard__acts">${acts}</div>
@@ -407,32 +410,52 @@ function renderInv() {
     <div><span class="tag tag--dark">${{ car: 'veículo', animal: 'animal', land: 'terra', good: 'armazém', squad: 'futebol', player: 'jogador de futebol' }[i.kind]}</span><h4>${esc(i.label)}</h4>${i.value ? `<p class="muted small">vale cerca de ${brl(i.value)}</p>` : ''}</div></article>`).join('')
     : '<p class="empty glass">Nada para trocar ainda. Compre carros, animais, terras ou guarde sacas no armazém.</p>';
   renderFeira();
-  const cs = [...(S().cards || [])].sort((a, b) => CD.value(b) - CD.value(a));
-  $('#cd-sum').textContent = cs.length ? `${cs.length} cartas, valem ${brl(cs.reduce((t, c) => t + CD.value(c), 0))}` : 'nenhuma carta ainda';
-  $('#cd-list').innerHTML = cs.map(c => `<div class="tcard-slot">${CD.cardHTML(c, { small: true })}<button class="btn btn--glass btn--sm" data-act="card-sell" data-id="${c.id}">vender ${brl(Math.round(CD.value(c) * CD.SELL))}</button></div>`).join('') || '<p class="empty glass">Ganhe cartas na roleta do dia ou abra um pacote. Cartas valem dinheiro, pagam terras e trocam com outros jogadores.</p>';
   const ppl = TUI.online();
   $('#inv-peers').innerHTML = ppl.length ? ppl.map(p => `<li><span class="who__av">${avatarSVG(p.look || {}, { label: p.name })}</span><span>${esc(p.name)}<small class="muted"> nível ${p.level}</small></span>
     <button class="btn btn--gold btn--sm" data-act="trade-invite" data-id="${esc(p.pid)}">propor troca</button></li>`).join('') : '<li class="muted small">Nenhuma pessoa online agora. Chame os amigos pelo link do jogo.</li>';
-  // bots da feira também aparecem na lista, marcados como bot
+  // negociantes da feira aparecem na lista, marcados como negociantes
   const bots = [...new Set([...(S().feira?.list || []).map(x => x.bot), S().feira?.want?.bot].filter(Boolean))];
   $('#inv-peers').insertAdjacentHTML('beforeend', bots.map(n => `<li class="is-bot"><span class="who__av">${avatarSVG(NPC_LOOK(n), { label: n })}</span><span>${esc(n)}<small class="muted"> negociante</small></span>
     <button class="btn btn--glass btn--sm" data-act="fe-goto">ver banca</button></li>`).join(''));
 }
 // visual estável por nome de bot
 const NPC_LOOK = n => { let h = 0; for (const c of n) h = (h * 31 + c.charCodeAt(0)) >>> 0; return { skin: 1 + h % 5, hair: ['curto', 'degradê', 'longo', 'coque', 'raspado', 'boné'][h % 6], hairColor: 1 + (h >> 3) % 5, beard: ['nenhuma', 'por fazer', 'cavanhaque'][(h >> 5) % 3], outfit: ['camisa', 'jaqueta', 'terno'][(h >> 7) % 3], cloth: 1 + (h >> 9) % 6, acc: ['óculos escuros', 'corrente de ouro', 'nenhum'][(h >> 11) % 3] }; };
+// cartas raras: coleção, chances de cada raridade e álbum de campeões
+function renderCartas() {
+  const cs = [...(S().cards || [])].sort((a, b) => CD.value(b) - CD.value(a));
+  $('#cd-sum').textContent = cs.length ? `${cs.length} cartas, valem ${brl(cs.reduce((t, c) => t + CD.value(c), 0))}` : 'nenhuma carta ainda';
+  $('#cd-list').innerHTML = cs.map(c => `<div class="tcard-slot">${CD.cardHTML(c, { small: true })}<button class="btn btn--glass btn--sm" data-act="card-sell" data-id="${c.id}">vender ${brl(Math.round(CD.value(c) * CD.SELL))}</button></div>`).join('') || '<p class="empty glass">Ganhe cartas na roleta do dia ou abra um pacote. Cartas valem dinheiro, pagam terras e trocam com outros jogadores.</p>';
+  const tot = CD.TIERS.reduce((t, x) => t + x.w, 0);
+  $('#cd-odds').innerHTML = CD.TIERS.map(t => `<div class="cd-odd cd-odd--${t.id}"><b>${t.label}</b><span>${(t.w / tot * 100).toFixed(t.w / tot < 0.01 ? 2 : 1).replace('.', ',')}%</span><small>a partir de ${brl(t.base * 0.85)}</small></div>`).join('');
+  const have = new Set(cs.map(c => c.champ));
+  $('#cd-album').innerHTML = CD.CHAMPS.map(ch => `<div class="cd-slot${have.has(ch.id) ? ' is-have' : ''}">${CD.cardHTML({ id: `al-${ch.id}`, champ: ch.id, tier: have.has(ch.id) ? cs.find(c => c.champ === ch.id).tier : 'bronze' }, { small: true })}</div>`).join('');
+}
 // feira dos bots: o índice da economia vem do ranking (patrimônio dos jogadores)
 let econ = 1, econAt = 0;
 function renderFeira() {
   if (Date.now() - econAt > 60000) { econAt = Date.now(); Auth.ranking?.().then(r => { const v = FE.econIndex((r || []).map(x => Number(x.worth))); if (Math.abs(v - econ) > 0.001) { econ = v; if (currentTab === 'inventario') renderFeira(); } }).catch(() => {}); }
   const f = FE.refresh(S(), econ);
   $('#fe-idx').textContent = `economia dos jogadores: ${f.idx >= 1.02 ? 'aquecida' : f.idx <= 0.98 ? 'fraca' : 'estável'} (preços ${f.idx >= 1 ? '+' : ''}${Math.round((f.idx - 1) * 100)}%)`;
-  $('#fe-list').innerHTML = f.list.length ? f.list.map(it => `<article class="glass icard icard--${it.kind}">
-    ${it.kind === 'car' ? `<img src="assets/${L.CARS[it.model].img}.webp" alt="" loading="lazy">` : '<span class="icard__ico" aria-hidden="true"></span>'}
-    <div><span class="tag tag--violet">${esc(it.bot)}</span><h4>${esc(it.label)}</h4><p class="muted small">pede ${brl(it.ask)}${it.kind === 'acc' && PK.ACC_PERKS[it.acc] ? `, ${esc(PK.label(PK.ACC_PERKS[it.acc]))}` : ''}</p>
-    <button class="btn btn--gold btn--sm" data-act="fe-buy" data-id="${it.id}">negociar</button></div></article>`).join('') : '<p class="empty glass">Bancas vazias. Volte no próximo mês.</p>';
+  const GROUPS = [['car', 'Veículos seminovos'], ['good', 'Safra e armazém'], ['acc', 'Acessórios com vantagem']];
+  const IMG = { soja: 'farm-soja', milho: 'farm-colheita', cafe: 'farm-cafe' };
+  const dealTag = it => { const d = Math.round((it.ask / it.value - 1) * 100); return d <= -3 ? `<span class="fcard__deal is-good">${-d}% abaixo da referência</span>` : d >= 3 ? `<span class="fcard__deal is-high">${d}% acima da referência</span>` : '<span class="fcard__deal">preço de referência</span>'; };
+  const media = it => it.kind === 'car' ? `<img src="assets/${L.CARS[it.model].img}.webp" alt="" loading="lazy">`
+    : it.kind === 'good' ? `<img src="assets/${IMG[it.good] || 'farm-soja'}.webp" alt="" loading="lazy">`
+    : `<div class="fcard__acc">${avatarSVG({ ...S().avatar, acc: it.acc, hair: S().avatar.hair }, { label: it.acc })}</div>`;
+  const card = it => `<article class="fcard fcard--${it.kind}">
+    <div class="fcard__media">${media(it)}<span class="fcard__kind">${{ car: 'seminovo', good: `${it.qty} sacas`, acc: 'usado' }[it.kind]}</span>${dealTag(it)}</div>
+    <div class="fcard__body">
+      <h4>${esc(it.label.replace(' (usado, com vantagem)', ''))}</h4>
+      ${it.kind === 'acc' && PK.ACC_PERKS[it.acc] ? `<p class="fcard__perk">${esc(PK.label(PK.ACC_PERKS[it.acc]))}</p>` : ''}
+      <div class="fcard__seller"><span class="fcard__av">${avatarSVG(NPC_LOOK(it.bot), { label: it.bot })}</span><span>${esc(it.bot)}<small>negociante</small></span></div>
+      <div class="fcard__price"><b>${brl(it.ask)}</b><small>referência ${brl(it.value)}</small></div>
+      <button class="btn btn--gold fcard__go" data-act="fe-buy" data-id="${it.id}">negociar</button>
+    </div></article>`;
+  $('#fe-list').innerHTML = f.list.length ? GROUPS.map(([k, title]) => { const items = f.list.filter(x => x.kind === k); return items.length ? `<div class="fgroup"><h4 class="fgroup__t">${title}</h4><div class="fgroup__grid">${items.map(card).join('')}</div></div>` : ''; }).join('') : '<p class="empty glass">As bancas estão vazias. Volte no próximo mês do mundo.</p>';
   const w = f.want;
-  $('#fe-want').innerHTML = w ? `<article class="glass offer"><div><span class="tag tag--violet">${esc(w.bot)}</span> quer comprar <strong>${esc(w.label)}</strong></div>
-    <p>Oferece <b class="good">${brl(w.bid)}</b> <span class="muted small">(vale cerca de ${brl(w.value)})</span></p><button class="btn btn--gold btn--sm" data-act="fe-sell">negociar a venda</button></article>` : '';
+  $('#fe-want').innerHTML = w ? `<article class="fwant"><span class="fcard__av fwant__av">${avatarSVG(NPC_LOOK(w.bot), { label: w.bot })}</span>
+    <div class="fwant__txt"><strong>${esc(w.bot)}</strong> quer comprar <strong>${esc(w.label)}</strong><small>oferece <b class="good">${brl(w.bid)}</b> · vale cerca de ${brl(w.value)}</small></div>
+    <button class="btn btn--gold" data-act="fe-sell">negociar a venda</button></article>` : '';
 }
 function feiraBuy(id) {
   const it = S().feira?.list.find(x => x.id === id); if (!it) return;
@@ -445,7 +468,7 @@ function feiraBuy(id) {
 }
 function feiraSell() {
   const w = S().feira?.want; if (!w) return;
-  openDeal({ title: `vender ${w.label}`, sub: `O bot pagou ${brl(w.bid)} de primeira. Peça mais, mas sem exagero.`, who: w.bot, deal: FE.sellDeal(w), onDone: price => {
+  openDeal({ title: `vender ${w.label}`, sub: `Ele ofereceu ${brl(w.bid)} de primeira. Peça mais, mas sem exagero.`, who: w.bot, deal: FE.sellDeal(w), onDone: price => {
     if (!price) return;
     const err = FE.sell(S(), price);
     if (err) return say(err[0].toUpperCase() + err.slice(1), true);
@@ -458,7 +481,7 @@ document.addEventListener('submit', e => { if (e.target.id === 'tr-chat-form') {
 
 // desempenho: cada aba só é desenhada quando está aberta (ou quando o usuário entra nela)
 const PANELS = { personagem: () => renderChar(), terras: () => renderTerras(), gado: () => renderGado(), mercado: () => renderMercado(),
-  carros: () => renderCarros(), banco: () => renderBanco(), livro: () => renderLivro(), haras: () => SUI.render(), trabalho: () => JUI.render(), futebol: () => FUI.render(), inventario: () => renderInv(), mesa: () => C.renderLobby() };
+  carros: () => renderCarros(), banco: () => renderBanco(), livro: () => renderLivro(), haras: () => SUI.render(), trabalho: () => JUI.render(), futebol: () => FUI.render(), inventario: () => renderInv(), cartas: () => renderCartas(), mesa: () => C.renderLobby() };
 let currentTab = 'mesa';
 function render() {
   renderHud(); renderMissions();
@@ -466,7 +489,7 @@ function render() {
   C.announce();
   JUI.hint();
 }
-G.render = render;
+G.render = () => { render(); G.onRender?.(); };
 G.callout = t => { const el = $('#race-call'); el.textContent = t; el.classList.remove('is-on'); void el.offsetWidth; el.classList.add('is-on'); };
 
 // ---------- ações ----------
@@ -595,7 +618,14 @@ const ACTS = {
   'rent-land'(idv) {
     const o = find(S().offers, idv); if (!o) return;
     S().offers.splice(S().offers.indexOf(o), 1); S().lands.push({ ...o, own: false, leasedOut: false });
-    say(`Arrendada por ${brl(o.value * L.RENT_PAY)} ao mês. Pasto para ${L.landCap(o)} cabeças ou lavoura.`); award('land');
+    say(`Arrendada por ${brl(o.value * L.RENT_PAY)} ao mês (reajuste de ${Math.round(L.RENT_RAISE * 100)}% ao ano). Pasto para ${L.landCap(o)} cabeças. Lavoura só com trator. O aluguel pago abate a compra depois.`); award('land');
+  },
+  'buy-rented'(idv) {
+    const l = find(S().lands, idv), price = L.buyRentedPrice(l);
+    if (!confirm(`Comprar esta terra por ${brl(price)}? O aluguel que você já pagou abate ${brl(L.rentCredit(l))}.`)) return;
+    const err = L.buyRented(S(), l);
+    if (err) return say(err[0].toUpperCase() + err.slice(1), true);
+    note(`compra de ${l.ha} ha, ${l.region} (abatendo aluguel)`, -price); award('land'); confetti(60); say('Agora a terra é sua: sem aluguel, com todas as vantagens.');
   },
   'return-land'(idv) { const l = find(S().lands, idv); S().lands.splice(S().lands.indexOf(l), 1); say('Terra devolvida ao dono.'); },
   lease(idv) { const l = find(S().lands, idv); l.leasedOut = !l.leasedOut; say(l.leasedOut ? 'Contrato de arrendamento assinado.' : 'Terra de volta para o seu uso.'); },
@@ -605,7 +635,8 @@ const ACTS = {
     S().lands.splice(S().lands.indexOf(l), 1); S().money += l.value * 0.95; note(`venda de ${l.ha} ha, ${l.region}`, l.value * 0.95); say('Terra vendida.');
   },
   plant(idv) {
-    const l = find(S().lands, idv), crop = $(`#crop-${idv}`).value, cost = L.plantCost(S(), crop, l.ha);
+    const l = find(S().lands, idv), crop = $(`#crop-${idv}`)?.value, cost = L.plantCost(S(), crop, l.ha, !l.own);
+    if (!crop) return;
     const err = L.plant(S(), l, crop);
     if (err) return say(err, true);
     note(`plantio de ${L.CROPS[crop].label}, ${l.ha} ha`, -cost);
@@ -655,17 +686,6 @@ const ACTS = {
       S().lent.push({ id: b.id, name: b.name, bal: b.amount, rate: b.rate, left: b.months, risk: b.risk });
       say(`${b.name} assinou a promissória.`); award('lend');
     }
-  },
-  month() {
-    if (C.busyRound()) return say('Termine a mão antes de passar o mês.', true);
-    const before = S().money;
-    const lines = L.tick(S());
-    for (const l of ST.monthly(S())) note(l.txt, l.val);
-    const harvests = lines.filter(l => l.txt.startsWith('colheita')).length;
-    document.body.classList.remove('is-newmonth'); void document.body.offsetWidth; document.body.classList.add('is-newmonth');
-    say(`Mês ${S().month}. Saldo do mês: ${brl(S().money - before)}.${harvests ? ' Colheita no armazém.' : ''}`);
-    award('month');
-    if (harvests) award('harvest', harvests);
   },
   reset() {
     if (!confirm('Começar um jogo novo? O progresso atual será apagado.')) return;
@@ -816,3 +836,61 @@ function showCard(c) {
   sfx.play('stack', 0.7); confetti(k ? 160 : 50);
   save(); render();
 }
+
+// mini tutorial sempre visível no topo de cada aba
+const HOWTO = {"mesa":["Como jogar no cassino",["Escolha uma mesa de 21 (ou crie a sua) e sente.","Coloque suas fichas na aposta e confirme. Fichas vêm do caixa (R$ 10 cada).","Peça carta (H), pare (S), dobre ou divida. Chegar mais perto de 21 que o dealer, sem passar, ganha. Blackjack paga 3 para 2.","Na roleta e no Aviator o caminho é o mesmo: aposte fichas e acompanhe o resultado."]],"trader":["Como funciona o trader",["Escolha um ativo e veja as velas subirem e descerem.","Compre se acha que vai subir, venda a descoberto se acha que vai cair. A alavancagem multiplica ganho e perda.","Feche a posição antes de ser liquidado: perdeu tudo da aposta, perdeu a posição."]],"trabalho":["Como funciona o trabalho",["Clique em \"começar turno\": são 90 segundos.","Clique nos pedidos do mapa para aceitar (a moto leva até 3).","Quando a moto chegar, confirme na hora (espaço) para ganhar gorjeta. Pneu furado: aperte F.","Bom aproveitamento sobe seu nível e os pedidos pagam mais. Serve de renda quando o dinheiro acaba."]],"futebol":["Como funciona o futebol",["Escolha um clube real e pague o valor para assumir.","Em \"próximo jogo\" defina formação e estilo e assista à partida (ou simule rápido).","No mercado, contrate jogadores (negocie o preço) e venda os que sobram; no estádio, aumente a bilheteria.","Fique entre os 4 primeiros para subir de divisão; os 4 últimos caem."]],"cartas":["Como funcionam as cartas raras",["Abra pacotes ou ganhe cartas na roleta do dia.","Quanto mais rara (bronze, prata, esmeralda, diamante, mestre, challenger), mais vale.","Use como moeda: troque com outros jogadores no inventário, pague terras ou venda para a loja.","Complete o álbum com os 12 campeões."]],"inventario":["Como funciona o inventário",["Aqui está tudo que você pode trocar: carros, terras, animais, jogadores e cartas.","Na feira, negocie a compra e venda: oferta muito baixa faz o negociante desistir.","Com outro jogador online, use \"propor troca\": os dois montam a oferta, ficam prontos e confirmam.","Cartas valem dinheiro e podem pagar terras."]],"haras":["Como funciona o canil e haras",["Compre um animal no leilão do mês.","Treine: cada treino gasta 1 das 4 semanas do mês e cansa o animal.","Inscreva em uma prova da sua classe. Corrida também gasta uma semana.","\"Sem semanas\" = acabaram as 4 semanas do mês do mundo. O mês passa sozinho (relógio no topo, igual para todos) e as semanas voltam.","Só o 1º e o 2º lugar dão lucro. Animal lesionado precisa de veterinário."]],"corridas":["Como funciona a corrida de galgos",["Escolha o cachorro em quem vai apostar e o valor em fichas.","Quanto menor a chance dele, maior o retorno.","Clique em \"apostar e largar\" e acompanhe a corrida."]],"personagem":["Como funciona o personagem",["Escolha o visual e o nome.","Itens pagos (acessórios, roupas) são seus para sempre.","Cada acessório dá uma vantagem permanente: veja a lista \"suas vantagens\"."]],"terras":["Como funcionam as terras",["Escolha um lote à venda e veja o benefício que ele dá ao comprar.","Comprar é o melhor negócio: a terra valoriza, rende vantagens, serve de garantia no banco, planta sem restrição e pode ser arrendada a terceiros.","Arrendar de terceiros custa aluguel todo mês (+8% ao ano), não dá vantagem nenhuma e a lavoura só é permitida com trator, com 20% a mais de custo e 15% da safra para o dono.","Se arrendou e gostou, compre: o aluguel que você já pagou abate o preço (até 40%).","Dá para pagar a compra também com cartas."]],"gado":["Como funciona o gado",["Compre bezerros no leilão e deixe no pasto (1 cabeça por hectare).","Eles engordam todo mês que passa. Venda quando o preço da arroba estiver bom.","Sem pasto suficiente, você paga ração e engorda menos."]],"mercado":["Como funciona o mercado",["Veja o preço de soja, milho e café, que variam todo mês.","Guarde a colheita no armazém e venda quando o preço subir."]],"carros":["Como funciona a concessionária",["Todo carro tem uma vantagem permanente (entregas, XP, provas...).","Você paga IPVA e seguro todo mês e o carro desvaloriza.","Vender na loja devolve 92% do valor atual."]],"banco":["Como funciona o banco",["Peça empréstimo usando terras e gado como garantia.","Pague as parcelas em dia: 2 atrasadas e o banco toma a terra.","Você também pode emprestar dinheiro a outras pessoas e ganhar juros, com risco de calote."]],"livro":["Livro-caixa",["Aqui fica o registro de tudo que entrou e saiu do seu dinheiro."]]};
+for (const [id, [title, steps]] of Object.entries(HOWTO)) {
+  const p = document.getElementById(`p-${id}`);
+  if (p) p.insertAdjacentHTML('afterbegin', `<aside class="howto" aria-label="como jogar"><div class="howto__t">${title}</div><ol>${steps.map(s => `<li>${s}</li>`).join('')}</ol></aside>`);
+}
+
+// ---------- tempo de mundo: o mês passa sozinho, igual para todos ----------
+// Um relógio único (config do servidor) define o mês do mundo. O jogo do jogador acompanha: roda os meses que faltam
+// (no máximo 6 de uma vez, quem ficou muito tempo fora é "perdoado"), sem botão para adiantar o próprio mês.
+function worldMonths() {
+  const w = Live.world(), t = Live.now(), target = W.current(w, t), s = S();
+  if (s.worldSync !== true) { s.month = target; s.worldSync = true; save(); return; }     // primeira vez: entra no mês atual do mundo
+  const p = W.plan(s.month, target);
+  if (!p.ticks || C.busyRound() || JUI.running() || SUI.isRunning()) return;
+  if (p.skipped) { s.month += p.skipped; note(`o mundo avançou ${p.skipped} meses enquanto você esteve fora (sem cobranças)`); }
+  const before = s.money; let harvests = 0;
+  for (let i = 0; i < p.ticks; i++) {
+    const lines = L.tick(s);
+    for (const l of ST.monthly(s)) note(l.txt, l.val);
+    harvests += lines.filter(l => l.txt.startsWith('colheita')).length;
+    award('month');
+  }
+  if (harvests) award('harvest', harvests);
+  document.getElementById('worldclock')?.classList.remove('is-new'); void document.body.offsetWidth; document.getElementById('worldclock')?.classList.add('is-new');
+  say(p.ticks > 1 || p.skipped ? `O mundo avançou até o mês ${s.month}. Saldo: ${brl(s.money - before)}.` : `Mês ${s.month} do mundo. Saldo do mês: ${brl(s.money - before)}.${harvests ? ' Colheita no armazém.' : ''}`);
+  checkAch(); save(); render();
+}
+function worldClock() {
+  const w = Live.world(), t = Live.now();
+  $('#wc-m').textContent = W.current(w, t);
+  $('#wc-bar').style.transform = `scaleX(${W.progress(w, t).toFixed(3)})`;
+  $('#wc-left').textContent = `próximo mês em ${W.fmt(W.msLeft(w, t))}`;
+}
+setInterval(() => { if (!Live.worldReady) return; worldClock(); worldMonths(); }, 1000);
+
+// ---------- tela cheia: o jogo inteiro (botão do topo) ou só a área de cada jogo ----------
+// Celular sem suporte (iPhone) usa uma "tela cheia" própria: a área ocupa a tela toda por cima do resto.
+function setFsLabels() {
+  const on = !!document.fullscreenElement || !!document.querySelector('.is-fs');
+  document.querySelectorAll('[data-fs]').forEach(b => { const me = document.fullscreenElement === document.getElementById(b.dataset.fs) || document.getElementById(b.dataset.fs)?.classList.contains('is-fs') || (b.dataset.fs === 'app' && document.fullscreenElement === document.documentElement); b.textContent = me ? 'sair da tela cheia' : 'tela cheia'; b.setAttribute('aria-pressed', me); });
+  document.body.classList.toggle('has-fs', on);
+}
+function toggleFs(id) {
+  const el = id === 'app' ? document.documentElement : document.getElementById(id);
+  const pseudo = document.querySelector('.is-fs');
+  if (pseudo) { pseudo.classList.remove('is-fs'); return setFsLabels(); }
+  if (document.fullscreenElement) { document.exitFullscreen().catch(() => {}); return; }
+  if (el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).catch(() => { el.classList.add('is-fs'); setFsLabels(); });
+  else { el.classList.add('is-fs'); setFsLabels(); }
+}
+for (const id of ['mesa', 'corridas', 'trader', 'trabalho', 'futebol', 'haras', 'cartas']) {
+  document.getElementById(`p-${id}`)?.insertAdjacentHTML('afterbegin', `<button class="btn btn--glass btn--sm fs-btn" type="button" data-fs="p-${id}" aria-pressed="false">tela cheia</button>`);
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-fs]'); if (b) toggleFs(b.dataset.fs); });
+document.addEventListener('fullscreenchange', setFsLabels);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.querySelector('.is-fs')) toggleFs(); });

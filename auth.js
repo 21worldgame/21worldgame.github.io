@@ -160,9 +160,9 @@ function scheduleSync() {
   clearTimeout(timer);
   timer = setTimeout(() => push().catch(() => {}), 1500);   // quase em tempo real: outro aparelho vê o progresso em segundos
 }
-export async function ranking() {
+export async function ranking(maxAge = 60000) {
   if (!sb || !user) return null;
-  if (rankCache && Date.now() - rankCache.at < 60000) return rankCache.rows;
+  if (rankCache && Date.now() - rankCache.at < maxAge) return rankCache.rows;
   const { data, error } = await sb.from('public_profiles').select('user_id, name, level, worth, rank, look').order('worth', { ascending: false }).limit(10);
   if (error) return rankCache?.rows || null;
   rankCache = { at: Date.now(), rows: data };
@@ -188,11 +188,20 @@ async function afterLogin() {
   if (dlg().open) dlg().close();
   try { localStorage.setItem('21world.hadAccount', '1'); } catch {}
   G.afterSave = scheduleSync;
+  watchRanking();
   await push().catch(() => {});
   renderAccount();
   G.onLogin?.();
 }
 
+// ranking em tempo real: o banco avisa quando algum perfil muda (precisa da replicação ligada; sem ela, o jogo consulta a cada poucos segundos)
+let rankCb = null, rankSub = false;
+export const onRankChange = fn => { rankCb = fn; };
+function watchRanking() {
+  if (rankSub || !sb) return;
+  rankSub = true;
+  try { sb.channel('rk').on('postgres_changes', { event: '*', schema: 'public', table: 'public_profiles' }, () => { rankCache = null; rankCb?.(); }).subscribe(); } catch {}
+}
 function renderAccount() {
   const el = $('#account-line'); if (!el) return;
   el.hidden = !user;

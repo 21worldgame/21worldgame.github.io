@@ -65,7 +65,7 @@ export function buy(s, id, price) {
 // fecha a venda para o bot que quer comprar
 export function sell(s, price) {
   const w = s.feira?.want;
-  if (!w) return 'o bot desistiu da compra.';
+  if (!w) return 'o comprador desistiu.';
   if (w.kind === 'car') { if (!s.cars.some(c => c.id === w.id)) return 'esse carro não está mais com você.'; s.cars = s.cars.filter(c => c.id !== w.id); }
   if (w.kind === 'good') { if ((s.stock[w.good] || 0) < w.qty) return 'você não tem mais essa quantidade.'; s.stock[w.good] -= w.qty; }
   s.money += price;

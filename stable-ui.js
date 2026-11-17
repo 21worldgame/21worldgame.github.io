@@ -166,6 +166,11 @@ export async function enter(evId) {
   if (res.err) return say(`${a.name} ${res.err}`, true);
   save();                                         // resultado já gravado: recarregar a página não refaz a prova
   running = true;
+  try { await runRace(res, a); }
+  catch (e) { console.error(e); say('A prova teve um problema na animação, mas o resultado já foi gravado.', true); try { $('#dlg-race').close(); RC.returnStage(); } catch {} }
+  finally { running = false; G.render(); }   // nunca deixa a trava ligada: antes um erro aqui bloqueava todas as inscrições seguintes
+}
+async function runRace(res, a) {
   const dlg = $('#dlg-race');
   RC.borrowStage($('#race-host'));
   dlg.showModal();
@@ -187,8 +192,6 @@ export async function enter(evId) {
       <span class="res__name">${esc(res.runners[i].name)}</span><span class="res__time">${res.T[i].toFixed(2)} s</span><span class="res__gap">${k ? `+${(res.T[i] - res.T[res.order[0]]).toFixed(2)}` : ''}</span></li>`).join('')}</ol>
     <p class="${net >= 0 ? 'good' : 'muted'}">${esc(a.name)} chegou em ${res.pos + 1}º. ${res.prize ? `Prêmio ${brl(res.prize)}, ${net >= 0 ? 'lucro' : 'prejuízo'}` : (net >= 0 ? 'Lucro' : 'Prejuízo')} de ${brl(Math.abs(net))} já descontada a inscrição.${res.injured ? ` ${esc(a.name)} se lesionou na prova.` : ''}</p>
     <button class="btn btn--gold" data-act="stable-close">fechar</button>`;
-  running = false;
-  G.render();
 }
 
 export function closeRace() {
@@ -198,3 +201,6 @@ export function closeRace() {
   render();
 }
 export const isRunning = () => running;
+// Esc não fecha a janela no meio da prova; fechada de qualquer jeito depois, a pista volta ao lugar
+$('#dlg-race')?.addEventListener('cancel', e => { if (running) e.preventDefault(); });
+$('#dlg-race')?.addEventListener('close', () => { if (!running) { RC.returnStage(); render(); } });

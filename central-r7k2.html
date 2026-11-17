@@ -83,6 +83,18 @@
             <button class="btn btn--glass" type="button" data-preset="weekend">evento: fim de semana em dobro</button>
             <button class="btn btn--glass" type="button" data-preset="normal">voltar ao normal</button></div>
         </form>
+        <h3>tempo de mundo</h3>
+        <form id="ad-world" class="ad-card ad-grid">
+          <p class="muted ad-span" id="ad-world-now"></p>
+          <label class="field"><span>minutos reais por mês do mundo</span><input class="input" name="min" type="number" step="0.1" min="0.2" max="1440"></label>
+          <div class="row"><button class="btn btn--gold" type="submit">aplicar velocidade</button>
+            <button class="btn btn--glass" type="button" data-world-speed="30">normal (30 min)</button>
+            <button class="btn btn--glass" type="button" data-world-speed="5">acelerado (5 min)</button>
+            <button class="btn btn--glass" type="button" data-world-speed="1">turbo (1 min)</button></div>
+          <label class="field"><span>avançar o mundo agora (meses, para todos)</span><input class="input" name="adv" type="number" min="1" max="24" value="1"></label>
+          <div class="row"><button class="btn btn--glass" type="button" id="ad-world-adv">avançar agora</button></div>
+          <p class="muted small ad-span">O mês do mundo é o mesmo para todos e passa sozinho. Quem ficou fora recupera no máximo 6 meses de cobranças ao voltar. Trocar a velocidade nunca volta nem pula o mês atual.</p>
+        </form>
         <h3>presente para todos os jogadores</h3>
         <form id="ad-gift-all" class="ad-card row">
           <label class="field"><span>o quê</span><select class="input" name="kind"><option value="chips">fichas</option><option value="money">dinheiro (R$)</option><option value="xp">XP</option></select></label>
