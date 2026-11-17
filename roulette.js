@@ -8,18 +8,32 @@ const SEG = 360 / 37;
 
 export function initRoulette() {
   // roda em SVG: setores na ordem real da roleta europeia
-  const R = 150, r0 = 96;
+  const R = 132, r0 = 90;
   const pt = (a, rad) => [160 + rad * Math.sin((a * Math.PI) / 180), 160 - rad * Math.cos((a * Math.PI) / 180)];
   const sectors = GM.WHEEL.map((n, i) => {
-    const a1 = i * SEG - SEG / 2, a2 = a1 + SEG, [x1, y1] = pt(a1, R), [x2, y2] = pt(a2, R), [x3, y3] = pt(a2, r0), [x4, y4] = pt(a1, r0), [tx, ty] = pt(i * SEG, 132);
+    const a1 = i * SEG - SEG / 2, a2 = a1 + SEG, [x1, y1] = pt(a1, R), [x2, y2] = pt(a2, R), [x3, y3] = pt(a2, r0), [x4, y4] = pt(a1, r0), [tx, ty] = pt(i * SEG, 106);
     return `<path d="M${x1} ${y1} A${R} ${R} 0 0 1 ${x2} ${y2} L${x3} ${y3} A${r0} ${r0} 0 0 0 ${x4} ${y4} Z" class="rl-sec rl-sec--${GM.colorOf(n)}"/>
       <text x="${tx}" y="${ty}" transform="rotate(${i * SEG} ${tx} ${ty})" class="rl-num">${n}</text>`;
   }).join('');
-  const frets = GM.WHEEL.map((_, i) => { const [x1, y1] = pt(i * SEG - SEG / 2, r0 - 14), [x2, y2] = pt(i * SEG - SEG / 2, R); return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="rl-fret"/>`; }).join('');
-  $('#rl-wheel').innerHTML = `<svg viewBox="0 0 320 320" aria-label="roleta"><circle cx="160" cy="160" r="158" class="rl-rim"/>
-    <g id="rl-rot">${sectors}${frets}<circle cx="160" cy="160" r="82" class="rl-pockets"/><circle cx="160" cy="160" r="56" class="rl-cone"/>
-      <g class="rl-turret">${[0, 90, 180, 270].map(a => `<rect x="156" y="104" width="8" height="40" rx="4" transform="rotate(${a} 160 160)"/>`).join('')}<circle cx="160" cy="160" r="12"/></g></g></svg>
-    <div class="rl-ballarm" id="rl-arm"><i class="rl-ball" id="rl-ball"></i></div><span class="rl-pointer" aria-hidden="true"></span>`;
+  const frets = GM.WHEEL.map((_, i) => { const [x1, y1] = pt(i * SEG - SEG / 2, r0), [x2, y2] = pt(i * SEG - SEG / 2, R); return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="rl-fret"/>`; }).join('');
+  const grad = (id, a, b) => `<radialGradient id="rl-g-${id}" gradientUnits="userSpaceOnUse" cx="160" cy="160" r="${R}"><stop offset=".66" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></radialGradient>`;
+  $('#rl-wheel').innerHTML = `<svg viewBox="0 0 320 320" aria-label="roleta"><defs>
+      <radialGradient id="rl-wood" cx=".5" cy=".5" r=".5"><stop offset=".78" stop-color="#4a250f"/><stop offset=".92" stop-color="#7a4421"/><stop offset="1" stop-color="#2a1408"/></radialGradient>
+      <radialGradient id="rl-track" gradientUnits="userSpaceOnUse" cx="160" cy="160" r="158"><stop offset=".82" stop-color="#1a0f08"/><stop offset=".9" stop-color="#5b3a1e"/><stop offset=".97" stop-color="#2b1809"/></radialGradient>
+      <linearGradient id="rl-brass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0b0"/><stop offset=".45" stop-color="#e2a21b"/><stop offset="1" stop-color="#7a5208"/></linearGradient>
+      <radialGradient id="rl-hub" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#d49a1c"/><stop offset="1" stop-color="#5c3d05"/></radialGradient>
+      <radialGradient id="rl-cone2" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#3a2a14"/><stop offset=".7" stop-color="#1b1208"/><stop offset="1" stop-color="#0a0704"/></radialGradient>
+      <linearGradient id="rl-shine" x1="0" y1="0" x2=".7" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".32"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+      ${grad('red', '#6e0716', '#e0243f')}${grad('black', '#030304', '#2a2a33')}${grad('green', '#03502a', '#19ad5c')}
+    </defs>
+    <circle cx="160" cy="160" r="158" fill="url(#rl-wood)"/><circle cx="160" cy="160" r="152" fill="url(#rl-track)" stroke="url(#rl-brass)" stroke-width="3"/>
+    <circle cx="160" cy="160" r="133" fill="none" stroke="url(#rl-brass)" stroke-width="2.4"/>
+    <g id="rl-rot">${sectors}${frets}<circle cx="160" cy="160" r="${r0}" class="rl-pockets"/><circle cx="160" cy="160" r="72" fill="url(#rl-cone2)" stroke="url(#rl-brass)" stroke-width="2"/>
+      <g class="rl-turret">${[0, 90, 180, 270].map(a => `<g transform="rotate(${a} 160 160)"><rect x="157" y="108" width="6" height="40" rx="3"/><circle cx="160" cy="106" r="5.5"/></g>`).join('')}<circle cx="160" cy="160" r="13"/></g></g>
+    <path d="M60 60 A140 140 0 0 1 250 38 A130 130 0 0 0 78 98 Z" fill="url(#rl-shine)" pointer-events="none"/></svg>
+    <i class="rl-blur" id="rl-blur" aria-hidden="true"></i><i class="rl-glow" aria-hidden="true"></i>
+    <div class="rl-ballarm" id="rl-arm"><i class="rl-trail" id="rl-trail"></i><i class="rl-ball" id="rl-ball"></i></div>
+    <span class="rl-centernum" id="rl-centernum" aria-hidden="true"></span><span class="rl-pointer" aria-hidden="true"></span>`;
 
   // mesa: zero, 3 x 12 números, colunas, dúzias e apostas externas
   const nums = [];
@@ -70,6 +84,28 @@ function renderBets() {
   $('[data-act="rl-spin"]').disabled = spinning || !Object.keys(bets).length;
 }
 
+const GLOW = { red: '255,60,90', black: '210,220,255', green: '60,255,140' };
+// chegada da bola: pancada na roda, anel de luz na casa vencedora e o número aparecendo no centro
+function landFx(n) {
+  const box = $('#rl-wheel'), col = GM.colorOf(n), rgb = GLOW[col];
+  const mid = $('#rl-centernum');
+  mid.textContent = n; mid.className = `rl-centernum is-${col} is-on`;
+  if (RM.matches) return;
+  box.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.025) rotate(-.4deg)', offset: 0.25 }, { transform: 'scale(.995) rotate(.3deg)', offset: 0.55 }, { transform: 'scale(1)' }], { duration: 520, easing: 'ease-out' });
+  mid.animate([{ transform: 'translate(-50%, -50%) scale(.2)', opacity: 0 }, { transform: 'translate(-50%, -50%) scale(1.25)', opacity: 1, offset: 0.6 }, { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 }], { duration: 650, easing: 'cubic-bezier(.2,.9,.3,1.2)', fill: 'both' });
+  for (let i = 0; i < 3; i++) {
+    const ring = document.createElement('i');
+    ring.className = 'rl-land'; ring.style.cssText = `--rgb:${rgb}`;
+    box.append(ring);
+    ring.animate([{ transform: 'translate(-50%, -50%) scale(.3)', opacity: 0.95 }, { transform: 'translate(-50%, -50%) scale(4.5)', opacity: 0 }], { duration: 1100, delay: i * 220, easing: 'ease-out', fill: 'backwards' }).finished.then(() => ring.remove());
+  }
+  for (let i = 0; i < 14; i++) {                       // faíscas saindo da casa
+    const sp = document.createElement('i'); sp.className = 'rl-spark'; sp.style.cssText = `--rgb:${rgb}`; box.append(sp);
+    const a = (Math.random() - 0.5) * Math.PI * 1.6 - Math.PI / 2, d = 40 + Math.random() * 70;
+    sp.animate([{ transform: 'translate(-50%, -50%)', opacity: 1 }, { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d + 30}px))`, opacity: 0 }], { duration: 600 + Math.random() * 500, easing: 'cubic-bezier(.2,.7,.3,1)' }).finished.then(() => sp.remove());
+  }
+}
+
 export async function spin() {
   const total = Object.values(bets).reduce((a, b) => a + b, 0);
   if (spinning || !total) return;
@@ -79,20 +115,37 @@ export async function spin() {
   document.querySelectorAll('.rl-cell.is-hit').forEach(c => c.classList.remove('is-hit'));
   document.querySelectorAll('.rl-dolly').forEach(d => d.remove());
   call('Não vale mais apostar.');
+  $('#rl-centernum').className = 'rl-centernum';
   const n = GM.WHEEL[Math.floor(Math.random() * 37)], idx = GM.WHEEL.indexOf(n);
   // a roda gira no sentido horário e para com o número do resultado embaixo do ponteiro
   const target = wheelAngle + 360 * 5 + ((360 - idx * SEG - (wheelAngle % 360)) % 360 + 360) % 360;
-  const dur = RM.matches ? 0 : 6000;
-  sfx.play('ball', 0.25);
-  $('#rl-rot').animate([{ transform: `rotate(${wheelAngle}deg)` }, { transform: `rotate(${target}deg)` }],
+  const dur = RM.matches ? 0 : 8500;
+  const box = $('#rl-wheel');
+  box.classList.add('is-spinning');
+  sfx.play('ball', 0.3);
+  // roda: gira no sentido horário, desacelera de verdade e fica nítida só no fim (borrão de movimento)
+  $('#rl-rot').animate([{ transform: `rotate(${wheelAngle}deg)`, filter: 'blur(3px)' }, { filter: 'blur(2px)', offset: 0.3 }, { filter: 'blur(0)', offset: 0.78 }, { transform: `rotate(${target}deg)`, filter: 'blur(0)' }],
     { duration: dur, easing: 'cubic-bezier(.12,.7,.18,1)', fill: 'forwards' });
-  // a bola corre ao contrário pela borda e cai na casa (topo) no fim
-  $('#rl-arm').animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(-2160deg)' }], { duration: dur, easing: 'cubic-bezier(.1,.6,.2,1)', fill: 'forwards' });
-  $('#rl-ball').animate([{ transform: 'translateY(0)' }, { transform: 'translateY(0)', offset: 0.65 }, { transform: 'translateY(30px)', offset: 0.82 }, { transform: 'translateY(26px)', offset: 0.9 }, { transform: 'translateY(31px)' }],
+  $('#rl-blur').animate([{ opacity: 0.9 }, { opacity: 0.55, offset: 0.35 }, { opacity: 0 }], { duration: dur, easing: 'ease-out', fill: 'forwards' });
+  box.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.035)', offset: 0.12 }, { transform: 'scale(1.035)', offset: 0.78 }, { transform: 'scale(1)' }], { duration: dur, easing: 'ease-in-out' });
+  // bola: corre ao contrário na pista (com rastro), perde velocidade, cai nos defletores, quica e assenta na casa (topo)
+  $('#rl-arm').animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(-2880deg)' }], { duration: dur, easing: 'cubic-bezier(.08,.55,.2,1)', fill: 'forwards' });
+  $('#rl-trail').animate([{ opacity: 1 }, { opacity: 0.8, offset: 0.55 }, { opacity: 0, offset: 0.7 }, { opacity: 0 }], { duration: dur, fill: 'forwards' });
+  const hop = (y, x, o, e = 'ease-out') => ({ transform: `translate(${x}%, ${y}%)`, offset: o, easing: e });
+  $('#rl-ball').animate([
+    { transform: 'translate(0, 0)' }, hop(0, 0, 0.6), hop(70, 0, 0.66, 'ease-in'), hop(25, 90, 0.7), hop(120, 160, 0.75, 'ease-in'), hop(70, -60, 0.8),
+    hop(165, -90, 0.85, 'ease-in'), hop(130, -30, 0.89), hop(185, 20, 0.93, 'ease-in'), hop(168, 0, 0.96), { transform: 'translate(0, 182%)', offset: 1 }],
     { duration: dur, fill: 'forwards' });
+  // tique-taque da bola passando pelas casas (espaçado cada vez mais) e as batidas nos defletores
+  const timers = [];
+  for (let k = 0; k < 30; k++) timers.push(setTimeout(() => sfx.play('chip', 0.12), dur * 0.58 * (1 - (1 - k / 30) ** 2.2)));
+  for (const o of [0.66, 0.75, 0.85, 0.93]) timers.push(setTimeout(() => sfx.play('ball', 0.35), dur * o));
   wheelAngle = target;
   await new Promise(r => setTimeout(r, dur + 200));
-  sfx.play('ball', 0.6);
+  timers.forEach(clearTimeout);
+  box.classList.remove('is-spinning');
+  sfx.play('stack', 0.5);
+  landFx(n);
 
   const back = GM.roulettePay(bets, n);
   G.S.chips += back;
