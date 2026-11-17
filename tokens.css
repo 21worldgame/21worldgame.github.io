@@ -1,0 +1,69 @@
+:root {
+  color-scheme: dark;
+  --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px; --space-md: 16px; --space-lg: 24px; --space-xl: 40px; --space-2xl: 64px; --space-3xl: 96px;
+  --text-xs: 0.75rem; --text-sm: 0.875rem; --text-md: 1rem; --text-lg: 1.2rem; --text-xl: 1.44rem; --text-2xl: 1.728rem; --text-3xl: 2.25rem;
+  --text-display: 1.728rem; --text-section: 1.44rem; --text-title: 1.1rem; --text-lead: 1rem;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-micro: 120ms; --dur-short: 220ms; --dur-long: 480ms;
+  --container: 1440px; --gutter: 48px; --gap-columns: 24px;
+  --z-raised: 10; --z-sticky-nav: 300; --z-toast: 500;
+
+  /* chão e vidro */
+  --color-paper: oklch(13% 0.025 265); --color-paper-2: oklch(17% 0.03 265); --color-paper-3: oklch(22% 0.035 265);
+  --glass: oklch(20% 0.03 265 / 0.62); --glass-2: oklch(26% 0.035 265 / 0.7); --glass-edge: oklch(80% 0.1 80 / 0.18);
+  --color-ink: oklch(96% 0.01 90); --color-ink-2: oklch(84% 0.02 260); --color-muted: oklch(70% 0.03 260);
+  --color-rule: oklch(32% 0.03 265); --color-rule-2: oklch(42% 0.04 265);
+  /* sinais */
+  --hud-accent: oklch(80% 0.15 75); --hud-accent-2: oklch(86% 0.14 85); --hud-accent-ink: oklch(18% 0.04 70);
+  --color-accent: var(--hud-accent); --color-focus: oklch(86% 0.14 85);
+  --money: oklch(80% 0.18 150); --violet: oklch(68% 0.2 300); --color-error: oklch(68% 0.2 25); --color-success: oklch(78% 0.17 150);
+  --glow-gold: oklch(80% 0.15 75 / 0.45); --glow-green: oklch(80% 0.18 150 / 0.45);
+  /* mesa */
+  --felt: oklch(42% 0.11 160); --felt-2: oklch(30% 0.09 162); --felt-ink: oklch(85% 0.08 150 / 0.55);
+  --rim: oklch(28% 0.04 50); --rim-2: oklch(42% 0.07 60);
+  --card: oklch(97% 0.005 90); --card-ink: oklch(20% 0.02 265); --card-red: oklch(55% 0.2 25);
+  --card-back: oklch(40% 0.16 25); --card-back-2: oklch(30% 0.13 25);
+  --chip-1: oklch(96% 0.01 90); --chip-2: oklch(58% 0.2 25); --chip-3: oklch(55% 0.15 250); --chip-4: oklch(25% 0.02 265); --chip-edge: oklch(98% 0 0 / 0.85);
+  /* cenas das regiões */
+  --sky: oklch(70% 0.09 230); --sky-2: oklch(84% 0.06 80);
+  --land-0: oklch(58% 0.1 200); --land-0b: oklch(48% 0.11 150);
+  --land-1: oklch(66% 0.13 70); --land-1b: oklch(52% 0.11 110);
+  --land-2: oklch(62% 0.15 135); --land-2b: oklch(46% 0.12 140);
+  --land-3: oklch(48% 0.13 35); --land-3b: oklch(56% 0.14 125);
+  /* personagem */
+  --skin-1: oklch(88% 0.04 70); --skin-2: oklch(80% 0.06 60); --skin-3: oklch(70% 0.08 55); --skin-4: oklch(56% 0.08 50); --skin-5: oklch(42% 0.06 45);
+  --hair-1: oklch(22% 0.02 50); --hair-2: oklch(40% 0.06 55); --hair-3: oklch(78% 0.1 85); --hair-4: oklch(48% 0.14 35); --hair-5: oklch(80% 0.01 260);
+  --cloth-1: oklch(92% 0.01 260); --cloth-2: oklch(55% 0.2 300); --cloth-3: oklch(48% 0.13 250); --cloth-4: oklch(60% 0.2 20); --cloth-5: oklch(55% 0.12 150); --cloth-6: oklch(20% 0.02 265);
+  --rail-1: oklch(17% 0.01 40); --rail-2: oklch(30% 0.015 40); --print-gold: oklch(86% 0.14 95);
+  --tray-1: oklch(26% 0.01 260); --tray-2: oklch(15% 0.01 260); --tray-edge: oklch(55% 0.02 260); --chip-face: oklch(96% 0.01 90);
+  --av-bg: oklch(14% 0.02 265); --av-bg-2: oklch(24% 0.06 20); --av-red: oklch(62% 0.23 25); --av-low: oklch(72% 0.12 250); --av-mid: oklch(70% 0.2 300); --av-hi: oklch(78% 0.2 340);
+  --av-cash: oklch(72% 0.2 145); --av-cash-2: oklch(84% 0.18 140); --tr-bg: oklch(15% 0.02 265 / 0.85);
+  --room-dark: oklch(9% 0.01 265); --felt-tint: oklch(48% 0.12 160); --leather-tint: oklch(46% 0.035 45); --wood-tint: oklch(62% 0.06 40);
+  --night-1: oklch(12% 0.03 260); --night-2: oklch(20% 0.04 250); --night-glow: oklch(40% 0.05 80 / 0.5); --flood: oklch(98% 0.05 95); --rail-white: oklch(94% 0.01 90);
+  --coat-fawn: oklch(70% 0.08 65); --coat-black: oklch(24% 0.01 60); --coat-blue: oklch(56% 0.02 250); --coat-red: oklch(56% 0.1 45); --coat-white: oklch(90% 0.01 80); --coat-brindle: oklch(42% 0.05 55); --muzzle: oklch(86% 0.02 90);
+  --ink-line: oklch(16% 0.02 40); --hi: oklch(99% 0.01 90); --sclera: oklch(95% 0.01 90);
+  --iris-1: oklch(38% 0.07 55); --iris-2: oklch(28% 0.04 50); --iris-3: oklch(55% 0.1 150); --iris-4: oklch(58% 0.1 240);
+  --lens-top: oklch(22% 0.03 260); --lens-bot: oklch(42% 0.08 40); --gold-hi: oklch(93% 0.1 95); --gold-lo: oklch(55% 0.12 70);
+  --suit: oklch(18% 0.02 265); --shirt: oklch(96% 0.01 90); --shade: oklch(15% 0.02 265); --eye: oklch(18% 0.02 265); --lip: oklch(50% 0.12 20); --gold: oklch(82% 0.15 85);
+
+  /* fichas por valor (cores de cassino) */
+  --chip-5: oklch(56% 0.21 27); --chip-25: oklch(56% 0.15 150); --chip-100: oklch(24% 0.02 265); --chip-500: oklch(48% 0.2 305); --chip-1000: oklch(80% 0.15 80);
+  /* carros */
+  --paint-1: oklch(55% 0.21 27); --paint-2: oklch(92% 0.01 260); --paint-3: oklch(45% 0.15 255); --paint-4: oklch(22% 0.02 265); --paint-5: oklch(80% 0.16 85);
+  --tire: oklch(16% 0.01 265); --rim-metal: oklch(75% 0.01 260); --glass-car: oklch(30% 0.04 250 / 0.85); --headlight: oklch(95% 0.08 95);
+  /* galgos: jaquetas tradicionais 1 a 6 */
+  --jacket-1: oklch(55% 0.21 27); --jacket-2: oklch(50% 0.17 255); --jacket-3: oklch(96% 0.01 90); --jacket-4: oklch(20% 0.02 265); --jacket-5: oklch(72% 0.18 55); --jacket-6: oklch(55% 0.17 150);
+  --coat: oklch(62% 0.05 60); --track: oklch(52% 0.07 60); --track-2: oklch(46% 0.07 55); --grass: oklch(48% 0.12 145);
+  /* cenas */
+  --land-varzea: oklch(58% 0.1 200); --land-varzea-b: oklch(48% 0.11 150);
+  --land-pasto: oklch(62% 0.15 135); --land-pasto-b: oklch(46% 0.12 140);
+  --land-lavoura: oklch(70% 0.13 90); --land-lavoura-b: oklch(55% 0.13 115);
+  --land-cafe: oklch(46% 0.12 150); --land-cafe-b: oklch(38% 0.09 145);
+  --land-roxa: oklch(46% 0.13 35); --land-roxa-b: oklch(56% 0.14 125);
+  --confetti-1: oklch(80% 0.15 80); --confetti-2: oklch(70% 0.2 300); --confetti-3: oklch(80% 0.18 150); --confetti-4: oklch(65% 0.22 25);
+
+  --font-display: "Rajdhani", ui-sans-serif, system-ui, sans-serif; --font-body: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-outlier: "Rajdhani", ui-sans-serif, system-ui, sans-serif;
+  --radius-card: 14px; --radius-pill: 999px; --rule-hair: 1px;
+  --tracking-display: 0; --display-weight: 700;
+}

@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>21 World</title>
+  <meta name="description" content="Mesas de 21 com amigos, corridas de galgos e uma economia de terras, gado e carros.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23f2b33d'/%3E%3Ctext x='16' y='22' font-size='16' font-family='Arial' font-weight='700' text-anchor='middle' fill='%23140f05'%3E21%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
+  <script type="module" src="game.js"></script>
+</head>
+<body>
+  <svg width="0" height="0" class="visually-hidden" aria-hidden="true">
+    <symbol id="i-cards" viewBox="0 0 24 24"><rect x="3" y="5" width="11" height="15" rx="2"/><path d="M10 4.5l7.6-1.4a2 2 0 0 1 2.3 1.6l2 11.3a2 2 0 0 1-1.6 2.3L16 19"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.2-6.5 8-6.5s7 2 8 6.5"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><path d="M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/></symbol>
+    <symbol id="i-herd" viewBox="0 0 24 24"><path d="M5 9c-2 0-3-2-3-3 2 0 3 .5 4 1.5M19 9c2 0 3-2 3-3-2 0-3 .5-4 1.5"/><rect x="6" y="6" width="12" height="11" rx="5"/><circle cx="9.5" cy="14" r=".8"/><circle cx="14.5" cy="14" r=".8"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></symbol>
+    <symbol id="i-car" viewBox="0 0 24 24"><path d="M3 16v-3l2-5h14l2 5v3zM3 16h18"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/></symbol>
+    <symbol id="i-bank" viewBox="0 0 24 24"><path d="M3 9l9-5 9 5M5 10v7M10 10v7M14 10v7M19 10v7M3 20h18"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></symbol>
+    <symbol id="i-candle" viewBox="0 0 24 24"><path d="M6 3v18M12 6v12M18 4v14"/><rect x="4" y="7" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="5" rx="1"/><rect x="16" y="8" width="4" height="6" rx="1"/></symbol>
+    <symbol id="i-horse" viewBox="0 0 24 24"><path d="M4 20v-6c0-3 2-5 5-5h3l3-4 2 2-1 3 3 2v8M9 14v6M15 14v6"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/></symbol>
+  </svg>
+
+  <header class="hud">
+    <div class="container hud__in">
+      <div class="brand"><span class="brand__badge">21</span><span class="brand__word">world</span></div>
+      <button class="me" data-profile="me" aria-label="ver meu perfil">
+        <span class="me__ring" id="hud-ring"><span class="me__avatar" id="hud-avatar"></span><span class="me__lvl" id="hud-level">1</span></span>
+        <span class="me__txt"><strong id="hud-name">você</strong><span id="hud-rank">iniciante</span></span>
+      </button>
+      <dl class="stats-hud">
+        <div><dt>mês</dt><dd id="r-month">1</dd></div>
+        <div class="is-money"><dt>dinheiro</dt><dd id="r-money">R$ 100.000</dd></div>
+        <div class="is-chips"><dt>fichas</dt><dd><span class="chip-ico" aria-hidden="true"></span><span id="r-chips">0</span></dd></div>
+        <div><dt>patrimônio</dt><dd id="r-worth">R$ 100.000</dd></div>
+      </dl>
+      <button class="btn btn--glass btn--missions" data-act="open-missions"><svg><use href="#i-target"/></svg>missões<span class="pill" id="missions-badge" hidden>0</span></button>
+      <button class="btn btn--gold" data-act="month">passar o mês</button>
+    </div>
+    <nav class="container" aria-label="áreas do jogo">
+      <div class="tabs" role="tablist">
+        <button role="tab" id="t-mesa" data-tab="mesa" aria-controls="p-mesa" aria-selected="true"><svg><use href="#i-cards"/></svg>cassino</button>
+        <button role="tab" id="t-corridas" data-tab="corridas" aria-controls="p-corridas" aria-selected="false" tabindex="-1"><svg><use href="#i-flag"/></svg>corridas</button>
+        <button role="tab" id="t-trader" data-tab="trader" aria-controls="p-trader" aria-selected="false" tabindex="-1"><svg><use href="#i-candle"/></svg>trader</button>
+        <button role="tab" id="t-haras" data-tab="haras" aria-controls="p-haras" aria-selected="false" tabindex="-1"><svg><use href="#i-horse"/></svg>canil e haras</button>
+        <button role="tab" id="t-personagem" data-tab="personagem" aria-controls="p-personagem" aria-selected="false" tabindex="-1"><svg><use href="#i-user"/></svg>personagem</button>
+        <button role="tab" id="t-terras" data-tab="terras" aria-controls="p-terras" aria-selected="false" tabindex="-1"><svg><use href="#i-map"/></svg>terras</button>
+        <button role="tab" id="t-gado" data-tab="gado" aria-controls="p-gado" aria-selected="false" tabindex="-1"><svg><use href="#i-herd"/></svg>gado</button>
+        <button role="tab" id="t-mercado" data-tab="mercado" aria-controls="p-mercado" aria-selected="false" tabindex="-1"><svg><use href="#i-chart"/></svg>mercado</button>
+        <button role="tab" id="t-carros" data-tab="carros" aria-controls="p-carros" aria-selected="false" tabindex="-1"><svg><use href="#i-car"/></svg>concessionária</button>
+        <button role="tab" id="t-banco" data-tab="banco" aria-controls="p-banco" aria-selected="false" tabindex="-1"><svg><use href="#i-bank"/></svg>banco</button>
+        <button role="tab" id="t-livro" data-tab="livro" aria-controls="p-livro" aria-selected="false" tabindex="-1"><svg><use href="#i-book"/></svg>livro-caixa</button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container">
+    <noscript><p class="empty">O 21 World roda no navegador e precisa de JavaScript ligado.</p></noscript>
+
+    <!-- CASSINO: salão de mesas e a mesa -->
+    <section id="p-mesa" role="tabpanel" aria-labelledby="t-mesa" class="panel">
+      <div class="subtabs" role="group" aria-label="jogos do cassino">
+        <button class="subtab is-on" data-sub="21">vinte e um</button><button class="subtab" data-sub="roleta">roleta</button><button class="subtab" data-sub="aviator">aviator</button>
+      </div>
+      <div id="sub-21" class="sub">
+      <div id="lobby" class="lobby">
+        <div class="lobby__main">
+          <div class="listhead"><h2>salão de jogos</h2><span class="online" id="online"><i></i>conectando ao salão</span></div>
+          <div class="glass lobby__bar">
+            <form id="create-form" class="row">
+              <label class="field"><span>nome da mesa</span><input class="input" name="tname" maxlength="24" placeholder="mesa dos amigos"></label>
+              <label class="field"><span>aposta mínima</span><select class="input" name="tmin"><option>50</option><option selected>100</option><option>500</option><option>1000</option></select></label>
+              <label class="field"><span>quem vê</span><select class="input" name="tvis"><option value="pub">todos no salão</option><option value="priv">só com o link</option></select></label>
+              <button class="btn btn--gold" type="submit">criar mesa online</button>
+            </form>
+            <form id="code-form" class="row">
+              <label class="field"><span>código de convite</span><input class="input" name="code" maxlength="12" autocomplete="off" placeholder="ex.: k3f9q2"></label>
+              <button class="btn btn--glass" type="submit">entrar</button>
+            </form>
+          </div>
+          <div class="cards cards--tables" id="tables"></div>
+        </div>
+        <aside class="lobby__side">
+          <div class="glass sidebox"><h3>missões de hoje</h3><ul class="mlist" id="missions-mini"></ul></div>
+          <div class="glass sidebox"><h3 id="ranking-title">ranking do salão</h3><ol class="ranking" id="ranking"></ol></div>
+        </aside>
+      </div>
+
+      <div id="room" class="room" hidden>
+        <div class="roombar">
+          <button class="btn btn--glass" data-act="leave-table">salão</button>
+          <h2 id="room-name">mesa</h2>
+          <span class="tag tag--dark" id="room-tag"></span>
+          <button class="btn btn--glass" data-act="invite" id="invite-btn" hidden>convidar amigos</button>
+        </div>
+        <div class="panel--mesa">
+          <div class="casino">
+            <div class="scene3d" id="tablewrap">
+              <div class="scene3d__bg" aria-hidden="true"></div>
+              <div class="hudchips"><span class="chip-ico" aria-hidden="true"></span><b id="table-chips">0</b></div>
+              <div class="felt3d" id="felt">
+                <div class="felt3d__wood" aria-hidden="true"></div>
+                <div class="felt3d__cloth">
+                  <svg class="felt3d__print" viewBox="0 0 1000 600" aria-hidden="true">
+                    <path id="arc1" d="M140 150 Q500 440 860 150" fill="none"/>
+                    <path id="arc2" d="M195 122 Q500 372 805 122" fill="none"/>
+                    <path d="M165 136 Q500 412 835 136" class="p-line"/><path d="M165 129 Q500 405 835 129" class="p-line p-line--thin"/>
+                    <text class="p-gold"><textPath href="#arc1" startOffset="50%" text-anchor="middle">a maior soma até 21 leva o pote</textPath></text>
+                    <text class="p-small"><textPath href="#arc2" startOffset="50%" text-anchor="middle">empate divide o pote, a casa retém 5%</textPath></text>
+                    <text class="p-logo" x="500" y="470" text-anchor="middle">vinte e um</text>
+                    <text class="p-sub" x="500" y="496" text-anchor="middle">21 world casino</text>
+                  </svg>
+                  <div class="felt3d__light" aria-hidden="true"></div>
+                </div>
+                <div class="rack" id="rack" aria-hidden="true"></div>
+                <div class="discard" aria-hidden="true"><span></span></div>
+                <div class="shoe" id="shoe" aria-hidden="true"><span></span></div>
+                <ol class="seats" id="seats"></ol>
+              </div>
+              <div class="banner" id="banner" hidden></div>
+              <div class="keys" aria-hidden="true">
+                <span><kbd>1</kbd>–<kbd>5</kbd> fichas</span><span><kbd>espaço</kbd> apostar</span><span><kbd>H</kbd> pedir</span><span><kbd>S</kbd> parar</span><span><kbd>R</kbd> regras</span>
+              </div>
+              <button class="mute" data-act="mute" aria-label="ligar ou desligar o som" id="mute-btn">som</button>
+            </div>
+            <p class="tstatus" id="tstatus" aria-live="polite"></p>
+            <div class="controls">
+              <div class="betpick" role="group" aria-label="montar aposta">
+                <button class="chipbtn chipbtn--5" data-add="5">5</button>
+                <button class="chipbtn chipbtn--25" data-add="25">25</button>
+                <button class="chipbtn chipbtn--100" data-add="100">100</button>
+                <button class="chipbtn chipbtn--500" data-add="500">500</button>
+                <button class="chipbtn chipbtn--1000" data-add="1000">1k</button>
+                <span class="betshow"><span class="muted small">aposta</span><strong id="betshow">0</strong></span>
+                <button class="btn btn--glass btn--sm" data-act="bet-clear">limpar</button>
+              </div>
+              <div class="playbtns">
+                <button class="btn btn--gold btn--lg" data-act="bet">apostar</button>
+                <button class="btn btn--glass btn--lg" data-act="hit" disabled>pedir carta</button>
+                <button class="btn btn--glass btn--lg" data-act="stand" disabled>parar</button>
+              </div>
+            </div>
+          </div>
+          <aside class="glass cashier">
+            <h2>caixa do cassino</h2>
+            <div class="cashier__chips"><span class="chip-ico chip-ico--lg" aria-hidden="true"></span><div><strong id="chips-now">0</strong><span class="muted" id="chips-val">R$ 0</span></div></div>
+            <label class="field"><span>quantidade de fichas</span>
+              <input class="input" name="chips-buy" type="number" min="1" step="50" value="500" inputmode="numeric"></label>
+            <div class="row">
+              <button class="btn btn--glass" data-act="buy-chips">comprar</button>
+              <button class="btn btn--glass" data-act="cash-chips">resgatar</button>
+            </div>
+            <p class="muted small">1 ficha = R$ 10. A maior soma até 21 leva o pote, menos 5% da casa. Empate divide.</p>
+            <h3>na mesa</h3>
+            <ul class="who-list" id="who-list"></ul>
+          </aside>
+        </div>
+      </div>
+      </div>
+
+      <!-- ROLETA -->
+      <div id="sub-roleta" class="sub" hidden>
+        <div class="rl-top">
+          <div class="rl-wheel" id="rl-wheel"></div>
+          <div class="rl-side glass">
+            <span class="muted small">último número</span>
+            <div class="rl-result" id="rl-result">?</div>
+            <span class="muted small">histórico</span>
+            <div class="rl-hist" id="rl-hist"></div>
+            <p class="muted small">Roleta europeia, um zero. Número cheio paga 35 para 1, dúzias e colunas 2 para 1, cor, par e metades 1 para 1.</p>
+          </div>
+        </div>
+        <div class="rl-board" id="rl-board"></div>
+        <div class="controls">
+          <div class="betpick" role="group" aria-label="ficha">
+            <button class="chipbtn chipbtn--5" data-rchip="5">5</button><button class="chipbtn chipbtn--25 is-on" data-rchip="25">25</button><button class="chipbtn chipbtn--100" data-rchip="100">100</button><button class="chipbtn chipbtn--500" data-rchip="500">500</button><button class="chipbtn chipbtn--1000" data-rchip="1000">1k</button>
+            <span class="betshow"><span class="muted small">na mesa</span><strong id="rl-total">0</strong></span>
+            <button class="btn btn--glass btn--sm" data-act="rl-clear">limpar</button>
+          </div>
+          <button class="btn btn--gold btn--lg" data-act="rl-spin" disabled>girar a roleta</button>
+        </div>
+      </div>
+
+      <!-- AVIATOR -->
+      <div id="sub-aviator" class="sub" hidden>
+        <div class="av-hist" id="av-hist"></div>
+        <div class="av-grid">
+          <div class="av-main">
+            <div class="av-stage"><canvas id="av-canvas"></canvas><div class="av-mult" id="av-mult"></div><div class="av-msg" id="av-msg" hidden></div></div>
+            <div class="glass av-controls">
+              <label class="field"><span>aposta em fichas</span><input class="input" name="av-bet" type="number" min="10" step="10" value="100" inputmode="numeric"></label>
+              <div class="row"><button class="btn btn--glass btn--sm" data-av-quick="10">+10</button><button class="btn btn--glass btn--sm" data-av-quick="50">+50</button><button class="btn btn--glass btn--sm" data-av-quick="100">+100</button></div>
+              <label class="field"><span>saque automático em (opcional)</span><input class="input" name="av-auto" type="number" min="1.01" step="0.1" placeholder="ex.: 2.00" inputmode="decimal"></label>
+              <button class="btn btn--gold btn--lg av-btn" id="av-btn" data-act="av-press">apostar</button>
+            </div>
+          </div>
+          <aside class="glass av-players"><div class="hcard__top"><h3>apostas da rodada</h3><span class="muted small" id="av-count"></span></div>
+            <ul id="av-players"></ul></aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRADER -->
+    <section id="p-trader" role="tabpanel" aria-labelledby="t-trader" class="panel" hidden>
+      <div class="listhead"><h2>mesa de operações</h2><span class="muted small">Preços simulados ao vivo. Alavancagem multiplica lucro e prejuízo; perdeu a margem, a posição é liquidada.</span></div>
+      <div class="tr-assets" id="tr-assets"></div>
+      <div class="tr-grid">
+        <div class="glass tr-chart">
+          <div class="tr-head"><div><span class="muted small" id="tr-name"></span><div class="tr-price" id="tr-price"></div></div><span id="tr-ch"></span><span class="muted small" id="tr-hl"></span></div>
+          <canvas id="tr-canvas"></canvas>
+        </div>
+        <aside class="glass tr-ticket">
+          <h3>boleta</h3>
+          <label class="field"><span>margem em R$</span><input class="input" name="tr-amt" type="number" min="100" step="100" value="5000" inputmode="numeric"></label>
+          <div class="seg" role="group" aria-label="alavancagem"><button class="segbtn" data-lev="1">1x</button><button class="segbtn" data-lev="2">2x</button><button class="segbtn is-on" data-lev="5">5x</button><button class="segbtn" data-lev="10">10x</button><button class="segbtn" data-lev="20">20x</button></div>
+          <p class="muted small" id="tr-size"></p>
+          <div class="tr-actions"><button class="btn btn--buy btn--lg" data-act="tr-buy">comprar</button><button class="btn btn--sell btn--lg" data-act="tr-sell">vender</button></div>
+          <h3>posições abertas</h3><ul class="tr-list" id="tr-pos"></ul>
+          <h3>histórico</h3><ul class="tr-list tr-list--h" id="tr-hist"></ul>
+        </aside>
+      </div>
+    </section>
+
+    <!-- CANIL E HARAS -->
+    <section id="p-haras" role="tabpanel" aria-labelledby="t-haras" class="panel" hidden>
+      <div class="listhead"><h2>canil e haras</h2><span class="muted small" id="st-sum"></span></div>
+      <div class="subtabs" role="group" aria-label="espécie">
+        <button class="subtab is-on" data-act="st-kind" data-id="dog">galgos</button><button class="subtab" data-act="st-kind" data-id="horse">cavalos</button>
+      </div>
+      <p class="muted small">Compre um animal, treine as semanas livres de cada mês e inscreva nas provas. Cada prova é limitada pela nota do animal, e o treino cansa: animal cansado treina e corre pior e pode se lesionar. Os atributos crescem até o potencial.</p>
+      <h3 id="st-mine-title">seus animais</h3>
+      <div class="cards cards--animals" id="st-mine"></div>
+      <h3>provas</h3>
+      <div class="cards cards--events" id="st-events"></div>
+      <h3>leilão do mês</h3>
+      <div class="cards cards--animals" id="st-offers"></div>
+    </section>
+
+    <!-- CORRIDAS -->
+    <section id="p-corridas" role="tabpanel" aria-labelledby="t-corridas" class="panel">
+      <div class="listhead"><h2>canódromo</h2><span class="muted small" id="race-no"></span></div>
+      <div class="rc" id="track">
+        <div class="rc__sky" aria-hidden="true"><i class="rc__tower rc__tower--1"></i><i class="rc__tower rc__tower--2"></i><i class="rc__tower rc__tower--3"></i></div>
+        <div class="rc__stand" id="rc-stand" aria-hidden="true"></div>
+        <div class="rc__infield" aria-hidden="true"></div>
+        <div class="rc__farrail" id="rc-farrail" aria-hidden="true"></div>
+        <div class="rc__track" id="rc-track" aria-hidden="true"></div>
+        <div class="rc__world" id="rc-world"></div>
+        <div class="rc__near" id="rc-near" aria-hidden="true"></div>
+        <div class="rc__hud">
+          <div class="rc__clock"><b id="rc-clock">0:00.0</b><span id="rc-left">480 m</span></div>
+          <div class="rc__order" id="rc-order"></div>
+        </div>
+        <div class="rc__map" aria-hidden="true"><div id="rc-map"></div></div>
+        <p class="track__call" id="race-call" aria-live="polite"></p>
+        <div class="track__count" id="race-count" hidden></div>
+        <div class="track__result" id="race-result" hidden></div>
+      </div>
+      <div class="raceboard">
+        <div class="cards cards--dogs" id="dogs"></div>
+        <aside class="glass betslip">
+          <h3>bilhete</h3>
+          <p class="muted small" id="slip-dog">Escolha um galgo.</p>
+          <div class="seg" role="radiogroup" aria-label="tipo de aposta">
+            <label><input type="radio" name="rtype" value="win" checked><span>vencedor</span></label>
+            <label><input type="radio" name="rtype" value="place"><span>placê (1º ou 2º)</span></label>
+          </div>
+          <label class="field"><span>fichas</span><input class="input" name="rbet" type="number" min="10" step="10" value="100" inputmode="numeric"></label>
+          <p class="slip-pay">retorno possível <strong id="slip-pay">0</strong></p>
+          <button class="btn btn--gold btn--lg" data-act="race-go">apostar e largar</button>
+          <h3>últimos resultados</h3>
+          <ol class="rhist" id="race-history"></ol>
+        </aside>
+      </div>
+    </section>
+
+    <!-- PERSONAGEM -->
+    <section id="p-personagem" role="tabpanel" aria-labelledby="t-personagem" class="panel panel--char">
+      <div class="stage">
+        <div class="stage__light" aria-hidden="true"></div>
+        <div class="stage__avatar" id="char-preview"></div>
+        <div class="stage__floor" aria-hidden="true"></div>
+        <p class="stage__name"><span id="char-name-show">você</span><span class="tag tag--gold" id="char-rank">iniciante</span></p>
+      </div>
+      <div class="glass wardrobe">
+        <h2>guarda-roupa</h2>
+        <label class="field"><span>nome do personagem</span>
+          <input class="input" id="char-name" name="char-name" maxlength="18" autocomplete="off"></label>
+        <div id="wardrobe"></div>
+        <p class="muted small">Itens de luxo custam dinheiro do jogo e só mudam o visual, nunca a sorte na mesa.</p>
+      </div>
+    </section>
+
+    <!-- TERRAS -->
+    <section id="p-terras" role="tabpanel" aria-labelledby="t-terras" class="panel">
+      <div class="glass mapbox">
+        <div class="mapbox__head"><h3 id="map-title">satélite</h3><span class="muted small">Clique num lote para aproximar. Amarelo: à venda. Verde: seu. Roxo: arrendado.</span><button class="btn btn--glass btn--sm" id="map-back">ver o brasil</button></div>
+        <div class="map" id="map"></div>
+      </div>
+      <div class="listhead"><h2>suas terras</h2><span class="muted small" id="lands-sum"></span></div>
+      <div class="cards" id="lands"></div>
+      <div class="listhead"><h2>ofertas deste mês</h2><span class="muted small">Imagem de satélite do próprio lote, com o contorno em amarelo.</span></div>
+      <div class="cards" id="offers"></div>
+    </section>
+
+    <!-- GADO -->
+    <section id="p-gado" role="tabpanel" aria-labelledby="t-gado" class="panel">
+      <div class="tiles" id="herd-stats"></div>
+      <p class="warn" id="herd-warn" hidden></p>
+      <div class="glass buybar">
+        <div><h3>leilão de bezerros</h3><p class="muted small" id="calf-price"></p></div>
+        <label class="field"><span>cabeças</span>
+          <input class="input input--s" name="calves" type="number" min="1" value="10" inputmode="numeric"></label>
+        <button class="btn btn--gold" data-act="buy-calves">dar o lance</button>
+      </div>
+      <p class="muted small">No pasto cada cabeça engorda 18 kg por mês. A arroba é sobre a carcaça (cerca de 52% do peso vivo), e o boi gordo dá lucro perto dos 450 kg.</p>
+      <div class="cards" id="herd"></div>
+    </section>
+
+    <!-- MERCADO -->
+    <section id="p-mercado" role="tabpanel" aria-labelledby="t-mercado" class="panel">
+      <div class="listhead"><h2>bolsa do negociante</h2><span class="muted small">Os preços mudam todo mês. A bolsa cobra 1% na venda. Sua colheita entra no armazém.</span></div>
+      <div class="cards cards--3" id="goods"></div>
+    </section>
+
+    <!-- CONCESSIONÁRIA -->
+    <section id="p-carros" role="tabpanel" aria-labelledby="t-carros" class="panel">
+      <div class="listhead"><h2>concessionária</h2><span class="muted small">Carro desvaloriza 1,5% ao mês e paga IPVA e seguro. Trator e caminhão rendem na fazenda.</span></div>
+      <div class="cards cards--cars" id="showroom"></div>
+      <h3>sua garagem</h3>
+      <div class="cards cards--cars" id="garage"></div>
+    </section>
+
+    <!-- BANCO -->
+    <section id="p-banco" role="tabpanel" aria-labelledby="t-banco" class="panel">
+      <div class="glass credit">
+        <div><span class="muted small">crédito disponível</span><p class="big" id="credit"></p></div>
+        <label class="field"><span>valor do empréstimo</span>
+          <input class="input" name="loan" type="number" min="1000" step="1000" value="10000" inputmode="numeric"></label>
+        <button class="btn btn--gold" data-act="borrow">tomar empréstimo</button>
+        <p class="muted small credit__note">1,8% ao mês em 12 parcelas, com terra e gado como garantia. Duas parcelas atrasadas e o banco toma sua terra mais cara.</p>
+      </div>
+      <h3>suas dívidas</h3>
+      <div class="glass scroll"><table>
+        <thead><tr><th class="num">saldo devedor</th><th class="num">juros/mês</th><th class="num">parcelas</th><th>situação</th><th><span class="visually-hidden">ações</span></th></tr></thead>
+        <tbody id="loans"></tbody>
+      </table></div>
+      <h3>pedidos de empréstimo</h3>
+      <div class="cards cards--3" id="borrowers"></div>
+      <h3>a receber</h3>
+      <div class="glass scroll"><table>
+        <thead><tr><th>quem</th><th class="num">saldo</th><th class="num">juros/mês</th><th class="num">parcelas</th></tr></thead>
+        <tbody id="lent"></tbody>
+      </table></div>
+    </section>
+
+    <!-- LIVRO -->
+    <section id="p-livro" role="tabpanel" aria-labelledby="t-livro" class="panel">
+      <h2>livro-caixa</h2>
+      <div class="glass scroll"><table>
+        <thead><tr><th class="num">mês</th><th>lançamento</th><th class="num">valor</th></tr></thead>
+        <tbody id="log"></tbody>
+      </table></div>
+      <button class="btn btn--danger" data-act="reset">começar jogo novo</button>
+    </section>
+  </main>
+
+  <!-- login e cadastro (só aparece quando o Supabase está configurado) -->
+  <dialog class="dlg dlg--auth" id="dlg-auth" aria-labelledby="au-title">
+    <div class="brand au__brand"><span class="brand__badge">21</span><span class="brand__word">world</span></div>
+    <h2 id="au-title">entre para jogar</h2>
+    <div class="seg au__tabs" role="group" aria-label="entrar ou criar conta">
+      <button type="button" class="segbtn is-on" data-au-tab="in" aria-pressed="true">entrar</button>
+      <button type="button" class="segbtn" data-au-tab="up" aria-pressed="false">criar conta</button>
+    </div>
+    <form id="au-form" class="au__form" novalidate>
+      <label class="field" data-up hidden><span>nome do jogador (3 a 18 caracteres)</span><input class="input" name="name" maxlength="18" autocomplete="nickname"></label>
+      <label class="field"><span>e-mail</span><input class="input" name="email" type="email" autocomplete="email" inputmode="email" maxlength="254"></label>
+      <label class="field"><span>senha (mínimo 8 caracteres)</span><input class="input" name="password" type="password" autocomplete="current-password" maxlength="72"></label>
+      <label class="check" data-up hidden><input type="checkbox" name="adult"><span>Tenho 18 anos ou mais e sei que o jogo usa só moeda virtual, sem valor real e sem saque.</span></label>
+      <p class="au__err" id="au-err" role="alert" hidden></p>
+      <p class="au__info" id="au-info" role="status" hidden></p>
+      <button class="btn btn--gold btn--lg" type="submit" id="au-submit">entrar</button>
+      <button type="button" class="linkbtn" id="au-forgot">esqueci a senha</button>
+    </form>
+    <div class="au__oauth" id="au-oauth" hidden><span class="muted small">ou</span><div id="au-oauth-btns"></div></div>
+    <p class="muted small">Seu e-mail serve só para entrar e recuperar a senha. Seu progresso fica salvo na sua conta e você pode jogar de qualquer aparelho.</p>
+  </dialog>
+
+  <dialog class="dlg dlg--auth" id="dlg-recovery" aria-labelledby="rc-title">
+    <h2 id="rc-title">crie uma senha nova</h2>
+    <form id="rc-form" class="au__form" novalidate>
+      <label class="field"><span>senha nova (mínimo 8 caracteres)</span><input class="input" name="password" type="password" autocomplete="new-password" maxlength="72"></label>
+      <label class="field"><span>repita a senha</span><input class="input" name="again" type="password" autocomplete="new-password" maxlength="72"></label>
+      <p class="au__err" id="rc-err" role="alert" hidden></p>
+      <button class="btn btn--gold btn--lg" type="submit">salvar senha</button>
+    </form>
+  </dialog>
+
+  <!-- perfil -->
+  <dialog class="dlg" id="dlg-profile" aria-labelledby="pf-name">
+    <button class="dlg__x btn btn--glass btn--sm" data-close>fechar</button>
+    <div class="pf" id="pf"></div>
+  </dialog>
+
+  <!-- prova dos animais do jogador (a pista do canódromo é emprestada para cá) -->
+  <dialog class="dlg dlg--race" id="dlg-race" aria-label="prova"><div id="race-host"></div></dialog>
+
+  <!-- regras do 21 -->
+  <dialog class="dlg" id="dlg-rules" aria-labelledby="rl-title">
+    <button class="dlg__x btn btn--glass btn--sm" data-close>fechar</button>
+    <h2 id="rl-title">regras da mesa</h2>
+    <ul class="rules">
+      <li>Cada jogador aposta e recebe duas cartas. O dealer só distribui, não joga contra você.</li>
+      <li>Ás vale 1 ou 11. J, Q e K valem 10. As outras cartas valem o número.</li>
+      <li>Na sua vez, peça carta (H) ou pare (S). Passou de 21, estourou.</li>
+      <li>Quem fizer a maior soma até 21 leva o pote inteiro, menos 5% da casa. Empate divide.</li>
+      <li>Você tem 20 segundos por jogada. Se o tempo acabar, a mesa para por você.</li>
+    </ul>
+  </dialog>
+
+  <!-- missões -->
+  <dialog class="dlg" id="dlg-missions" aria-labelledby="ms-title">
+    <button class="dlg__x btn btn--glass btn--sm" data-close>fechar</button>
+    <h2 id="ms-title">missões de hoje</h2>
+    <p class="muted small">Novas missões todo dia. Cumpra e resgate as fichas.</p>
+    <ul class="mlist mlist--big" id="missions-full"></ul>
+    <h3>sequência de dias</h3>
+    <div class="streak" id="streak-mini"></div>
+  </dialog>
+
+  <!-- bônus diário -->
+  <dialog class="dlg dlg--daily" id="dlg-daily" aria-labelledby="dl-title">
+    <h2 id="dl-title">roleta de prêmios do dia</h2>
+    <p class="muted" id="dl-sub">Um giro por dia, todo prêmio é bom. Dias seguidos aumentam o prêmio.</p>
+    <div class="dw"><div class="dw__wheel" id="dw-wheel"></div><span class="dw__pin" aria-hidden="true"></span></div>
+    <div class="streak" id="streak"></div>
+    <button class="btn btn--gold btn--lg" data-act="spin-daily" id="dw-btn">girar</button>
+  </dialog>
+
+  <div class="levelup" id="levelup" hidden><div class="levelup__rays" aria-hidden="true"></div><div class="levelup__box"><small>subiu de nível</small><strong>nível 2</strong><span></span></div></div>
+  <div class="badges" id="badges" aria-live="polite"></div>
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
+  <p id="status" class="toast" role="status" aria-live="polite"></p>
+</body>
+</html>
