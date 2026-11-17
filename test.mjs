@@ -85,24 +85,34 @@ assert.ok(times[order[0]] > 28 && times[order[5]] < 32);
 assert.equal(R.margin(0.005), 'por um focinho');
 assert.equal(R.margin(0.21), 'por 3 corpos');
 
-// motor da mesa: 1 humano + 3 bots jogam uma mão inteira
+// motor da mesa (blackjack contra o dealer): 1 humano + 3 bots, várias rodadas
 import { Table } from './table.js';
-await new Promise(done => {
-  const t = new Table({ id: 't', name: 'teste', minBet: 50, speed: 0.001, onChange: v => {
-    if (v.phase === 'play' && v.turn === 1) t.act('me', 'stand');
-    if (v.phase === 'done') {
-      const total = v.seats.reduce((a, s) => a + s.pay, 0), pot = v.seats.reduce((a, s) => a + s.bet, 0);
-      assert.ok(total <= pot && total >= Math.floor(pot * 0.95) - 4);
-      t.close(); done();
-    }
-  } });
-  assert.equal(t.join('me', { name: 'eu' }), 0);
-  assert.ok(t.bet('me', 100));
-  assert.ok(!t.bet('me', 100));
-  t.act('me', 'noop');
-  // o humano entra no lugar 0; força a vez dele no turno certo
-  t.onChange = (o => v => { if (v.phase === 'play' && v.turn === 0) t.act('me', 'stand'); o(v); })(t.onChange);
-});
+import * as BJ2 from './bj.js';
+for (let round = 0; round < 25; round++) {
+  await new Promise(done => {
+    let leaked = false;
+    const t = new Table({ id: 't', name: 'teste', minBet: 50, speed: 0.0005, onChange: v => {
+      if (['deal', 'play'].includes(v.phase) && v.dealer[1] && !v.dealer[1].hidden) leaked = true;
+      if (v.phase === 'play' && v.turn === 0) t.act('me', round % 3 === 0 ? 'double' : round % 3 === 1 ? 'hit' : 'stand');
+      if (v.phase === 'done') {
+        assert.ok(!leaked, 'carta escondida do dealer vazou');
+        const dv = BJ2.value(v.dealer);
+        for (const s of v.seats) {
+          if (s.out) continue;
+          const sum = s.hands.reduce((x, h) => x + BJ2.payout(h, v.dealer), 0);
+          assert.equal(s.pay, sum);
+          assert.equal(s.bet, s.hands.reduce((x, h) => x + h.bet, 0));
+        }
+        const anyAlive = v.seats.some(s => !s.out && s.hands.some(h => BJ2.value(h.cards) <= 21 && !BJ2.isBlackjack(h.cards, h.split)));
+        if (anyAlive && !BJ2.isBlackjack(v.dealer)) assert.ok(dv >= 17, 'dealer parou com ' + dv);
+        t.close(); done();
+      }
+    } });
+    assert.equal(t.join('me', { name: 'eu' }), 0);
+    assert.ok(t.bet('me', 100));
+    assert.ok(!t.bet('me', 100));
+  });
+}
 // jogos novos
 import * as GM from './games.js';
 let rs = 1; const lcg = () => ((rs = (rs * 16807) % 2147483647) / 2147483647);
@@ -233,5 +243,149 @@ assert.ok(ST.animalsValue(s5) > 0);
 a5.inj = 0; a5.age = ST.KINDS.horse.retire; assert.ok(ST.enter(s5, 20, ST.events('horse')[1].id, rnd).err.includes('aposentado'));
 // tempos e margem de cavalo
 const hT = ST.KINDS.horse; assert.ok(hT.dist === 1600 && hT.baseTime > 90);
+}
+// blackjack de cassino
+import * as BJ from './bj.js';
+{
+  const c = (...rs) => rs.map(r => ({ r, s: '♠' }));
+  assert.equal(BJ.newShoe().cards.length, 312);
+  assert.deepEqual(BJ.total(c('A', '6')), { t: 17, soft: true });
+  assert.deepEqual(BJ.total(c('A', '6', '10')), { t: 17, soft: false });
+  assert.ok(BJ.isBlackjack(c('A', 'K')) && !BJ.isBlackjack(c('A', 'K'), true) && !BJ.isBlackjack(c('7', '7', '7')));
+  assert.ok(BJ.dealerPlays(c('10', '6')) && !BJ.dealerPlays(c('A', '6')) && !BJ.dealerPlays(c('10', '7')));
+  const H = (cards, bet = 100, split = false) => ({ cards: c(...cards), bet, split });
+  assert.equal(BJ.payout(H(['A', 'K']), c('10', '9')), 250);        // blackjack 3:2
+  assert.equal(BJ.payout(H(['A', 'K']), c('A', 'Q')), 100);         // os dois com blackjack: empate
+  assert.equal(BJ.payout(H(['10', '9']), c('A', 'Q')), 0);          // dealer blackjack
+  assert.equal(BJ.payout(H(['10', '9']), c('10', '6', '9')), 200);  // dealer estourou
+  assert.equal(BJ.payout(H(['10', '8']), c('10', '8')), 100);       // empate
+  assert.equal(BJ.payout(H(['10', '5', '9']), c('10', '6', '9')), 0); // jogador estourou primeiro perde mesmo se o dealer estourar
+  assert.equal(BJ.payout(H(['A', 'K'], 100, true), c('10', '9')), 200); // 21 depois de dividir não é blackjack
+  assert.equal(BJ.outcome(H(['A', 'K']), c('10', '9')), 'blackjack');
+  assert.ok(BJ.canSplit({ cards: c('8', '8') }, 1) && BJ.canSplit({ cards: c('K', 'Q') }, 1) && !BJ.canSplit({ cards: c('8', '8') }, 2));
+  assert.equal(BJ.botAction({ cards: c('8', '8') }, { r: '10' }, 1), 'split');
+  assert.equal(BJ.botAction({ cards: c('6', '5') }, { r: '6' }, 1), 'double');
+  assert.equal(BJ.botAction({ cards: c('10', '6') }, { r: '10' }, 1), 'hit');
+  assert.equal(BJ.botAction({ cards: c('10', '3') }, { r: '5' }, 1), 'stand');
+  assert.ok(BJ.dealerPeeks({ r: 'A' }) && BJ.dealerPeeks({ r: 'K' }) && !BJ.dealerPeeks({ r: '9' }));
+  const shoe = BJ.newShoe(); shoe.cards.length = 70; assert.ok(BJ.needsShuffle(shoe));
+}
+// central de entregas
+import * as JB from './jobs.js';
+{
+  let sd = 3; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+  // quem presta atenção (aceita e confirma na hora) ganha; quem não faz nada não ganha nada
+  const good = JB.newShift(1, r);
+  while (!good.over) {
+    JB.step(good, 0.1, r);
+    for (const o of [...good.orders]) JB.accept(good, o.id);
+    for (const x of [...good.route]) if (x.arrived) JB.confirm(good, x.id);
+    if (good.flat) JB.repair(good);
+  }
+  assert.ok(good.earned > 1500 && good.delivered >= 10, 'turno bom ' + good.earned + ' ' + good.delivered);
+  assert.ok(good.tips > 0 && JB.grade(good) > 0.6);
+  const lazy = JB.newShift(1, r);
+  while (!lazy.over) JB.step(lazy, 0.1, r);
+  assert.equal(lazy.earned, 0); assert.ok(lazy.missed >= 10);
+  // aceita mas não confirma: cliente cancela
+  const dist = JB.newShift(1, r);
+  while (!dist.over) { JB.step(dist, 0.1, r); for (const o of [...dist.orders]) JB.accept(dist, o.id); if (dist.flat) JB.repair(dist); }
+  assert.equal(dist.earned, 0); assert.ok(dist.failed >= 3);
+  // moto cheia e pneu furado
+  const s = JB.newShift(1, r); for (let i = 0; i < 5; i++) s.orders.push({ id: 100 + i, pay: 100, until: 99, travel: 5 });
+  assert.equal(JB.accept(s, 100), null); JB.accept(s, 101); JB.accept(s, 102);
+  assert.ok(JB.accept(s, 103).includes('cheia'));
+  s.flat = { clicks: 0, need: 3 }; const before = s.route[0].left; JB.step(s, 1, r);
+  assert.equal(s.route[0].left, before);
+  JB.repair(s); JB.repair(s); assert.ok(JB.repair(s) && !s.flat);
+  assert.ok(JB.levelMult(5) > JB.levelMult(1));
+}
+// clube de futebol
+import * as FT from './futebol.js';
+{
+  let sd = 11; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+  // tabela: 10 clubes, 18 rodadas, cada clube joga 1 vez por rodada e enfrenta cada rival 2 vezes (1 em casa)
+  const fx = FT.fixtures(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']);
+  assert.equal(fx.length, 18);
+  for (const round of fx) assert.equal(new Set(round.flat()).size, 10);
+  const pairs = {}; for (const round of fx) for (const [h, a] of round) pairs[h + a] = (pairs[h + a] || 0) + 1;
+  assert.ok(Object.values(pairs).every(n => n === 1) && Object.keys(pairs).length === 90);
+  // fundar clube
+  const s = { money: 50000 };
+  assert.ok(FT.foundClub(s, 'Meu Time', r).includes('insuficiente'));
+  s.money = 1e6;
+  assert.ok(FT.foundClub(s, 'ab', r).includes('nome'));
+  assert.equal(FT.foundClub(s, 'Esporte Clube Teste', r), null);
+  assert.equal(s.money, 1e6 - FT.FOUND_COST); assert.equal(s.fut.squad.length, 18); assert.equal(s.fut.div, 2);
+  const l = FT.lineup(s.fut.squad, '4-3-3'); assert.equal(l.gk.length + l.def.length + l.mid.length + l.att.length, 11);
+  // time mais forte vence mais (500 jogos)
+  let hw = 0, lw = 0;
+  for (let i = 0; i < 500; i++) { const g = FT.simulate({ att: 72, def: 72 }, { att: 55, def: 55 }, r); if (g.hg > g.ag) hw++; if (g.hg < g.ag) lw++; }
+  assert.ok(hw > 330 && lw < 60, 'forte ' + hw + ' fraco ' + lw);
+  // gols por jogo realistas (entre 1,8 e 3,6 em times iguais)
+  let goals = 0; for (let i = 0; i < 500; i++) { const g = FT.simulate({ att: 60, def: 60 }, { att: 60, def: 60 }, r); goals += g.hg + g.ag; }
+  assert.ok(goals / 500 > 1.8 && goals / 500 < 3.6, 'gols/jogo ' + goals / 500);
+  // temporada inteira: pontos fecham, dinheiro anda, fim de temporada move divisão
+  const m0 = s.money;
+  let res; do { res = FT.playRound(s, r); } while (!res.done);
+  const tb = s.fut.league.table; const totalP = Object.values(tb).reduce((a, x) => a + x.p, 0);
+  assert.equal(totalP, 180); assert.equal(tb.user.p, 18);
+  assert.equal(Object.values(tb).reduce((a, x) => a + x.gf, 0), Object.values(tb).reduce((a, x) => a + x.ga, 0));
+  assert.ok(s.money !== m0);
+  const end = FT.endSeason(s, r);
+  assert.ok(end.pos >= 1 && end.pos <= 10); assert.equal(s.fut.season, 2); assert.equal(s.fut.league.round, 0);
+  if (end.pos <= 2) assert.equal(s.fut.div, 1); else assert.equal(s.fut.div, 2);
+  // mercado
+  const p = s.fut.market[0]; const mb = s.money; assert.equal(FT.buy(s, p.id), null); assert.equal(s.money, mb - p.price);
+  const sold = FT.sell(s, p.id); assert.ok(sold > 0 && sold < p.price);
+  while (s.fut.squad.length > 14) FT.sell(s, s.fut.squad[0].id);
+  assert.equal(FT.sell(s, s.fut.squad[0].id), -1);
+}
+// trocas entre jogadores
+import * as TD from './trade.js';
+{
+  const mk = () => ({ money: 100000, chips: 500, nextId: 50, stock: { soja: 10, milho: 0, cafe: 0 }, prices: { soja: 130 }, cars: [{ id: 1, model: 'onix', value: 90000 }],
+    lands: [{ id: 2, own: true, region: 'cerrado, goiás', ha: 10, value: 220000 }], stable: { animals: [{ id: 7, kind: 'dog', name: 'Bala', spd: 60, sta: 60, acc: 60, pot: 70, age: 30, wk: 4, fat: 0, inj: 0 }], next: 8 } });
+  const A = mk(), B = mk();
+  const inv = TD.inventory(A); assert.ok(inv.some(i => i.kind === 'car') && inv.some(i => i.kind === 'animal') && inv.some(i => i.kind === 'land') && inv.some(i => i.kind === 'good'));
+  const giveA = [{ kind: 'car', data: A.cars[0] }, { kind: 'chips', amount: 200 }];
+  const giveB = [{ kind: 'money', amount: 80000 }, { kind: 'animal', data: B.stable.animals[0] }];
+  assert.equal(TD.apply(A, giveA, giveB), null); assert.equal(TD.apply(B, giveB, giveA), null);
+  assert.equal(A.cars.length, 0); assert.equal(B.cars.length, 2); assert.equal(A.chips, 300); assert.equal(B.chips, 700);
+  assert.equal(A.money, 180000); assert.equal(B.money, 20000); assert.equal(A.stable.animals.length, 2); assert.equal(B.stable.animals.length, 0);
+  assert.notEqual(B.cars[1].id, B.cars[0].id);
+  // não dá para dar o que não tem
+  assert.ok(TD.canGive(A, [{ kind: 'chips', amount: 99999 }]).includes('fichas'));
+  assert.ok(TD.canGive(A, [{ kind: 'car', data: { id: 1 } }]).includes('carro'));
+  assert.ok(TD.canGive(A, [{ kind: 'money', amount: -5 }]).includes('inválido'));
+  assert.ok(TD.apply(A, [{ kind: 'money', amount: 1e9 }], []).includes('dinheiro'));
+  // o que chega do outro lado é limpo: valores impossíveis cortados, tipos estranhos descartados
+  const evil = TD.sanitize([{ kind: 'car', data: { model: 'veyron', value: 1e12 } }, { kind: 'hack', amount: 5 }, { kind: 'chips', amount: Infinity },
+    { kind: 'animal', data: { kind: 'horse', name: '<img onerror=x>', spd: 500, sta: 1, acc: 50, pot: 999, age: 30 } }]);
+  assert.equal(evil.length, 2); assert.ok(evil[0].data.value <= 15000000);
+  assert.ok(evil[1].data.spd === 99 && evil[1].data.sta === 20 && !evil[1].data.name.includes('<'));
+}
+// treino com mini-jogo e ração premium
+{
+  const s = { money: 1e6, stable: { animals: [], offers: [], next: 1 } };
+  const mk = () => ({ ...ST.newAnimal('dog', 50, () => 0.5, 1), id: 1, pot: 90, spd: 50, fat: 0, wk: 4, inj: 0, age: 30 });
+  s.stable.animals = [mk()]; const g1 = ST.train(s, 1, 'spd', () => 0.5, 1.5).gain;
+  s.stable.animals = [mk()]; const g2 = ST.train(s, 1, 'spd', () => 0.5, 0.6).gain;
+  assert.ok(g1 > g2 * 2, 'treino perfeito ' + g1 + ' x ruim ' + g2);
+  const a = mk(); a.fat = 90; s.stable.animals = [a]; const base = ST.upkeep(a);
+  ST.togglePremium(s, 1); assert.ok(ST.upkeep(a) > base);
+  ST.monthly(s, () => 0.5); assert.equal(a.fat, 10);
+}
+// passe da temporada
+{
+  const s = L.newState(() => 0.5); s.chips = 0; s.money = 0; P.ensure(s, '2026-11-01');
+  P.passEnsure(s, '2026-11');
+  assert.equal(P.passTier(s), 0);
+  for (let i = 0; i < 20; i++) P.track(s, 'land');
+  assert.equal(P.passTier(s), Math.floor(1000 / P.PASS_XP));
+  const r1 = P.passClaim(s, 1); assert.ok(r1 && (s.chips > 0 || s.money > 0));
+  assert.equal(P.passClaim(s, 1), null); assert.equal(P.passClaim(s, 30), null);
+  P.passEnsure(s, '2026-12'); assert.equal(s.pass.xp, 0); assert.equal(s.pass.claimed.length, 0);
+  assert.equal(P.passReward(10).kind, 'chips'); assert.equal(P.passReward(5).kind, 'money');
 }
 console.log('ok');

@@ -1,0 +1,100 @@
+// Ligação do jogo com o painel administrativo: configuração e eventos, avisos, suspensões e ordens do admin.
+// Se as tabelas do supabase/admin.sql ainda não existirem, tudo aqui fica quieto e o jogo segue normal.
+import { G, $, esc, brl, int, say, save, note, badge, levelUp, blankState } from './store.js';
+import * as P from './progress.js';
+import * as Auth from './auth.js';
+
+export const CFG = { xp_mult: 1, daily_mult: 1, job_mult: 1, prize_mult: 1, maintenance: false, maintenance_msg: '', event: '' };
+const num = (v, d) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Math.min(10, Number(v)) : d);
+let isAdmin = false, timer = 0, anns = [];
+
+export async function start() {
+  const sb = Auth.sbClient();
+  if (!sb) return 'off';
+  await loadConfig(sb);
+  await loadAnnouncements(sb);
+  if (Auth.account()) {
+    try { const { data } = await sb.rpc('is_admin'); isAdmin = data === true; } catch {}
+    if (await checkBan(sb)) return 'banned';
+    await applyGrants(sb);
+  }
+  maintenance();
+  clearInterval(timer);
+  timer = setInterval(async () => {
+    await loadConfig(sb); await loadAnnouncements(sb); maintenance();
+    if (Auth.account()) { if (await checkBan(sb)) return; await applyGrants(sb); }
+  }, 60000);
+  return 'ok';
+}
+export const admin = () => isAdmin;
+
+async function loadConfig(sb) {
+  const { data, error } = await sb.from('game_config').select('data').eq('id', 1).maybeSingle();
+  if (error || !data) return;
+  const d = data.data || {};
+  Object.assign(CFG, { xp_mult: num(d.xp_mult, 1), daily_mult: num(d.daily_mult, 1), job_mult: num(d.job_mult, 1), prize_mult: num(d.prize_mult, 1),
+    maintenance: !!d.maintenance, maintenance_msg: String(d.maintenance_msg || '').slice(0, 280), event: String(d.event || '').slice(0, 120) });
+  P.setXpMult(CFG.xp_mult);
+  renderBar();
+}
+
+async function loadAnnouncements(sb) {
+  const { data, error } = await sb.from('announcements').select('id, text, kind').order('created_at', { ascending: false }).limit(5);
+  if (error) return;
+  anns = data || [];
+  let seen = [];
+  try { seen = JSON.parse(localStorage.getItem('21world.ann') || '[]'); } catch {}
+  for (const a of anns) if (!seen.includes(a.id)) { badge(a.kind === 'evento' ? 'Evento' : a.kind === 'alerta' ? 'Aviso importante' : 'Aviso', a.text, 'mission'); seen.push(a.id); }
+  try { localStorage.setItem('21world.ann', JSON.stringify(seen.slice(-50))); } catch {}
+  renderBar();
+}
+
+function renderBar() {
+  const bar = $('#ann-bar'); if (!bar) return;
+  const items = [...(CFG.event ? [{ text: CFG.event, kind: 'evento' }] : []), ...anns];
+  const mults = [CFG.xp_mult > 1 && `XP x${CFG.xp_mult}`, CFG.daily_mult > 1 && `roleta do dia x${CFG.daily_mult}`, CFG.job_mult > 1 && `trabalhos x${CFG.job_mult}`, CFG.prize_mult > 1 && `prêmios das provas x${CFG.prize_mult}`].filter(Boolean);
+  if (mults.length) items.unshift({ text: `Bônus ativo: ${mults.join(', ')}`, kind: 'evento' });
+  bar.hidden = !items.length;
+  bar.innerHTML = items.map(a => `<span class="ann ann--${esc(a.kind)}">${esc(a.text)}</span>`).join('');
+}
+
+function maintenance() {
+  const d = $('#dlg-maint');
+  if (CFG.maintenance && !isAdmin) {
+    $('#maint-msg').textContent = CFG.maintenance_msg || 'O jogo está em manutenção. Volte em alguns minutos.';
+    if (!d.open) d.showModal();
+  } else if (d.open) d.close();
+}
+
+async function checkBan(sb) {
+  const { data, error } = await sb.from('bans').select('reason, until').eq('user_id', Auth.account().id).maybeSingle();
+  if (error || !data) return false;
+  if (data.until && new Date(data.until) <= new Date()) return false;
+  G.afterSave = null;                                                  // suspenso: nada mais vai para a nuvem
+  $('#ban-msg').textContent = `${data.reason ? `Motivo: ${data.reason}. ` : ''}${data.until ? `Até ${new Date(data.until).toLocaleString('pt-BR')}.` : 'Sem data para terminar.'}`;
+  const d = $('#dlg-ban'); if (!d.open) d.showModal();
+  return true;
+}
+
+// aplica as ordens pendentes: primeiro marca como aplicada (para nunca aplicar duas vezes), depois aplica só as que marcou
+async function applyGrants(sb) {
+  const me = Auth.account().id;
+  const { data: pend, error } = await sb.from('admin_grants').select('id').eq('user_id', me).is('applied_at', null).limit(50);
+  if (error || !pend?.length) return;
+  const { data: rows, error: e2 } = await sb.from('admin_grants').update({ applied_at: new Date().toISOString() })
+    .in('id', pend.map(r => r.id)).is('applied_at', null).select('id, kind, amount, note');
+  if (e2 || !rows?.length) return;
+  for (const g of rows) {
+    const amt = Number(g.amount) || 0, why = g.note ? `: ${g.note}` : '';
+    if (g.kind === 'money') { G.S.money += amt; note(`ajuste do administrador${why}`, amt); badge('Administrador', `${amt >= 0 ? 'Você recebeu' : 'Foram retirados'} ${brl(Math.abs(amt))}${why}.`, 'mission'); }
+    if (g.kind === 'chips') { G.S.chips = Math.max(0, G.S.chips + amt); note(`fichas do administrador${why}`); badge('Administrador', `${amt >= 0 ? '+' : ''}${int(amt)} fichas${why}.`, 'mission'); }
+    if (g.kind === 'xp') { P.addXp(G.S, amt).forEach(levelUp); badge('Administrador', `+${int(amt)} XP${why}.`, 'mission'); }
+    if (g.kind === 'message') badge('Mensagem do administrador', g.note || '', 'mission');
+    if (g.kind === 'reset') {
+      const name = G.S.avatar?.name;
+      G.S = blankState(name && name !== 'você' ? name : '');
+      say('O administrador reiniciou o seu progresso.', true);
+    }
+  }
+  save(); G.render();
+}

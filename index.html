@@ -5,9 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>21 World</title>
   <meta name="description" content="Mesas de 21 com amigos, corridas de galgos e uma economia de terras, gado e carros.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23f2b33d'/%3E%3Ctext x='16' y='22' font-size='16' font-family='Arial' font-weight='700' text-anchor='middle' fill='%23140f05'%3E21%3C/text%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="assets/brand/logo-mark.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/brand/icon-32.png">
+  <link rel="apple-touch-icon" href="assets/brand/icon-180.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0f1220">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="21 World: cassino, corridas e futebol com os amigos">
+  <meta property="og:description" content="Blackjack de verdade, roleta, Aviator, corridas de galgos e cavalos, clube de futebol e fazenda. Moeda virtual, jogue grátis no navegador.">
+  <meta property="og:image" content="https://21worldgame.github.io/assets/brand/og-image.png">
+  <meta property="og:url" content="https://21worldgame.github.io/">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="modulepreload" href="game.js">
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="style.css">
@@ -15,6 +27,7 @@
   <script type="module" src="game.js"></script>
 </head>
 <body>
+  <div class="splash" id="splash" aria-hidden="true"><img src="assets/brand/logo-mark.svg" width="120" height="120" alt=""><span>carregando a mesa</span></div>
   <svg width="0" height="0" class="visually-hidden" aria-hidden="true">
     <symbol id="i-cards" viewBox="0 0 24 24"><rect x="3" y="5" width="11" height="15" rx="2"/><path d="M10 4.5l7.6-1.4a2 2 0 0 1 2.3 1.6l2 11.3a2 2 0 0 1-1.6 2.3L16 19"/></symbol>
     <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
@@ -27,12 +40,15 @@
     <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></symbol>
     <symbol id="i-candle" viewBox="0 0 24 24"><path d="M6 3v18M12 6v12M18 4v14"/><rect x="4" y="7" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="5" rx="1"/><rect x="16" y="8" width="4" height="6" rx="1"/></symbol>
     <symbol id="i-horse" viewBox="0 0 24 24"><path d="M4 20v-6c0-3 2-5 5-5h3l3-4 2 2-1 3 3 2v8M9 14v6M15 14v6"/></symbol>
+    <symbol id="i-bike" viewBox="0 0 24 24"><circle cx="5.5" cy="17" r="3"/><circle cx="18.5" cy="17" r="3"/><path d="M5.5 17l4-7h5l4 7M9.5 10l-1.5-3H5M14.5 10l1-3h2"/></symbol>
+    <symbol id="i-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 4.5h-5L8 10z M12 3v4 M16 10l4.5-1.5 M14.5 14.5l2.5 4 M9.5 14.5l-2.5 4 M8 10L3.5 8.5"/></symbol>
+    <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
     <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/></symbol>
   </svg>
 
   <header class="hud">
     <div class="container hud__in">
-      <div class="brand"><span class="brand__badge">21</span><span class="brand__word">world</span></div>
+      <div class="brand"><img class="brand__mark" src="assets/brand/logo-mark.svg" width="40" height="40" alt=""><span class="brand__word">21 <b>world</b></span></div>
       <button class="me" data-profile="me" aria-label="ver meu perfil">
         <span class="me__ring" id="hud-ring"><span class="me__avatar" id="hud-avatar"></span><span class="me__lvl" id="hud-level">1</span></span>
         <span class="me__txt"><strong id="hud-name">você</strong><span id="hud-rank">iniciante</span></span>
@@ -43,6 +59,7 @@
         <div class="is-chips"><dt>fichas</dt><dd><span class="chip-ico" aria-hidden="true"></span><span id="r-chips">0</span></dd></div>
         <div><dt>patrimônio</dt><dd id="r-worth">R$ 100.000</dd></div>
       </dl>
+      <button class="btn btn--glass btn--pass" data-act="open-pass"><span class="pass-ico" aria-hidden="true"></span>passe <b id="pass-tier">0</b>/30<span class="pill" id="pass-badge" hidden>!</span></button>
       <button class="btn btn--glass btn--missions" data-act="open-missions"><svg><use href="#i-target"/></svg>missões<span class="pill" id="missions-badge" hidden>0</span></button>
       <button class="btn btn--gold" data-act="month">passar o mês</button>
     </div>
@@ -51,6 +68,9 @@
         <button role="tab" id="t-mesa" data-tab="mesa" aria-controls="p-mesa" aria-selected="true"><svg><use href="#i-cards"/></svg>cassino</button>
         <button role="tab" id="t-corridas" data-tab="corridas" aria-controls="p-corridas" aria-selected="false" tabindex="-1"><svg><use href="#i-flag"/></svg>corridas</button>
         <button role="tab" id="t-trader" data-tab="trader" aria-controls="p-trader" aria-selected="false" tabindex="-1"><svg><use href="#i-candle"/></svg>trader</button>
+        <button role="tab" id="t-trabalho" data-tab="trabalho" aria-controls="p-trabalho" aria-selected="false" tabindex="-1"><svg><use href="#i-bike"/></svg>trabalho</button>
+        <button role="tab" id="t-futebol" data-tab="futebol" aria-controls="p-futebol" aria-selected="false" tabindex="-1"><svg><use href="#i-ball"/></svg>futebol</button>
+        <button role="tab" id="t-inventario" data-tab="inventario" aria-controls="p-inventario" aria-selected="false" tabindex="-1"><svg><use href="#i-bag"/></svg>inventário</button>
         <button role="tab" id="t-haras" data-tab="haras" aria-controls="p-haras" aria-selected="false" tabindex="-1"><svg><use href="#i-horse"/></svg>canil e haras</button>
         <button role="tab" id="t-personagem" data-tab="personagem" aria-controls="p-personagem" aria-selected="false" tabindex="-1"><svg><use href="#i-user"/></svg>personagem</button>
         <button role="tab" id="t-terras" data-tab="terras" aria-controls="p-terras" aria-selected="false" tabindex="-1"><svg><use href="#i-map"/></svg>terras</button>
@@ -61,6 +81,7 @@
         <button role="tab" id="t-livro" data-tab="livro" aria-controls="p-livro" aria-selected="false" tabindex="-1"><svg><use href="#i-book"/></svg>livro-caixa</button>
       </div>
     </nav>
+    <div class="ann-bar" id="ann-bar" role="status" hidden></div>
   </header>
 
   <main class="container">
@@ -114,8 +135,8 @@
                     <path id="arc1" d="M140 150 Q500 440 860 150" fill="none"/>
                     <path id="arc2" d="M195 122 Q500 372 805 122" fill="none"/>
                     <path d="M165 136 Q500 412 835 136" class="p-line"/><path d="M165 129 Q500 405 835 129" class="p-line p-line--thin"/>
-                    <text class="p-gold"><textPath href="#arc1" startOffset="50%" text-anchor="middle">a maior soma até 21 leva o pote</textPath></text>
-                    <text class="p-small"><textPath href="#arc2" startOffset="50%" text-anchor="middle">empate divide o pote, a casa retém 5%</textPath></text>
+                    <text class="p-gold"><textPath href="#arc1" startOffset="50%" text-anchor="middle">blackjack paga 3 para 2</textPath></text>
+                    <text class="p-small"><textPath href="#arc2" startOffset="50%" text-anchor="middle">o dealer compra até 16 e para em todos os 17</textPath></text>
                     <text class="p-logo" x="500" y="470" text-anchor="middle">vinte e um</text>
                     <text class="p-sub" x="500" y="496" text-anchor="middle">21 world casino</text>
                   </svg>
@@ -123,12 +144,14 @@
                 </div>
                 <div class="rack" id="rack" aria-hidden="true"></div>
                 <div class="discard" aria-hidden="true"><span></span></div>
+                <div class="dealer-hand" id="dealer-cards" aria-label="cartas do dealer"></div>
+                <span class="seat__val dealer-val upright" id="dealer-val" hidden></span>
                 <div class="shoe" id="shoe" aria-hidden="true"><span></span></div>
                 <ol class="seats" id="seats"></ol>
               </div>
               <div class="banner" id="banner" hidden></div>
               <div class="keys" aria-hidden="true">
-                <span><kbd>1</kbd>–<kbd>5</kbd> fichas</span><span><kbd>espaço</kbd> apostar</span><span><kbd>H</kbd> pedir</span><span><kbd>S</kbd> parar</span><span><kbd>R</kbd> regras</span>
+                <span><kbd>1</kbd>–<kbd>5</kbd> fichas</span><span><kbd>espaço</kbd> apostar</span><span><kbd>H</kbd> pedir</span><span><kbd>S</kbd> parar</span><span><kbd>D</kbd> dobrar</span><span><kbd>P</kbd> dividir</span><span><kbd>R</kbd> regras</span>
               </div>
               <button class="mute" data-act="mute" aria-label="ligar ou desligar o som" id="mute-btn">som</button>
             </div>
@@ -147,6 +170,8 @@
                 <button class="btn btn--gold btn--lg" data-act="bet">apostar</button>
                 <button class="btn btn--glass btn--lg" data-act="hit" disabled>pedir carta</button>
                 <button class="btn btn--glass btn--lg" data-act="stand" disabled>parar</button>
+                <button class="btn btn--glass btn--lg" data-act="double" disabled>dobrar</button>
+                <button class="btn btn--glass btn--lg" data-act="split" disabled>dividir</button>
               </div>
             </div>
           </div>
@@ -159,7 +184,7 @@
               <button class="btn btn--glass" data-act="buy-chips">comprar</button>
               <button class="btn btn--glass" data-act="cash-chips">resgatar</button>
             </div>
-            <p class="muted small">1 ficha = R$ 10. A maior soma até 21 leva o pote, menos 5% da casa. Empate divide.</p>
+            <p class="muted small">1 ficha = R$ 10. Você joga contra o dealer: quem chegar mais perto de 21 sem passar vence. Blackjack paga 3 para 2.</p>
             <h3>na mesa</h3>
             <ul class="who-list" id="who-list"></ul>
           </aside>
@@ -172,6 +197,7 @@
         <div class="rl-top">
           <div class="rl-wheel" id="rl-wheel"></div>
           <div class="rl-side glass">
+            <p class="rl-call" id="rl-call" aria-live="polite">Façam suas apostas.</p>
             <span class="muted small">último número</span>
             <div class="rl-result" id="rl-result">?</div>
             <span class="muted small">histórico</span>
@@ -185,6 +211,7 @@
             <button class="chipbtn chipbtn--5" data-rchip="5">5</button><button class="chipbtn chipbtn--25 is-on" data-rchip="25">25</button><button class="chipbtn chipbtn--100" data-rchip="100">100</button><button class="chipbtn chipbtn--500" data-rchip="500">500</button><button class="chipbtn chipbtn--1000" data-rchip="1000">1k</button>
             <span class="betshow"><span class="muted small">na mesa</span><strong id="rl-total">0</strong></span>
             <button class="btn btn--glass btn--sm" data-act="rl-clear">limpar</button>
+            <button class="btn btn--glass btn--sm" data-act="rl-double">dobrar apostas</button>
           </div>
           <button class="btn btn--gold btn--lg" data-act="rl-spin" disabled>girar a roleta</button>
         </div>
@@ -227,6 +254,56 @@
           <h3>posições abertas</h3><ul class="tr-list" id="tr-pos"></ul>
           <h3>histórico</h3><ul class="tr-list tr-list--h" id="tr-hist"></ul>
         </aside>
+      </div>
+    </section>
+
+    <!-- TRABALHO -->
+    <section id="p-trabalho" role="tabpanel" aria-labelledby="t-trabalho" class="panel" hidden>
+      <div class="listhead"><h2>central de entregas</h2><span class="muted small" id="job-stats"></span></div>
+      <div class="glass job-head">
+        <div><span class="muted small">entregador nível</span><strong class="job-lvl" id="job-level">1</strong></div>
+        <div class="job-xp"><span class="bar"><i id="job-xp"></i></span><span class="muted small" id="job-xp-txt"></span></div>
+        <button class="btn btn--gold btn--lg" data-act="job-start" id="job-start">começar turno de 90 s</button>
+      </div>
+      <p class="muted small">Pedidos aparecem no mapa e somem se ninguém aceitar. A moto leva até 3. Quando chega, você tem 3 segundos para confirmar a entrega (barra de espaço confirma). Confirmou rápido, ganha gorjeta. Fique de olho na chuva e no pneu furado.</p>
+      <div id="job-live" hidden>
+        <div class="job-bar glass"><span>tempo <b id="job-clock">90 s</b></span><span>ganho no turno <b id="job-earned">R$ 0</b></span><span id="job-weather">tempo bom</span></div>
+        <div class="job-grid">
+          <div class="job-map" id="job-map"><span class="job-depot" aria-hidden="true">base</span><div id="job-pins"></div>
+            <div class="job-flat" id="job-flat" hidden><p id="job-flat-txt"></p><button class="btn btn--gold btn--lg" data-act="job-repair">consertar (F)</button></div></div>
+          <aside class="glass job-side"><h3>na moto</h3><ul class="job-route" id="job-route"></ul><h3>acontecendo</h3><ul class="job-log" id="job-log"></ul></aside>
+        </div>
+      </div>
+      <div class="job-result" id="job-result" hidden></div>
+      <div id="job-board"></div>
+    </section>
+
+    <!-- FUTEBOL -->
+    <section id="p-futebol" role="tabpanel" aria-labelledby="t-futebol" class="panel" hidden>
+      <div id="ft-found" class="glass ft-found">
+        <h2>seja presidente de um clube</h2>
+        <p>Funde um clube na Série C, monte o elenco, escolha a tática e jogue as rodadas ao vivo. Bilheteria, prêmios e vendas de jogadores viram dinheiro para você. Os dois primeiros sobem de divisão; os dois últimos caem.</p>
+        <div class="row"><label class="field"><span>nome do clube</span><input class="input" id="ft-new" maxlength="28" placeholder="ex.: Esporte Clube Vila Rica"></label>
+          <button class="btn btn--gold btn--lg" data-act="ft-found">fundar por <span id="ft-cost"></span></button></div>
+        <p class="muted small">Clubes e jogadores são fictícios.</p>
+      </div>
+      <div id="ft-club" hidden>
+        <div class="listhead"><div><h2 id="ft-name"></h2><p class="muted small" id="ft-sub"></p></div></div>
+        <div class="tiles tiles--ft" id="ft-kpis"></div>
+        <div class="subtabs" role="group" aria-label="clube"><button class="subtab is-on" data-act="ft-view" data-id="jogo" data-ftv="jogo">próximo jogo</button><button class="subtab" data-act="ft-view" data-id="elenco" data-ftv="elenco">elenco</button><button class="subtab" data-act="ft-view" data-id="tabela" data-ftv="tabela">tabela</button><button class="subtab" data-act="ft-view" data-id="mercado" data-ftv="mercado">mercado</button></div>
+        <div data-ftpanel="jogo"><div class="ft-grid"><div class="glass ft-next" id="ft-next"></div><div id="ft-pitch"></div></div><div id="ft-last"></div></div>
+        <div data-ftpanel="elenco" hidden><div class="glass scroll"><table><thead><tr><th>pos</th><th>jogador</th><th class="num">idade</th><th class="num">nota</th><th class="num">potencial</th><th class="num">salário</th><th class="num">valor</th><th></th></tr></thead><tbody id="ft-squad"></tbody></table></div></div>
+        <div data-ftpanel="tabela" hidden><div class="glass scroll"><table><thead><tr><th class="num">#</th><th>clube</th><th class="num">J</th><th class="num">V</th><th class="num">E</th><th class="num">D</th><th class="num">gols</th><th class="num">pts</th></tr></thead><tbody id="ft-table"></tbody></table></div><h3>histórico</h3><ul class="ft-hist" id="ft-hist"></ul></div>
+        <div data-ftpanel="mercado" hidden><p class="muted small">O mercado renova a cada temporada. Jogador jovem com potencial alto cresce a cada ano.</p><div class="glass scroll"><table><thead><tr><th>pos</th><th>jogador</th><th class="num">idade</th><th class="num">nota</th><th class="num">potencial</th><th class="num">salário</th><th></th></tr></thead><tbody id="ft-market"></tbody></table></div></div>
+      </div>
+    </section>
+
+    <!-- INVENTÁRIO E TROCAS -->
+    <section id="p-inventario" role="tabpanel" aria-labelledby="t-inventario" class="panel" hidden>
+      <div class="listhead"><h2>inventário</h2><span class="muted small" id="inv-sum"></span></div>
+      <div class="inv-grid">
+        <div class="cards cards--inv" id="inv-items"></div>
+        <aside class="glass inv-online"><h3>jogadores online</h3><p class="muted small">Negocie carros, animais, terras, sacas, fichas e dinheiro. Os dois montam a oferta, ficam "prontos" e confirmam. Se alguém mexer na oferta, os dois precisam confirmar de novo.</p><ul class="inv-peers" id="inv-peers"></ul></aside>
       </div>
     </section>
 
@@ -376,7 +453,7 @@
 
   <!-- login e cadastro (só aparece quando o Supabase está configurado) -->
   <dialog class="dlg dlg--auth" id="dlg-auth" aria-labelledby="au-title">
-    <div class="brand au__brand"><span class="brand__badge">21</span><span class="brand__word">world</span></div>
+    <div class="brand au__brand"><img class="brand__mark" src="assets/brand/logo-mark.svg" width="40" height="40" alt=""><span class="brand__word">21 <b>world</b></span></div>
     <h2 id="au-title">entre para jogar</h2>
     <div class="seg au__tabs" role="group" aria-label="entrar ou criar conta">
       <button type="button" class="segbtn is-on" data-au-tab="in" aria-pressed="true">entrar</button>
@@ -415,15 +492,74 @@
   <!-- prova dos animais do jogador (a pista do canódromo é emprestada para cá) -->
   <dialog class="dlg dlg--race" id="dlg-race" aria-label="prova"><div id="race-host"></div></dialog>
 
+  <!-- conta suspensa e manutenção (vindos do painel administrativo) -->
+  <dialog class="dlg dlg--auth" id="dlg-ban" aria-labelledby="ban-title">
+    <h2 id="ban-title">conta suspensa</h2>
+    <p id="ban-msg"></p>
+    <p class="muted small">Se achar que foi um engano, fale com o administrador do jogo.</p>
+    <button class="btn btn--glass" data-act="logout">sair da conta</button>
+  </dialog>
+  <dialog class="dlg dlg--auth" id="dlg-maint" aria-labelledby="mt-title">
+    <h2 id="mt-title">em manutenção</h2>
+    <p id="maint-msg"></p>
+  </dialog>
+
+  <!-- partida ao vivo -->
+  <dialog class="dlg dlg--match" id="dlg-match" aria-labelledby="mt-score">
+    <div class="mt-board"><span id="mt-home"></span><strong id="mt-score">0 x 0</strong><span id="mt-away"></span></div>
+    <div class="mt-clock"><span id="mt-min">0'</span><span class="bar"><i id="mt-bar"></i></span></div>
+    <ul class="mt-feed" id="mt-feed" aria-live="polite"></ul>
+    <div class="mt-end" id="mt-end" hidden></div>
+  </dialog>
+
+  <!-- trocas -->
+  <dialog class="dlg dlg--auth" id="dlg-trade-invite" aria-labelledby="ti-title">
+    <h2 id="ti-title">proposta de troca</h2><p id="ti-text"></p>
+    <div class="row"><button class="btn btn--gold" data-act="trade-yes">negociar</button><button class="btn btn--glass" data-act="trade-no">recusar</button></div>
+  </dialog>
+  <dialog class="dlg dlg--trade" id="dlg-trade" aria-labelledby="tr-who">
+    <h2 id="tr-who">troca</h2>
+    <div class="tr-cols">
+      <div class="glass tr-col"><h3>você oferece</h3><ul class="tr-list" id="tr-mine"></ul>
+        <div class="row"><label class="visually-hidden" for="tr-pick">item</label><select class="input" id="tr-pick"></select><button class="btn btn--glass btn--sm" data-act="trade-add">pôr na troca</button></div>
+        <div class="row"><label class="field"><span>fichas</span><input class="input input--s" id="tr-chips" type="number" min="1" step="10"></label><button class="btn btn--glass btn--sm" data-act="trade-chips">pôr fichas</button>
+          <label class="field"><span>dinheiro</span><input class="input input--s" id="tr-money" type="number" min="1" step="1000"></label><button class="btn btn--glass btn--sm" data-act="trade-money">pôr dinheiro</button></div></div>
+      <div class="glass tr-col tr-col--them"><h3>você recebe</h3><ul class="tr-list" id="tr-theirs"></ul></div>
+    </div>
+    <p class="tr-state" id="tr-state"></p>
+    <div class="tr-chatbox"><ul class="tr-chat" id="tr-chat" aria-live="polite"></ul>
+      <form class="row" id="tr-chat-form"><label class="visually-hidden" for="tr-msg">mensagem</label><input class="input" id="tr-msg" maxlength="140" placeholder="negocie aqui" autocomplete="off"><button class="btn btn--glass btn--sm" type="submit">enviar</button></form></div>
+    <div class="row tr-acts"><button class="btn btn--glass" data-act="trade-lock">estou pronto</button><button class="btn btn--gold" data-act="trade-confirm" disabled>confirmar troca</button><button class="btn btn--danger" data-act="trade-cancel">cancelar</button></div>
+  </dialog>
+
+  <!-- mini-jogo de treino -->
+  <dialog class="dlg dlg--auth" id="dlg-train" aria-labelledby="tg-title">
+    <h2 id="tg-title">treino</h2>
+    <div class="tg-bar" id="tg-bar"><span class="tg-zone" id="tg-zone"></span><span class="tg-mark" id="tg-mark"></span></div>
+    <p id="tg-msg" class="muted"></p>
+    <button class="btn btn--gold btn--lg" id="tg-go">agora! (espaço)</button>
+  </dialog>
+
+  <!-- passe da temporada -->
+  <dialog class="dlg dlg--pass" id="dlg-pass" aria-labelledby="ps-title">
+    <button class="dlg__x btn btn--glass btn--sm" data-close>fechar</button>
+    <h2 id="ps-title">passe da temporada</h2>
+    <p class="muted small" id="ps-sub"></p>
+    <div class="ps-xp"><span class="bar"><i id="ps-bar"></i></span><span class="small" id="ps-xp"></span></div>
+    <ol class="ps-track" id="ps-track"></ol>
+  </dialog>
+
   <!-- regras do 21 -->
   <dialog class="dlg" id="dlg-rules" aria-labelledby="rl-title">
     <button class="dlg__x btn btn--glass btn--sm" data-close>fechar</button>
     <h2 id="rl-title">regras da mesa</h2>
     <ul class="rules">
-      <li>Cada jogador aposta e recebe duas cartas. O dealer só distribui, não joga contra você.</li>
-      <li>Ás vale 1 ou 11. J, Q e K valem 10. As outras cartas valem o número.</li>
-      <li>Na sua vez, peça carta (H) ou pare (S). Passou de 21, estourou.</li>
-      <li>Quem fizer a maior soma até 21 leva o pote inteiro, menos 5% da casa. Empate divide.</li>
+      <li>Você joga contra o dealer, não contra os outros jogadores. Cada um ganha ou perde a própria aposta.</li>
+      <li>O sapato tem 6 baralhos e é embaralhado de novo quando 3/4 das cartas já saíram.</li>
+      <li>Ás vale 1 ou 11. J, Q e K valem 10. Ás + carta de 10 nas duas primeiras é blackjack e paga 3 para 2.</li>
+      <li>O dealer recebe uma carta aberta e uma escondida. Com Ás ou 10 à mostra, ele confere se tem blackjack antes de todos jogarem.</li>
+      <li>Na sua vez: pedir carta (H), parar (S), dobrar a aposta com só mais uma carta (D) ou dividir um par em duas mãos (P).</li>
+      <li>O dealer compra até 16 e para em todos os 17. Passou de 21, estourou. Empate devolve a aposta.</li>
       <li>Você tem 20 segundos por jogada. Se o tempo acabar, a mesa para por você.</li>
     </ul>
   </dialog>

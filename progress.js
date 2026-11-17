@@ -3,7 +3,10 @@ import { netWorth, heads } from './logic.js';
 
 export const XP = { hand: 10, win: 25, '21': 40, calves: 15, sellherd: 30, plant: 30, harvest: 40, land: 50, car: 60,
   month: 5, race: 8, raceWin: 30, lend: 20, onlineHand: 20,
-  buyAnimal: 30, train: 10, stakeRun: 15, stakeWin: 60, stakeGP: 120, roulette: 6, rouletteWin: 20, aviator: 6, cashout: 15, trade: 10, tradeWin: 30, car: 60 };
+  trade: 40, ftFound: 50, ftMatch: 10, ftWin: 20, ftTitle: 200, job: 20, jobPerfect: 40, buyAnimal: 30, train: 10, stakeRun: 15, stakeWin: 60, stakeGP: 120, roulette: 6, rouletteWin: 20, aviator: 6, cashout: 15, trade: 10, tradeWin: 30, car: 60 };
+// multiplicador de XP vindo dos eventos do painel administrativo
+let XP_MULT = 1;
+export const setXpMult = m => { XP_MULT = m > 0 ? m : 1; };
 export const xpNeed = level => 100 * level;           // XP para sair do nível atual
 export const levelReward = level => 100 * level;      // fichas ao subir
 
@@ -20,6 +23,8 @@ export const MISSIONS = [
   { id: 'land', txt: 'Compre ou arrende uma terra', ev: 'land', goal: 1, reward: 400 },
   { id: 'lend', txt: 'Empreste para alguém', ev: 'lend', goal: 1, reward: 300 },
   { id: 'online', txt: 'Jogue uma mão numa mesa online', ev: 'onlineHand', goal: 1, reward: 600 },
+  { id: 'ft3', txt: 'Jogue 3 rodadas com o seu clube', ev: 'ftMatch', goal: 3, reward: 500 },
+  { id: 'job2', txt: 'Faça 2 turnos de entregas', ev: 'job', goal: 2, reward: 400 },
   { id: 'train1', txt: 'Treine um dos seus animais', ev: 'train', goal: 1, reward: 300 },
   { id: 'stake1', txt: 'Inscreva um animal seu numa prova', ev: 'stakeRun', goal: 1, reward: 450 },
   { id: 'roleta3', txt: 'Gire a roleta 3 vezes', ev: 'roulette', goal: 3, reward: 300 },
@@ -38,6 +43,10 @@ export const ACHIEVEMENTS = [
   { id: 'land', txt: 'Dono de terra', ev: 'land', goal: 1 },
   { id: 'harvest', txt: 'Primeira colheita', ev: 'harvest', goal: 1 },
   { id: 'car', txt: 'Primeiro carro', ev: 'car', goal: 1 },
+  { id: 'trader-p2p', txt: 'Negociante: fez uma troca com outro jogador', ev: 'trade', goal: 1 },
+  { id: 'president', txt: 'Presidente: fundou um clube', ev: 'ftFound', goal: 1 },
+  { id: 'champion-ft', txt: 'Campeão da liga', ev: 'ftTitle', goal: 1 },
+  { id: 'courier', txt: 'Entregador nota 10', ev: 'jobPerfect', goal: 1 },
   { id: 'owner', txt: 'Dono de um animal de corrida', ev: 'buyAnimal', goal: 1 },
   { id: 'champ', txt: 'Campeão: venceu uma prova', ev: 'stakeWin', goal: 1 },
   { id: 'gpwin', txt: 'Venceu um grande prêmio', ev: 'stakeGP', goal: 1 },
@@ -74,7 +83,9 @@ export function track(s, ev, n = 1) {
     m.prog = Math.min(def.goal, m.prog + n);
     if (m.prog >= def.goal) out.missions.push(def);
   }
-  s.xp += (XP[ev] || 0) * n;
+  const gained = Math.round((XP[ev] || 0) * n * XP_MULT);
+  s.xp += gained;
+  passGain(s, gained);
   while (s.xp >= xpNeed(s.level)) {
     s.xp -= xpNeed(s.level); s.level++;
     s.chips += levelReward(s.level);
@@ -119,5 +130,26 @@ export function claimDaily(s, today, yesterday, payChips = true) {
   s.daily = { last: today, streak: st.streak };
   const r = dailyReward(st.streak);
   if (payChips) s.chips += r;
+  return r;
+}
+
+// ---------- passe da temporada: 30 níveis por mês; todo XP ganho também avança o passe ----------
+export const PASS_TIERS = 30, PASS_XP = 120;
+export function passReward(tier) {          // nível de 1 a 30
+  if (tier % 10 === 0) return { kind: 'chips', amount: 2500 * (tier / 10) };
+  if (tier % 5 === 0) return { kind: 'money', amount: 30000 * (tier / 5) };
+  return tier % 2 ? { kind: 'chips', amount: 150 + tier * 20 } : { kind: 'money', amount: 4000 + tier * 800 };
+}
+export function passEnsure(s, month) {
+  if (s.pass?.month !== month) s.pass = { month, xp: 0, claimed: [] };
+  return s.pass;
+}
+export const passTier = s => Math.min(PASS_TIERS, Math.floor((s.pass?.xp || 0) / PASS_XP));
+function passGain(s, n) { if (s.pass && n > 0) s.pass.xp += n; }
+export function passClaim(s, tier) {
+  if (!s.pass || tier < 1 || tier > passTier(s) || s.pass.claimed.includes(tier)) return null;
+  const r = passReward(tier);
+  if (r.kind === 'chips') s.chips += r.amount; else s.money += r.amount;
+  s.pass.claimed.push(tier);
   return r;
 }

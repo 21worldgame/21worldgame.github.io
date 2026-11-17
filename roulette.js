@@ -49,6 +49,17 @@ export function placeBet(key) {
   renderBets();
 }
 export function clearBets() { if (!spinning) { bets = {}; renderBets(); } }
+// crupiê: as falas de cada fase, como no cassino
+function call(t) { const el = document.querySelector('#rl-call'); if (el) { el.textContent = t; el.classList.remove('is-on'); void el.offsetWidth; el.classList.add('is-on'); } }
+// dobra todas as apostas que estão na mesa
+export function doubleBets() {
+  if (spinning) return;
+  const total = Object.values(bets).reduce((a, b) => a + b, 0);
+  if (!total) return say('Não há apostas na mesa para dobrar.', true);
+  if (total * 2 > G.S.chips) return say('Fichas insuficientes para dobrar.', true);
+  for (const k of Object.keys(bets)) bets[k] *= 2;
+  sfx.play('stack', 0.5); renderBets();
+}
 
 function renderBets() {
   document.querySelectorAll('[data-rbet]').forEach(c => {
@@ -66,6 +77,8 @@ export async function spin() {
   spinning = true; renderBets();
   G.S.chips -= total; save(); G.render();
   document.querySelectorAll('.rl-cell.is-hit').forEach(c => c.classList.remove('is-hit'));
+  document.querySelectorAll('.rl-dolly').forEach(d => d.remove());
+  call('Não vale mais apostar.');
   const n = GM.WHEEL[Math.floor(Math.random() * 37)], idx = GM.WHEEL.indexOf(n);
   // a roda gira no sentido horário e para com o número do resultado embaixo do ponteiro
   const target = wheelAngle + 360 * 5 + ((360 - idx * SEG - (wheelAngle % 360)) % 360 + 360) % 360;
@@ -89,6 +102,8 @@ export async function spin() {
   res.className = `rl-result is-${GM.colorOf(n)}`; res.textContent = n;
   res.animate([{ transform: 'scale(.4)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: ms(500), easing: 'cubic-bezier(.34,1.56,.64,1)' });
   document.querySelectorAll('[data-rbet]').forEach(c => { if (GM.rouletteWins(c.dataset.rbet, n) > 0) c.classList.add('is-hit'); });
+  document.querySelector(`[data-rbet="n:${n}"]`)?.insertAdjacentHTML('beforeend', '<i class="rl-dolly" aria-hidden="true"></i>');
+  call(`${n}, ${GM.colorOf(n) === 'red' ? 'vermelho' : GM.colorOf(n) === 'black' ? 'preto' : 'verde'}${n ? `, ${n % 2 ? 'ímpar' : 'par'}` : ''}. Façam suas apostas.`);
   note(`roleta: deu ${n}, apostou ${int(total)}, voltaram ${int(back)} fichas`);
   award('roulette');
   if (back > total) { award('rouletteWin'); sfx.play('stack', 0.7); confetti(back >= total * 5 ? 90 : 35); say(`Deu ${n}. Você ganhou ${int(back - total)} fichas.`); }

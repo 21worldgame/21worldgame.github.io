@@ -10,8 +10,13 @@ import * as AV from './aviator.js';
 import * as RL from './roulette.js';
 import * as TR from './trader.js';
 import * as Auth from './auth.js';
+import * as Live from './live.js';
 import * as ST from './stable.js';
 import * as SUI from './stable-ui.js';
+import * as JUI from './jobs-ui.js';
+import * as FUI from './futebol-ui.js';
+import * as TUI from './trade-ui.js';
+import * as TD from './trade.js';
 
 const S = () => G.S;
 
@@ -39,6 +44,19 @@ function rollTo(el, to, fmt) {
   requestAnimationFrame(step);
 }
 
+function renderPass() {
+  const s = S(), tier = P.passTier(s), into = (s.pass.xp % P.PASS_XP) / P.PASS_XP;
+  const end = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
+  $('#ps-sub').textContent = `Temporada de ${new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}. Termina em ${Math.ceil((end - Date.now()) / 864e5)} dias. Todo XP ganho no jogo avança o passe.`;
+  $('#ps-bar').style.transform = `scaleX(${tier >= P.PASS_TIERS ? 1 : into})`;
+  $('#ps-xp').textContent = tier >= P.PASS_TIERS ? 'Passe completo!' : `nível ${tier}, faltam ${P.PASS_XP - (s.pass.xp % P.PASS_XP)} XP para o ${tier + 1}`;
+  $('#ps-track').innerHTML = Array.from({ length: P.PASS_TIERS }, (_, k) => {
+    const t = k + 1, r = P.passReward(t), got = s.pass.claimed.includes(t), open = t <= tier;
+    return `<li class="ps-t${got ? ' is-got' : open ? ' is-open' : ''}${t % 10 === 0 ? ' is-big' : ''}"><small>${t}</small><b>${r.kind === 'chips' ? `${int(r.amount)} fichas` : brl(r.amount)}</b>
+      ${got ? '<span class="tag tag--dark">resgatado</span>' : open ? `<button class="btn btn--gold btn--sm" data-act="pass-claim" data-id="${t}">resgatar</button>` : ''}</li>`;
+  }).join('');
+}
+
 function renderHud() {
   const s = S(), worth = L.netWorth(s);
   $('#r-month').textContent = s.month;
@@ -53,6 +71,10 @@ function renderHud() {
   $('#hud-rank').textContent = $('#char-rank').textContent = L.rank(worth);
   $('#hud-level').textContent = s.level;
   $('#hud-ring').style.setProperty('--p', s.xp / P.xpNeed(s.level));
+  P.passEnsure(s, today().slice(0, 7));
+  const ptier = P.passTier(s);
+  $('#pass-tier').textContent = ptier;
+  $('#pass-badge').hidden = !Array.from({ length: ptier }, (_, k) => k + 1).some(t => !s.pass.claimed.includes(t));
   const ready = s.missions.list.filter(m => !m.claimed && m.prog >= P.MISSIONS.find(x => x.id === m.id).goal).length;
   $('#missions-badge').hidden = !ready;
   $('#missions-badge').textContent = ready;
@@ -111,7 +133,7 @@ async function spinDaily() {
     { duration: RM.matches ? 0 : 5200, easing: 'cubic-bezier(.12,.7,.18,1)', fill: 'forwards' }).finished;
   dwAngle = target;
   P.claimDaily(S(), today(), yesterday(), false);   // só registra a sequência; o prêmio vem da roda
-  const prize = GM.DAILY_WHEEL[i], mult = streakBonus(S().daily.streak), amt = Math.round(prize.amount * mult);
+  const prize = GM.DAILY_WHEEL[i], mult = streakBonus(S().daily.streak) * Live.CFG.daily_mult, amt = Math.round(prize.amount * mult);
   let txt;
   if (prize.kind === 'chips') { S().chips += amt; txt = `${int(amt)} fichas`; }
   if (prize.kind === 'money') { S().money += amt; note('roleta de prêmios do dia', amt); txt = brl(amt); }
@@ -359,14 +381,38 @@ function openProfile(pid) {
         <div class="pf__cars">${(p.cars || []).length ? p.cars.map(m => L.CARS[m] ? `<span class="pf__car"><img src="assets/${L.CARS[m].img}.webp" alt=""><small>${esc(L.CARS[m].name)}</small></span>` : '').join('') : '<p class="muted small">Sem carros ainda.</p>'}</div>
     <h3>conquistas ${p.ach?.length || 0} de ${P.ACHIEVEMENTS.length}</h3>
     <ul class="achs">${P.ACHIEVEMENTS.map(a => `<li class="${p.ach?.includes(a.id) ? 'is-got' : ''}"><span class="badge__medal" aria-hidden="true"></span>${esc(a.txt)}</li>`).join('')}</ul>
+    ${!me && TUI.online().some(x => x.pid === pid) ? `<div class="pf__acts"><button class="btn btn--gold" data-act="trade-invite" data-id="${esc(pid)}">propor troca</button></div>` : ''}
     ${me ? `<div class="pf__acts"><button class="btn btn--glass" data-act="edit-char">editar personagem</button>${Auth.account() ? '<button class="btn btn--glass" data-act="logout">sair da conta</button><button class="btn btn--danger btn--sm" data-act="wipe">apagar meus dados</button>' : ''}</div>${Auth.account() ? `<p class="muted small">Conta: ${esc(Auth.account().email)}</p>` : ''}` : ''}`;
   const dlg = $('#dlg-profile');
   if (!dlg.open) dlg.showModal();
 }
 
+// inventário: tudo o que o jogador tem, e quem está online para negociar
+function renderInv() {
+  const items = TD.inventory(S());
+  const total = items.reduce((t, i) => t + (i.value || 0), 0);
+  $('#inv-sum').textContent = `${items.length} itens trocáveis, ${int(S().chips)} fichas e ${brl(S().money)} em dinheiro`;
+  $('#inv-items').innerHTML = items.length ? items.map(i => `<article class="glass icard icard--${i.kind}">
+    ${i.img ? `<img src="assets/${i.img}.webp" alt="" loading="lazy">` : `<span class="icard__ico" aria-hidden="true"></span>`}
+    <div><span class="tag tag--dark">${{ car: 'veículo', animal: 'animal', land: 'terra', good: 'armazém' }[i.kind]}</span><h4>${esc(i.label)}</h4>${i.value ? `<p class="muted small">vale cerca de ${brl(i.value)}</p>` : ''}</div></article>`).join('')
+    : '<p class="empty glass">Nada para trocar ainda. Compre carros, animais, terras ou guarde sacas no armazém.</p>';
+  const ppl = TUI.online();
+  $('#inv-peers').innerHTML = ppl.length ? ppl.map(p => `<li><span class="who__av">${avatarSVG(p.look || {}, { label: p.name })}</span><span>${esc(p.name)}<small class="muted"> nível ${p.level}</small></span>
+    <button class="btn btn--gold btn--sm" data-act="trade-invite" data-id="${esc(p.pid)}">propor troca</button></li>`).join('') : '<li class="muted small">Ninguém online agora. Chame os amigos pelo link do jogo.</li>';
+}
+G.onLobby = l => TUI.attach(l);
+G.onPeers = () => { if (currentTab === 'inventario') renderInv(); };
+document.addEventListener('submit', e => { if (e.target.id === 'tr-chat-form') { e.preventDefault(); TUI.chat(); } });
+
+// desempenho: cada aba só é desenhada quando está aberta (ou quando o usuário entra nela)
+const PANELS = { personagem: () => renderChar(), terras: () => renderTerras(), gado: () => renderGado(), mercado: () => renderMercado(),
+  carros: () => renderCarros(), banco: () => renderBanco(), livro: () => renderLivro(), haras: () => SUI.render(), trabalho: () => JUI.render(), futebol: () => FUI.render(), inventario: () => renderInv(), mesa: () => C.renderLobby() };
+let currentTab = 'mesa';
 function render() {
-  renderHud(); renderMissions(); renderChar(); renderTerras(); renderGado(); renderMercado(); renderCarros(); renderBanco(); renderLivro(); SUI.render();
-  C.renderLobby(); C.announce();
+  renderHud(); renderMissions();
+  PANELS[currentTab]?.();
+  C.announce();
+  JUI.hint();
 }
 G.render = render;
 G.callout = t => { const el = $('#race-call'); el.textContent = t; el.classList.remove('is-on'); void el.offsetWidth; el.classList.add('is-on'); };
@@ -388,11 +434,15 @@ const ACTS = {
   bet() { C.placeBet(); },
   hit() { C.hit(); },
   stand() { C.stand(); },
+  double() { C.double(); },
+  split() { C.split(); },
   'bet-clear'() { C.clearBet(); },
   'race-pick'(id) { RC.pickDog(id); },
   'race-go'() { RC.go(); },
   'race-next'() { RC.nextRace(); },
   mute() { const off = sfx.toggleMute(); $('#mute-btn').classList.toggle('is-off', off); say(off ? 'Som desligado.' : 'Som ligado.'); },
+  'open-pass'() { renderPass(); $('#dlg-pass').showModal(); },
+  'pass-claim'(id) { const r = P.passClaim(S(), Number(id)); if (r) { say(`Passe: +${r.kind === 'chips' ? `${int(r.amount)} fichas` : brl(r.amount)}.`); confetti(40); renderPass(); } },
   'open-missions'() { renderMissions(); $('#dlg-missions').showModal(); },
   'claim-mission'(id) {
     const r = P.claimMission(S(), id);
@@ -401,10 +451,32 @@ const ACTS = {
   'spin-daily'() { spinDaily(); },
   logout() { Auth.logout(); },
   'st-kind'(id) { SUI.setKind(id); },
+  'job-start'() { JUI.start(); },
+  'ft-found'() { FUI.found(); },
+  'trade-invite'(id) { const d = $('#dlg-profile'); if (d.open) d.close(); TUI.invite(id); },
+  'trade-yes'() { TUI.answer(true); },
+  'trade-no'() { TUI.answer(false); },
+  'trade-add'() { TUI.addPicked(); },
+  'trade-chips'() { TUI.addAmount('chips'); },
+  'trade-money'() { TUI.addAmount('money'); },
+  'trade-remove'(id) { TUI.remove(id); },
+  'trade-lock'() { TUI.lock(); },
+  'trade-confirm'() { TUI.confirmTrade(); },
+  'trade-cancel'() { TUI.cancel(); },
+  'ft-view'(id) { FUI.setView(id); },
+  'ft-buy'(id) { FUI.buy(id); },
+  'ft-sell'(id) { FUI.sell(id); },
+  'ft-season'() { FUI.seasonEnd(); },
+  'ft-play'() { FUI.play(); },
+  'ft-close'() { FUI.closeMatch(); },
+  'job-accept'(id) { JUI.accept(id); },
+  'job-confirm'(id) { JUI.confirmOne(id); },
+  'job-repair'() { JUI.repair(); },
   'st-buy'(id) { SUI.buy(id); },
   'st-train'(id, b) { SUI.train(id, b.dataset.k); },
   'st-treat'(id) { SUI.treat(id); },
   'st-sell'(id) { SUI.sell(id); },
+  'st-premium'(id) { SUI.premium(id); },
   'st-enter'(id) { SUI.enter(id); },
   'stable-close'() { SUI.closeRace(); },
   wipe() {
@@ -416,6 +488,7 @@ const ACTS = {
   'show-card'(id) { const el = document.querySelector(`.lcard[data-pin="${id}"]`); el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); el?.classList.add('is-hot'); setTimeout(() => el?.classList.remove('is-hot'), 2000); },
   'rl-spin'() { RL.spin(); },
   'rl-clear'() { RL.clearBets(); },
+  'rl-double'() { RL.doubleBets(); },
   'av-press'() { AV.press(); },
   'tr-buy'() { TR.open(1); },
   'tr-sell'() { TR.open(-1); },
@@ -540,7 +613,7 @@ document.addEventListener('click', e => {
   if (!b || b.disabled) return;
   const act = b.dataset.act;
   ACTS[act]?.(b.dataset.id, b);
-  if (['logout', 'wipe', 'st-enter', 'stable-close', 'sit', 'leave-table', 'invite', 'bet', 'hit', 'stand', 'bet-clear', 'race-go', 'race-pick', 'race-next', 'mute', 'rl-spin', 'rl-clear', 'av-press', 'tr-buy', 'tr-sell', 'tr-close', 'tr-asset', 'spin-daily', 'map-lot', 'show-card'].includes(act)) return;
+  if (['rl-double', 'pass-claim', 'st-train', 'trade-invite', 'trade-yes', 'trade-no', 'trade-add', 'trade-chips', 'trade-money', 'trade-remove', 'trade-lock', 'trade-confirm', 'trade-cancel', 'ft-play', 'ft-close', 'job-start', 'job-accept', 'job-confirm', 'job-repair', 'double', 'split', 'logout', 'wipe', 'st-enter', 'stable-close', 'sit', 'leave-table', 'invite', 'bet', 'hit', 'stand', 'bet-clear', 'race-go', 'race-pick', 'race-next', 'mute', 'rl-spin', 'rl-clear', 'av-press', 'tr-buy', 'tr-sell', 'tr-close', 'tr-asset', 'spin-daily', 'map-lot', 'show-card'].includes(act)) return;
   checkAch(); save(); render();
 });
 $('#map-back').addEventListener('click', () => { lmap?.flyTo([-14, -51], 4, { duration: 1.4 }); $('#map-title').textContent = 'satélite'; });
@@ -553,6 +626,12 @@ function showSub(name) {
   AV.setActive(name === 'aviator' && !$('#p-mesa').hidden);
 }
 
+// atalhos das entregas: espaço confirma a próxima entrega, F conserta o pneu
+document.addEventListener('keydown', e => {
+  if (!JUI.running() || $('#p-trabalho').hidden || e.target.closest('input, select, textarea')) return;
+  if (e.key === ' ') { e.preventDefault(); JUI.confirmOne(); }
+  if (e.key.toLowerCase() === 'f') JUI.repair();
+});
 // atalhos da mesa: 1-5 fichas, espaço aposta, H pede, S para, R regras
 const CHIP_KEYS = { 1: 5, 2: 25, 3: 100, 4: 500, 5: 1000 };
 document.addEventListener('keydown', e => {
@@ -562,6 +641,8 @@ document.addEventListener('keydown', e => {
   else if (k === ' ') { e.preventDefault(); C.placeBet(); }
   else if (k === 'h') C.hit();
   else if (k === 's') C.stand();
+  else if (k === 'd') C.double();
+  else if (k === 'p') C.split();
   else if (k === 'r') $('#dlg-rules').showModal();
 });
 $('#mute-btn').classList.toggle('is-off', sfx.isMuted());
@@ -596,6 +677,8 @@ function show(name, focus = false) {
     document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
     if (on && focus) t.focus();
   }
+  currentTab = name;
+  PANELS[name]?.();
   if (name === 'terras') setTimeout(initMap, 50);
   if (name === 'trader') TR.tick();
   if (name === 'corridas') RC.relayout();
@@ -612,10 +695,17 @@ tabs.forEach((t, i) => {
 });
 
 show(location.hash.slice(1));
+// aplicativo instalável e cache dos arquivos (só no site publicado, em https)
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+requestAnimationFrame(() => setTimeout(() => { $('#splash')?.classList.add('is-gone'); setTimeout(() => $('#splash')?.remove(), 600); }, 250));
 RC.initRacing();
 RL.initRoulette();
 TR.initTrader();
 render();
 C.initCasino();
 // login: sem Supabase configurado segue local; com ele, a tela de entrada aparece antes de tudo
-Auth.boot().then(st => { if (st !== 'gate' && st !== 'recovery') maybeDaily(); });
+Auth.boot().then(async st => {
+  if (st === 'gate' || st === 'recovery') return;
+  const live = await Live.start().catch(() => 'off');
+  if (live !== 'banned') maybeDaily();
+});

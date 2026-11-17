@@ -57,3 +57,27 @@ A chave `anon` pode ficar no site: quem protege os dados são as regras (RLS) do
 - **Nome do jogador**: único (sem diferenciar maiúsculas). Se já existir, o jogo acrescenta um número.
 - **Apagar dados (LGPD)**: o botão "apagar meus dados" no perfil apaga o save e o perfil da nuvem. O cadastro em si (e-mail) é apagado por você em **Authentication > Users**.
 - **Moderação**: não há filtro de nomes ofensivos. Se precisar, renomeie ou apague a linha em `public_profiles`.
+
+# Painel administrativo (admin.html)
+
+O painel fica em `https://21worldgame.github.io/admin.html`. Ele não aparece em nenhum menu do jogo.
+Quem decide quem é administrador é o banco, nunca o site: sem estar na tabela `admins`, a pessoa não lê nem muda nada.
+
+## Ativar (uma vez)
+1. Crie a sua conta normalmente pelo jogo, com o e-mail de administrador, e confirme o e-mail pelo link.
+2. No Supabase, abra o **SQL Editor**, cole todo o `supabase/admin.sql` e clique em **Run**.
+3. Ainda no SQL Editor, rode a linha que cadastra o administrador (está em `supabase/admin-setup.local.sql`, que não vai para o GitHub):
+   `insert into public.admins (email) values ('seu-email') on conflict do nothing;`
+4. Abra `admin.html` e entre com o mesmo e-mail e senha do jogo.
+
+## O que dá para fazer
+- **Visão geral**: jogadores, novos cadastros, ativos nas últimas 24 h, suspensos e os mais ricos.
+- **Jogadores**: buscar por nome ou e-mail, ver o save completo, dar ou tirar dinheiro, fichas e XP, mandar mensagem, renomear, suspender por um tempo ou sem prazo, reativar, reiniciar o progresso e apagar o save.
+  O que você manda vira uma "ordem" que o jogo do jogador aplica sozinho em até 1 minuto, uma vez só.
+- **Economia e eventos**: multiplicadores de XP, da roleta do dia, dos trabalhos e dos prêmios; nome do evento (aparece numa faixa no topo do jogo); modo manutenção; presente para todos os jogadores.
+- **Avisos**: mensagens que aparecem para todos, com prazo.
+- **Registro**: tudo o que cada administrador fez, com data.
+
+## Limites
+- Apagar a conta de e-mail de alguém é em **Authentication > Users** no Supabase (o site não tem permissão para isso, de propósito).
+- Os números do jogo ficam no aparelho de cada jogador; quem entende de programação consegue alterar o próprio save. O painel mostra e corrige, mas não impede isso.

@@ -24,6 +24,8 @@ Arquivos de terceiros usados no 21 World. As licenças CC BY e CC BY-SA exigem e
 
 ## Outros
 
+- Logo, ícones e imagem de compartilhamento: criados para o 21 World (assets/brand).
+
 - Texturas de feltro, couro, madeira, areia e grama: Poly Haven (polyhaven.com), CC0.
 - Baralho: Vector Playing Cards, Byron Knoll, domínio público.
 - Sons: Kenney Casino Audio (kenney.nl), CC0.

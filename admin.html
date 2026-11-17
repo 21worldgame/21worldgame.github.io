@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>21 World Admin</title>
+  <link rel="icon" href="assets/brand/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <script type="module" src="admin.js"></script>
+</head>
+<body>
+  <noscript><p>O painel precisa de JavaScript ligado.</p></noscript>
+
+  <!-- entrada -->
+  <main class="ad-login" id="ad-login" hidden>
+    <form class="ad-card" id="ad-form" novalidate>
+      <div class="ad-brand"><img src="assets/brand/logo-mark.svg" alt="" width="44" height="44"><span>21 world <b>admin</b></span></div>
+      <h1>painel administrativo</h1>
+      <label class="field"><span>e-mail</span><input class="input" name="email" type="email" autocomplete="username" required></label>
+      <label class="field"><span>senha</span><input class="input" name="password" type="password" autocomplete="current-password" required></label>
+      <p class="ad-err" id="ad-err" role="alert" hidden></p>
+      <button class="btn btn--gold btn--lg" type="submit" id="ad-submit">entrar</button>
+      <p class="muted small">Só contas cadastradas como administradoras no banco do jogo conseguem entrar aqui.</p>
+    </form>
+  </main>
+
+  <!-- painel -->
+  <div class="ad-app" id="ad-app" hidden>
+    <aside class="ad-side">
+      <div class="ad-brand"><img src="assets/brand/logo-mark.svg" alt="" width="36" height="36"><span>21 world <b>admin</b></span></div>
+      <nav class="ad-nav" aria-label="seções do painel">
+        <button class="is-on" data-tab="overview">visão geral</button>
+        <button data-tab="players">jogadores</button>
+        <button data-tab="economy">economia e eventos</button>
+        <button data-tab="news">avisos</button>
+        <button data-tab="log">registro</button>
+      </nav>
+      <p class="muted small" id="ad-who"></p>
+      <button class="btn btn--glass btn--sm" id="ad-logout">sair</button>
+      <a class="btn btn--glass btn--sm" href="./" target="_blank" rel="noopener">abrir o jogo</a>
+    </aside>
+
+    <main class="ad-main">
+      <p class="ad-toast" id="ad-toast" role="status" aria-live="polite"></p>
+
+      <section data-panel="overview">
+        <h2>visão geral</h2>
+        <div class="ad-tiles" id="ad-stats"></div>
+        <h3>mais ricos</h3>
+        <div class="ad-tablewrap"><table><thead><tr><th>#</th><th>jogador</th><th class="num">nível</th><th class="num">patrimônio</th></tr></thead><tbody id="ad-top"></tbody></table></div>
+      </section>
+
+      <section data-panel="players" hidden>
+        <div class="ad-head"><h2>jogadores</h2>
+          <form id="ad-search" class="row"><label class="visually-hidden" for="ad-q">buscar</label><input class="input" id="ad-q" placeholder="nome ou e-mail" autocomplete="off"><button class="btn btn--glass" type="submit">buscar</button></form></div>
+        <div class="ad-tablewrap"><table>
+          <thead><tr><th>jogador</th><th>e-mail</th><th class="num">nível</th><th class="num">patrimônio</th><th>último acesso</th><th>situação</th></tr></thead>
+          <tbody id="ad-users"></tbody></table></div>
+      </section>
+
+      <section data-panel="economy" hidden>
+        <h2>economia e eventos</h2>
+        <form id="ad-config" class="ad-card ad-grid">
+          <label class="field"><span>multiplicador de XP</span><select class="input" name="xp_mult"><option>1</option><option>1.5</option><option>2</option><option>3</option></select></label>
+          <label class="field"><span>roleta de prêmios do dia</span><select class="input" name="daily_mult"><option>1</option><option>1.5</option><option>2</option><option>3</option></select></label>
+          <label class="field"><span>ganho dos trabalhos</span><select class="input" name="job_mult"><option>1</option><option>1.5</option><option>2</option><option>3</option></select></label>
+          <label class="field"><span>prêmios das provas e do futebol</span><select class="input" name="prize_mult"><option>1</option><option>1.5</option><option>2</option><option>3</option></select></label>
+          <label class="field ad-span"><span>nome do evento (aparece no topo do jogo)</span><input class="input" name="event" maxlength="120" placeholder="ex.: Fim de semana de XP em dobro"></label>
+          <label class="check ad-span"><input type="checkbox" name="maintenance"><span>colocar o jogo em manutenção (jogadores veem um aviso e não conseguem jogar; você continua entrando)</span></label>
+          <label class="field ad-span"><span>mensagem da manutenção</span><input class="input" name="maintenance_msg" maxlength="280"></label>
+          <div class="row ad-span"><button class="btn btn--gold" type="submit">salvar configuração</button>
+            <button class="btn btn--glass" type="button" data-preset="weekend">evento: fim de semana em dobro</button>
+            <button class="btn btn--glass" type="button" data-preset="normal">voltar ao normal</button></div>
+        </form>
+        <h3>presente para todos os jogadores</h3>
+        <form id="ad-gift-all" class="ad-card row">
+          <label class="field"><span>o quê</span><select class="input" name="kind"><option value="chips">fichas</option><option value="money">dinheiro (R$)</option><option value="xp">XP</option></select></label>
+          <label class="field"><span>quantidade</span><input class="input" name="amount" type="number" min="1" step="1" value="1000"></label>
+          <label class="field ad-grow"><span>mensagem</span><input class="input" name="note" maxlength="200" placeholder="ex.: presente de inauguração"></label>
+          <button class="btn btn--gold" type="submit">enviar para todos</button>
+        </form>
+      </section>
+
+      <section data-panel="news" hidden>
+        <h2>avisos</h2>
+        <form id="ad-ann" class="ad-card row">
+          <label class="field ad-grow"><span>texto (até 280 caracteres)</span><input class="input" name="text" maxlength="280" required></label>
+          <label class="field"><span>tipo</span><select class="input" name="kind"><option value="info">aviso</option><option value="evento">evento</option><option value="alerta">alerta</option></select></label>
+          <label class="field"><span>duração</span><select class="input" name="hours"><option value="24">1 dia</option><option value="72">3 dias</option><option value="168">7 dias</option><option value="0">sem prazo</option></select></label>
+          <button class="btn btn--gold" type="submit">publicar</button>
+        </form>
+        <div class="ad-tablewrap"><table><thead><tr><th>aviso</th><th>tipo</th><th>até</th><th></th></tr></thead><tbody id="ad-anns"></tbody></table></div>
+      </section>
+
+      <section data-panel="log" hidden>
+        <h2>registro das ações</h2>
+        <div class="ad-tablewrap"><table><thead><tr><th>quando</th><th>admin</th><th>ação</th><th>jogador</th><th>detalhes</th></tr></thead><tbody id="ad-log"></tbody></table></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ficha do jogador -->
+  <dialog class="ad-dlg" id="ad-player" aria-labelledby="ap-name">
+    <button class="btn btn--glass btn--sm ad-x" data-close>fechar</button>
+    <div id="ap-body"></div>
+  </dialog>
+
+  <!-- falta instalar -->
+  <main class="ad-login" id="ad-setup" hidden>
+    <div class="ad-card">
+      <h1>falta um passo</h1>
+      <p>As tabelas do painel ainda não existem no banco. No Supabase, abra o SQL Editor e rode o arquivo <code>supabase/admin.sql</code>, depois cadastre o seu e-mail como administrador.</p>
+      <button class="btn btn--glass" id="ad-logout2">sair</button>
+    </div>
+  </main>
+</body>
+</html>

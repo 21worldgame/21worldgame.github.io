@@ -34,6 +34,7 @@ function animalCard(a) {
       <div class="acard__train"><span class="muted small">treinar (${brl(cost)}, uma semana)</span><div class="row">${trainBtns}</div></div>
       <div class="acard__acts">
         ${a.inj ? `<button class="btn btn--glass" data-act="st-treat" data-id="${a.id}">tratar ${brl(K.vet)}</button>` : ''}
+        <button class="btn btn--glass" data-act="st-premium" data-id="${a.id}" aria-pressed="${!!a.premium}">${a.premium ? 'ração premium: ligada' : 'ração premium'}</button>
         <button class="btn btn--glass" data-act="st-sell" data-id="${a.id}">vender ${brl(ST.value(a))}</button>
       </div>
     </div></article>`;
@@ -90,15 +91,55 @@ export function buy(id) {
   say(`${name} chegou ao seu ${kind === 'dog' ? 'canil' : 'haras'}.`); sfx.play('stack', 0.5); award('buyAnimal');
 }
 
-export function train(id, stat) {
+// mini-jogo de treino: o marcador vai e volta; aperte (espaço ou botão) quando estiver no centro da faixa verde
+function trainGame(a, label) {
+  return new Promise(resolve => {
+    const d = $('#dlg-train'), bar = $('#tg-bar'), mark = $('#tg-mark'), zone = $('#tg-zone');
+    const center = 22 + Math.random() * 56, speed = 70 + Math.random() * 40 + (100 - ST.rating(a)) * 0.4;   // % por segundo
+    zone.style.left = `${center - 8}%`; zone.style.width = '16%';
+    $('#tg-title').textContent = `treino de ${label}: ${a.name}`;
+    $('#tg-msg').textContent = 'Aperte no centro da faixa verde.';
+    let pos = 0, dir = 1, raf = 0, last = performance.now(), done = false;
+    const loop = now => {
+      const dt = (now - last) / 1000; last = now;
+      pos += dir * speed * dt;
+      if (pos >= 100) { pos = 100; dir = -1; } else if (pos <= 0) { pos = 0; dir = 1; }
+      mark.style.left = `${pos}%`;
+      raf = requestAnimationFrame(loop);
+    };
+    const press = () => {
+      if (done) return; done = true; cancelAnimationFrame(raf);
+      const dist = Math.abs(pos - center);
+      const q = dist <= 2.5 ? 1.5 : dist <= 8 ? 1.15 : dist <= 16 ? 0.9 : 0.6;
+      $('#tg-msg').textContent = q === 1.5 ? 'Perfeito! Rendimento máximo.' : q > 1 ? 'Bom treino.' : q > 0.6 ? 'Treino regular.' : 'Errou o tempo: rendeu pouco.';
+      bar.dataset.q = q;
+      sfx.play(q >= 1.15 ? 'stack' : 'chip', 0.5);
+      setTimeout(() => { d.close(); cleanup(); resolve(q); }, 900);
+    };
+    const key = e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); press(); } };
+    const cleanup = () => { document.removeEventListener('keydown', key); $('#tg-go').onclick = null; delete bar.dataset.q; };
+    $('#tg-go').onclick = press;
+    document.addEventListener('keydown', key);
+    d.oncancel = e => { e.preventDefault(); press(); };
+    d.showModal();
+    raf = requestAnimationFrame(loop);
+  });
+}
+
+export async function train(id, stat) {
   const a = S().stable.animals.find(x => String(x.id) === String(id));
-  const res = ST.train(S(), Number(id), stat);
-  if (res.err) return say(`${a?.name || 'Animal'} ${res.err}`, true);
+  if (!a) return;
+  if (!ST.ready(a)) return say(`${a.name} ${a.inj ? 'está lesionado.' : ST.retired(a) ? 'está aposentado.' : 'não tem semanas livres neste mês.'}`, true);
+  if (ST.trainCost(a) > S().money) return say('Dinheiro insuficiente para o treino.', true);
+  const q = await trainGame(a, ST.STATS[stat]);
+  const res = ST.train(S(), Number(id), stat, Math.random, q);
+  if (res.err) return say(`${a.name} ${res.err}`, true);
   note(`treino de ${ST.STATS[stat]}, ${a.name}`, -res.cost);
-  sfx.play('chip', 0.4);
   say(res.injured ? `${a.name} se lesionou no treino. Trate com o veterinário ou espere.` : `${a.name} treinou ${ST.STATS[stat]}: +${res.gain.toFixed(1)}.`, res.injured);
   award('train');
+  save(); G.render();
 }
+export function premium(id) { const on = ST.togglePremium(S(), Number(id)); say(on ? 'Ração premium ligada: recupera mais do cansaço por mês.' : 'Ração premium desligada.'); }
 
 export function treat(id) {
   const a = S().stable.animals.find(x => String(x.id) === String(id)), c = ST.KINDS[a.kind].vet;

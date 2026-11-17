@@ -43,7 +43,9 @@ export function value(a) {
 }
 export const animalsValue = s => (s.stable?.animals || []).reduce((t, a) => t + value(a), 0);
 export const trainCost = a => Math.round((KINDS[a.kind].train * (0.5 + rating(a) / 50)) / 10) * 10;
-export const upkeep = a => Math.round(KINDS[a.kind].upkeep * (retired(a) ? 0.5 : 1 + rating(a) / 200));
+export const upkeep = a => Math.round(KINDS[a.kind].upkeep * (retired(a) ? 0.5 : 1 + rating(a) / 200) * (a.premium ? 1.6 : 1));
+// ração premium: custa 60% a mais por mês, mas o animal recupera mais do cansaço
+export function togglePremium(s, id) { const a = s.stable.animals.find(x => x.id === id); if (a) a.premium = !a.premium; return a?.premium; }
 
 let rid = 1;
 export function newAnimal(kind, target, rng = Math.random, id = 0) {
@@ -100,14 +102,16 @@ export function treat(s, id) {
 }
 
 // treino: uma semana, ganho com retorno decrescente até o potencial, cansa e pode lesionar quem treina cansado
-export function train(s, id, stat, rng = Math.random) {
+// quality: nota do mini-jogo de treino (0,6 a 1,5)
+export function train(s, id, stat, rng = Math.random, quality = 1) {
   const a = s.stable.animals.find(x => x.id === id);
   if (!a) return { err: 'animal não encontrado.' };
   if (!ready(a)) return { err: a.inj ? 'está lesionado.' : retired(a) ? 'está aposentado.' : 'sem semanas livres neste mês.' };
   const cost = trainCost(a);
   if (cost > s.money) return { err: 'dinheiro insuficiente para o treino.' };
   s.money -= cost;
-  const gain = Math.max(0.3, (a.pot - a[stat]) / 12) * (0.6 + rng() * 0.8);
+  const q = Math.max(0.5, Math.min(1.5, Number(quality) || 1));
+  const gain = Math.max(0.3, (a.pot - a[stat]) / 12) * (0.6 + rng() * 0.8) * q;
   const before = a[stat];
   a[stat] = Math.min(a.pot, +(a[stat] + gain).toFixed(1));
   const risk = a.fat >= 60 ? 0.2 : 0.02;
@@ -165,7 +169,7 @@ export function monthly(s, rng = Math.random) {
   for (const a of s.stable.animals) {
     const c = upkeep(a);
     s.money -= c; lines.push({ txt: `ração e cuidados, ${a.name}`, val: -c });
-    a.age++; a.fat = Math.max(0, a.fat - 55); a.wk = WEEKS; if (a.inj) a.inj--;
+    a.age++; a.fat = Math.max(0, a.fat - (a.premium ? 80 : 55)); a.wk = WEEKS; if (a.inj) a.inj--;
     const hi = KINDS[a.kind].peak[1];
     if (a.age > hi && rng() < 0.25) a.spd = Math.max(20, a.spd - 1);
     if (a.age === KINDS[a.kind].retire) lines.push({ txt: `${a.name} se aposentou das pistas`, val: 0 });

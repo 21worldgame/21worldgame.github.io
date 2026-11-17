@@ -8,6 +8,7 @@ const LIB = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/+esm';
 export const configured = () => !!(SUPABASE.url && SUPABASE.anonKey);
 let recovering = false, sb = null, user = null, mode = 'in', busy = false, lastPush = 0, timer = 0, rankCache = null;
 
+export const sbClient = () => sb;
 export const account = () => (user ? { id: user.id, email: user.email } : null);
 
 async function client() {

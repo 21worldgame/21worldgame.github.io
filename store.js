@@ -23,7 +23,10 @@ export const today = () => day(new Date());
 export const yesterday = () => day(new Date(Date.now() - 864e5));
 
 function normalize(s) {
-  s ??= L.newState();
+  // save antigo ou incompleto: completa com os campos padrão que faltarem
+  s = s && typeof s === 'object' ? Object.assign(L.newState(), s) : L.newState();
+  for (const k of ['lands', 'herd', 'loans', 'lent', 'offers', 'borrowers', 'log']) if (!Array.isArray(s[k])) s[k] = [];
+  s.stock = { soja: 0, milho: 0, cafe: 0, ...(s.stock || {}) };
   s.avatar ??= { ...DEFAULT };
   s.owned ??= []; s.cars ??= [];
   for (const c of s.cars) c.model = L.OLD_CARS[c.model] || c.model;

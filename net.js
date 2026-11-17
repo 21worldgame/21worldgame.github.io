@@ -14,18 +14,28 @@ export async function openLobby(onChange) {
   if (!t) return null;
   const room = t.joinRoom(CFG, 'salao');
   const hello = room.makeAction('hello');
+  const trade = room.makeAction('trade');
+  let onTrade = () => {};
+  trade.onMessage = (d, { peerId }) => onTrade(d, peerId);
   const peers = new Map();
   let mine = null;
+  // identidade estável desta aba: quem recarrega a página volta com conexão nova, e a entrada antiga (fantasma) sai na hora
+  let cid = '';
+  try { cid = sessionStorage.getItem('21world.cid') || ''; if (!cid) { cid = Math.random().toString(36).slice(2, 12); sessionStorage.setItem('21world.cid', cid); } } catch { cid = Math.random().toString(36).slice(2, 12); }
   const changed = () => onChange(peers);
   room.onPeerJoin = id => { if (mine) hello.send(mine, { target: id }); };
   room.onPeerLeave = id => { peers.delete(id); changed(); };
-  hello.onMessage = (d, { peerId }) => { peers.set(peerId, { ...d, seen: Date.now() }); changed(); };
+  hello.onMessage = (d, { peerId }) => {
+    if (d?.cid) for (const [id, p] of peers) if (p.cid === d.cid && id !== peerId) peers.delete(id);
+    peers.set(peerId, { ...d, seen: Date.now() }); changed();
+  };
   setInterval(() => {
     if (mine) hello.send(mine);
-    for (const [id, p] of peers) if (Date.now() - p.seen > 40000) peers.delete(id);
+    for (const [id, p] of peers) if (Date.now() - p.seen > 25000) peers.delete(id);
     changed();
   }, 10000);
-  return { selfId: t.selfId, peers, announce(d) { mine = d; hello.send(d); } };
+  return { selfId: t.selfId, peers, announce(d) { mine = { ...d, cid }; hello.send(mine); },
+    sendTrade: (msg, target) => trade.send(msg, { target }), setOnTrade: fn => { onTrade = fn; } };
 }
 
 // sala de uma mesa: o anfitrião manda "state", os jogadores mandam "act"
