@@ -70,3 +70,6 @@ tr[data-user]:hover, tr[data-user]:focus-visible { background: color-mix(in okla
 code { font-family: ui-monospace, monospace; color: var(--hud-accent-2); }
 @media (max-width: 56rem) { .ad-app { grid-template-columns: 1fr; } .ad-side { position: static; height: auto; } .ad-nav { grid-auto-flow: column; overflow-x: auto; } .ad-main { padding: var(--space-md); } }
 @media (prefers-reduced-motion: reduce) { .btn, .ad-toast { transition: none; } }
+
+.ad-badge { display: inline-block; min-width: 18px; padding: 0 6px; margin-left: 6px; border-radius: 9px; background: #e5484d; color: #fff; font-size: .72rem; text-align: center; }
+tr.is-done { opacity: .55; }

@@ -1,3 +1,4 @@
+import { value as cardValue } from './cards.js';
 // Regras puras do 21 World (sem DOM) — usadas pelo jogo e pelo test.mjs.
 import { animalsValue } from './stable.js';
 export const CHIP = 10;           // 1 ficha = R$ 10
@@ -157,7 +158,7 @@ export function netWorth(s) {
   const lands = s.lands.filter(l => l.own).reduce((a, l) => a + l.value, 0);
   const stock = Object.entries(s.stock).reduce((a, [k, q]) => a + q * s.prices[k], 0);
   const lent = s.lent.reduce((a, l) => a + l.bal, 0);
-  return Math.round(s.money + s.chips * CHIP + lands + herdValue(s) + stock + lent + carsValue(s) + animalsValue(s) - debt(s));
+  return Math.round(s.money + s.chips * CHIP + lands + herdValue(s) + stock + lent + carsValue(s) + animalsValue(s) + (s.cards || []).reduce((a, c) => a + cardValue(c), 0) - debt(s));
 }
 
 export const TITLES = [[0, 'iniciante'], [150000, 'fazendeiro'], [500000, 'barão do gado'], [2000000, 'magnata']];

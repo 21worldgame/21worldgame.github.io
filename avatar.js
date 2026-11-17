@@ -13,7 +13,7 @@ export const CATALOG = {
   cloth: { label: 'cor da roupa', opts: [1, 2, 3, 4, 5, 6].map(n => ({ id: n, swatch: `var(--cloth-${n})` })) },
   acc: {
     label: 'acessório',
-    opts: [{ id: 'nenhum' }, { id: 'brinco', price: 1200 }, { id: 'óculos escuros', price: 2500 }, { id: 'fone gamer', price: 4000 }, { id: 'corrente de ouro', price: 25000 }],
+    opts: [{ id: 'nenhum' }, { id: 'brinco', price: 1200 }, { id: 'óculos escuros', price: 2500 }, { id: 'fone gamer', price: 4000 }, { id: 'boné de marca', price: 6000 }, { id: 'chapéu de peão', price: 9000 }, { id: 'pulseira de prata', price: 15000 }, { id: 'corrente de ouro', price: 25000 }, { id: 'relógio de luxo', price: 60000 }, { id: 'grillz de ouro', price: 90000 }, { id: 'anel de diamante', price: 150000 }],
   },
 };
 
@@ -126,6 +126,13 @@ export function avatarSVG(raw, { label = '' } = {}) {
     'fone gamer': `<path d="M64 64 C58 10 142 10 136 64" fill="none" stroke="${INK}" stroke-width="7"/><path d="M64 64 C58 10 142 10 136 64" fill="none" stroke="var(--hud-accent)" stroke-width="2.4"/>
       <rect x="56" y="58" width="14" height="26" rx="6" fill="${INK}"/><rect x="130" y="58" width="14" height="26" rx="6" fill="${INK}"/><rect x="58" y="62" width="4" height="18" rx="2" fill="var(--hud-accent)"/><rect x="138" y="62" width="4" height="18" rx="2" fill="var(--hud-accent)"/>`,
     brinco: `<circle cx="64" cy="88" r="2.6" fill="url(#${id}-gold)"/><circle cx="136" cy="88" r="2.6" fill="url(#${id}-gold)"/>`,
+    'boné de marca': `<path d="M64 54 C62 22 84 10 100 10 C118 10 138 22 136 54 Z" fill="var(--ink-line)"/>${glow('M76 28 C84 18 92 16 100 16 C90 22 84 30 80 42 Z', 0.18)}
+      <path d="M64 52 C80 46 120 46 136 52 C140 60 60 60 64 52 Z" fill="var(--ink-line)"/><circle cx="100" cy="34" r="7" fill="url(#${id}-gold)"/>${line('M64 54 C62 22 84 10 100 10 C118 10 138 22 136 54', 2)}`,
+    'chapéu de peão': `<ellipse cx="100" cy="50" rx="62" ry="12" fill="var(--hair-3)"/>${shade('M40 50 Q100 70 160 50 Q100 62 40 50 Z', 0.35)}
+      <path d="M70 50 C68 24 80 10 100 14 C120 10 132 24 130 50 Q100 58 70 50 Z" fill="var(--hair-3)"/><path d="M70 44 Q100 52 130 44 L130 50 Q100 58 70 50 Z" fill="var(--ink-line)"/>
+      ${glow('M78 24 C86 16 94 14 100 16 C92 22 86 30 82 42 Z', 0.2)}${line('M40 50 Q100 66 160 50 M70 50 C68 24 80 10 100 14 C120 10 132 24 130 50', 1.8)}`,
+    'grillz de ouro': `<path d="M91 105.4 Q100 109.5 109 105.4 L108 108 Q100 111 92 108 Z" fill="url(#${id}-gold)" stroke="var(--gold-lo)" stroke-width=".6"/>`,
+    'pulseira de prata': '', 'relógio de luxo': '', 'anel de diamante': '',
   }[a.acc] || '';
 
   return `<svg viewBox="0 0 200 200" role="img" aria-label="${label || 'personagem'}">${defs}${backHair}${neck}${outfits[a.outfit] || outfits.camiseta}${tie}${ears}${head}${beard}${eye(86, false)}${eye(114, true)}${brows}${nose}${mouth}${top}${acc}</svg>`;

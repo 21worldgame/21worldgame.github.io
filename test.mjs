@@ -302,6 +302,8 @@ import * as JB from './jobs.js';
 }
 // clube de futebol
 import * as FT from './futebol.js';
+import * as BT from './bots.js';
+import * as PK from './perks.js';
 {
   let sd = 11; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
   // tabela: 10 clubes, 18 rodadas, cada clube joga 1 vez por rodada e enfrenta cada rival 2 vezes (1 em casa)
@@ -310,13 +312,16 @@ import * as FT from './futebol.js';
   for (const round of fx) assert.equal(new Set(round.flat()).size, 10);
   const pairs = {}; for (const round of fx) for (const [h, a] of round) pairs[h + a] = (pairs[h + a] || 0) + 1;
   assert.ok(Object.values(pairs).every(n => n === 1) && Object.keys(pairs).length === 90);
-  // fundar clube
+  // assumir clube real
+  assert.equal(FT.CLUBS.every(d => d.length === 20), true);
+  assert.ok(FT.clubPrice('Flamengo') > FT.clubPrice('Remo') && FT.clubPrice('Remo') > FT.clubPrice('Sport'));
   const s = { money: 50000 };
-  assert.ok(FT.foundClub(s, 'Meu Time', r).includes('insuficiente'));
+  assert.ok(FT.takeClub(s, 'Barra-SC', r).includes('insuficiente'));
   s.money = 1e6;
-  assert.ok(FT.foundClub(s, 'ab', r).includes('nome'));
-  assert.equal(FT.foundClub(s, 'Esporte Clube Teste', r), null);
-  assert.equal(s.money, 1e6 - FT.FOUND_COST); assert.equal(s.fut.squad.length, 18); assert.equal(s.fut.div, 2);
+  assert.ok(FT.takeClub(s, 'Time Inventado', r).includes('lista'));
+  assert.equal(FT.takeClub(s, 'Barra-SC', r), null);
+  assert.equal(s.money, 1e6 - FT.clubPrice('Barra-SC') + FT.SPONSOR[2]); assert.equal(s.fut.squad.length, 18); assert.equal(s.fut.div, 2);
+  assert.equal(s.fut.league.teams.length, 20); assert.ok(s.fut.league.teams.some(t => t.name === 'Paysandu'));
   const l = FT.lineup(s.fut.squad, '4-3-3'); assert.equal(l.gk.length + l.def.length + l.mid.length + l.att.length, 11);
   // time mais forte vence mais (500 jogos)
   let hw = 0, lw = 0;
@@ -329,12 +334,22 @@ import * as FT from './futebol.js';
   const m0 = s.money;
   let res; do { res = FT.playRound(s, r); } while (!res.done);
   const tb = s.fut.league.table; const totalP = Object.values(tb).reduce((a, x) => a + x.p, 0);
-  assert.equal(totalP, 180); assert.equal(tb.user.p, 18);
+  assert.equal(totalP, 760); assert.equal(tb.user.p, 38);
   assert.equal(Object.values(tb).reduce((a, x) => a + x.gf, 0), Object.values(tb).reduce((a, x) => a + x.ga, 0));
   assert.ok(s.money !== m0);
   const end = FT.endSeason(s, r);
-  assert.ok(end.pos >= 1 && end.pos <= 10); assert.equal(s.fut.season, 2); assert.equal(s.fut.league.round, 0);
-  if (end.pos <= 2) assert.equal(s.fut.div, 1); else assert.equal(s.fut.div, 2);
+  assert.ok(end.pos >= 1 && end.pos <= 20); assert.equal(s.fut.season, 2); assert.equal(s.fut.league.round, 0);
+  if (end.pos <= 4) assert.equal(s.fut.div, 1); else assert.equal(s.fut.div, 2);
+  // propostas de bots chegaram durante a temporada e dá para aceitar
+  s.fut.offers = [{ id: 'o1', pid: s.fut.squad[0].id, name: 'x', club: 'Remo', amount: 5000, until: 99 }];
+  const mo = s.money; const ans = FT.answerOffer(s, 'o1', true); assert.ok(ans.ok); assert.equal(s.money, mo + 5000);
+  // negociação com bot: oferta absurda faz o bot desistir, oferta justa fecha
+  const d1 = FT.dealFor(s.fut, s.fut.market[0].id, r); assert.equal(BT.haggle(d1, 1).result, 'walk');
+  const d2 = FT.dealFor(s.fut, s.fut.market[0].id, r); assert.equal(BT.haggle(d2, s.fut.market[0].price).result, 'accept');
+  const d3 = FT.dealFor(s.fut, s.fut.market[0].id, r); const c3 = BT.haggle(d3, Math.round(d3.limit * 0.9)); assert.equal(c3.result, 'counter'); assert.ok(c3.price >= d3.limit);
+  // vantagens: carro e acessório somam
+  const pk = { cars: [{ model: 'onix' }, { model: 'onix' }, { model: 'veyron' }], owned: ['acc:corrente de ouro'] };
+  assert.equal(PK.mult(pk, 'job'), 1.15); assert.equal(+PK.mult(pk, 'daily').toFixed(2), 1.55); assert.equal(PK.mult({ owned: ['acc:relógio de luxo'], cars: [{ model: 'g63' }] }, 'loan'), 1 - 0.35);
   // mercado
   const p = s.fut.market[0]; const mb = s.money; assert.equal(FT.buy(s, p.id), null); assert.equal(s.money, mb - p.price);
   const sold = FT.sell(s, p.id); assert.ok(sold > 0 && sold < p.price);
@@ -389,3 +404,52 @@ import * as TD from './trade.js';
   assert.equal(P.passReward(10).kind, 'chips'); assert.equal(P.passReward(5).kind, 'money');
 }
 console.log('ok');
+// feira dos bots: comprar e revender na hora nunca dá lucro
+import * as FE from './feira.js';
+import { CAR_BUYBACK } from './logic.js';
+{
+  let sd = 5; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+  for (let k = 0; k < 40; k++) {
+    const s = { month: k, money: 1e8, cars: [{ id: 1, model: 'onix', value: 90000 }], stock: { soja: 30, milho: 0, cafe: 0 }, prices: { soja: 130, milho: 60, cafe: 1400 }, owned: [], nextId: 9 };
+    const f = FE.refresh(s, 0.85 + r() * 0.4, r);
+    for (const it of f.list) { const d = FE.buyDeal(it, r); assert.ok(d.limit >= (it.kind === 'car' ? it.value : it.kind === 'good' ? it.value : 0), 'bot vende abaixo do valor'); }
+    if (f.want) { const d = FE.sellDeal(f.want, r); assert.ok(d.limit <= f.want.value); }
+    const car = f.list.find(x => x.kind === 'car'); const d = FE.buyDeal(car, r);
+    assert.equal(FE.buy(s, car.id, d.limit), null);
+    assert.ok(s.cars.at(-1).value * CAR_BUYBACK < d.limit, 'revenda na concessionária daria lucro');
+  }
+  assert.equal(FE.econIndex([]), 1); assert.ok(FE.econIndex([5e7, 5e7, 5e7]) > 1 && FE.econIndex([1000]) < 1);
+}
+console.log('feira ok');
+// cartas: pacote não dá lucro garantido, pagar terra com cartas devolve troco certo, troca só aceita carta válida
+import * as CD from './cards.js';
+{
+  let sd = 9; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+  let tot = 0; for (let i = 0; i < 20000; i++) tot += CD.value(CD.draw(r));
+  const ev = tot / 20000;
+  assert.ok(ev * CD.SELL < CD.PACK_PRICE && ev * CD.LAND_RATE < CD.PACK_PRICE, 'pacote dá lucro: ' + ev);
+  const s = { money: 0, cards: [], nextId: 1 };
+  CD.give(s, { tier: 'diamante', champ: 'brasa' }); CD.give(s, { tier: 'bronze', champ: 'faisca' }); CD.give(s, { tier: 'prata', champ: 'raiz' });
+  const big = CD.value(s.cards[0]) * CD.LAND_RATE;
+  const p = CD.payWith(s, 50000);
+  assert.ok(!p.err && p.used.length === 1 && p.used[0].tier === 'diamante' && p.change === Math.round(big - 50000) && s.cards.length === 2);
+  assert.ok(CD.payWith(s, 1e9).err);
+  assert.equal(CD.sanitize({ tier: 'deus', champ: 'brasa' }), null);
+  assert.equal(TD.sanitize([{ kind: 'card', data: { tier: 'mestre', champ: 'umbra', id: 'x' } }]).length, 1);
+}
+console.log('cartas ok');
+// chat: palavrão vira ***, nível 2, intervalo e destaque pago
+import * as CH from './chat.js';
+{
+  assert.equal(CH.clean('vendo hilux, p0rra de barata'), 'vendo hilux, ***** de barata');
+  assert.equal(CH.clean('FDP caralhoooo puta'), '*** ****** ****');
+  assert.equal(CH.clean('computador putativo cuca'), 'computador putativo cuca');
+  assert.equal(CH.clean('<script>oi</script>'), 'scriptoi/script');
+  assert.ok(CH.canSend({ level: 1, money: 1e6 }, 'oi', 0).includes('nível'));
+  assert.equal(CH.canSend({ level: 2, money: 1e6 }, 'oi', 0), null);
+  assert.ok(CH.canSend({ level: 2, money: 1e6 }, 'oi', Date.now()).includes('espere'));
+  assert.ok(CH.canSend({ level: 3, money: 10 }, 'oi', 0, Date.now(), true).includes('insuficiente'));
+  assert.equal(CH.highlightFee(1), 1000); assert.ok(CH.highlightFee(1.25) > 1000);
+  assert.equal(CH.accept({ text: 'merda', name: '<b>x' }).text, '*****');
+}
+console.log('chat ok');

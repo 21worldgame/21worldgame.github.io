@@ -1,14 +1,15 @@
 -- 21 World: painel administrativo. Rode DEPOIS do schema.sql, no SQL Editor do Supabase (pode rodar de novo).
--- Quem é administrador fica na tabela public.admins (só dá para mudar pelo SQL Editor; o site não consegue).
--- Para virar administrador:  insert into public.admins (email) values ('seu-email@exemplo.com') on conflict do nothing;
+-- Quem é administrador fica na tabela public.admins, presa ao ID da conta (não ao e-mail), e só muda pelo SQL Editor.
+-- Assim, mesmo sem confirmação de e-mail, ninguém vira administrador criando uma conta com o seu e-mail.
+-- Para virar administrador, DEPOIS de criar a conta no jogo:
+--   insert into public.admins (user_id) select id from auth.users where email = 'seu-email@exemplo.com' on conflict do nothing;
 
-create table if not exists public.admins (email text primary key check (email = lower(email)));
+create table if not exists public.admins (user_id uuid primary key references auth.users(id) on delete cascade);
 alter table public.admins enable row level security;
 
 create or replace function public.is_admin() returns boolean
 language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.admins a where a.email = lower(coalesce(auth.jwt() ->> 'email', '')))
-     and coalesce((auth.jwt() ->> 'email_verified')::boolean, (auth.jwt() -> 'user_metadata' ->> 'email_verified')::boolean, true);
+  select exists (select 1 from public.admins a where a.user_id = auth.uid());
 $$;
 revoke all on function public.is_admin() from public;
 grant execute on function public.is_admin() to authenticated;
@@ -159,3 +160,83 @@ begin
 end $$;
 revoke all on function public.admin_stats() from public;
 grant execute on function public.admin_stats() to authenticated;
+
+-- ---------- conta entra na hora, sem e-mail de confirmação ----------
+-- (Desligue também "Confirm email" em Authentication > Sign In / Providers > Email, para o Supabase não mandar e-mail nenhum.)
+create or replace function public.autoconfirm_user() returns trigger
+language plpgsql security definer set search_path = public, auth as $$
+begin
+  new.email_confirmed_at := coalesce(new.email_confirmed_at, now());
+  return new;
+end $$;
+drop trigger if exists autoconfirm_user on auth.users;
+create trigger autoconfirm_user before insert on auth.users for each row execute function public.autoconfirm_user();
+update auth.users set email_confirmed_at = now() where email_confirmed_at is null;
+
+-- ---------- recuperação de senha sem e-mail: pedido vai para análise no painel ----------
+-- A senha nova é guardada só como hash (bcrypt, igual ao login). Ninguém, nem o painel, vê a senha.
+create extension if not exists pgcrypto with schema extensions;
+create table if not exists public.password_requests (
+  id         bigint generated always as identity primary key,
+  email      text not null check (char_length(email) <= 254),
+  name       text check (char_length(name) <= 30),
+  details    text check (char_length(details) <= 300),
+  pw_hash    text not null,
+  status     text not null default 'pendente' check (status in ('pendente', 'aprovado', 'recusado')),
+  created_at timestamptz not null default now(),
+  decided_at timestamptz
+);
+create unique index if not exists password_requests_one_pending on public.password_requests (email) where status = 'pendente';
+alter table public.password_requests enable row level security;
+revoke all on public.password_requests from anon, authenticated;
+
+-- qualquer pessoa pode pedir (a resposta é sempre igual, não revela se o e-mail existe)
+create or replace function public.request_password_reset(p_email text, p_name text, p_details text, p_password text) returns void
+language plpgsql security definer set search_path = public, extensions as $$
+declare e text := lower(trim(coalesce(p_email, '')));
+begin
+  if char_length(coalesce(p_password, '')) not between 8 and 72 or position('@' in e) < 2 or char_length(e) > 254 then return; end if;
+  if (select count(*) from public.password_requests where status = 'pendente') >= 500 then return; end if;   -- trava contra enxurrada
+  delete from public.password_requests where email = e and status = 'pendente';                               -- o pedido novo substitui o anterior
+  insert into public.password_requests (email, name, details, pw_hash)
+  values (e, left(p_name, 30), left(p_details, 300), extensions.crypt(p_password, extensions.gen_salt('bf', 10)));
+end $$;
+revoke all on function public.request_password_reset(text, text, text, text) from public;
+grant execute on function public.request_password_reset(text, text, text, text) to anon, authenticated;
+
+-- painel: lista os pedidos com os dados reais da conta ao lado, para comparar
+create or replace function public.admin_password_requests() returns table (
+  id bigint, email text, name text, details text, status text, created_at timestamptz,
+  account_exists boolean, real_name text, real_level int, real_worth numeric, last_sign_in_at timestamptz)
+language plpgsql stable security definer set search_path = public, auth as $$
+begin
+  if not public.is_admin() then raise exception 'acesso negado' using errcode = '42501'; end if;
+  return query
+    select r.id, r.email, r.name, r.details, r.status, r.created_at, u.id is not null, p.name, p.level, p.worth, u.last_sign_in_at
+      from public.password_requests r
+      left join auth.users u on lower(u.email) = r.email
+      left join public.public_profiles p on p.user_id = u.id
+     order by (r.status = 'pendente') desc, r.created_at desc
+     limit 200;
+end $$;
+revoke all on function public.admin_password_requests() from public;
+grant execute on function public.admin_password_requests() to authenticated;
+
+create or replace function public.admin_decide_password(p_id bigint, p_approve boolean) returns text
+language plpgsql security definer set search_path = public, auth as $$
+declare r public.password_requests; n int;
+begin
+  if not public.is_admin() then raise exception 'acesso negado' using errcode = '42501'; end if;
+  select * into r from public.password_requests where id = p_id and status = 'pendente' for update;
+  if not found then return 'pedido não está mais pendente'; end if;
+  if p_approve then
+    update auth.users set encrypted_password = r.pw_hash, updated_at = now() where lower(email) = r.email;
+    get diagnostics n = row_count;
+    if n = 0 then return 'não existe conta com esse e-mail'; end if;
+  end if;
+  update public.password_requests set status = case when p_approve then 'aprovado' else 'recusado' end, decided_at = now(), pw_hash = '-' where id = p_id;
+  insert into public.admin_log (action, details) values (case when p_approve then 'senha aprovada' else 'senha recusada' end, jsonb_build_object('email', r.email));
+  return 'ok';
+end $$;
+revoke all on function public.admin_decide_password(bigint, boolean) from public;
+grant execute on function public.admin_decide_password(bigint, boolean) to authenticated;

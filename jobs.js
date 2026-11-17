@@ -7,8 +7,8 @@ export const FAST_TIP = 1.2;      // confirmou em até 1,2 s: gorjeta
 export const levelMult = lvl => 1 + (lvl - 1) * 0.12;
 export const xpToNext = lvl => 4 + lvl * 2;   // turnos bons para subir de nível
 
-export function newShift(level = 1, rng = Math.random) {
-  return { t: 0, level, rain: false, flat: null, orders: [], route: [], log: [], earned: 0, tips: 0, delivered: 0, missed: 0, failed: 0,
+export function newShift(level = 1, rng = Math.random, win = 1) {
+  return { t: 0, level, win, rain: false, flat: null, orders: [], route: [], log: [], earned: 0, tips: 0, delivered: 0, missed: 0, failed: 0,
     seq: 1, nextSpawn: 1.5, nextEvent: 25 + rng() * 20, over: false };
 }
 
@@ -17,7 +17,7 @@ function spawn(s, rng) {
   const x = 8 + rng() * 84, y = 10 + rng() * 80;
   const dist = Math.hypot(x - 50, y - 50);
   const pay = Math.round((60 + dist * 6) * (vip ? 2.4 : 1) * levelMult(s.level) / 5) * 5;
-  s.orders.push({ id: s.seq++, x, y, pay, vip, until: s.t + (vip ? 5 : ACCEPT_WINDOW), travel: 3.5 + dist / 9 + rng() * 2 });
+  s.orders.push({ id: s.seq++, x, y, pay, vip, until: s.t + (vip ? 5 : ACCEPT_WINDOW) * (s.win || 1), travel: 3.5 + dist / 9 + rng() * 2 });
 }
 
 // avança o turno dt segundos

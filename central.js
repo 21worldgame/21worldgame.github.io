@@ -31,7 +31,7 @@ $('#ad-form').addEventListener('submit', async e => {
   err.hidden = true; $('#ad-submit').disabled = true;
   const { data, error } = await sb.auth.signInWithPassword({ email: String(f.email).trim(), password: f.password });
   $('#ad-submit').disabled = false;
-  if (error) { err.textContent = /invalid login/i.test(error.message) ? 'E-mail ou senha incorretos.' : /not confirmed/i.test(error.message) ? 'Confirme o e-mail pelo link que o Supabase enviou.' : error.message; err.hidden = false; return; }
+  if (error) { err.textContent = /invalid login/i.test(error.message) ? 'E-mail ou senha incorretos.' : /not confirmed/i.test(error.message) ? 'Conta ainda não confirmada: rode o admin.sql novo no SQL Editor (ele confirma as contas).' : error.message; err.hidden = false; return; }
   e.target.reset();
   enter(data.user);
 });
@@ -48,14 +48,41 @@ async function enter(user) {
   $('#ad-login').hidden = true; $('#ad-app').hidden = false;
   $('#ad-who').textContent = `Conectado como ${user.email}`;
   show('overview');
+  pwBadge(); setInterval(pwBadge, 60000);
 }
+// ---------- pedidos de senha ----------
+async function pwBadge() {
+  const { data } = await sb.rpc('admin_password_requests');
+  const n = (data || []).filter(r => r.status === 'pendente').length, b = $('#ad-pw-badge');
+  b.textContent = n; b.hidden = !n;
+  if (n) document.title = `(${n}) 21 World: central`;
+}
+async function loadPw() {
+  const { data, error } = await sb.rpc('admin_password_requests');
+  if (error) return fail(error, 'carregar os pedidos (rode o admin.sql novo)');
+  $('#ad-pw').innerHTML = (data || []).map(r => `<tr class="${r.status !== 'pendente' ? 'is-done' : ''}">
+    <td>${when(r.created_at)}</td><td>${esc(r.email)}</td><td>${esc(r.name)}</td><td>${esc(r.details)}</td>
+    <td>${r.account_exists ? `${esc(r.real_name || 'sem perfil')}, nível ${r.real_level ?? '?'}, ${brl(r.real_worth)}, último acesso ${when(r.last_sign_in_at)}` : '<b class="bad">não existe conta com esse e-mail</b>'}</td>
+    <td>${r.status === 'pendente' ? `<button class="btn btn--gold btn--sm" data-pw="${r.id}" data-ok="1" ${r.account_exists ? '' : 'disabled'}>aprovar</button> <button class="btn btn--glass btn--sm" data-pw="${r.id}" data-ok="0">recusar</button>` : esc(r.status)}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">Nenhum pedido.</td></tr>';
+  pwBadge();
+}
+document.addEventListener('click', async e => {
+  if (e.target.id === 'ad-pw-reload') return loadPw();
+  const b = e.target.closest('[data-pw]'); if (!b) return;
+  const ok = b.dataset.ok === '1';
+  if (ok && !confirm('Aprovar e trocar a senha dessa conta agora?')) return;
+  const { data, error } = await sb.rpc('admin_decide_password', { p_id: Number(b.dataset.pw), p_approve: ok });
+  if (error) return fail(error, 'decidir o pedido');
+  toast(data === 'ok' ? (ok ? 'Senha trocada. Avise o jogador que já pode entrar.' : 'Pedido recusado.') : data, data !== 'ok');
+  loadPw();
+});
 for (const id of ['#ad-logout', '#ad-logout2']) $(id).addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
 
 // ---------- navegação ----------
 function show(tab) {
   document.querySelectorAll('.ad-nav button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === tab));
   document.querySelectorAll('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== tab; });
-  ({ overview: loadOverview, players: loadUsers, economy: loadConfig, news: loadAnns, log: loadLog })[tab]?.();
+  ({ overview: loadOverview, players: loadUsers, economy: loadConfig, news: loadAnns, log: loadLog, passwords: loadPw })[tab]?.();
 }
 document.querySelector('.ad-nav').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) show(b.dataset.tab); });
 

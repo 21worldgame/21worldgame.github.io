@@ -1,3 +1,4 @@
+import * as PK from './perks.js';
 // Progressão: XP/nível, bônus diário, missões do dia e conquistas. Sem DOM.
 import { netWorth, heads } from './logic.js';
 
@@ -83,7 +84,7 @@ export function track(s, ev, n = 1) {
     m.prog = Math.min(def.goal, m.prog + n);
     if (m.prog >= def.goal) out.missions.push(def);
   }
-  const gained = Math.round((XP[ev] || 0) * n * XP_MULT);
+  const gained = Math.round((XP[ev] || 0) * n * XP_MULT * PK.mult(s, 'xp'));
   s.xp += gained;
   passGain(s, gained);
   while (s.xp >= xpNeed(s.level)) {

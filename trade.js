@@ -2,6 +2,8 @@
 // Item da troca: { kind: 'chips'|'money', amount } | { kind: 'good', good, qty } | { kind: 'car'|'animal'|'land', data }
 import { CARS, region } from './logic.js';
 import { KINDS as ANIMAL } from './stable.js';
+import * as CD from './cards.js';
+import { POS as FPOS, value as fValue, salary as fSalary } from './futebol.js';
 export const GOODS = { soja: 'soja', milho: 'milho', cafe: 'café' };
 export const MAX_ITEMS = 8;
 
@@ -11,13 +13,15 @@ export function inventory(s) {
   for (const c of s.cars || []) if (CARS[c.model]) out.push({ kind: 'car', id: c.id, label: CARS[c.model].name, value: c.value, img: CARS[c.model].img, data: c });
   for (const a of s.stable?.animals || []) out.push({ kind: 'animal', id: a.id, label: `${a.name} (${ANIMAL[a.kind].label})`, value: 0, data: a });
   for (const l of s.lands || []) if (l.own) out.push({ kind: 'land', id: l.id, label: `${l.ha} ha, ${l.region}`, value: l.value, data: l });
+  for (const c of s.cards || []) out.push({ kind: 'card', id: c.id, label: `carta ${CD.label(c)}`, value: CD.value(c), data: c });
+  for (const p of s.fut?.squad || []) out.push({ kind: 'player', id: p.id, label: `${p.name} (${p.pos}, nota ${p.ovr})`, value: fValue(p), data: p });
   for (const [g, q] of Object.entries(s.stock || {})) if (q > 0) out.push({ kind: 'good', id: g, good: g, label: `${GOODS[g] || g}: ${q} sacas`, qty: q, value: q * (s.prices?.[g] || 0) });
   return out;
 }
 
 export const describe = it => it.kind === 'chips' ? `${it.amount} fichas` : it.kind === 'money' ? `R$ ${Math.round(it.amount).toLocaleString('pt-BR')}`
   : it.kind === 'good' ? `${it.qty} sacas de ${GOODS[it.good] || it.good}` : it.kind === 'car' ? (CARS[it.data.model]?.name || 'carro')
-  : it.kind === 'animal' ? `${it.data.name} (${ANIMAL[it.data.kind]?.label || 'animal'})` : it.kind === 'land' ? `${it.data.ha} ha, ${it.data.region}` : '?';
+  : it.kind === 'card' ? `carta ${CD.label(it.data)}` : it.kind === 'player' ? `jogador ${it.data.name} (${it.data.pos}, nota ${it.data.ovr})` : it.kind === 'animal' ? `${it.data.name} (${ANIMAL[it.data.kind]?.label || 'animal'})` : it.kind === 'land' ? `${it.data.ha} ha, ${it.data.region}` : '?';
 
 // o jogador ainda tem tudo o que ofereceu?
 export function canGive(s, items) {
@@ -32,7 +36,10 @@ export function canGive(s, items) {
     if (i.kind === 'animal' && !(s.stable?.animals || []).some(a => a.id === i.data?.id)) return 'esse animal não é mais seu.';
     if (i.kind === 'land' && !(s.lands || []).some(l => l.id === i.data?.id && l.own)) return 'essa terra não é mais sua.';
     if (i.kind === 'land' && i.data.crop) return 'terra com lavoura plantada não pode ser trocada.';
+    if (i.kind === 'card' && !(s.cards || []).some(c => c.id === i.data?.id)) return 'essa carta não é mais sua.';
+    if (i.kind === 'player' && !(s.fut?.squad || []).some(p => p.id === i.data?.id)) return 'esse jogador não está mais no seu elenco.';
   }
+  if (items.some(i => i.kind === 'player') && (s.fut?.squad || []).length - items.filter(i => i.kind === 'player').length < 14) return 'o elenco precisa ficar com pelo menos 14 jogadores.';
   return null;
 }
 
@@ -46,6 +53,11 @@ export function sanitize(items) {
     if (i?.kind === 'animal' && ANIMAL[i.data?.kind]) {
       const a = i.data, cl = (v, lo, hi) => Math.max(lo, Math.min(hi, Number(v) || lo));
       return [{ kind: 'animal', data: { ...a, name: String(a.name || 'animal').replace(/[<>&"]/g, '').slice(0, 20), spd: cl(a.spd, 20, 99), sta: cl(a.sta, 20, 99), acc: cl(a.acc, 20, 99), pot: cl(a.pot, 20, 99), age: cl(a.age, 1, 400) } }];
+    }
+    if (i?.kind === 'card') { const c = CD.sanitize(i.data); return c ? [{ kind: 'card', data: c }] : []; }
+    if (i?.kind === 'player' && FPOS[i.data?.pos]) {
+      const p = i.data, cl = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(v) || lo))), ovr = cl(p.ovr, 30, 95);
+      return [{ kind: 'player', data: { name: String(p.name || 'jogador').replace(/[<>&"]/g, '').slice(0, 30), pos: p.pos, age: cl(p.age, 16, 40), ovr, pot: cl(p.pot, ovr, 97), sal: fSalary(ovr), trait: String(p.trait || '').replace(/[<>&"]/g, '').slice(0, 20), id: p.id } }];
     }
     if (i?.kind === 'land' && i.data?.region && Number(i.data.ha) > 0 && Number(i.data.ha) <= 1000) {
       const reg = region(i.data.region);
@@ -66,6 +78,8 @@ export function apply(s, give, receive) {
     if (i.kind === 'car') s.cars = s.cars.filter(c => c.id !== i.data.id);
     if (i.kind === 'animal') s.stable.animals = s.stable.animals.filter(a => a.id !== i.data.id);
     if (i.kind === 'land') s.lands = s.lands.filter(l => l.id !== i.data.id);
+    if (i.kind === 'player') s.fut.squad = s.fut.squad.filter(p => p.id !== i.data.id);
+    if (i.kind === 'card') s.cards = s.cards.filter(c => c.id !== i.data.id);
   }
   for (const i of sanitize(receive)) {
     if (i.kind === 'chips') s.chips += i.amount;
@@ -74,6 +88,8 @@ export function apply(s, give, receive) {
     if (i.kind === 'car') s.cars.push({ ...i.data, id: s.nextId++ });
     if (i.kind === 'animal') s.stable.animals.push({ ...i.data, id: s.stable.next++, wk: Math.min(4, i.data.wk ?? 4) });
     if (i.kind === 'land') s.lands.push({ ...i.data, id: s.nextId++ });
+    if (i.kind === 'card') CD.give(s, i.data);
+    if (i.kind === 'player') { const p = { ...i.data, id: `t${s.nextId++}` }; if (s.fut?.club) s.fut.squad.push(p); else (s.freeAgents ??= []).push(p); }   // sem clube: espera até assumir um
   }
   return null;
 }

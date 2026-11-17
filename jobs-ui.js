@@ -3,6 +3,7 @@ import * as JB from './jobs.js';
 import { G, $, esc, brl, int, say, save, note, award, confetti } from './store.js';
 import * as Live from './live.js';
 import * as sfx from './sfx.js';
+import * as PK from './perks.js';
 
 let s = null, raf = 0, last = 0, acc = 0, hinted = false;
 const job = () => (G.S.job ??= { level: 1, xp: 0, shifts: 0, best: 0, total: 0 });
@@ -12,7 +13,7 @@ export function render() {
   $('#job-level').textContent = j.level;
   $('#job-xp').style.transform = `scaleX(${Math.min(1, j.xp / JB.xpToNext(j.level))})`;
   $('#job-xp-txt').textContent = `${j.xp} de ${JB.xpToNext(j.level)} turnos bons para o próximo nível`;
-  $('#job-stats').textContent = `${j.shifts} turnos, melhor turno ${brl(j.best)}, total ganho ${brl(j.total)}. Pagamento ${Math.round(JB.levelMult(j.level) * 100)}% da tabela${Live.CFG.job_mult > 1 ? `, evento x${Live.CFG.job_mult}` : ''}.`;
+  $('#job-stats').textContent = `${j.shifts} turnos, melhor turno ${brl(j.best)}, total ganho ${brl(j.total)}. Pagamento ${Math.round(JB.levelMult(j.level) * PK.mult(G.S, 'job') * 100)}% da tabela (nível + veículos)${Live.CFG.job_mult > 1 ? `, evento x${Live.CFG.job_mult}` : ''}.`;
   if (!s) $('#job-board').innerHTML = '';
 }
 
@@ -20,7 +21,7 @@ export function running() { return !!s && !s.over; }
 
 export function start() {
   if (running()) return;
-  s = JB.newShift(job().level);
+  s = JB.newShift(job().level, Math.random, PK.mult(G.S, 'jobTime'));
   $('#job-start').disabled = true; $('#job-result').hidden = true; $('#job-live').hidden = false;
   last = performance.now(); acc = 0;
   cancelAnimationFrame(raf);
@@ -45,7 +46,7 @@ function draw() {
   $('#job-map').classList.toggle('is-rain', s.rain);
   // pedidos no mapa (clique para aceitar) com o tempo que falta em volta do pino
   $('#job-pins').innerHTML = s.orders.map(o => {
-    const left = Math.max(0, (o.until - s.t) / (o.vip ? 5 : JB.ACCEPT_WINDOW));
+    const left = Math.max(0, (o.until - s.t) / ((o.vip ? 5 : JB.ACCEPT_WINDOW) * (s.win || 1)));
     return `<button class="pin${o.vip ? ' pin--vip' : ''}" style="left:${o.x}%;top:${o.y}%;--k:${left.toFixed(2)}" data-act="job-accept" data-id="${o.id}" aria-label="aceitar pedido de ${brl(o.pay)}">
       <span>${brl(o.pay)}</span></button>`;
   }).join('') + s.route.map(r => `<span class="moto-dest" style="left:${r.x}%;top:${r.y}%"></span>`).join('');
@@ -71,7 +72,7 @@ export function repair() { if (s && JB.repair(s)) sfx.play('place', 0.5); if (s)
 
 function finish() {
   cancelAnimationFrame(raf);
-  const j = job(), mult = Live.CFG.job_mult || 1, pay = Math.round(s.earned * mult), g = JB.grade(s);
+  const j = job(), mult = Live.CFG.job_mult || 1, tipM = PK.mult(G.S, 'tip'), pay = Math.round(((s.earned - s.tips) * PK.mult(G.S, 'job') + s.tips * tipM) * mult), g = JB.grade(s);
   G.S.money += pay;
   j.shifts++; j.total += pay; j.best = Math.max(j.best, pay);
   let up = false;
@@ -83,7 +84,7 @@ function finish() {
   $('#job-live').hidden = true; $('#job-start').disabled = false;
   const r = $('#job-result'); r.hidden = false;
   r.innerHTML = `<h3>fim do turno</h3>
-    <div class="tiles tiles--job">${[['ganho', brl(pay)], ['entregas', int(s.delivered)], ['gorjetas', brl(s.tips * mult)], ['perdidos', int(s.missed + s.failed)], ['aproveitamento', `${Math.round(g * 100)}%`]]
+    <div class="tiles tiles--job">${[['ganho', brl(pay)], ['entregas', int(s.delivered)], ['gorjetas', brl(Math.round(s.tips * tipM * mult))], ['perdidos', int(s.missed + s.failed)], ['aproveitamento', `${Math.round(g * 100)}%`]]
       .map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${v}</strong></div>`).join('')}</div>
     <p class="${g >= 0.6 ? 'good' : 'muted'}">${up ? `Você subiu para entregador nível ${j.level}: os pedidos pagam mais.` : g >= 0.6 ? 'Turno bom: conta para subir de nível.' : 'Aproveitamento abaixo de 60%: este turno não conta para subir de nível.'}</p>`;
   s = null;

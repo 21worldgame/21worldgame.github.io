@@ -280,21 +280,22 @@
 
     <!-- FUTEBOL -->
     <section id="p-futebol" role="tabpanel" aria-labelledby="t-futebol" class="panel" hidden>
-      <div id="ft-found" class="glass ft-found">
-        <h2>seja presidente de um clube</h2>
-        <p>Funde um clube na Série C, monte o elenco, escolha a tática e jogue as rodadas ao vivo. Bilheteria, prêmios e vendas de jogadores viram dinheiro para você. Os dois primeiros sobem de divisão; os dois últimos caem.</p>
-        <div class="row"><label class="field"><span>nome do clube</span><input class="input" id="ft-new" maxlength="28" placeholder="ex.: Esporte Clube Vila Rica"></label>
-          <button class="btn btn--gold btn--lg" data-act="ft-found">fundar por <span id="ft-cost"></span></button></div>
-        <p class="muted small">Clubes e jogadores são fictícios.</p>
+      <div id="ft-found" class="ft-found">
+        <div class="ft-hero glass"><h2>assuma um clube do futebol brasileiro</h2>
+          <p>Escolha um clube real da Série A, B ou C, monte o elenco, negocie contratações, amplie o estádio e jogue o Brasileirão de 38 rodadas. Os 4 primeiros sobem e os 4 últimos caem. Bilheteria, patrocínio, prêmios e vendas de jogadores viram dinheiro para você.</p></div>
+        <div class="subtabs" role="group" aria-label="divisão"><button class="subtab" data-act="ft-div" data-id="0" data-ftdiv="0">Série A</button><button class="subtab" data-act="ft-div" data-id="1" data-ftdiv="1">Série B</button><button class="subtab is-on" data-act="ft-div" data-id="2" data-ftdiv="2">Série C</button></div>
+        <div class="clubgrid" id="ft-clubs"></div>
+        <p class="muted small">Nomes e cores dos clubes reais; escudos e jogadores não são oficiais (nomes de jogadores fictícios).</p>
       </div>
       <div id="ft-club" hidden>
         <div class="listhead"><div><h2 id="ft-name"></h2><p class="muted small" id="ft-sub"></p></div></div>
         <div class="tiles tiles--ft" id="ft-kpis"></div>
-        <div class="subtabs" role="group" aria-label="clube"><button class="subtab is-on" data-act="ft-view" data-id="jogo" data-ftv="jogo">próximo jogo</button><button class="subtab" data-act="ft-view" data-id="elenco" data-ftv="elenco">elenco</button><button class="subtab" data-act="ft-view" data-id="tabela" data-ftv="tabela">tabela</button><button class="subtab" data-act="ft-view" data-id="mercado" data-ftv="mercado">mercado</button></div>
+        <div class="subtabs" role="group" aria-label="clube"><button class="subtab is-on" data-act="ft-view" data-id="jogo" data-ftv="jogo">próximo jogo</button><button class="subtab" data-act="ft-view" data-id="elenco" data-ftv="elenco">elenco</button><button class="subtab" data-act="ft-view" data-id="tabela" data-ftv="tabela">tabela</button><button class="subtab" data-act="ft-view" data-id="mercado" data-ftv="mercado">mercado</button><button class="subtab" data-act="ft-view" data-id="propostas" data-ftv="propostas">propostas</button></div>
         <div data-ftpanel="jogo"><div class="ft-grid"><div class="glass ft-next" id="ft-next"></div><div id="ft-pitch"></div></div><div id="ft-last"></div></div>
         <div data-ftpanel="elenco" hidden><div class="glass scroll"><table><thead><tr><th>pos</th><th>jogador</th><th class="num">idade</th><th class="num">nota</th><th class="num">potencial</th><th class="num">salário</th><th class="num">valor</th><th></th></tr></thead><tbody id="ft-squad"></tbody></table></div></div>
         <div data-ftpanel="tabela" hidden><div class="glass scroll"><table><thead><tr><th class="num">#</th><th>clube</th><th class="num">J</th><th class="num">V</th><th class="num">E</th><th class="num">D</th><th class="num">gols</th><th class="num">pts</th></tr></thead><tbody id="ft-table"></tbody></table></div><h3>histórico</h3><ul class="ft-hist" id="ft-hist"></ul></div>
-        <div data-ftpanel="mercado" hidden><p class="muted small">O mercado renova a cada temporada. Jogador jovem com potencial alto cresce a cada ano.</p><div class="glass scroll"><table><thead><tr><th>pos</th><th>jogador</th><th class="num">idade</th><th class="num">nota</th><th class="num">potencial</th><th class="num">salário</th><th></th></tr></thead><tbody id="ft-market"></tbody></table></div></div>
+        <div data-ftpanel="mercado" hidden><p class="muted small">O mercado renova a cada temporada. Clique em "negociar" para pechinchar com o clube dono do passe: ofereça pouco demais e ele desiste. Jogador jovem com potencial alto cresce a cada ano.</p><div class="glass scroll"><table><thead><tr><th>pos</th><th>jogador</th><th class="num">idade</th><th class="num">nota</th><th class="num">potencial</th><th class="num">salário</th><th></th></tr></thead><tbody id="ft-market"></tbody></table></div></div>
+        <div data-ftpanel="propostas" hidden><div class="offers" id="ft-offers"></div></div>
       </div>
     </section>
 
@@ -303,7 +304,14 @@
       <div class="listhead"><h2>inventário</h2><span class="muted small" id="inv-sum"></span></div>
       <div class="inv-grid">
         <div class="cards cards--inv" id="inv-items"></div>
-        <aside class="glass inv-online"><h3>jogadores online</h3><p class="muted small">Negocie carros, animais, terras, sacas, fichas e dinheiro. Os dois montam a oferta, ficam "prontos" e confirmam. Se alguém mexer na oferta, os dois precisam confirmar de novo.</p><ul class="inv-peers" id="inv-peers"></ul></aside>
+        <section class="cartas"><div class="listhead"><h3>suas cartas</h3><span class="muted small" id="cd-sum"></span></div>
+          <p class="muted small">Seis raridades: bronze, prata, esmeralda, diamante, mestre e challenger. Use como moeda: troque com outros jogadores, pague terras ou venda para a loja.</p>
+          <div class="row"><button class="btn btn--gold" data-act="card-pack">abrir pacote por R$ 30.000</button></div>
+          <div class="cd-list" id="cd-list"></div></section>
+        <section class="feira"><div class="listhead"><h3>feira dos bots</h3><span class="muted small" id="fe-idx"></span></div>
+          <p class="muted small">Bots vendem seminovos, sacas e acessórios e às vezes querem comprar o que é seu. O preço acompanha a economia dos jogadores: quanto mais rico o ranking, mais caro. Negocie: oferta baixa demais faz o bot desistir. As bancas mudam todo mês do jogo.</p>
+          <div class="cards cards--feira" id="fe-list"></div><div id="fe-want"></div></section>
+        <aside class="glass inv-online"><h3>jogadores online</h3><p class="muted small">Negocie carros, animais, terras, jogadores de futebol, sacas, fichas e dinheiro. Os dois montam a oferta, ficam "prontos" e confirmam. Se alguém mexer na oferta, os dois precisam confirmar de novo.</p><ul class="inv-peers" id="inv-peers"></ul></aside>
       </div>
     </section>
 
@@ -373,7 +381,8 @@
         <label class="field"><span>nome do personagem</span>
           <input class="input" id="char-name" name="char-name" maxlength="18" autocomplete="off"></label>
         <div id="wardrobe"></div>
-        <p class="muted small">Itens de luxo custam dinheiro do jogo e só mudam o visual, nunca a sorte na mesa.</p>
+        <div class="perks" id="char-perks"></div>
+        <p class="muted small">Cada carro e acessório comprado dá uma vantagem permanente (valem todos os que você possui). Nada muda a sorte das cartas ou da roleta.</p>
       </div>
     </section>
 
@@ -452,7 +461,26 @@
   </main>
 
   <!-- login e cadastro (só aparece quando o Supabase está configurado) -->
-  <dialog class="dlg dlg--auth" id="dlg-auth" aria-labelledby="au-title">
+  <dialog class="dlg dlg--auth dlg--landing" id="dlg-auth" aria-labelledby="au-title">
+    <section class="lp" aria-label="apresentação do jogo">
+      <div class="lp__bg" aria-hidden="true"></div>
+      <div class="lp__in">
+        <p class="lp__kicker"><span class="lp__live" id="lp-live">mundo aberto, multiplayer</span></p>
+        <h1 class="lp__h">Seja quem você quiser.<br><span>Fique rico.</span></h1>
+        <p class="lp__sub">Comece com R$ 100 mil e construa um império: cassino, fazendas, gado, carros de luxo, cavalos de corrida e um clube do Brasileirão. Tudo ao vivo com seus amigos.</p>
+        <ul class="lp__bonus"><li><b>R$ 100.000</b><span>para começar</span></li><li><b>500 fichas</b><span>de boas-vindas</span></li><li><b>roleta diária</b><span>só prêmio bom</span></li></ul>
+        <div class="lp__cards">
+          <figure style="--img:url(assets/photo-blackjack.webp)"><figcaption>21 de cassino</figcaption></figure>
+          <figure style="--img:url(assets/photo-roulette.webp)"><figcaption>roleta</figcaption></figure>
+          <figure style="--img:url(assets/photo-horses.webp)"><figcaption>cavalos e galgos</figcaption></figure>
+          <figure style="--img:url(assets/photo-stadium.webp)"><figcaption>seu clube</figcaption></figure>
+          <figure style="--img:url(assets/car-huracan.webp)"><figcaption>carros com vantagens</figcaption></figure>
+          <figure style="--img:url(assets/photo-chips.webp)"><figcaption>trocas ao vivo</figcaption></figure>
+        </div>
+        <p class="lp__fine">Dinheiro 100% virtual: sem depósito, sem saque, sem aposta real. Só para maiores de 18.</p>
+      </div>
+    </section>
+    <div class="au__panel">
     <div class="brand au__brand"><img class="brand__mark" src="assets/brand/logo-mark.svg" width="40" height="40" alt=""><span class="brand__word">21 <b>world</b></span></div>
     <h2 id="au-title">entre para jogar</h2>
     <div class="seg au__tabs" role="group" aria-label="entrar ou criar conta">
@@ -470,7 +498,27 @@
       <button type="button" class="linkbtn" id="au-forgot">esqueci a senha</button>
     </form>
     <div class="au__oauth" id="au-oauth" hidden><span class="muted small">ou</span><div id="au-oauth-btns"></div></div>
-    <p class="muted small">Seu e-mail serve só para entrar e recuperar a senha. Seu progresso fica salvo na sua conta e você pode jogar de qualquer aparelho.</p>
+    <p class="muted small">Seu progresso fica salvo na conta: entre no celular ou no computador e continue de onde parou.</p>
+    </div>
+  </dialog>
+
+  <dialog class="dlg dlg--auth" id="dlg-forgot" aria-labelledby="fg-title">
+    <h2 id="fg-title">recuperar acesso</h2>
+    <form id="fg-form" class="au__form" novalidate>
+      <p class="muted small">Preencha os dados da sua conta e a senha nova que você quer. Nossa equipe confere e libera.</p>
+      <label class="field"><span>e-mail da conta</span><input class="input" name="email" type="email" autocomplete="email" maxlength="254"></label>
+      <label class="field"><span>nome do seu personagem no jogo</span><input class="input" name="nick" maxlength="18" autocomplete="nickname"></label>
+      <label class="field"><span>o que você lembra da conta (nível, dinheiro, carros...)</span><input class="input" name="details" maxlength="300"></label>
+      <label class="field"><span>senha nova (mínimo 8 caracteres)</span><input class="input" name="password" type="password" autocomplete="new-password" maxlength="72"></label>
+      <label class="field"><span>repita a senha nova</span><input class="input" name="again" type="password" autocomplete="new-password" maxlength="72"></label>
+      <p class="au__err" id="fg-err" role="alert" hidden></p>
+      <button class="btn btn--gold btn--lg" type="submit">enviar para análise</button>
+    </form>
+    <div id="fg-done" hidden>
+      <p class="big-line">Pedido recebido!</p>
+      <p>Vamos analisar em até 5 minutos. Se as informações estiverem corretas, sua senha nova passa a valer e você já pode entrar com ela.</p>
+    </div>
+    <button class="btn btn--glass btn--sm" data-close>voltar</button>
   </dialog>
 
   <dialog class="dlg dlg--auth" id="dlg-recovery" aria-labelledby="rc-title">
@@ -505,6 +553,30 @@
   </dialog>
 
   <!-- partida ao vivo -->
+  <!-- chat global -->
+  <button class="chat-fab btn btn--gold" id="chat-fab" type="button" aria-expanded="false" aria-controls="chat-box">chat <span class="chat-fab__n" id="chat-n" hidden></span></button>
+  <section class="chat-box glass" id="chat-box" hidden aria-label="chat global">
+    <header class="chat-box__head"><h3>chat global</h3><span class="muted small" id="chat-online"></span><button class="btn btn--glass btn--sm" id="chat-x" type="button" aria-label="fechar o chat">fechar</button></header>
+    <ul class="chat-list" id="chat-list" aria-live="polite"></ul>
+    <form class="chat-form" id="chat-form">
+      <label class="visually-hidden" for="chat-in">mensagem</label><input class="input" id="chat-in" maxlength="200" autocomplete="off" placeholder="Venda, compra, troca... sem palavrão">
+      <button class="btn btn--gold btn--sm" type="submit">enviar</button>
+      <label class="check chat-hi"><input type="checkbox" id="chat-hi"><span>destacar por <b id="chat-fee"></b></span></label>
+    </form>
+    <p class="muted small chat-lock" id="chat-lock" hidden></p>
+  </section>
+  <dialog class="dlg dlg--card" id="dlg-card" aria-labelledby="cd-reveal-txt">
+    <div class="cd-reveal" id="cd-reveal"></div>
+    <p class="cd-reveal-txt" id="cd-reveal-txt"></p>
+    <button class="btn btn--gold" data-act="card-close">guardar</button>
+  </dialog>
+  <dialog class="dlg dlg--deal" id="dlg-deal" aria-labelledby="dl2-title">
+    <h2 id="dl2-title">negociação</h2><p class="muted small" id="dl2-sub"></p>
+    <ul class="deal-feed" id="dl2-feed" aria-live="polite"></ul>
+    <form id="dl2-form" class="row"><label class="field"><span>sua oferta (R$)</span><input class="input" id="dl2-amt" type="number" min="1" step="100" inputmode="numeric"></label>
+      <button class="btn btn--gold">oferecer</button><button class="btn btn--glass" type="button" id="dl2-take">aceitar o preço dele</button></form>
+    <button class="btn btn--glass btn--sm" data-close>fechar</button>
+  </dialog>
   <dialog class="dlg dlg--match" id="dlg-match" aria-labelledby="mt-score">
     <div class="mt-board"><span id="mt-home"></span><strong id="mt-score">0 x 0</strong><span id="mt-away"></span></div>
     <div class="mt-clock"><span id="mt-min">0'</span><span class="bar"><i id="mt-bar"></i></span></div>

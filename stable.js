@@ -1,3 +1,4 @@
+import * as PK from './perks.js';
 // Canil e haras: comprar, treinar e inscrever galgos e cavalos em provas. Lógica pura, sem DOM.
 import { runRace, officialTimes } from './race.js';
 
@@ -152,7 +153,7 @@ export function enter(s, id, evId, rng = Math.random) {
   const order = runRace({ dogs: runners.map((r, i) => ({ p: w[i] / tot })) }, rng);
   const T = officialTimes(order, rng, K.baseTime, K.timeScale);
   const pos = order.findIndex(i => runners[i].id === a.id);
-  const prize = ev.prize[pos] || 0;
+  const prize = Math.round((ev.prize[pos] || 0) * PK.mult(s, 'race'));
   s.money += prize;
   a.runs++; a.earn += prize; if (pos === 0) a.wins++;
   a.best = Math.max(a.best, prize);

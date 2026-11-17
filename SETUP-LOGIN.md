@@ -58,19 +58,35 @@ A chave `anon` pode ficar no site: quem protege os dados são as regras (RLS) do
 - **Apagar dados (LGPD)**: o botão "apagar meus dados" no perfil apaga o save e o perfil da nuvem. O cadastro em si (e-mail) é apagado por você em **Authentication > Users**.
 - **Moderação**: não há filtro de nomes ofensivos. Se precisar, renomeie ou apague a linha em `public_profiles`.
 
-# Painel administrativo (admin.html)
+# Painel administrativo (central-r7k2.html)
 
-O painel fica em `https://21worldgame.github.io/admin.html`. Ele não aparece em nenhum menu do jogo.
+O painel fica em `https://21worldgame.github.io/central-r7k2.html`. Ele não aparece em nenhum menu do jogo.
 Quem decide quem é administrador é o banco, nunca o site: sem estar na tabela `admins`, a pessoa não lê nem muda nada.
 
 ## Ativar (uma vez)
-1. Crie a sua conta normalmente pelo jogo, com o e-mail de administrador, e confirme o e-mail pelo link.
-2. No Supabase, abra o **SQL Editor**, cole todo o `supabase/admin.sql` e clique em **Run**.
-3. Ainda no SQL Editor, rode a linha que cadastra o administrador (está em `supabase/admin-setup.local.sql`, que não vai para o GitHub):
-   `insert into public.admins (email) values ('seu-email') on conflict do nothing;`
-4. Abra `admin.html` e entre com o mesmo e-mail e senha do jogo.
+1. No Supabase, em **Authentication > Sign In / Providers > Email**, desligue **Confirm email** (o jogo não usa e-mail de confirmação).
+2. Abra o **SQL Editor**, cole todo o `supabase/admin.sql` e clique em **Run**. Ele também confirma sozinho toda conta nova.
+3. (Opcional) Para zerar todas as contas, rode `supabase/reset-contas.sql`.
+4. Crie a sua conta normalmente pelo jogo, com o e-mail de administrador. Ela entra na hora.
+5. No SQL Editor, rode a linha que cadastra o administrador (está em `supabase/admin-setup.local.sql`, que não vai para o GitHub):
+   `insert into public.admins (user_id) select id from auth.users where lower(email) = 'seu-email' on conflict do nothing;`
+   O administrador fica preso ao ID da conta: alguém que crie outra conta com o mesmo e-mail não vira administrador.
+6. Abra `central-r7k2.html` e entre com o mesmo e-mail e senha do jogo.
+
+## Senha esquecida (sem e-mail)
+No jogo, "esqueci a senha" abre um formulário: e-mail, nome do personagem, o que a pessoa lembra da conta e a senha nova.
+O pedido aparece na aba **senhas** do painel ao lado dos dados reais da conta. Aprovar troca a senha na hora; a senha
+fica guardada só cifrada (bcrypt) e ninguém a vê. A pessoa recebe sempre a mesma resposta, exista a conta ou não.
+
+## Entrar com Google
+1. No Google Cloud Console, crie um "ID do cliente OAuth" do tipo Aplicativo da Web. Em "URIs de redirecionamento autorizados" coloque
+   `https://musurfbgxdhfaqzpuhhu.supabase.co/auth/v1/callback`.
+2. No Supabase, em **Authentication > Sign In / Providers > Google**, ligue e cole o Client ID e o Client Secret.
+3. Em **Authentication > URL Configuration**, Site URL `https://21worldgame.github.io/` e Redirect URL `https://21worldgame.github.io/**`.
+O botão "entrar com Google" aparece sozinho no jogo assim que o provedor estiver ligado.
 
 ## O que dá para fazer
+- **Senhas**: pedidos de senha nova para aprovar ou recusar.
 - **Visão geral**: jogadores, novos cadastros, ativos nas últimas 24 h, suspensos e os mais ricos.
 - **Jogadores**: buscar por nome ou e-mail, ver o save completo, dar ou tirar dinheiro, fichas e XP, mandar mensagem, renomear, suspender por um tempo ou sem prazo, reativar, reiniciar o progresso e apagar o save.
   O que você manda vira uma "ordem" que o jogo do jogador aplica sozinho em até 1 minuto, uma vez só.

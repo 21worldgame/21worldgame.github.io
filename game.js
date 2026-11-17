@@ -10,6 +10,11 @@ import * as AV from './aviator.js';
 import * as RL from './roulette.js';
 import * as TR from './trader.js';
 import * as Auth from './auth.js';
+import * as PK from './perks.js';
+import * as FE from './feira.js';
+import * as CD from './cards.js';
+import * as CHUI from './chat-ui.js';
+import { openDeal } from './deal-ui.js';
 import * as Live from './live.js';
 import * as ST from './stable.js';
 import * as SUI from './stable-ui.js';
@@ -133,12 +138,13 @@ async function spinDaily() {
     { duration: RM.matches ? 0 : 5200, easing: 'cubic-bezier(.12,.7,.18,1)', fill: 'forwards' }).finished;
   dwAngle = target;
   P.claimDaily(S(), today(), yesterday(), false);   // só registra a sequência; o prêmio vem da roda
-  const prize = GM.DAILY_WHEEL[i], mult = streakBonus(S().daily.streak) * Live.CFG.daily_mult, amt = Math.round(prize.amount * mult);
+  const prize = GM.DAILY_WHEEL[i], mult = streakBonus(S().daily.streak) * Live.CFG.daily_mult * PK.mult(S(), 'daily'), amt = Math.round(prize.amount * mult);
   let txt;
   if (prize.kind === 'chips') { S().chips += amt; txt = `${int(amt)} fichas`; }
   if (prize.kind === 'money') { S().money += amt; note('roleta de prêmios do dia', amt); txt = brl(amt); }
   if (prize.kind === 'calves') { S().herd.push({ id: S().nextId++, heads: amt, kg: 180 }); txt = `${amt} bezerros no seu rebanho`; }
   if (prize.kind === 'xp') { P.addXp(S(), amt).forEach(levelUp); txt = `${int(amt)} XP`; }
+  if (prize.kind === 'card') { const c = CD.give(S(), CD.draw(Math.random, S().daily.streak >= 5 ? 1 : 0)); txt = `a carta ${CD.label(c)}`; setTimeout(() => showCard(c), 600); }
   sfx.play('stack', 0.7); confetti(110);
   $('#dl-sub').innerHTML = `<strong class="dw-win">Você ganhou ${txt}!</strong>${mult > 1 ? ` Bônus de sequência +${Math.round((mult - 1) * 100)}%.` : ''} Volte amanhã.`;
   $('#streak').innerHTML = streakHTML(S().daily.streak, true);
@@ -152,12 +158,14 @@ function renderChar() {
   $('#char-preview').innerHTML = avatarSVG(a, { label: 'seu personagem' });
   $('#char-name-show').textContent = a.name || 'você';
   if (document.activeElement !== $('#char-name')) $('#char-name').value = a.name || '';
+  const b = PK.bonuses(S());
+  $('#char-perks').innerHTML = `<h3>suas vantagens</h3>${Object.keys(b).length ? `<ul>${Object.entries(b).map(([k, v]) => `<li><b class="${v > 0 === (k !== 'loan') ? 'good' : 'bad'}">${v > 0 ? '+' : ''}${Math.round(v * 100)}%</b> ${PK.EFFECTS[k]}</li>`).join('')}</ul>` : '<p class="muted small">Nenhuma ainda. Compre carros na concessionária ou acessórios aqui.</p>'}`;
   $('#wardrobe').innerHTML = Object.entries(CATALOG).map(([k, g]) => `
     <fieldset class="opts"><legend>${g.label}</legend>
       ${g.opts.map(o => {
         const on = String(a[k]) === String(o.id), locked = o.price && !S().owned.includes(`${k}:${o.id}`);
         return `<button class="opt${o.swatch ? ' opt--sw' : ''}${on ? ' is-on' : ''}" aria-pressed="${on}" data-act="look" data-k="${k}" data-id="${o.id}"
-          ${o.swatch ? `style="--sw:${o.swatch}" aria-label="${g.label} ${o.id}"` : ''}>${o.swatch ? '' : esc(o.id)}${locked ? `<small>${brl(o.price)}</small>` : ''}</button>`;
+          ${o.swatch ? `style="--sw:${o.swatch}" aria-label="${g.label} ${o.id}"` : ''}>${o.swatch ? '' : esc(o.id)}${locked ? `<small>${brl(o.price)}</small>` : ''}${k === 'acc' && PK.ACC_PERKS[o.id] ? `<small class="good">${esc(PK.label(PK.ACC_PERKS[o.id]))}</small>` : ''}</button>`;
       }).join('')}
     </fieldset>`).join('');
 }
@@ -192,7 +200,7 @@ function landCard(l, kind) {
     }
   }
   const acts = kind === 'offer'
-    ? `<button class="btn btn--gold" data-act="buy-land" data-id="${l.id}">comprar</button><button class="btn btn--glass" data-act="rent-land" data-id="${l.id}">arrendar</button>`
+    ? `<button class="btn btn--gold" data-act="buy-land" data-id="${l.id}">comprar</button><button class="btn btn--glass" data-act="rent-land" data-id="${l.id}">arrendar</button>${(S().cards || []).length ? `<button class="btn btn--glass btn--sm" data-act="buy-land-cards" data-id="${l.id}">pagar com cartas</button>` : ''}`
     : kind === 'own'
       ? `<button class="btn btn--glass" data-act="lease" data-id="${l.id}" ${l.crop ? 'disabled' : ''}>${l.leasedOut ? 'retomar' : 'arrendar a terceiros'}</button><button class="btn btn--glass" data-act="sell-land" data-id="${l.id}">vender</button>`
       : `<button class="btn btn--glass" data-act="return-land" data-id="${l.id}" ${l.crop ? 'disabled' : ''}>devolver</button>`;
@@ -310,12 +318,12 @@ function renderCarros() {
     const owned = s.cars.some(x => x.model === id);
     return `<article class="glass ccard">
       <div class="ccard__photo"><img src="${carImg(c)}" alt="${esc(c.name)}" loading="lazy">
-        <span class="tag ${c.perk ? 'tag--green' : c.price > 1e6 ? 'tag--violet' : 'tag--dark'}">${c.cat}</span>${owned ? '<span class="tag tag--gold ccard__own">na garagem</span>' : ''}</div>
+        <span class="tag ${c.perk || PK.CAR_PERKS[id] ? 'tag--green' : c.price > 1e6 ? 'tag--violet' : 'tag--dark'}">${c.cat}</span>${owned ? '<span class="tag tag--gold ccard__own">na garagem</span>' : ''}</div>
       <div class="ccard__body">
         <h4>${esc(c.name)}</h4>
         <p class="price">${brl(c.price)}</p>
         <dl class="specs"><div><dt>potência</dt><dd>${c.hp} cv</dd></div><div><dt>máxima</dt><dd>${c.top} km/h</dd></div><div><dt>IPVA e seguro</dt><dd>${brl(c.price * L.CAR_UPKEEP)}/mês</dd></div></dl>
-        ${c.perk ? `<p class="small good">${esc(c.perk)}</p>` : ''}
+        <p class="small good perk">vantagem: ${esc([c.perk, PK.label(PK.CAR_PERKS[id])].filter(Boolean).join(', '))}</p>
         <button class="btn btn--gold" data-act="buy-car" data-id="${id}">comprar</button>
       </div></article>`;
   }).join('');
@@ -392,15 +400,59 @@ function renderInv() {
   const items = TD.inventory(S());
   const total = items.reduce((t, i) => t + (i.value || 0), 0);
   $('#inv-sum').textContent = `${items.length} itens trocáveis, ${int(S().chips)} fichas e ${brl(S().money)} em dinheiro`;
-  $('#inv-items').innerHTML = items.length ? items.map(i => `<article class="glass icard icard--${i.kind}">
+  const players = items.filter(i => i.kind === 'player'), shown = items.filter(i => i.kind !== 'player');
+  if (players.length) shown.push({ kind: 'squad', label: `elenco do ${S().fut.club}: ${players.length} jogadores`, value: players.reduce((t, i) => t + i.value, 0) });
+  $('#inv-items').innerHTML = shown.length ? shown.map(i => `<article class="glass icard icard--${i.kind}">
     ${i.img ? `<img src="assets/${i.img}.webp" alt="" loading="lazy">` : `<span class="icard__ico" aria-hidden="true"></span>`}
-    <div><span class="tag tag--dark">${{ car: 'veículo', animal: 'animal', land: 'terra', good: 'armazém' }[i.kind]}</span><h4>${esc(i.label)}</h4>${i.value ? `<p class="muted small">vale cerca de ${brl(i.value)}</p>` : ''}</div></article>`).join('')
+    <div><span class="tag tag--dark">${{ car: 'veículo', animal: 'animal', land: 'terra', good: 'armazém', squad: 'futebol', player: 'jogador de futebol' }[i.kind]}</span><h4>${esc(i.label)}</h4>${i.value ? `<p class="muted small">vale cerca de ${brl(i.value)}</p>` : ''}</div></article>`).join('')
     : '<p class="empty glass">Nada para trocar ainda. Compre carros, animais, terras ou guarde sacas no armazém.</p>';
+  renderFeira();
+  const cs = [...(S().cards || [])].sort((a, b) => CD.value(b) - CD.value(a));
+  $('#cd-sum').textContent = cs.length ? `${cs.length} cartas, valem ${brl(cs.reduce((t, c) => t + CD.value(c), 0))}` : 'nenhuma carta ainda';
+  $('#cd-list').innerHTML = cs.map(c => `<div class="tcard-slot">${CD.cardHTML(c, { small: true })}<button class="btn btn--glass btn--sm" data-act="card-sell" data-id="${c.id}">vender ${brl(Math.round(CD.value(c) * CD.SELL))}</button></div>`).join('') || '<p class="empty glass">Ganhe cartas na roleta do dia ou abra um pacote. Cartas valem dinheiro, pagam terras e trocam com outros jogadores.</p>';
   const ppl = TUI.online();
   $('#inv-peers').innerHTML = ppl.length ? ppl.map(p => `<li><span class="who__av">${avatarSVG(p.look || {}, { label: p.name })}</span><span>${esc(p.name)}<small class="muted"> nível ${p.level}</small></span>
-    <button class="btn btn--gold btn--sm" data-act="trade-invite" data-id="${esc(p.pid)}">propor troca</button></li>`).join('') : '<li class="muted small">Ninguém online agora. Chame os amigos pelo link do jogo.</li>';
+    <button class="btn btn--gold btn--sm" data-act="trade-invite" data-id="${esc(p.pid)}">propor troca</button></li>`).join('') : '<li class="muted small">Nenhuma pessoa online agora. Chame os amigos pelo link do jogo.</li>';
+  // bots da feira também aparecem na lista, marcados como bot
+  const bots = [...new Set([...(S().feira?.list || []).map(x => x.bot), S().feira?.want?.bot].filter(Boolean))];
+  $('#inv-peers').insertAdjacentHTML('beforeend', bots.map(n => `<li class="is-bot"><span class="who__av">${avatarSVG(NPC_LOOK(n), { label: n })}</span><span>${esc(n)}<small class="muted"> negociante</small></span>
+    <button class="btn btn--glass btn--sm" data-act="fe-goto">ver banca</button></li>`).join(''));
 }
-G.onLobby = l => TUI.attach(l);
+// visual estável por nome de bot
+const NPC_LOOK = n => { let h = 0; for (const c of n) h = (h * 31 + c.charCodeAt(0)) >>> 0; return { skin: 1 + h % 5, hair: ['curto', 'degradê', 'longo', 'coque', 'raspado', 'boné'][h % 6], hairColor: 1 + (h >> 3) % 5, beard: ['nenhuma', 'por fazer', 'cavanhaque'][(h >> 5) % 3], outfit: ['camisa', 'jaqueta', 'terno'][(h >> 7) % 3], cloth: 1 + (h >> 9) % 6, acc: ['óculos escuros', 'corrente de ouro', 'nenhum'][(h >> 11) % 3] }; };
+// feira dos bots: o índice da economia vem do ranking (patrimônio dos jogadores)
+let econ = 1, econAt = 0;
+function renderFeira() {
+  if (Date.now() - econAt > 60000) { econAt = Date.now(); Auth.ranking?.().then(r => { const v = FE.econIndex((r || []).map(x => Number(x.worth))); if (Math.abs(v - econ) > 0.001) { econ = v; if (currentTab === 'inventario') renderFeira(); } }).catch(() => {}); }
+  const f = FE.refresh(S(), econ);
+  $('#fe-idx').textContent = `economia dos jogadores: ${f.idx >= 1.02 ? 'aquecida' : f.idx <= 0.98 ? 'fraca' : 'estável'} (preços ${f.idx >= 1 ? '+' : ''}${Math.round((f.idx - 1) * 100)}%)`;
+  $('#fe-list').innerHTML = f.list.length ? f.list.map(it => `<article class="glass icard icard--${it.kind}">
+    ${it.kind === 'car' ? `<img src="assets/${L.CARS[it.model].img}.webp" alt="" loading="lazy">` : '<span class="icard__ico" aria-hidden="true"></span>'}
+    <div><span class="tag tag--violet">${esc(it.bot)}</span><h4>${esc(it.label)}</h4><p class="muted small">pede ${brl(it.ask)}${it.kind === 'acc' && PK.ACC_PERKS[it.acc] ? `, ${esc(PK.label(PK.ACC_PERKS[it.acc]))}` : ''}</p>
+    <button class="btn btn--gold btn--sm" data-act="fe-buy" data-id="${it.id}">negociar</button></div></article>`).join('') : '<p class="empty glass">Bancas vazias. Volte no próximo mês.</p>';
+  const w = f.want;
+  $('#fe-want').innerHTML = w ? `<article class="glass offer"><div><span class="tag tag--violet">${esc(w.bot)}</span> quer comprar <strong>${esc(w.label)}</strong></div>
+    <p>Oferece <b class="good">${brl(w.bid)}</b> <span class="muted small">(vale cerca de ${brl(w.value)})</span></p><button class="btn btn--gold btn--sm" data-act="fe-sell">negociar a venda</button></article>` : '';
+}
+function feiraBuy(id) {
+  const it = S().feira?.list.find(x => x.id === id); if (!it) return;
+  openDeal({ title: it.label, sub: `Valor de referência ${brl(it.value)}.`, who: it.bot, deal: FE.buyDeal(it), onDone: price => {
+    if (!price) return;
+    const err = FE.buy(S(), id, price);
+    if (err) return say(err[0].toUpperCase() + err.slice(1), true);
+    note(`feira: ${it.label} de ${it.bot}`, -price); award('trade'); confetti(30); say(`Comprado por ${brl(price)}.`); save(); render();
+  } });
+}
+function feiraSell() {
+  const w = S().feira?.want; if (!w) return;
+  openDeal({ title: `vender ${w.label}`, sub: `O bot pagou ${brl(w.bid)} de primeira. Peça mais, mas sem exagero.`, who: w.bot, deal: FE.sellDeal(w), onDone: price => {
+    if (!price) return;
+    const err = FE.sell(S(), price);
+    if (err) return say(err[0].toUpperCase() + err.slice(1), true);
+    note(`feira: venda de ${w.label} para ${w.bot}`, price); award('trade'); say(`Vendido por ${brl(price)}.`); save(); render();
+  } });
+}
+G.onLobby = l => { TUI.attach(l); CHUI.attach(l); };
 G.onPeers = () => { if (currentTab === 'inventario') renderInv(); };
 document.addEventListener('submit', e => { if (e.target.id === 'tr-chat-form') { e.preventDefault(); TUI.chat(); } });
 
@@ -452,7 +504,17 @@ const ACTS = {
   logout() { Auth.logout(); },
   'st-kind'(id) { SUI.setKind(id); },
   'job-start'() { JUI.start(); },
-  'ft-found'() { FUI.found(); },
+  'fe-buy'(id) { feiraBuy(id); },
+  'fe-sell'() { feiraSell(); },
+  'card-close'() { $('#dlg-card').close(); },
+  'fe-goto'() { $('.feira').scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+  'ft-take'(id) { FUI.take(id); },
+  'ft-div'(id) { FUI.setPickDiv(id); },
+  'ft-haggle'(id) { FUI.haggle(id); },
+  'ft-quick'() { FUI.quick(); },
+  'ft-stadium'() { FUI.stadium(); },
+  'ft-offer-yes'(id) { FUI.answer(id, true); },
+  'ft-offer-no'(id) { FUI.answer(id, false); },
   'trade-invite'(id) { const d = $('#dlg-profile'); if (d.open) d.close(); TUI.invite(id); },
   'trade-yes'() { TUI.answer(true); },
   'trade-no'() { TUI.answer(false); },
@@ -511,6 +573,25 @@ const ACTS = {
       S().offers.splice(S().offers.indexOf(o), 1); S().lands.push({ ...o, own: true, leasedOut: false }); say('Terra registrada no seu nome.'); award('land');
     }
   },
+  'buy-land-cards'(idv) {
+    const o = find(S().offers, idv); if (!o) return;
+    if (!confirm(`Pagar ${brl(o.value)} com cartas? Cada carta vale ${Math.round(CD.LAND_RATE * 100)}% do valor dela e o troco volta em dinheiro.`)) return;
+    const r = CD.payWith(S(), o.value);
+    if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true);
+    S().offers.splice(S().offers.indexOf(o), 1); S().lands.push({ ...o, own: true, leasedOut: false });
+    note(`compra de ${o.ha} ha com ${r.used.length} cartas`, r.change); award('land'); confetti(50);
+    say(`Terra comprada com ${r.used.length} carta${r.used.length > 1 ? 's' : ''}.${r.change ? ` Troco: ${brl(r.change)}.` : ''}`);
+  },
+  'card-pack'() {
+    const r = CD.buyPack(S());
+    if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true);
+    note('pacote de cartas', -CD.PACK_PRICE); showCard(r.card);
+  },
+  'card-sell'(id) {
+    const c = (S().cards || []).find(x => x.id === id); if (!c) return;
+    if (!confirm(`Vender ${CD.label(c)} para a loja por ${brl(Math.round(CD.value(c) * CD.SELL))}?`)) return;
+    const v = CD.sell(S(), id); note(`venda da carta ${CD.label(c)}`, v); say(`Carta vendida por ${brl(v)}.`);
+  },
   'rent-land'(idv) {
     const o = find(S().offers, idv); if (!o) return;
     S().offers.splice(S().offers.indexOf(o), 1); S().lands.push({ ...o, own: false, leasedOut: false });
@@ -536,7 +617,7 @@ const ACTS = {
   },
   'sell-herd'(idv) {
     const h = find(S().herd, idv);
-    const v = h.heads * L.arrobas(h.kg) * S().prices.arroba * (1 - L.cattleFee(S()));
+    const v = h.heads * L.arrobas(h.kg) * S().prices.arroba * (1 - L.cattleFee(S())) * PK.mult(S(), 'cattle');
     S().herd.splice(S().herd.indexOf(h), 1); S().money += v; note(`venda de ${h.heads} cabeças`, v); say(`Lote vendido por ${brl(v)}.`); award('sellherd');
   },
   'buy-good'(k) { const n = qty(`q-${k}`); if (n && pay(n * S().prices[k], `compra de ${n} sacas de ${GOODS[k]}`)) { S().stock[k] += n; say('Mercadoria no armazém.'); } },
@@ -563,7 +644,7 @@ const ACTS = {
     const v = qty('loan');
     if (!v) return;
     if (v > L.creditLimit(S())) return say('Acima do seu crédito. O banco empresta contra terra e gado.', true);
-    S().loans.push({ id: S().nextId++, bal: v, rate: L.BANK_RATE, left: 12, missed: 0 });
+    S().loans.push({ id: S().nextId++, bal: v, rate: +(L.BANK_RATE * PK.mult(S(), 'loan')).toFixed(4), left: 12, missed: 0 });
     S().money += v; note('empréstimo do banco, 12 parcelas', v); say(`${brl(v)} na conta. A parcela sai todo mês.`);
   },
   payoff(idv) { const l = find(S().loans, idv); if (pay(l.bal, 'quitação de empréstimo')) { S().loans.splice(S().loans.indexOf(l), 1); say('Dívida quitada.'); } },
@@ -613,7 +694,7 @@ document.addEventListener('click', e => {
   if (!b || b.disabled) return;
   const act = b.dataset.act;
   ACTS[act]?.(b.dataset.id, b);
-  if (['rl-double', 'pass-claim', 'st-train', 'trade-invite', 'trade-yes', 'trade-no', 'trade-add', 'trade-chips', 'trade-money', 'trade-remove', 'trade-lock', 'trade-confirm', 'trade-cancel', 'ft-play', 'ft-close', 'job-start', 'job-accept', 'job-confirm', 'job-repair', 'double', 'split', 'logout', 'wipe', 'st-enter', 'stable-close', 'sit', 'leave-table', 'invite', 'bet', 'hit', 'stand', 'bet-clear', 'race-go', 'race-pick', 'race-next', 'mute', 'rl-spin', 'rl-clear', 'av-press', 'tr-buy', 'tr-sell', 'tr-close', 'tr-asset', 'spin-daily', 'map-lot', 'show-card'].includes(act)) return;
+  if (['rl-double', 'pass-claim', 'st-train', 'trade-invite', 'trade-yes', 'trade-no', 'trade-add', 'trade-chips', 'trade-money', 'trade-remove', 'trade-lock', 'trade-confirm', 'trade-cancel', 'ft-play', 'ft-close', 'ft-quick', 'fe-buy', 'fe-sell', 'fe-goto', 'card-close', 'ft-haggle', 'job-start', 'job-accept', 'job-confirm', 'job-repair', 'double', 'split', 'logout', 'wipe', 'st-enter', 'stable-close', 'sit', 'leave-table', 'invite', 'bet', 'hit', 'stand', 'bet-clear', 'race-go', 'race-pick', 'race-next', 'mute', 'rl-spin', 'rl-clear', 'av-press', 'tr-buy', 'tr-sell', 'tr-close', 'tr-asset', 'spin-daily', 'map-lot', 'show-card'].includes(act)) return;
   checkAch(); save(); render();
 });
 $('#map-back').addEventListener('click', () => { lmap?.flyTo([-14, -51], 4, { duration: 1.4 }); $('#map-title').textContent = 'satélite'; });
@@ -709,3 +790,29 @@ Auth.boot().then(async st => {
   const live = await Live.start().catch(() => 'off');
   if (live !== 'banned') maybeDaily();
 });
+
+// efeito ao clicar: anel dourado + faíscas (só em botões; respeita "reduzir movimento")
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('.btn, .opt, .subtab, .clubcard, [data-tab]');
+  if (!b || b.disabled || RM.matches) return;
+  const at = (el, x, y) => { el.style.left = `${x}px`; el.style.top = `${y}px`; document.body.append(el); return el; };
+  const ring = at(Object.assign(document.createElement('span'), { className: 'fx-ripple' }), e.clientX, e.clientY);
+  setTimeout(() => ring.remove(), 520);
+  if (!b.matches('.btn--gold, .clubcard')) return;
+  for (let i = 0; i < 8; i++) {
+    const s = at(Object.assign(document.createElement('span'), { className: 'fx-spark' }), e.clientX, e.clientY), a = (i / 8) * Math.PI * 2 + Math.random() * 0.5, d = 28 + Math.random() * 26;
+    s.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(${Math.cos(a) * d}px, ${Math.sin(a) * d}px) scale(.2)`, opacity: 0 }], { duration: 480 + Math.random() * 200, easing: 'cubic-bezier(.2,.7,.3,1)' }).finished.then(() => s.remove());
+  }
+  sfx.play('chip', 0.12);
+}, { passive: true });
+
+// revelação de carta nova (pacote ou roleta)
+function showCard(c) {
+  const d = $('#dlg-card');
+  $('#cd-reveal').innerHTML = CD.cardHTML(c);
+  $('#cd-reveal-txt').innerHTML = `<strong>${esc(CD.label(c))}</strong><br>vale ${brl(CD.value(c))}`;
+  if (!d.open) d.showModal();
+  const k = ['diamante', 'mestre', 'challenger'].includes(c.tier);
+  sfx.play('stack', 0.7); confetti(k ? 160 : 50);
+  save(); render();
+}

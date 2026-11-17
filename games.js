@@ -66,6 +66,7 @@ export const DAILY_WHEEL = [
   { kind: 'chips', amount: 2500, label: '2.500 fichas', w: 15 },
   { kind: 'calves', amount: 5, label: '5 bezerros', w: 14 },
   { kind: 'xp', amount: 250, label: '250 XP', w: 12 },
+  { kind: 'card', amount: 1, label: 'carta rara', w: 12 },
   { kind: 'money', amount: 50000, label: 'R$ 50 mil', w: 9 },
   { kind: 'chips', amount: 10000, label: '10.000 fichas', w: 7 },
   { kind: 'money', amount: 250000, label: 'R$ 250 mil', w: 3 },

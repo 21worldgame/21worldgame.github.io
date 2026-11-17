@@ -35,10 +35,16 @@ function setMode(m) {
 }
 function showGate() {
   if (dlg().open) return;
-  const providers = (SUPABASE.providers || []).filter(p => ['github', 'google'].includes(p));
-  $('#au-oauth').hidden = !providers.length;
-  $('#au-oauth-btns').innerHTML = providers.map(p => `<button type="button" class="btn btn--glass" data-au-oauth="${p}">entrar com ${p === 'github' ? 'GitHub' : 'Google'}</button>`).join('');
-  setMode('in');
+  const show = providers => {
+    $('#au-oauth').hidden = !providers.length;
+    $('#au-oauth-btns').innerHTML = providers.map(p => `<button type="button" class="btn btn--glass btn--oauth" data-au-oauth="${p}">${p === 'google' ? '<span class="g-ico" aria-hidden="true">G</span>' : ''}entrar com ${p === 'github' ? 'GitHub' : 'Google'}</button>`).join('');
+  };
+  show((SUPABASE.providers || []).filter(p => ['github', 'google'].includes(p)));
+  // o botão do Google aparece sozinho quando o provedor for ligado no projeto
+  fetch(`${SUPABASE.url}/auth/v1/settings`, { headers: { apikey: SUPABASE.anonKey } }).then(r => r.json())
+    .then(st => show(['google', 'github'].filter(p => st?.external?.[p]))).catch(() => {});
+  let had = false; try { had = !!localStorage.getItem('21world.hadAccount'); } catch {}
+  setMode(had ? 'in' : 'up');                // quem nunca entrou vê primeiro o cadastro
   dlg().showModal();
   $('#au-form [name="email"]').focus();
 }
@@ -57,11 +63,13 @@ async function submit(e) {
       const { data, error } = await c.auth.signUp({ email: f.email.trim(), password: f.password,
         options: { data: { name: cleanName(f.name) }, emailRedirectTo: location.origin + location.pathname } });
       if (error) throw error;
-      if (!data.session) {   // confirmação por e-mail ligada: a conta só entra depois do link
+      if (!data.session) {   // projeto ainda com confirmação ligada: tenta entrar direto (o banco já confirma a conta sozinho)
+        const again = await c.auth.signInWithPassword({ email: f.email.trim(), password: f.password });
+        if (!again.error) { user = again.data.user; $('#au-form [name="password"]').value = ''; await afterLogin(); return; }
         setMode('in');
         $('#au-form [name="password"]').value = '';
         setErr('');
-        $('#au-info').textContent = 'Enviamos um link de confirmação para o seu e-mail. Clique nele e depois entre aqui.';
+        $('#au-info').textContent = 'Conta criada. Entre com o seu e-mail e senha.';
         $('#au-info').hidden = false;
         return;
       }
@@ -78,16 +86,23 @@ async function submit(e) {
   } finally { setBusy(false); }
 }
 
-async function forgot() {
-  const email = $('#au-form [name="email"]').value.trim();
-  if (!email) return setErr('Digite seu e-mail e clique de novo em "esqueci a senha".');
-  setBusy(true); setErr('');
-  try {
-    const { error } = await (await client()).auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
-    if (error) throw error;
-    $('#au-info').textContent = 'Se esse e-mail tiver conta, enviamos um link para criar uma senha nova.';
-    $('#au-info').hidden = false;
-  } catch (err) { setErr(translateError(err)); } finally { setBusy(false); }
+// recuperar senha sem e-mail: o pedido vai para análise da equipe, que troca a senha manualmente
+function forgot() {
+  const d = $('#dlg-forgot'), f = $('#fg-form');
+  f.reset(); f.hidden = false; $('#fg-done').hidden = true; $('#fg-err').hidden = true;
+  f.email.value = $('#au-form [name="email"]').value.trim();
+  d.showModal();
+}
+async function sendForgot(e) {
+  e.preventDefault();
+  const f = e.target, err = $('#fg-err');
+  const email = f.email.value.trim().toLowerCase(), pw = f.password.value;
+  const bad = (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) && 'Digite um e-mail válido.') || validatePassword(pw) || (pw !== f.again.value && 'As duas senhas precisam ser iguais.') || (cleanName(f.nick.value).length < 3 && 'Digite o nome do seu personagem no jogo.');
+  if (bad) { err.textContent = bad; err.hidden = false; return; }
+  err.hidden = true; f.querySelector('button').disabled = true;
+  try { await (await client()).rpc('request_password_reset', { p_email: email, p_name: cleanName(f.nick.value), p_details: f.details.value.slice(0, 300), p_password: pw }); } catch {}
+  f.querySelector('button').disabled = false;
+  f.hidden = true; $('#fg-done').hidden = false;      // a resposta é sempre a mesma: não revela se o e-mail tem conta
 }
 
 async function oauth(provider) {
@@ -143,7 +158,7 @@ export async function push() {
 function scheduleSync() {
   if (!user) return;
   clearTimeout(timer);
-  timer = setTimeout(() => push().catch(() => {}), 5000);
+  timer = setTimeout(() => push().catch(() => {}), 1500);   // quase em tempo real: outro aparelho vê o progresso em segundos
 }
 export async function ranking() {
   if (!sb || !user) return null;
@@ -162,17 +177,16 @@ async function afterLogin() {
   if (previous !== user.id) {
     if (cloud) writeSave(user.id, cloud.data);
     else {
-      const anon = localStorage.getItem(keyFor(null));
-      const name = cleanName(user.user_metadata?.name);
-      let state = blankState(name);
-      if (anon && confirm('Encontramos progresso salvo neste aparelho. Quer levar esse progresso para a sua conta?')) { try { state = JSON.parse(anon); if (name && (!state.avatar?.name || state.avatar.name === 'você')) state.avatar.name = name; } catch {} }
-      writeSave(user.id, state);
+      const fresh = blankState(cleanName(user.user_metadata?.name || user.user_metadata?.full_name));   // conta nova começa do zero
+      fresh.chips = (fresh.chips || 0) + 500;                                                               // bônus de boas-vindas da tela de entrada
+      writeSave(user.id, fresh);
     }
     location.reload();
     return new Promise(() => {});
   }
   if (cloud && (cloud.data?.savedAt || 0) > (G.S.savedAt || 0) + 1000) { writeSave(user.id, cloud.data); location.reload(); return new Promise(() => {}); }
   if (dlg().open) dlg().close();
+  try { localStorage.setItem('21world.hadAccount', '1'); } catch {}
   G.afterSave = scheduleSync;
   await push().catch(() => {});
   renderAccount();
@@ -208,7 +222,7 @@ export async function wipe() {
 // ---------- início ----------
 export async function boot() {
   if (!configured()) return 'local';
-  document.addEventListener('submit', e => { if (e.target.id === 'au-form') submit(e); if (e.target.id === 'rc-form') saveNewPassword(e); });
+  document.addEventListener('submit', e => { if (e.target.id === 'au-form') submit(e); if (e.target.id === 'rc-form') saveNewPassword(e); if (e.target.id === 'fg-form') sendForgot(e); });
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-au-tab]'); if (t) { $('#au-info').hidden = true; setMode(t.dataset.auTab); }
     const o = e.target.closest('[data-au-oauth]'); if (o) oauth(o.dataset.auOauth);
@@ -221,6 +235,12 @@ export async function boot() {
   c.auth.onAuthStateChange(ev => { if (ev === 'PASSWORD_RECOVERY') { recovering = true; showRecovery(); } });
   const { data } = await c.auth.getSession();
   if (!data.session) { forgetUser(); showGate(); return 'gate'; }
+  const check = await c.auth.getUser();
+  if (check.error?.status === 401 || check.error?.status === 403 || (!check.error && !check.data?.user)) {
+    try { localStorage.removeItem(keyFor(data.session.user.id)); } catch {}
+    await c.auth.signOut().catch(() => {});
+    forgetUser(); showGate(); return 'gate';
+  }
   user = data.session.user;
   if (recovering) { showRecovery(); return 'recovery'; }       // a conta só segue depois de definir a senha nova
   await afterLogin();

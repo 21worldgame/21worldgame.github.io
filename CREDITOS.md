@@ -13,6 +13,13 @@ Arquivos de terceiros usados no 21 World. As licenças CC BY e CC BY-SA exigem e
 - car-scania: Lav Ulv from Viby J, Denmark, CC BY 2.0, https://commons.wikimedia.org/wiki/File:XJ92901_(17.05.02,_Motorvej_501,_Viby)DSC_6282_Balancer_(39893025501).jpg
 - car-deere: Radosław Drożdżewski (Zwiadowca21), CC BY-SA 3.0, https://commons.wikimedia.org/wiki/File:Maimarkt_Mannheim_2014_-_John_Deere_6125R_12.JPG
 - car-hilux: Chanokchon, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:2021_Toyota_Hilux_Revo_Prerunner_Double-Cab_2.4_Mid.jpg
+- photo-vegas: Clément Bardot, CC BY-SA 3.0, https://commons.wikimedia.org/wiki/File:Las_Vegas_Strip_at_night,_2012.jpg
+- photo-slots: Tristan Surtel, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Slot_machines_at_Monte_Carlo_hotel,_Las_Vegas.jpg
+- photo-blackjack: DanielPenfield, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:DelLagoCasinoBlackjackTable.jpg
+- photo-roulette: Oniff, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Roulette_casino.JPG
+- photo-chips: slgckgc, CC BY 2.0, https://commons.wikimedia.org/wiki/File:Poker_Chips_with_Cards_and_Dice_(51803864625).jpg
+- photo-horses: MJ Boswell, CC BY 2.0, https://commons.wikimedia.org/wiki/File:Horse_Race_Finish_Line_(11888565543).jpg
+- photo-stadium: Rodrigo Padula, CC BY-SA 3.0, https://commons.wikimedia.org/wiki/File:Maracan%C3%A3_Stadium.jpeg
 - farm-pasto: Carlos Ebert, CC BY 2.0, https://commons.wikimedia.org/wiki/File:Nelore_cattle_Brasil.jpg
 - farm-pasto2: Carlos Ebert, CC BY 2.0, https://commons.wikimedia.org/wiki/File:Nelore_cattle_-_12704276665.jpg
 - farm-bezerro: Scott Bauer, U.S. Department of Agriculture, Public domain, https://commons.wikimedia.org/wiki/File:Nelore_beef_cattle.jpg
