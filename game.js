@@ -911,7 +911,7 @@ function worldClock() {
   const m = W.current(w, t);
   $('#wc-m').textContent = `${W.monthName(m)}, ano ${W.yearOf(m)}`;
   $('#wc-bar').style.transform = `scaleX(${W.progress(w, t).toFixed(3)})`;
-  $('#wc-left').textContent = `${W.monthName(m + 1)} chega em ${W.fmt(W.msLeft(w, t))}`;
+  $('#wc-left').textContent = `${W.monthName(m + 1)} em ${W.fmt(W.msLeft(w, t))}`;
 }
 setInterval(() => { if (!Live.worldReady) return; worldClock(); worldMonths(); }, 1000);
 

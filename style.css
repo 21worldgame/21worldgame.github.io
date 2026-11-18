@@ -1509,3 +1509,38 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .howto { border-color: rgba(125,211,252,.35); background: linear-gradient(90deg, rgba(56,189,248,.12), rgba(139,92,246,.08)); }
 .howto__t::before { background: linear-gradient(135deg, #38bdf8, #8b5cf6); color: #fff; }
 .perks { background: linear-gradient(90deg, rgba(56,189,248,.10), rgba(139,92,246,.06)); border-color: rgba(125,211,252,.3); }
+
+/* cabeçalho numa linha só, tudo da mesma altura (relógio compacto) */
+@media (min-width: 40.01rem) {
+  .hud__in { flex-wrap: nowrap; gap: 12px; }
+  .hud__in > .stats-hud { margin-right: auto; }
+  .hud__in > .btn, .tkmenu > .btn { height: 44px; min-height: 44px; white-space: nowrap; }
+  .worldclock { position: relative; display: flex; flex-direction: column; justify-content: center; gap: 1px; height: 44px; min-width: 150px; padding: 4px 12px 6px; overflow: hidden; border-radius: 12px; flex: none; }
+  .worldclock__t { display: none; }
+  .worldclock b { font-size: .88rem; line-height: 1.1; justify-self: auto; }
+  .worldclock small { font-size: .68rem; line-height: 1.1; text-align: left; opacity: .75; }
+  .worldclock__bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; margin: 0; border-radius: 0; }
+}
+@media (min-width: 40.01rem) and (max-width: 78rem) {
+  .hud__in { flex-wrap: wrap; }
+  .brand__word { display: none; }
+}
+/* telas médias: continua numa linha, com botões só de ícone */
+@media (min-width: 60rem) and (max-width: 78rem) {
+  .hud__in { flex-wrap: nowrap; gap: 8px; }
+  .btn--missions { font-size: 0; gap: 0; padding-inline: 12px; } .btn--missions svg { width: 20px; height: 20px; }
+  .btn--missions .pill { font-size: .7rem; }
+  .hud__in > .btn, .tkmenu > .btn { padding-inline: 10px; }
+  .stats-hud dd { font-size: 1rem; }
+  .stats-hud { gap: 14px; }
+  .worldclock { min-width: 128px; }
+}
+/* tablet: duas linhas organizadas (dados em cima, botões embaixo) */
+@media (min-width: 40.01rem) and (max-width: 59.99rem) {
+  .hud__in { flex-wrap: wrap; row-gap: 8px; }
+  .stats-hud { flex: 1 1 auto; }
+  .hud__in > .btn, .tkmenu, .worldclock { order: 5; }
+  .worldclock { margin-left: auto; }
+}
+@media (min-width: 40.01rem) and (max-width: 59.99rem) { .hud__in > .btn--pass { order: 5; } }
+@media (min-width: 40.01rem) and (max-width: 59.99rem) { .stats-hud { min-width: 64%; } }
