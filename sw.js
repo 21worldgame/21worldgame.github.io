@@ -1,6 +1,6 @@
 // Service worker do 21 World: abre rápido (arquivos do jogo em cache) e atualiza em segundo plano.
 // Nunca guarda chamadas do Supabase (login, saves) nem do mapa: essas sempre vão para a rede.
-const VERSION = '21world-v12';
+const VERSION = '21world-v13';
 const CORE = ['./', 'index.html', 'style.css', 'tokens.css', 'base.css', 'game.js', 'logic.js', 'store.js', 'progress.js', 'casino.js', 'table.js', 'bj.js',
   'avatar.js', 'net.js', 'auth.js', 'authrules.js', 'live.js', 'supabase-config.js', 'manifest.webmanifest', 'assets/brand/logo-mark.svg', 'assets/brand/icon-192.png'];
 
@@ -11,7 +11,7 @@ self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 
-const NEVER = /supabase\.co|arcgisonline|tile|nostr|relay|\/rest\/|\/auth\//;
+const NEVER = /version.json|supabase\.co|arcgisonline|tile|nostr|relay|\/rest\/|\/auth\//;
 const LIBS = /cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com|fonts\.(googleapis|gstatic)\.com/;
 
 self.addEventListener('fetch', e => {

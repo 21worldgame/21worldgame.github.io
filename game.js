@@ -939,15 +939,20 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
-let loadedVersion = null, updateShown = false;
+// Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
+const APP_VERSION = 1;
+let updateShown = false, updateMsg = '';
 async function checkUpdate() {
   if (updateShown) return;
   try {
-    const r = await fetch(`${location.pathname}?v=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
-    const v = r.headers.get('last-modified') || r.headers.get('etag');
-    if (!r.ok || !v) return;
-    if (loadedVersion === null) { loadedVersion = v; return; }
-    if (v !== loadedVersion) showUpdate();
+    const r = await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (!r.ok) return;
+    const j = await r.json(), v = Number(j.v) || 0;
+    if (v <= APP_VERSION) return;
+    // já recarregou por causa desta versão e ainda veio código velho (cache): não fica em laço, só mostra o botão
+    let tried = false; try { tried = sessionStorage.getItem('21world.updTried') === String(v); } catch {}
+    updateMsg = String(j.msg || '').slice(0, 140);
+    showUpdate(!tried, v);
   } catch {}
 }
 // a página recarrega sozinha em 15 s, a não ser que a pessoa esteja no meio de uma mão, corrida, turno ou troca
@@ -959,13 +964,15 @@ async function doReload() {
   try { await (await navigator.serviceWorker?.getRegistration())?.update(); } catch {}
   location.reload();
 }
-function showUpdate() {
+function showUpdate(auto = true, v = 0) {
   updateShown = true;
+  try { sessionStorage.setItem('21world.updTried', String(v)); } catch {}
   const host = [...document.querySelectorAll('dialog[open]')].pop() || document.body;   // janela aberta deixa o resto sem clique
   host.insertAdjacentHTML('beforeend', `<div class="upd" role="alert"><span class="upd__dot" aria-hidden="true"></span>
-    <span><strong>Nova atualização do 21 World!</strong> <span id="upd-txt">Recarregando em 15 s. Seu progresso fica salvo.</span></span>
+    <span><strong>Nova atualização do 21 World!</strong> <span id="upd-txt">${updateMsg ? esc(updateMsg) + ' ' : ''}${auto ? 'Recarregando em 15 s.' : ''} Seu progresso fica salvo.</span></span>
     <button class="btn btn--gold btn--sm" type="button" id="upd-go">recarregar agora</button></div>`);
   $('#upd-go').addEventListener('click', doReload);
+  if (!auto) return;
   let left = 15;
   const t = setInterval(() => {
     if (busyNow()) { $('#upd-txt').textContent = 'Recarrega assim que você terminar a jogada. Seu progresso fica salvo.'; return; }
@@ -973,7 +980,7 @@ function showUpdate() {
     $('#upd-txt').textContent = `Recarregando em ${left} s. Seu progresso fica salvo.`;
   }, 1000);
 }
-checkUpdate(); setInterval(checkUpdate, 15000);
+checkUpdate(); setInterval(checkUpdate, 30000);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
 addEventListener('focus', checkUpdate);
 
