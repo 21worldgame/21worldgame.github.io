@@ -130,7 +130,7 @@ function draw(vis) {
 }
 
 // ---------- cotações ao vivo no topo de todas as telas ----------
-const COMMOD = { soja: ['Soja (saca)', 'soja'], milho: ['Milho (saca)', 'milho'], cafe: ['Café (saca)', 'cafe'], arroba: ['Arroba do boi', 'arroba'], bezerro: ['Bezerro', 'bezerro'], frango: ['Frango vivo (kg)', 'frango'] };
+const COMMOD = { soja: ['Soja (saca)', 'soja'], milho: ['Milho (saca)', 'milho'], cafe: ['Café (saca)', 'cafe'], arroba: ['Arroba do boi', 'arroba'], bezerro: ['Bezerro', 'bezerro'], frango: ['Frango vivo (kg)', 'frango'], laranja: ['Laranja (caixa)', 'laranja'] };
 function tickerItems() {
   return [...Object.entries(MK.ASSETS).map(([k, a]) => `<li class="tk" data-tk="${k}"><b>${a.ticker}</b><small>${a.name}</small><i class="tk__p"></i><i class="tk__c"></i></li>`),
     ...Object.entries(COMMOD).map(([k, [label]]) => `<li class="tk tk--farm" data-tk="${k}"><b>${label}</b><small>mês do mundo</small><i class="tk__p"></i><i class="tk__c"></i></li>`)].join('');

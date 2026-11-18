@@ -626,3 +626,50 @@ import * as GR from './granja.js';
   assert.ok(L.netWorth({ ...L.newState(), granja: s.granja }) > L.netWorth(L.newState()) - 1);
 }
 console.log('granja ok');
+// pomar de laranja: forma, colhe a cada 4 meses, defensivo segura a praga; matadouro: abate rende mais que vender vivo, sem máquina de dinheiro
+import * as PM from './pomar.js';
+import * as AB from './abate.js';
+{
+  const mk = () => { const s = L.newState(() => 0.5); PM.ensure(s); s.money = 1e7; s.lands.push({ id: 77, own: true, region: 'x', ha: 20, value: 400000, use: 'lavoura', cap: 1, leasedOut: false }); return s; };
+  const s = mk(), l = s.lands[0];
+  assert.equal(PM.plant(s, l), null); assert.ok(PM.plant(s, l).includes('ocupada'));
+  assert.equal(L.capacity(s), 0, 'pomar não serve de pasto');
+  for (let i = 0; i < PM.ORANGE.grow; i++) PM.monthly(s, () => 0.5);
+  assert.ok(s.stock.laranja > 0, 'primeira colheita no fim da formação');
+  const c1 = s.stock.laranja; for (let i = 0; i < PM.ORANGE.cycle; i++) PM.monthly(s, () => 0.5);
+  assert.ok(s.stock.laranja > c1, 'colhe de novo 4 meses depois');
+  // sem defensivo a praga sobe e a colheita cai
+  const s2 = mk(), l2 = s2.lands[0]; PM.plant(s2, l2); PM.toggleSpray(l2);
+  for (let i = 0; i < 6; i++) PM.monthly(s2, () => 0.99);
+  assert.ok(s2.stock.laranja < c1, 'sem veneno deveria colher menos');
+  // retorno: em 2 anos (24 meses) o pomar paga plantio e manutenção
+  const s3 = mk(), l3 = s3.lands[0], m0 = s3.money; PM.plant(s3, l3);
+  for (let i = 0; i < 24; i++) PM.monthly(s3, () => 0.5);
+  assert.ok(s3.money + s3.stock.laranja * PM.ORANGE.price > m0, 'pomar deveria se pagar em 2 anos');
+  // abate
+  const a = L.newState(() => 0.5); a.money = 5e6; a.herd.push({ id: 1, heads: 10, kg: 450 });
+  const vivo = AB.perHead(a, 450, 'vivo', L.cattleFee(a)), terc = AB.perHead(a, 450, 'terceiros'), prop = AB.perHead(a, 450, 'proprio');
+  assert.ok(prop > terc && terc > vivo);
+  assert.ok(AB.perHead(a, 180, 'proprio') < a.prices.bezerro, 'bezerro abatido não pode dar lucro');
+  assert.ok(AB.buyAndSlaughter(a, 5).err.includes('frigorífico'));
+  assert.equal(AB.build(a), null);
+  const r = AB.slaughter(a, 1); assert.equal(r.own, 10); assert.ok(r.amount > 10 * vivo);
+  assert.ok(AB.buyAndSlaughter(a, 400).err.includes('só abate'));
+  const b = AB.buyAndSlaughter(a, 290); assert.ok(b.profit > 0 && b.profit < 290 * 600, 'lucro do boi comprado ' + b.profit);
+  // um mês inteiro no limite não paga o custo fixo + a desvalorização com folga absurda
+  assert.ok(b.profit + r.amount - 10 * vivo < AB.OWN.price, 'frigorífico se paga rápido demais');
+}
+console.log('laranja e abate ok');
+// descuido: sem defensivo o pomar dá prejuízo e pode morrer
+{
+  const s = L.newState(() => 0.5); PM.ensure(s); s.money = 1e7; s.lands.push({ id: 78, own: true, region: 'y', ha: 20, value: 400000, use: 'lavoura', cap: 1, leasedOut: false });
+  const l = s.lands[0], m0 = s.money; PM.plant(s, l); PM.toggleSpray(l);
+  let sd = 4; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 24; i++) PM.monthly(s, r);
+  assert.ok(s.money + s.stock.laranja * PM.ORANGE.price < m0, 'descuidado deveria dar prejuízo');
+  const s2 = L.newState(() => 0.5); PM.ensure(s2); s2.money = 1e7; s2.lands.push({ id: 79, own: true, region: 'z', ha: 10, value: 200000, use: 'lavoura', cap: 1, leasedOut: false });
+  PM.plant(s2, s2.lands[0]); PM.toggleSpray(s2.lands[0]);
+  for (let i = 0; i < 24 && s2.lands[0].orchard; i++) PM.monthly(s2, () => 0.01);
+  assert.equal(s2.lands[0].orchard, undefined, 'greening sem controle deveria matar o pomar');
+}
+console.log('descuido ok');

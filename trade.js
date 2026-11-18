@@ -4,7 +4,7 @@ import { CARS, region } from './logic.js';
 import { KINDS as ANIMAL, value as animalValue } from './stable.js';
 import * as CD from './cards.js';
 import { POS as FPOS, value as fValue, salary as fSalary } from './futebol.js';
-export const GOODS = { soja: 'soja', milho: 'milho', cafe: 'café' };
+export const GOODS = { soja: 'soja', milho: 'milho', cafe: 'café', laranja: 'laranja (caixas)' };
 export const MAX_ITEMS = 8;
 
 // tudo o que o jogador tem e pode trocar

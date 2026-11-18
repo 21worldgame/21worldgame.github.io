@@ -1683,3 +1683,20 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
   .stats-hud > div { min-width: 0; }
   .stats-hud dd { white-space: nowrap; font-size: clamp(.95rem, 1.25vw, 1.2rem); }
 }
+
+/* pomar e frigorífico */
+.orchard { display: grid; grid-template-columns: 84px 1fr; gap: 10px; align-items: start; padding: 8px; border-radius: 12px; background: rgba(251,146,60,.08); border: 1px solid rgba(251,146,60,.35); }
+.orchard img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; }
+.orchard > div { display: grid; gap: 4px; }
+.btn--orange { border-color: rgba(251,146,60,.6); color: #fdba74; }
+.herd-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.abate-box { display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: center; padding: 14px; margin-top: 16px; }
+.abate-box img { width: 100%; height: 150px; object-fit: cover; border-radius: 12px; }
+.abate-box h3 { margin: 0 0 6px; }
+@media (max-width: 40rem) { .abate-box { grid-template-columns: minmax(0, 1fr); } }
+/* cartão de terra: textos e botões quebram em vez de vazar */
+.lcard__body { min-width: 0; }
+.lcard__body p, .lcard__body span { overflow-wrap: anywhere; }
+.orchard { min-width: 0; } .orchard > div { min-width: 0; }
+.orchard .btn, .lcard__acts .btn { white-space: normal; text-align: center; }
+.orchard .row { flex-wrap: wrap; }

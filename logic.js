@@ -1,6 +1,8 @@
 import { value as cardValue } from './cards.js';
 import * as PK from './perks.js';
 import { granjaValue } from './granja.js';
+import { orchardValue } from './pomar.js';
+import { plantValue } from './abate.js';
 // Regras puras do 21 World (sem DOM) — usadas pelo jogo e pelo test.mjs.
 import { animalsValue } from './stable.js';
 export const CHIP = 10;           // 1 ficha = R$ 10
@@ -164,7 +166,7 @@ export function refreshOffers(s, rng = Math.random) {
 
 // lotação do pasto: cabeças por hectare conforme aptidão e água; terra plantada não é pasto
 export const landCap = l => Math.floor(l.ha * (l.cap ?? 1));
-export const capacity = s => s.lands.filter(l => !l.leasedOut && !l.crop).reduce((a, l) => a + landCap(l), 0);
+export const capacity = s => s.lands.filter(l => !l.leasedOut && !l.crop && !l.orchard).reduce((a, l) => a + landCap(l), 0);
 export const carsValue = s => (s.cars || []).reduce((a, c) => a + c.value, 0);
 export const heads = s => s.herd.reduce((a, h) => a + h.heads, 0);
 export const BOITEL_COST = 95, BOITEL_GAIN = 22;   // R$ por cabeça por mês e kg por mês no confinamento
@@ -179,7 +181,7 @@ export function netWorth(s) {
   const lands = s.lands.filter(l => l.own).reduce((a, l) => a + l.value, 0);
   const stock = Object.entries(s.stock).reduce((a, [k, q]) => a + q * s.prices[k], 0);
   const lent = s.lent.reduce((a, l) => a + l.bal, 0);
-  return Math.round(s.money + s.chips * CHIP + lands + herdValue(s) + stock + lent + carsValue(s) + animalsValue(s) + (s.cards || []).reduce((a, c) => a + cardValue(c), 0) + granjaValue(s) - debt(s));
+  return Math.round(s.money + s.chips * CHIP + lands + herdValue(s) + stock + lent + carsValue(s) + animalsValue(s) + (s.cards || []).reduce((a, c) => a + cardValue(c), 0) + granjaValue(s) + s.lands.filter(l => l.own).reduce((a, l) => a + orchardValue(s, l), 0) + plantValue(s) - debt(s));
 }
 
 export const TITLES = [[0, 'iniciante'], [150000, 'fazendeiro'], [500000, 'barão do gado'], [2000000, 'magnata']];

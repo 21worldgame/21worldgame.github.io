@@ -63,3 +63,5 @@ Os nomes de carros no jogo são paródias; marcas visíveis nas fotos pertencem 
 - granja-aviario: Joe Valbuena (USDA), "Broiler house", domínio público
 - granja-frangos: USAID Afghanistan, "Bolan Poultry Farm-3", domínio público
 - granja-pintinhos: Chandapiwa Malema, "Chicks in a poultry house in Sebele", CC BY-SA 4.0
+- farm-laranja: inkknife_2000, "Orange Grove on Lugonia, Redlands, CA", CC BY-SA 2.0
+- farm-frigorifico: JacobinoWunsh, "Frigorífico Carrasco 04", CC BY-SA 4.0

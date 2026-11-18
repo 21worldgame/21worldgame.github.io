@@ -6,6 +6,7 @@ import * as CD from './cards.js';
 import * as FT from './futebol.js';
 import { inventory } from './trade.js';
 import * as GR from './granja.js';
+import * as PM from './pomar.js';
 
 export const HOUSE_RATE = { car: CAR_BUYBACK, land: 0.95, card: CD.SELL, player: 0.8 };
 export const NPC_MAX = 1.05;            // comprador da casa paga até 5% acima do preço de venda na hora
@@ -29,7 +30,7 @@ export function items(s) {
 export function housePrice(s, it) {
   if (it.kind === 'car') return Math.round(it.data.value * CAR_BUYBACK);
   if (it.kind === 'animal') return ST.value(it.data);
-  if (it.kind === 'land') return Math.round(it.data.value * 0.95);
+  if (it.kind === 'land') return Math.round(it.data.value * 0.95 + PM.orchardValue(s, it.data) * 0.9);
   if (it.kind === 'good') return Math.round(it.qty * (s.prices?.[it.good] || 0) * (1 - MARKET_FEE));
   if (it.kind === 'card') return Math.round(CD.value(it.data) * CD.SELL);
   if (it.kind === 'player') return Math.round(FT.value(it.data) * 0.8);
