@@ -17,7 +17,7 @@ export const CHAMPS = [
   { id: 'umbra', name: 'Umbra, a Ceifadora', el: 'sombra', k: 1.4 }, { id: 'corvo', name: 'Corvo Noturno', el: 'sombra', k: 1.0 },
   { id: 'raiz', name: 'Raiz Ancestral', el: 'natureza', k: 0.85 }, { id: 'vespa', name: 'Vespa Esmeralda', el: 'natureza', k: 1.05 },
 ];
-export const PACK_PRICE = 30000;   // acima do valor médio da carta: abrir pacote é sorte, não lucro garantido
+export const PACK_PRICE = 30000;   // pacote ouro (mantido para compatibilidade)
 export const SELL = 0.7;          // a loja recompra por 70%
 export const LAND_RATE = 0.9;     // como pagamento de terra, a carta vale 90%
 
@@ -37,11 +37,32 @@ export function give(s, card) {
   s.cards.push(c);
   return c;
 }
-export function buyPack(s, rng = Math.random) {
-  if (s.money < PACK_PRICE) return { err: 'dinheiro insuficiente para o pacote.' };
-  s.money -= PACK_PRICE;
-  return { card: give(s, draw(rng)) };
+// Pacotes: cada vaga da carta tem sua chance de raridade. O valor médio do pacote fica perto do preço
+// (você recebe várias cartas e às vezes tira uma rara), mas vender na loja ou pagar terra com elas nunca dá lucro garantido.
+const COMUM = { bronze: 64, prata: 29, esmeralda: 6, diamante: 0.9, mestre: 0.09, challenger: 0.01 };
+export const PACKS = {
+  simples: { label: 'pacote simples', price: 8000, slots: [COMUM], hint: '1 carta' },
+  ouro: { label: 'pacote ouro', price: 30000, slots: [COMUM, COMUM, { prata: 84, esmeralda: 13.5, diamante: 2.2, mestre: 0.27, challenger: 0.03 }], hint: '3 cartas, 1 garantida prata ou melhor' },
+  lendario: { label: 'pacote lendário', price: 200000, slots: [COMUM, COMUM, COMUM, { esmeralda: 80, diamante: 17, mestre: 2.6, challenger: 0.4 }, { diamante: 92, mestre: 7, challenger: 1 }], hint: '5 cartas, 1 esmeralda+ e 1 diamante+ garantidas' },
+};
+function drawFrom(w, rng) {
+  const ent = Object.entries(w), tot = ent.reduce((t, [, x]) => t + x, 0);
+  let r = rng() * tot; const t = (ent.find(([, x]) => (r -= x) < 0) || ent[0])[0];
+  return { tier: t, champ: CHAMPS[Math.floor(rng() * CHAMPS.length)].id };
 }
+// valor médio de um pacote (para mostrar na tela e para o teste)
+export function packEV(id) {
+  const kAvg = CHAMPS.reduce((t, c) => t + c.k, 0) / CHAMPS.length;
+  return PACKS[id].slots.reduce((sum, w) => { const tot = Object.values(w).reduce((a, b) => a + b, 0); return sum + Object.entries(w).reduce((a, [t, x]) => a + tier(t).base * kAvg * x / tot, 0); }, 0);
+}
+export function openPack(s, id = 'ouro', rng = Math.random) {
+  const P = PACKS[id];
+  if (!P) return { err: 'pacote inválido.' };
+  if (s.money < P.price) return { err: 'dinheiro insuficiente para o pacote.' };
+  s.money -= P.price;
+  return { cards: P.slots.map(w => give(s, drawFrom(w, rng))) };
+}
+export function buyPack(s, rng = Math.random) { const r = openPack(s, 'ouro', rng); return r.err ? r : { card: r.cards[0], cards: r.cards }; }
 export function sell(s, id) {
   const c = (s.cards || []).find(x => x.id === id);
   if (!c) return 0;

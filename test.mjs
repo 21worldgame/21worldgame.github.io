@@ -525,3 +525,16 @@ console.log('mercado ok');
   assert.ok(pv.pv && !pv.hi && pv.toName === 'bBia');
 }
 console.log('chat pv ok');
+// pacotes: várias cartas, valor médio perto do preço, mas vender ou pagar terra com elas nunca dá lucro garantido
+{
+  for (const [k, P] of Object.entries(CD.PACKS)) {
+    const ev = CD.packEV(k);
+    assert.ok(ev * CD.LAND_RATE < P.price && ev * CD.SELL < P.price, `${k} dá lucro: ${ev}`);
+    assert.ok(ev > P.price * 0.85, `${k} vale pouco: ${ev}`);
+  }
+  const s = { money: 300000, nextId: 1 };
+  assert.equal(CD.openPack(s, 'lendario').cards.length, 5); assert.equal(s.money, 100000);
+  assert.ok(CD.openPack(s, 'lendario').err);
+  const o = CD.openPack(s, 'ouro'); assert.equal(o.cards.length, 3); assert.notEqual(o.cards[2].tier, 'bronze');
+}
+console.log('pacotes ok');

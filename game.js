@@ -442,6 +442,7 @@ function renderCartas() {
   const cs = [...(S().cards || [])].sort((a, b) => CD.value(b) - CD.value(a));
   $('#cd-sum').textContent = cs.length ? `${cs.length} cartas, valem ${brl(cs.reduce((t, c) => t + CD.value(c), 0))}` : 'nenhuma carta ainda';
   $('#cd-list').innerHTML = cs.map(c => `<div class="tcard-slot">${CD.cardHTML(c, { small: true })}<button class="btn btn--glass btn--sm" data-act="card-sell" data-id="${c.id}">vender ${brl(Math.round(CD.value(c) * CD.SELL))}</button></div>`).join('') || '<p class="empty glass">Ganhe cartas na roleta do dia ou abra um pacote. Cartas valem dinheiro, pagam terras e trocam com outros jogadores.</p>';
+  $('#cd-packs').innerHTML = Object.entries(CD.PACKS).map(([k, P]) => `<button class="cd-packbtn cd-packbtn--${k}" data-act="card-pack" data-id="${k}"><b>${P.label}</b><span>${P.hint}</span><span class="cd-packbtn__ev">valor médio ${brl(Math.round(CD.packEV(k) / 1000) * 1000)}</span><strong>${brl(P.price)}</strong></button>`).join('');
   const tot = CD.TIERS.reduce((t, x) => t + x.w, 0);
   $('#cd-odds').innerHTML = CD.TIERS.map(t => `<div class="cd-odd cd-odd--${t.id}"><b>${t.label}</b><span>${(t.w / tot * 100).toFixed(t.w / tot < 0.01 ? 2 : 1).replace('.', ',')}%</span><small>a partir de ${brl(t.base * 0.85)}</small></div>`).join('');
   const have = new Set(cs.map(c => c.champ));
@@ -623,10 +624,10 @@ const ACTS = {
     note(`compra de ${o.ha} ha com ${r.used.length} cartas`, r.change); award('land'); confetti(50);
     say(`Terra comprada com ${r.used.length} carta${r.used.length > 1 ? 's' : ''}.${r.change ? ` Troco: ${brl(r.change)}.` : ''}`);
   },
-  'card-pack'() {
-    const r = CD.buyPack(S());
+  'card-pack'(id) {
+    const P = CD.PACKS[id || 'ouro'], r = CD.openPack(S(), id || 'ouro');
     if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true);
-    note('pacote de cartas', -CD.PACK_PRICE); showCard(r.card);
+    note(P.label, -P.price); showCard(r.cards);
   },
   'card-sell'(id) {
     const c = (S().cards || []).find(x => x.id === id); if (!c) return;
@@ -854,18 +855,23 @@ document.addEventListener('pointerdown', e => {
 }, { passive: true });
 
 // revelação de carta nova (pacote ou roleta)
-function showCard(c) {
-  const d = $('#dlg-card'), box = $('#cd-reveal'), high = ['diamante', 'mestre', 'challenger'].includes(c.tier);
-  box.className = `cd-reveal cd-reveal--${c.tier}`;
+function showCard(cs) {
+  const list = Array.isArray(cs) ? cs : [cs], order = CD.TIERS.map(t => t.id);
+  const best = [...list].sort((a, b) => order.indexOf(b.tier) - order.indexOf(a.tier))[0];
+  const d = $('#dlg-card'), box = $('#cd-reveal'), high = ['diamante', 'mestre', 'challenger'].includes(best.tier);
+  const total = list.reduce((t, c) => t + CD.value(c), 0);
+  box.className = `cd-reveal cd-reveal--${best.tier}${list.length > 1 ? ' is-multi' : ''}`;
   box.innerHTML = '<div class="cd-pack"><span>21 WORLD<br>pacote de cartas</span></div>';
   $('#cd-reveal-txt').innerHTML = 'abrindo...';
   if (!d.open) d.showModal();
   sfx.play('handle', 0.6);
   setTimeout(() => {
-    box.innerHTML = CD.cardHTML(c); box.classList.add('is-burst');
-    $('#cd-reveal-txt').innerHTML = `<strong>${esc(CD.label(c))}</strong><br>vale ${brl(CD.value(c))}${high ? '<br><b class="good">CARTA RARA!</b>' : ''}`;
-    sfx.play('stack', 0.8); confetti(c.tier === 'challenger' ? 260 : high ? 160 : 50);
-    if (c.tier === 'mestre' || c.tier === 'challenger') d.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-6px,3px)' }, { transform: 'translate(6px,-3px)' }, { transform: 'translate(0,0)' }], { duration: 300, iterations: 2 });
+    box.innerHTML = list.map((c, i) => `<div class="cd-reveal__one" style="animation-delay:${i * 180}ms">${CD.cardHTML(c, { small: list.length > 1 })}</div>`).join(''); box.classList.add('is-burst');
+    $('#cd-reveal-txt').innerHTML = list.length > 1
+      ? `<strong>${list.length} cartas</strong>: valem juntas <b class="good">${brl(total)}</b>${high ? `<br><b class="good">CARTA RARA: ${esc(CD.label(best))}!</b>` : ''}`
+      : `<strong>${esc(CD.label(best))}</strong><br>vale ${brl(total)}${high ? '<br><b class="good">CARTA RARA!</b>' : ''}`;
+    sfx.play('stack', 0.8); confetti(best.tier === 'challenger' ? 260 : high ? 160 : 50);
+    if (best.tier === 'mestre' || best.tier === 'challenger') d.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-6px,3px)' }, { transform: 'translate(6px,-3px)' }, { transform: 'translate(0,0)' }], { duration: 300, iterations: 2 });
   }, RM.matches ? 0 : 950);
   save(); render();
 }
