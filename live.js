@@ -40,7 +40,7 @@ export async function start() {
   timer = setInterval(async () => {
     await loadConfig(sb); await loadAnnouncements(sb); maintenance();
     if (Auth.account()) { if (await checkBan(sb)) return; await applyGrants(sb); }
-  }, 20000);
+  }, 10000);
   return 'ok';
 }
 export const admin = () => isAdmin;

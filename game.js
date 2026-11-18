@@ -950,23 +950,32 @@ async function checkUpdate() {
     if (v !== loadedVersion) showUpdate();
   } catch {}
 }
+// a página recarrega sozinha em 15 s, a não ser que a pessoa esteja no meio de uma mão, corrida, turno ou troca
+const busyNow = () => C.busyRound() || JUI.running() || SUI.isRunning() || !!document.querySelector('#dlg-race[open], #dlg-match[open], #dlg-trade[open], #dlg-deal[open], #dlg-card[open]');
+async function doReload() {
+  const b = $('#upd-go'); if (b) { b.disabled = true; b.textContent = 'salvando...'; }
+  save();
+  try { await Promise.race([Auth.push?.(), new Promise(r => setTimeout(r, 3000))]); } catch {}   // manda o progresso para a nuvem antes
+  try { await (await navigator.serviceWorker?.getRegistration())?.update(); } catch {}
+  location.reload();
+}
 function showUpdate() {
   updateShown = true;
-  // janela aberta (modal) deixa o resto da tela sem clique: o aviso entra dentro dela
-  const host = [...document.querySelectorAll('dialog[open]')].pop() || document.body;
+  const host = [...document.querySelectorAll('dialog[open]')].pop() || document.body;   // janela aberta deixa o resto sem clique
   host.insertAdjacentHTML('beforeend', `<div class="upd" role="alert"><span class="upd__dot" aria-hidden="true"></span>
-    <span><strong>Nova atualização do 21 World!</strong> Recarregue para jogar com as novidades. Seu progresso fica salvo.</span>
+    <span><strong>Nova atualização do 21 World!</strong> <span id="upd-txt">Recarregando em 15 s. Seu progresso fica salvo.</span></span>
     <button class="btn btn--gold btn--sm" type="button" id="upd-go">recarregar agora</button></div>`);
-  $('#upd-go').addEventListener('click', async () => {
-    $('#upd-go').disabled = true; $('#upd-go').textContent = 'salvando...';
-    save();
-    try { await Promise.race([Auth.push?.(), new Promise(r => setTimeout(r, 3000))]); } catch {}   // manda o progresso para a nuvem antes
-    try { await (await navigator.serviceWorker?.getRegistration())?.update(); } catch {}
-    location.reload();
-  });
+  $('#upd-go').addEventListener('click', doReload);
+  let left = 15;
+  const t = setInterval(() => {
+    if (busyNow()) { $('#upd-txt').textContent = 'Recarrega assim que você terminar a jogada. Seu progresso fica salvo.'; return; }
+    if (--left <= 0) { clearInterval(t); doReload(); return; }
+    $('#upd-txt').textContent = `Recarregando em ${left} s. Seu progresso fica salvo.`;
+  }, 1000);
 }
-checkUpdate(); setInterval(checkUpdate, 60000);
+checkUpdate(); setInterval(checkUpdate, 15000);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
+addEventListener('focus', checkUpdate);
 
 // ---------- instalar como aplicativo (Android e computador; no iPhone é pelo "Adicionar à Tela de Início") ----------
 let installEv = null;
