@@ -118,6 +118,14 @@ export function renderLobby() {
 }
 let lastRank = new Map();
 // ranking global ao vivo: jogadores da nuvem + quem está no salão + o seu valor de agora + concorrentes do mundo
+// lista completa do ranking (usada aqui no salão e na aba ranking)
+export function rankingRows(limit = 10) {
+  const peers = lobby ? [...lobby.peers.entries()].filter(([, p]) => p.profile).map(([pid, p]) => ({ pid, ...p.profile, worth: Number(p.profile.worth) || 0 })) : [];
+  const w = Live.world(), t = Live.now(), month = W.current(w, t) + W.progress(w, t);
+  const meP = profileOf(), myId = Auth.account()?.id;
+  const cloud = (Auth.account() ? globalRows || [] : []).filter(r => r.user_id !== myId).map(r => ({ name: r.name, level: r.level, rank: r.rank || '', worth: Number(r.worth), look: r.look || {} }));
+  return RV.merge({ cloud, me: { ...meP, pid: 'me' }, peers, rivalRows: RV.rivals(month), limit });
+}
 export function renderRanking() {
   const el = $('#ranking'); if (!el) return;
   const peers = lobby ? [...lobby.peers.entries()].filter(([, p]) => p.profile).map(([pid, p]) => ({ pid, ...p.profile, worth: Number(p.profile.worth) || 0 })) : [];

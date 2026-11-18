@@ -45,6 +45,7 @@
     <symbol id="i-gem" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9z M2 9h20 M9 3l3 18 3-18"/></symbol>
     <symbol id="i-shop" viewBox="0 0 24 24"><path d="M3 9l2-5h14l2 5M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0zM5 13v7h14v-7M10 20v-5h4v5"/></symbol>
     <symbol id="i-chick" viewBox="0 0 24 24"><path d="M7 14a5 5 0 0 0 10 0c0-3-2-5-5-5S7 11 7 14zM12 9V7a2 2 0 1 1 3 1.7M15 8.5l2 .5M9 19l-1 2M15 19l1 2"/><circle cx="13.3" cy="6.6" r=".4"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4M12 13v4M8 21h8M9 17h6"/></symbol>
     <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
     <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/></symbol>
   </svg>
@@ -72,6 +73,7 @@
     <nav class="container" aria-label="áreas do jogo">
       <div class="tabs" role="tablist">
         <button role="tab" id="t-mesa" data-tab="mesa" aria-controls="p-mesa" aria-selected="true"><svg><use href="#i-cards"/></svg>cassino</button>
+        <button role="tab" id="t-ranking" data-tab="ranking" aria-controls="p-ranking" aria-selected="false" tabindex="-1"><svg><use href="#i-trophy"/></svg>ranking</button>
         <button role="tab" id="t-corridas" data-tab="corridas" aria-controls="p-corridas" aria-selected="false" tabindex="-1"><svg><use href="#i-flag"/></svg>corridas</button>
         <button role="tab" id="t-trader" data-tab="trader" aria-controls="p-trader" aria-selected="false" tabindex="-1"><svg><use href="#i-candle"/></svg>trader</button>
         <button role="tab" id="t-trabalho" data-tab="trabalho" aria-controls="p-trabalho" aria-selected="false" tabindex="-1"><svg><use href="#i-bike"/></svg>trabalho</button>
@@ -319,6 +321,20 @@
           <p class="muted small">Negociantes vendem seminovos, sacas e acessórios e às vezes querem comprar o que é seu. O preço acompanha a economia dos jogadores: quanto mais rico o ranking, mais caro. Negocie: oferta baixa demais faz o negociante desistir. As bancas mudam todo mês do jogo.</p>
           <div id="fe-list"></div><div id="fe-want"></div></section>
         <aside class="glass inv-online"><h3>jogadores online</h3><p class="muted small">Negocie carros, animais, terras, jogadores de futebol, sacas, fichas e dinheiro. Os dois montam a oferta, ficam "prontos" e confirmam. Se alguém mexer na oferta, os dois precisam confirmar de novo.</p><ul class="inv-peers" id="inv-peers"></ul></aside>
+      </div>
+    </section>
+
+    <!-- RANKING -->
+    <section id="p-ranking" role="tabpanel" aria-labelledby="t-ranking" class="panel" hidden>
+      <div class="rk-hero glass">
+        <div><p class="rk-live"><span class="lp__live">ao vivo</span></p><h2>ranking global</h2><p class="muted">Os mais ricos e os melhores do 21 World, atualizado a cada poucos segundos. Toque em alguém para ver o perfil.</p></div>
+        <div class="podium" id="rk-podium"></div>
+      </div>
+      <div class="rk-me glass" id="rk-me"></div>
+      <div class="subtabs" role="group" aria-label="categoria"><button class="subtab is-on" data-act="rk-cat" data-id="worth" data-rkcat="worth">patrimônio</button><button class="subtab" data-act="rk-cat" data-id="level" data-rkcat="level">nível</button><button class="subtab" data-act="rk-cat" data-id="farm" data-rkcat="farm">fazendeiros</button><button class="subtab" data-act="rk-cat" data-id="casino" data-rkcat="casino">cassino</button></div>
+      <div class="rk-grid">
+        <ol class="rk-list glass" id="rk-list"></ol>
+        <aside class="rk-facts" id="rk-facts"></aside>
       </div>
     </section>
 

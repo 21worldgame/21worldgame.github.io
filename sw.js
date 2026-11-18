@@ -1,6 +1,6 @@
 // Service worker do 21 World: abre rápido (arquivos do jogo em cache) e atualiza em segundo plano.
 // Nunca guarda chamadas do Supabase (login, saves) nem do mapa: essas sempre vão para a rede.
-const VERSION = '21world-v19';
+const VERSION = '21world-v20';
 const CORE = ['./', 'index.html', 'style.css', 'tokens.css', 'base.css', 'game.js', 'logic.js', 'store.js', 'progress.js', 'casino.js', 'table.js', 'bj.js',
   'avatar.js', 'net.js', 'auth.js', 'authrules.js', 'live.js', 'supabase-config.js', 'manifest.webmanifest', 'assets/brand/logo-mark.svg', 'assets/brand/icon-192.png'];
 
