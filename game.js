@@ -316,9 +316,9 @@ function renderMercado() {
   const s = S();
   $('#goods').innerHTML = Object.entries(GOODS).map(([k, label]) => {
     const pv = s.prev?.[k] ?? s.prices[k], ch = (s.prices[k] / pv - 1) * 100, trade = k in s.stock;
-    return `<article class="glass tcard">
-      <img class="tcard__photo" src="assets/${PHOTO[k]}.webp" alt="" loading="lazy">
-      <div class="tcard__top"><h4>${label}</h4><span class="delta ${ch > 0 ? 'is-up' : ch < 0 ? 'is-down' : ''}">${ch > 0 ? '▲' : ch < 0 ? '▼' : '='} ${Math.abs(ch).toFixed(1)}%</span></div>
+    return `<article class="glass hcard mcard">
+      <img class="hcard__photo" src="assets/${PHOTO[k]}.webp" alt="" loading="lazy">
+      <div class="hcard__top"><h4>${label}</h4><span class="delta ${ch > 0 ? 'is-up' : ch < 0 ? 'is-down' : ''}">${ch > 0 ? '▲' : ch < 0 ? '▼' : '='} ${Math.abs(ch).toFixed(1)}%</span></div>
       <p class="price">${brl(s.prices[k])}<small> / ${UNIT[k]}</small></p>
       ${trade ? `<p class="muted small">no armazém: ${int(s.stock[k])} sacas, valem ${brl(s.stock[k] * s.prices[k])}</p>
       <div class="row"><label class="visually-hidden" for="q-${k}">quantidade de ${label}</label>
