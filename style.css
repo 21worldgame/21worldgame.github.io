@@ -1646,3 +1646,6 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
   #btn-install { padding: 6px 10px; font-size: .74rem; }
 }
 .cd-packbtn--simples { background: linear-gradient(135deg, #1e3a5f, #2563eb); }
+.pf__bio { margin: 8px 0 0; font-style: italic; opacity: .85; }
+/* nicks com maiúsculas e minúsculas como o jogador escreveu */
+#pf-name, .rk__name, .who, #inv-peers li span, .fcard__seller span, .chat-name { text-transform: none; }

@@ -1,7 +1,7 @@
 // Negociação com bots (regras puras). Usada no mercado de futebol e na feira de itens.
 // O bot tem um preço-limite secreto; aceita se a sua oferta passa dele, contrapropõe no meio do caminho
 // e desiste depois de 3 rodadas ou se a oferta for ofensiva.
-export const BOT_NAMES = ['Dorival', 'Rosa', 'Tião', 'Neide', 'Jair do posto', 'Marta da feira', 'Zé Carreteiro', 'Cida', 'Bené', 'Lurdes'];
+export const BOT_NAMES = ['zeca021', 'Bea.Lima', 'Diguinho', 'Joãozinho99', 'Carla_BR', 'Bruninho', 'Thaís.S', 'Mateus.L', 'Rayssa_', 'Fe_Martins'];
 
 // dealer = quem vende (você compra); limit = menor preço que o bot aceita
 export function newDeal(ask, rng = Math.random, side = 'sell') {

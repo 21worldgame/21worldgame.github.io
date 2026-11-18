@@ -1,7 +1,9 @@
 // Feira dos bots: bots vendem e compram itens, com preço puxado pela economia dos jogadores (regras puras).
 import { CARS, CAR_BUYBACK } from './logic.js';
 import { CATALOG } from './avatar.js';
-import { BOT_NAMES, newDeal } from './bots.js';
+import { newDeal } from './bots.js';
+import { NPCS } from './npcs.js';
+const BOT_NAMES = NPCS.slice(8).map(n => n.nick);
 import { GOODS } from './trade.js';
 
 // índice da economia: patrimônio mediano dos jogadores do ranking comparado a R$ 500 mil.

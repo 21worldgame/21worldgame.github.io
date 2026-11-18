@@ -14,6 +14,7 @@ import * as PK from './perks.js';
 import * as FE from './feira.js';
 import * as W from './world.js';
 import * as RV from './rivals.js';
+import * as NPC from './npcs.js';
 import * as CD from './cards.js';
 import * as CHUI from './chat-ui.js';
 import * as SHUI from './shop-ui.js';
@@ -394,13 +395,14 @@ function openProfile(pid) {
   const p = C.findProfile(pid);
   if (!p) return say('Perfil indisponível: o jogador saiu.', true);
   const me = pid === 'me', st = p.stats || {};
+  if (p.npc && !p.ach) p.ach = P.ACHIEVEMENTS.slice(0, p.achCount).map(a => a.id);
   const rate = st.hands ? Math.round((st.wins / st.hands) * 100) : 0;
   const xp = me ? `<div class="pf__xp"><span class="small">nível ${p.level}, ${S().xp} de ${P.xpNeed(S().level)} XP</span><span class="bar"><i style="transform:scaleX(${S().xp / P.xpNeed(S().level)})"></i></span></div>` : '';
   $('#pf').innerHTML = `
     <div class="pf__head">
       <span class="pf__avatar">${avatarSVG(p.look, { label: p.name })}</span>
       <div><h2 id="pf-name">${esc(p.name)}</h2><p><span class="tag tag--gold">nível ${p.level}</span> <span class="tag tag--dark">${esc(p.rank)}</span></p>
-      <p class="big">${brl(p.worth)}</p><p class="muted small">patrimônio</p>${xp}</div>
+      <p class="big">${brl(p.worth)}</p><p class="muted small">patrimônio</p>${xp}${p.bio ? `<p class="pf__bio">“${esc(p.bio)}”</p>` : ''}</div>
     </div>
     <div class="pf__stats">
       ${[['mãos de 21', int(st.hands || 0)], ['vitórias', `${int(st.wins || 0)} (${rate}%)`], ['maior prêmio', `${int(st.best || 0)} fichas`], ['corridas', `${int(st.races || 0)}, ${int(st.raceWins || 0)} acertos`],
@@ -443,13 +445,13 @@ function renderInv() {
   const ppl = TUI.online();
   $('#inv-peers').innerHTML = ppl.length ? ppl.map(p => `<li><span class="who__av">${avatarSVG(p.look || {}, { label: p.name })}</span><span>${esc(p.name)}<small class="muted"> nível ${p.level}</small></span>
     <button class="btn btn--gold btn--sm" data-act="trade-invite" data-id="${esc(p.pid)}">propor troca</button></li>`).join('') : '<li class="muted small">Nenhuma pessoa online agora. Chame os amigos pelo link do jogo.</li>';
-  // negociantes da feira aparecem na lista, marcados como negociantes
-  const bots = [...new Set([...(S().feira?.list || []).map(x => x.bot), S().feira?.want?.bot].filter(Boolean))];
-  $('#inv-peers').insertAdjacentHTML('beforeend', bots.map(n => `<li class="is-bot"><span class="who__av">${avatarSVG(NPC_LOOK(n), { label: n })}</span><span>${esc(n)}<small class="muted"> negociante</small></span>
-    <button class="btn btn--glass btn--sm" data-act="fe-goto">ver banca</button></li>`).join(''));
+  const npcOn = NPC.onlineNow(Live.now(), 10);
+  $('#inv-peers').insertAdjacentHTML('beforeend', npcOn.map(n => `<li><span class="who__av">${avatarSVG(n.look, { label: n.nick })}</span><span>${esc(n.nick)}<small class="muted"> nível ${NPC.levelFor(NPC.worthAt(n, S().month))}</small></span>
+    <button class="btn btn--glass btn--sm" data-profile="npc:${n.id}">ver perfil</button></li>`).join(''));
 }
 // visual estável por nome de bot
-const NPC_LOOK = n => { let h = 0; for (const c of n) h = (h * 31 + c.charCodeAt(0)) >>> 0; return { skin: 1 + h % 5, hair: ['curto', 'degradê', 'longo', 'coque', 'raspado', 'boné'][h % 6], hairColor: 1 + (h >> 3) % 5, beard: ['nenhuma', 'por fazer', 'cavanhaque'][(h >> 5) % 3], outfit: ['camisa', 'jaqueta', 'terno'][(h >> 7) % 3], cloth: 1 + (h >> 9) % 6, acc: ['óculos escuros', 'corrente de ouro', 'nenhum'][(h >> 11) % 3] }; };
+const NPC_LOOK = n => NPC.byNick(n)?.look || NPC_LOOK_HASH(n);
+const NPC_LOOK_HASH = n => { let h = 0; for (const c of n) h = (h * 31 + c.charCodeAt(0)) >>> 0; return { skin: 1 + h % 5, hair: ['curto', 'degradê', 'longo', 'coque', 'raspado', 'boné'][h % 6], hairColor: 1 + (h >> 3) % 5, beard: ['nenhuma', 'por fazer', 'cavanhaque'][(h >> 5) % 3], outfit: ['camisa', 'jaqueta', 'terno'][(h >> 7) % 3], cloth: 1 + (h >> 9) % 6, acc: ['óculos escuros', 'corrente de ouro', 'nenhum'][(h >> 11) % 3] }; };
 // cartas raras: coleção, chances de cada raridade e álbum de campeões
 function renderCartas() {
   const cs = [...(S().cards || [])].sort((a, b) => CD.value(b) - CD.value(a));
@@ -478,7 +480,7 @@ function renderFeira() {
     <div class="fcard__body">
       <h4>${esc(it.label.replace(' (usado, com vantagem)', ''))}</h4>
       ${it.kind === 'acc' && PK.ACC_PERKS[it.acc] ? `<p class="fcard__perk">${esc(PK.label(PK.ACC_PERKS[it.acc]))}</p>` : ''}
-      <div class="fcard__seller"><span class="fcard__av">${avatarSVG(NPC_LOOK(it.bot), { label: it.bot })}</span><span>${esc(it.bot)}<small>negociante</small></span></div>
+      <div class="fcard__seller"><span class="fcard__av">${avatarSVG(NPC_LOOK(it.bot), { label: it.bot })}</span><span>${esc(it.bot)}<small>nível ${NPC.byNick(it.bot) ? NPC.levelFor(NPC.worthAt(NPC.byNick(it.bot), S().month)) : 1}</small></span></div>
       <div class="fcard__price"><b>${brl(it.ask)}</b><small>referência ${brl(it.value)}</small></div>
       <button class="btn btn--gold fcard__go" data-act="fe-buy" data-id="${it.id}">negociar</button>
     </div></article>`;
@@ -967,7 +969,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 3;
+const APP_VERSION = 4;
 let updateShown = false, updateMsg = '';
 async function checkUpdate() {
   if (updateShown) return;

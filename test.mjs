@@ -581,3 +581,16 @@ console.log('loja ok');
   assert.ok(FT.setSlot(f, 'att9', ata.id));
 }
 console.log('escalação ok');
+// jogadores do mundo: nicks únicos, ranking alcançável e movimento ao longo do dia
+import * as NP from './npcs.js';
+{
+  assert.equal(new Set(NP.NPCS.map(n => n.nick)).size, NP.NPCS.length);
+  const w1 = NP.NPCS.map(n => NP.worthAt(n, 1)).sort((a, b) => b - a);
+  assert.ok(w1[0] < 1.2e6, 'topo alto demais');
+  assert.ok(w1.filter(w => w < 100000).length >= 10, 'novato precisa passar alguém logo');
+  const at = h => NP.onlineCount(Date.UTC(2026, 10, 18, h + 3));          // horário de Brasília
+  assert.ok(at(21) > at(4) * 2 && at(13) >= 45 && at(13) <= 75, `${at(4)} ${at(13)} ${at(21)}`);
+  assert.equal(NP.onlineNow(Date.UTC(2026, 10, 18, 15)).length, NP.onlineNow(Date.UTC(2026, 10, 18, 15, 5)).length);
+  const p = NP.profile(NP.NPCS[0], 3); assert.ok(p.name && p.level >= 1 && p.stats.hands > 0 && p.bio);
+}
+console.log('jogadores do mundo ok');

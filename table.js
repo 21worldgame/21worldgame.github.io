@@ -3,7 +3,7 @@
 import * as BJ from './bj.js';
 
 export const BOTS = [
-  { name: 'Dorival' }, { name: 'Rosa' }, { name: 'Tião' }, { name: 'Neide' },
+  { name: 'zeca021' }, { name: 'Bea.Lima' }, { name: 'Diguinho' }, { name: 'Joãozinho99' },
 ];
 const SEATS = 4, TURN_MS = 20000;
 

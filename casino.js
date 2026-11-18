@@ -10,17 +10,18 @@ import * as Live from './live.js';
 import * as W from './world.js';
 import * as RV from './rivals.js';
 import * as SH from './shop.js';
+import * as NPC from './npcs.js';
 import * as BJ from './bj.js';
 
 const SOLO = [
-  { id: 'bot-dorival', name: 'Mesa do Dorival', minBet: 50, bots: ['Dorival', 'Rosa', 'Tião', 'Neide'] },
-  { id: 'bot-azul', name: 'Salão azul', minBet: 100, bots: ['Júlia', 'Renato', 'Aline', 'Danilo'] },
-  { id: 'bot-porto', name: 'Mesa do Porto', minBet: 250, bots: ['Marcelo', 'Patrícia', 'Bené', 'Cida'] },
-  { id: 'bot-esm', name: 'Salão Esmeralda', minBet: 500, bots: ['Bianca', 'Gustavo', 'Lurdes', 'Zé'] },
-  { id: 'bot-vip', name: 'Mesa VIP', minBet: 1000, bots: ['Larissa', 'Thiago', 'Marta', 'Jair'] },
-  { id: 'bot-dia', name: 'Sala Diamante', minBet: 2500, bots: ['Camila', 'Rafael', 'Larissa', 'Thiago'] },
-  { id: 'bot-high', name: 'High Roller', minBet: 5000, bots: ['Rafael', 'Camila', 'Gustavo', 'Bianca'] },
-  { id: 'bot-mag', name: 'Mesa do Magnata', minBet: 10000, bots: ['Rafael', 'Camila', 'Thiago', 'Larissa'] },
+  { id: 'bot-dorival', name: 'Mesa do Zeca', minBet: 50, bots: ['zeca021', 'Bea.Lima', 'Diguinho', 'Joãozinho99'] },
+  { id: 'bot-azul', name: 'Salão azul', minBet: 100, bots: ['ju_andrade', 'Renatinho', 'Aline.C', 'Danilo_Q'] },
+  { id: 'bot-porto', name: 'Mesa do Porto', minBet: 250, bots: ['Marcelão', 'PatyLopes', 'Lobo_Gamer', 'kaique.21'] },
+  { id: 'bot-esm', name: 'Salão Esmeralda', minBet: 500, bots: ['BiaFerraz', 'GuNeves', 'LuanaXD', 'Vitinho'] },
+  { id: 'bot-vip', name: 'Mesa VIP', minBet: 1000, bots: ['lari.prado', 'ThBarros21', 'Neguinho_BJ', 'Duda.Rocha'] },
+  { id: 'bot-dia', name: 'Sala Diamante', minBet: 2500, bots: ['CamiDuarte', 'Rafa_Moura', 'lari.prado', 'TioSam777'] },
+  { id: 'bot-high', name: 'High Roller', minBet: 5000, bots: ['Rafa_Moura', 'CamiDuarte', 'GuNeves', 'BiaFerraz'] },
+  { id: 'bot-mag', name: 'Mesa do Magnata', minBet: 10000, bots: ['Rafa_Moura', 'CamiDuarte', 'ThBarros21', 'lari.prado'] },
 ];
 let lobby = null, selfId = null;
 let cur = null;          // mesa aberta
@@ -71,7 +72,7 @@ export async function initCasino() {
   renderLobby();
   G.onLogin = loadGlobalRanking; loadGlobalRanking(); setInterval(loadGlobalRanking, 12000);
   Auth.onRankChange(loadGlobalRanking);
-  setInterval(renderRanking, 4000);               // os números do mundo andam sozinhos
+  setInterval(() => { renderRanking(); if (lobby) $('#online').innerHTML = `<i class="is-on"></i>${NPC.onlineCount(Live.now()) + lobby.peers.size + 1} jogadores online`; }, 4000);   // os números do mundo andam sozinhos
   G.onRender = renderRanking;
   const code = new URLSearchParams(location.search).get('mesa');
   if (code) { G.goto('mesa'); joinOnline(code); }
@@ -92,7 +93,7 @@ const summary = v => ({ id: v.id, name: v.name, minBet: v.minBet, phase: v.phase
   seats: v.seats.map(s => ({ kind: s.kind, name: s.name, look: s.look })) });
 
 function tableCard(t, kind, host) {
-  const seats = t.seats || [0, 1, 2, 3].map(i => ({ kind: 'bot', name: (t.bots || ['Dorival', 'Rosa', 'Tião', 'Neide'])[i] }));
+  const seats = t.seats || [0, 1, 2, 3].map(i => ({ kind: 'bot', name: (t.bots || ['zeca021', 'Bea.Lima', 'Diguinho', 'Joãozinho99'])[i] }));
   const humans = seats.filter(s => s.kind === 'human').length;
   return `<article class="tcard2 ${kind === 'online' ? 'is-online' : ''}">
     <div class="tcard2__felt"><span class="tag ${kind === 'online' ? 'tag--green' : 'tag--dark'}">${kind === 'online' ? `online, ${humans} ${humans === 1 ? 'jogador' : 'jogadores'}` : 'mesa da casa'}</span>
@@ -112,8 +113,7 @@ export function renderLobby() {
     ...online.map(o => tableCard(o.t, 'online', o.host)),
     ...SOLO.map(t => tableCard(t, 'solo')),
   ].join('');
-  const house = SOLO.length * 4;   // lugares ocupados nas mesas da casa
-  if (lobby) $('#online').innerHTML = `<i class="is-on"></i>${peers.length + 1} ${peers.length ? 'jogadores' : 'jogador'} no salão · ${house} jogando nas mesas da casa`;
+  if (lobby) $('#online').innerHTML = `<i class="is-on"></i>${NPC.onlineCount(Live.now()) + peers.length + 1} jogadores online`;
   renderRanking();
 }
 let lastRank = new Map();
@@ -139,6 +139,7 @@ export function renderRanking() {
 
 export function findProfile(pid) {
   if (pid === 'me') return profileOf();
+  if (String(pid).startsWith('npc:')) { const n = NPC.byId(pid.slice(4)); if (n) { const w = Live.world(), t = Live.now(); return NPC.profile(n, W.current(w, t) + W.progress(w, t)); } }
   const p = lobby?.peers.get(pid)?.profile;
   if (p) return p;
   return prev?.seats.find(s => s.pid === pid)?.profile || null;
@@ -508,8 +509,8 @@ function status(v, me) {
 }
 
 function whoList(v, me) {
-  $('#who-list').innerHTML = v.seats.map((s, i) => `<li><button class="who" ${s.kind === 'human' ? `data-profile="${i === me ? 'me' : s.pid}"` : 'disabled'}>
-    <span class="who__av">${avatarSVG(s.kind === 'bot' ? NPC_LOOKS[s.name] || NPC_LOOKS.Dorival : s.look, { label: s.name })}</span>
+  $('#who-list').innerHTML = v.seats.map((s, i) => `<li><button class="who" ${s.kind === 'human' ? `data-profile="${i === me ? 'me' : s.pid}"` : NPC.byNick(s.name) ? `data-profile="npc:${NPC.byNick(s.name).id}"` : 'disabled'}>
+    <span class="who__av">${avatarSVG(s.kind === 'bot' ? NPC.byNick(s.name)?.look || NPC_LOOKS.Dorival : s.look, { label: s.name })}</span>
     <span>${esc(s.name)}${i === me && s.name !== 'você' ? ' (você)' : ''}</span><small>${s.kind === 'bot' ? 'bot' : `nível ${s.profile?.level ?? 1}`}</small></button></li>`).join('');
 }
 
