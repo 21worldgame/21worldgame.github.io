@@ -5,6 +5,7 @@ import * as ST from './stable.js';
 import * as CD from './cards.js';
 import * as FT from './futebol.js';
 import { inventory } from './trade.js';
+import * as GR from './granja.js';
 
 export const HOUSE_RATE = { car: CAR_BUYBACK, land: 0.95, card: CD.SELL, player: 0.8 };
 export const NPC_MAX = 1.05;            // comprador da casa paga até 5% acima do preço de venda na hora
@@ -21,6 +22,7 @@ export function clubValue(f) {
 // tudo que dá para vender: o inventário de trocas + o clube inteiro
 export function items(s) {
   const out = inventory(s).map(i => ({ ...i, key: `${i.kind}:${i.id}` }));
+  for (const h of s.granja?.houses || []) out.push({ kind: 'aviario', id: h.id, key: `aviario:${h.id}`, label: `${GR.HOUSES[h.type].label} (granja)`, value: h.value, data: h });
   if (s.fut?.club) out.push({ kind: 'club', id: 'club', key: 'club:club', label: `clube ${s.fut.club} (${FT.DIVS[s.fut.div]})`, value: clubValue(s.fut) });
   return out;
 }
@@ -32,11 +34,13 @@ export function housePrice(s, it) {
   if (it.kind === 'card') return Math.round(CD.value(it.data) * CD.SELL);
   if (it.kind === 'player') return Math.round(FT.value(it.data) * 0.8);
   if (it.kind === 'club') return clubValue(s.fut);
+  if (it.kind === 'aviario') return Math.round(it.data.value * GR.HOUSE_RESALE);
   return 0;
 }
 // por que não dá para vender (ou null)
 export function blocked(s, it) {
   if (it.kind === 'land' && it.data.crop) return 'terra com lavoura plantada: espere a colheita.';
+  if (it.kind === 'aviario' && GR.lotOf(s, it.id)) return 'venda o lote de frangos antes.';
   if (it.kind === 'player' && s.fut.squad.length <= 14) return 'o elenco precisa de pelo menos 14 jogadores.';
   return null;
 }
@@ -51,6 +55,7 @@ export function remove(s, it) {
   if (it.kind === 'card') s.cards = s.cards.filter(c => c.id !== it.id);
   if (it.kind === 'player') s.fut.squad = s.fut.squad.filter(p => p.id !== it.id);
   if (it.kind === 'club') delete s.fut;
+  if (it.kind === 'aviario') s.granja.houses = s.granja.houses.filter(h => h.id !== it.id);
   s.shop = (s.shop || []).filter(l => l.key !== it.key);
 }
 export function sellToHouse(s, key) {
@@ -89,4 +94,4 @@ export function npcTick(s, rng = Math.random) {
   return sold;
 }
 // vitrine pública (vai para os outros jogadores pelo salão): só o que eles precisam ver
-export const publicListings = s => (s.shop || []).filter(l => l.kind !== 'club').slice(0, MAX_LISTINGS).map(l => ({ id: l.id, kind: l.kind, label: String(l.label).slice(0, 60), price: l.price }));
+export const publicListings = s => (s.shop || []).filter(l => l.kind !== 'club' && l.kind !== 'aviario').slice(0, MAX_LISTINGS).map(l => ({ id: l.id, kind: l.kind, label: String(l.label).slice(0, 60), price: l.price }));

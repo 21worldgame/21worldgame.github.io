@@ -13,16 +13,16 @@ assert.deepEqual(L.settle([{ bet: 500, value: 21 }, { bet: 500, value: 19 }, { b
 assert.deepEqual(L.settle([{ bet: 100, value: 20 }, { bet: 100, value: 20 }]), [95, 95]);
 assert.deepEqual(L.settle([{ bet: 100, value: 22 }, { bet: 100, value: 25 }]), [95, 95]);
 
-// gado sem pasto paga ração; com pasto engorda 18 kg
+// gado sem pasto vai para o confinamento (paga por cabeça e engorda 22 kg); com pasto engorda 18 kg de graça
 const s = L.newState(() => 0.5);
 s.herd.push({ id: 1, heads: 10, kg: 180 });
 const before = s.money;
 L.tick(s, () => 0.5);
-assert.equal(s.money, before - 1500);
-assert.equal(s.herd[0].kg, 188);
+assert.equal(s.money, before - 10 * L.BOITEL_COST);
+assert.equal(s.herd[0].kg, 180 + L.BOITEL_GAIN);
 s.lands.push({ id: 2, own: true, region: 'x', ha: 10, value: 100000, leasedOut: false });
 L.tick(s, () => 0.5);
-assert.equal(s.herd[0].kg, 206);
+assert.equal(s.herd[0].kg, 180 + L.BOITEL_GAIN + 18);
 
 // calote de banco por 2 meses sem dinheiro executa a terra
 s.money = 0; s.loans.push({ id: 3, bal: 50000, rate: 0.018, left: 6, missed: 0 });
@@ -594,3 +594,35 @@ import * as NP from './npcs.js';
   const p = NP.profile(NP.NPCS[0], 3); assert.ok(p.name && p.level >= 1 && p.stats.hands > 0 && p.bio);
 }
 console.log('jogadores do mundo ok');
+// confinamento: novato sem terra consegue lucrar com gado (menos que quem tem pasto)
+{
+  const s = L.newState(() => 0.5); const m0 = s.money;
+  s.money -= 10 * s.prices.bezerro; s.herd.push({ id: 1, heads: 10, kg: 180 });
+  let months = 0; while (s.herd[0].kg < 450) { L.tick(s, () => 0.5); months++; s.prices.arroba = 310; s.prices.bezerro = 2600; }
+  const sale = 10 * L.arrobas(s.herd[0].kg) * 310 * (1 - L.cattleFee(s));
+  assert.ok(sale - 10 * 2600 - months * 10 * L.BOITEL_COST > 0, 'boitel dá prejuízo');
+}
+// granja: galpão, lote, engorda, venda no ponto certo dá lucro; passar do ponto rende menos; galpão revende abaixo do preço
+import * as GR from './granja.js';
+{
+  const mk = () => { const s = { money: 2e6, prices: {}, nextId: 1 }; GR.ensure(s); return s; };
+  const s = mk(); assert.equal(GR.buyHouse(s, 'convencional'), null); const hid = s.granja.houses[0].id;
+  assert.ok(GR.house(s, hid, 20000).includes('comporta'));
+  assert.equal(GR.house(s, hid, 15000, true), null); assert.ok(GR.house(s, hid, 100).includes('já tem'));
+  const lid = s.granja.lots[0].id; assert.ok(GR.sellLot(s, lid).err);
+  const before = s.money + GR.housingCost(s, 15000, true);
+  GR.monthly(s, () => 0.5); GR.monthly(s, () => 0.5);
+  const r = GR.sellLot(s, lid); const profit = s.money - before;
+  assert.ok(profit > 0 && profit < 15000 * 4, 'lucro do lote ' + profit);
+  // passar do ponto (4 meses) dá menos que vender no 2º mês
+  const s2 = mk(); GR.buyHouse(s2, 'convencional'); const h2 = s2.granja.houses[0].id; GR.house(s2, h2, 15000, true);
+  const b2 = s2.money + GR.housingCost(s2, 15000, true); for (let i = 0; i < 4; i++) GR.monthly(s2, () => 0.5); GR.sellLot(s2, s2.granja.lots[0].id);
+  assert.ok(s2.money - b2 < profit, 'passar do ponto deveria render menos');
+  assert.ok(GR.sellHouse(s, hid).amount < GR.HOUSES.convencional.price);
+  // sem vacina, a doença mata muito mais
+  const s3 = mk(); GR.buyHouse(s3, 'pequeno'); GR.house(s3, s3.granja.houses[0].id, 5000, false); GR.monthly(s3, () => 0.001);
+  const s4 = mk(); GR.buyHouse(s4, 'pequeno'); GR.house(s4, s4.granja.houses[0].id, 5000, true); GR.monthly(s4, () => 0.001);
+  assert.ok(s3.granja.lots[0].birds < s4.granja.lots[0].birds);
+  assert.ok(L.netWorth({ ...L.newState(), granja: s.granja }) > L.netWorth(L.newState()) - 1);
+}
+console.log('granja ok');

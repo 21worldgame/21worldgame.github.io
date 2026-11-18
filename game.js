@@ -15,6 +15,7 @@ import * as FE from './feira.js';
 import * as W from './world.js';
 import * as RV from './rivals.js';
 import * as NPC from './npcs.js';
+import * as GR from './granja.js';
 import * as CD from './cards.js';
 import * as CHUI from './chat-ui.js';
 import * as SHUI from './shop-ui.js';
@@ -296,7 +297,7 @@ function renderGado() {
     ['cabeças', int(n)], ['pasto livre', `${int(Math.max(0, cap - n))} de ${int(cap)}`], ['peso médio', n ? `${int(avg)} kg` : '—'], ['valor do rebanho', brl(L.herdValue(s))],
   ].map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${v}</strong></div>`).join('');
   $('#herd-warn').hidden = n <= cap;
-  $('#herd-warn').textContent = `${int(n - cap)} cabeças sem pasto: cada uma custa R$ 150 de ração por mês e engorda menos.`;
+  $('#herd-warn').textContent = `${int(n - cap)} cabeças no confinamento terceirizado (sem pasto próprio): R$ ${L.BOITEL_COST} por cabeça por mês, engordam ${L.BOITEL_GAIN} kg. Com terra própria o pasto sai de graça.`;
   $('#calf-price').textContent = `${brl(s.prices.bezerro)} por bezerro de 180 kg${L.hasVehicle(s, 'caminhao') ? '. Seu caminhão leva o gado sem taxa.' : ''}`;
   $('#herd').innerHTML = s.herd.length ? s.herd.map((h, i) => {
     const val = h.heads * L.arrobas(h.kg) * s.prices.arroba, k = Math.min(1, (h.kg - 180) / (450 - 180));
@@ -308,6 +309,39 @@ function renderGado() {
       <div class="bar" role="img" aria-label="${Math.round(k * 100)}% do peso de abate"><i style="transform:scaleX(${k})"></i></div>
       <button class="btn btn--glass" data-act="sell-herd" data-id="${h.id}">vender lote</button></article>`;
   }).join('') : '<p class="empty glass">Sem rebanho. Dê um lance no leilão de bezerros e engorde no seu pasto.</p>';
+}
+
+// ---------- granja ----------
+const grStage = age => age < 1 ? ['pintinhos', 'granja-pintinhos'] : age === 1 ? ['crescendo', 'granja-galpao'] : age === 2 ? ['no ponto de abate', 'granja-frangos'] : ['passou do ponto', 'granja-frangos'];
+function renderGranja() {
+  const s = S(), g = GR.ensure(s), lots = g.lots, birds = lots.reduce((t, l) => t + l.birds, 0);
+  $('#gr-stats').innerHTML = [['galpões', g.houses.length], ['aves alojadas', int(birds)], ['valor dos lotes', brl(lots.reduce((t, l) => t + GR.lotValue(s, l), 0))], ['valor dos galpões', brl(g.houses.reduce((t, x) => t + x.value, 0))]]
+    .map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${v}</strong></div>`).join('');
+  const pr = (k, label, unit, dec) => { const p = s.prices[k], pv = s.prev?.[k] ?? p, ch = pv ? (p / pv - 1) * 100 : 0;
+    return `<div class="gr-price"><span class="muted small">${label}</span><strong>R$ ${p.toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec })}<small> ${unit}</small></strong><span class="${ch >= 0 ? 'good' : 'bad'} small">${ch >= 0 ? '▲' : '▼'} ${Math.abs(ch).toFixed(1)}%</span></div>`; };
+  $('#gr-prices').innerHTML = pr('frango', 'frango vivo (frigorífico paga)', '/kg', 2) + pr('pintinho', 'pintinho de 1 dia', '/cabeça', 2) + pr('racao', 'ração', '/kg', 2);
+  $('#gr-houses').innerHTML = g.houses.length ? g.houses.map(hs => {
+    const H = GR.HOUSES[hs.type], l = GR.lotOf(s, hs.id);
+    if (!l) return `<article class="glass grcard"><img class="grcard__img" src="assets/${H.img}.webp" alt="" loading="lazy">
+      <div class="grcard__body"><div class="hcard__top"><h4>${H.label}</h4><span class="tag tag--dark">vazio</span></div>
+      <p class="small muted">até ${int(H.cap)} aves · conversão ${H.conv.toString().replace('.', ',')} kg de ração por kg · mortalidade ${(H.mort * 100).toFixed(1).replace('.', ',')}%/mês</p>
+      <div class="row"><label class="field"><span>pintinhos</span><input class="input input--s" id="gr-q-${hs.id}" type="number" min="100" step="100" max="${H.cap}" value="${H.cap}" inputmode="numeric"></label>
+        <label class="check small"><input type="checkbox" id="gr-v-${hs.id}" checked><span>vacinar (R$ ${GR.VACCINE.toFixed(2).replace('.', ',')}/ave)</span></label></div>
+      <p class="small">custo do alojamento: <b>${brl(GR.housingCost(s, H.cap, true))}</b> para ${int(H.cap)} pintinhos</p>
+      <div class="row"><button class="btn btn--gold" data-act="gr-house" data-id="${hs.id}">alojar pintinhos</button><button class="btn btn--glass btn--sm" data-act="gr-sellhouse" data-id="${hs.id}">vender galpão ${brl(Math.round(hs.value * GR.HOUSE_RESALE))}</button></div></div></article>`;
+    const [stage, img] = grStage(l.age), kg = GR.kgAt(l.age), k = Math.min(1, l.age / 2);
+    return `<article class="glass grcard${l.age >= 3 ? ' is-late' : l.age === 2 ? ' is-ready' : ''}"><img class="grcard__img" src="assets/${img}.webp" alt="" loading="lazy">
+      <div class="grcard__body"><div class="hcard__top"><h4>${H.label}</h4><span class="tag ${l.age === 2 ? 'tag--green' : l.age >= 3 ? 'tag--red' : 'tag--dark'}">${stage}</span></div>
+      <p class="price">${brl(GR.lotValue(s, l))}</p>
+      <p class="small muted">${int(l.birds)} aves de ${int(l.start)} alojadas · ${kg.toString().replace('.', ',')} kg cada · ${l.age} ${l.age === 1 ? 'mês' : 'meses'}${l.vac ? ' · vacinado' : ' · sem vacina'}${l.events.length ? ` · ${l.events.join(', ')}` : ''}</p>
+      <div class="bar" role="img" aria-label="${Math.round(k * 100)}% do peso de abate"><i style="transform:scaleX(${k})"></i></div>
+      <p class="small">${l.age < 1 ? 'Pintinhos recém-chegados: ainda sem peso de venda.' : l.age === 1 ? 'Ainda dá para engordar mais um mês: o melhor preço por ave é no 2º mês.' : l.age === 2 ? 'Ponto certo de venda!' : 'Passou do ponto: come muito ração e quase não ganha peso. Venda logo.'}</p>
+      <button class="btn ${l.age >= 2 ? 'btn--gold' : 'btn--glass'}" data-act="gr-sell" data-id="${l.id}" ${l.age < 1 ? 'disabled' : ''}>vender lote ao frigorífico</button></div></article>`;
+  }).join('') : '<p class="empty glass">Nenhum galpão ainda. Construa o primeiro abaixo.</p>';
+  $('#gr-shop').innerHTML = Object.entries(GR.HOUSES).map(([k, H]) => `<article class="glass grcard"><img class="grcard__img" src="assets/${H.img}.webp" alt="" loading="lazy">
+    <div class="grcard__body"><h4>${H.label}</h4><p class="price">${brl(H.price)}</p>
+    <p class="small muted">até ${int(H.cap)} aves · conversão ${H.conv.toString().replace('.', ',')} · mortalidade ${(H.mort * 100).toFixed(1).replace('.', ',')}%/mês${H.heat ? ' · sofre com calor' : ' · climatizado, sem onda de calor'}</p>
+    <button class="btn btn--gold" data-act="gr-buy" data-id="${k}">construir</button></div></article>`).join('');
 }
 
 // ---------- mercado ----------
@@ -419,7 +453,7 @@ function openProfile(pid) {
 }
 
 // nome e foto de cada tipo de item (inventário, loja e trocas). Tipo novo sem entrada aqui ainda ganha nome e foto genéricos.
-export const ITEM_KIND = { car: 'veículo', animal: 'animal', land: 'terra', good: 'armazém', card: 'carta rara', player: 'jogador de futebol', squad: 'futebol', club: 'clube de futebol' };
+export const ITEM_KIND = { car: 'veículo', animal: 'animal', land: 'terra', good: 'armazém', card: 'carta rara', player: 'jogador de futebol', squad: 'futebol', club: 'clube de futebol', aviario: 'granja' };
 const GOOD_IMG = { soja: 'farm-soja', milho: 'farm-colheita', cafe: 'farm-cafe' };
 export function itemMedia(i) {
   const d = i.data || {};
@@ -429,6 +463,7 @@ export function itemMedia(i) {
   if (i.kind === 'good') return `<img src="assets/${GOOD_IMG[i.good] || 'farm-colheita'}.webp" alt="" loading="lazy">`;
   if (i.kind === 'card') return `<span class="icard__cardart" style="background-image:url(assets/cards/${d.champ}.webp)"></span>`;
   if (i.kind === 'player' || i.kind === 'squad' || i.kind === 'club') return '<img src="assets/photo-stadium.webp" alt="" loading="lazy">';
+  if (i.kind === 'aviario') return `<img src="assets/${GR.HOUSES[d.type]?.img || 'granja-galpao'}.webp" alt="" loading="lazy">`;
   return '<img src="assets/photo-chips.webp" alt="" loading="lazy">';
 }
 // inventário: tudo o que o jogador tem, e quem está online para negociar
@@ -515,7 +550,7 @@ document.addEventListener('submit', e => { if (e.target.id === 'tr-chat-form') {
 
 // desempenho: cada aba só é desenhada quando está aberta (ou quando o usuário entra nela)
 const PANELS = { personagem: () => renderChar(), terras: () => renderTerras(), gado: () => renderGado(), mercado: () => renderMercado(),
-  carros: () => renderCarros(), banco: () => renderBanco(), livro: () => renderLivro(), haras: () => SUI.render(), trabalho: () => JUI.render(), futebol: () => FUI.render(), inventario: () => renderInv(), cartas: () => renderCartas(), loja: () => SHUI.render(), mesa: () => C.renderLobby() };
+  carros: () => renderCarros(), banco: () => renderBanco(), livro: () => renderLivro(), haras: () => SUI.render(), trabalho: () => JUI.render(), futebol: () => FUI.render(), inventario: () => renderInv(), cartas: () => renderCartas(), granja: () => renderGranja(), loja: () => SHUI.render(), mesa: () => C.renderLobby() };
 let currentTab = 'mesa';
 function render() {
   renderHud(); renderMissions();
@@ -565,6 +600,10 @@ const ACTS = {
   'fe-sell'() { feiraSell(); },
   'card-close'() { $('#dlg-card').close(); },
   'fe-goto'() { $('.feira').scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+  'gr-buy'(id) { const H = GR.HOUSES[id]; if (!confirm(`Construir ${H.label} por ${brl(H.price)}?`)) return; const err = GR.buyHouse(S(), id); if (err) return say(err[0].toUpperCase() + err.slice(1), true); note(`granja: ${H.label}`, -H.price); award('land'); confetti(40); say(`${H.label} pronto para receber pintinhos.`); },
+  'gr-house'(id) { const q = Number($(`#gr-q-${id}`)?.value), v = !!$(`#gr-v-${id}`)?.checked, cost = GR.housingCost(S(), q, v); const err = GR.house(S(), id, q, v); if (err) return say(err[0].toUpperCase() + err.slice(1), true); note(`granja: ${int(q)} pintinhos alojados`, -cost); say(`${int(q)} pintinhos alojados. Venda no 2º mês, com ~2,8 kg.`); },
+  'gr-sell'(id) { const l = GR.ensure(S()).lots.find(x => x.id === id); if (l && l.age < 2 && !confirm('Ainda não chegou no ponto (2º mês). Vender mesmo assim?')) return; const r = GR.sellLot(S(), id); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true); note(`granja: venda de ${int(r.lot.birds)} frangos`, r.amount); confetti(50); sfx.play('stack', 0.6); say(`Lote vendido ao frigorífico por ${brl(r.amount)}.`); },
+  'gr-sellhouse'(id) { if (!confirm('Vender este galpão?')) return; const r = GR.sellHouse(S(), id); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true); note('granja: venda de galpão', r.amount); say(`Galpão vendido por ${brl(r.amount)}.`); },
   'shop-sell'(id) { SHUI.sellNow(id); },
   'shop-list'(id) { SHUI.listItem(id); },
   'shop-unlist'(id) { SHUI.unlist(id); },
@@ -908,7 +947,7 @@ document.addEventListener('pointermove', e => {
 document.addEventListener('pointerout', e => { const card = e.target.closest?.('.tcard'); if (card && !card.contains(e.relatedTarget)) { card.style.removeProperty('--rx'); card.style.removeProperty('--ry'); } });
 
 // mini tutorial sempre visível no topo de cada aba
-const HOWTO = {"mesa":["Como jogar no cassino",["Escolha uma mesa de 21 (ou crie a sua) e sente.","Coloque suas fichas na aposta e confirme. Fichas vêm do caixa (R$ 10 cada).","Peça carta (H), pare (S), dobre ou divida. Chegar mais perto de 21 que o dealer, sem passar, ganha. Blackjack paga 3 para 2.","Na roleta e no Aviator o caminho é o mesmo: aposte fichas e acompanhe o resultado."]],"trader":["Como funciona a mesa de operações",["Escolha o ativo (boi, soja, dólar ou bitcoin) e o tamanho das velas (1, 5 ou 10 min) para ler o gráfico.","Digite o valor e o tempo da operação: 1, 5 ou 10 minutos.","Clique em \"sobe\" se acha que o preço vai estar mais alto no fim do tempo, ou \"desce\" se vai estar mais baixo.","O valor sai na hora. Acertou: recebe 1,85x. Errou ou ficou igual: perde o valor. Não dá para desistir no meio.","A faixa de cotações no topo mostra os preços ao vivo em qualquer tela."]],"trabalho":["Como funciona o trabalho",["Clique em \"começar turno\": são 90 segundos.","Clique nos pedidos do mapa para aceitar (a moto leva até 3).","Quando a moto chegar, confirme na hora (espaço) para ganhar gorjeta. Pneu furado: aperte F.","Bom aproveitamento sobe seu nível e os pedidos pagam mais. Serve de renda quando o dinheiro acaba."]],"futebol":["Como funciona o futebol",["Escolha um clube real e pague o valor para assumir.","Em \"próximo jogo\" defina formação e estilo e assista à partida (ou simule rápido).","No mercado, contrate jogadores (negocie o preço) e venda os que sobram; no estádio, aumente a bilheteria.","Fique entre os 4 primeiros para subir de divisão; os 4 últimos caem."]],"loja":["Como funciona a loja",["Tudo que é seu aparece aqui: cavalos, galgos, carros, terras, sacas, cartas, jogadores e o seu clube.","\"Vender agora\" paga na hora o preço da loja.","\"Anunciar\" deixa você escolher o preço: outros jogadores online veem e compram na hora.","Se nenhum jogador comprar, um comprador da loja pode levar, pagando no máximo 5% acima do preço de venda na hora.","Na parte de baixo ficam os anúncios dos outros jogadores."]],"cartas":["Como funcionam as cartas raras",["Abra pacotes ou ganhe cartas na roleta do dia.","Quanto mais rara (bronze, prata, esmeralda, diamante, mestre, challenger), mais vale.","Use como moeda: troque com outros jogadores no inventário, pague terras ou venda para a loja.","Complete o álbum com os 12 campeões."]],"inventario":["Como funciona o inventário",["Aqui está tudo que você pode trocar: carros, terras, animais, jogadores e cartas.","Na feira, negocie a compra e venda: oferta muito baixa faz o negociante desistir.","Com outro jogador online, use \"propor troca\": os dois montam a oferta, ficam prontos e confirmam.","Cartas valem dinheiro e podem pagar terras."]],"haras":["Como funciona o canil e haras",["Compre um animal no leilão do mês.","Treine: cada treino gasta 1 das 4 semanas do mês e cansa o animal.","Inscreva em uma prova da sua classe. Corrida também gasta uma semana.","\"Sem semanas\" = acabaram as 4 semanas do mês do mundo. O mês passa sozinho (relógio no topo, igual para todos) e as semanas voltam.","Só o 1º e o 2º lugar dão lucro. Animal lesionado precisa de veterinário."]],"corridas":["Como funciona a corrida de galgos",["Escolha o cachorro em quem vai apostar e o valor em fichas.","Quanto menor a chance dele, maior o retorno.","Clique em \"apostar e largar\" e acompanhe a corrida."]],"personagem":["Como funciona o personagem",["Escolha o visual e o nome.","Itens pagos (acessórios, roupas) são seus para sempre.","Cada acessório dá uma vantagem permanente: veja a lista \"suas vantagens\"."]],"terras":["Como funcionam as terras",["Escolha um lote à venda e veja o benefício que ele dá ao comprar.","Comprar é o melhor negócio: a terra valoriza, rende vantagens, serve de garantia no banco, planta sem restrição e pode ser arrendada a terceiros.","Arrendar de terceiros custa aluguel todo mês (+8% ao ano), não dá vantagem nenhuma e a lavoura só é permitida com trator, com 20% a mais de custo e 15% da safra para o dono.","Se arrendou e gostou, compre: o aluguel que você já pagou abate o preço (até 40%).","Dá para pagar a compra também com cartas."]],"gado":["Como funciona o gado",["Compre bezerros no leilão e deixe no pasto (1 cabeça por hectare).","Eles engordam todo mês que passa. Venda quando o preço da arroba estiver bom.","Sem pasto suficiente, você paga ração e engorda menos."]],"mercado":["Como funciona o mercado",["Veja o preço de soja, milho e café, que variam todo mês.","Guarde a colheita no armazém e venda quando o preço subir."]],"carros":["Como funciona a concessionária",["Todo carro tem uma vantagem permanente (entregas, XP, provas...).","Você paga IPVA e seguro todo mês e o carro desvaloriza.","Vender na loja devolve 92% do valor atual."]],"banco":["Como funciona o banco",["Peça empréstimo usando terras e gado como garantia.","Pague as parcelas em dia: 2 atrasadas e o banco toma a terra.","Você também pode emprestar dinheiro a outras pessoas e ganhar juros, com risco de calote."]],"livro":["Livro-caixa",["Aqui fica o registro de tudo que entrou e saiu do seu dinheiro."]]};
+const HOWTO = {"mesa":["Como jogar no cassino",["Escolha uma mesa de 21 (ou crie a sua) e sente.","Coloque suas fichas na aposta e confirme. Fichas vêm do caixa (R$ 10 cada).","Peça carta (H), pare (S), dobre ou divida. Chegar mais perto de 21 que o dealer, sem passar, ganha. Blackjack paga 3 para 2.","Na roleta e no Aviator o caminho é o mesmo: aposte fichas e acompanhe o resultado."]],"trader":["Como funciona a mesa de operações",["Escolha o ativo (boi, soja, dólar ou bitcoin) e o tamanho das velas (1, 5 ou 10 min) para ler o gráfico.","Digite o valor e o tempo da operação: 1, 5 ou 10 minutos.","Clique em \"sobe\" se acha que o preço vai estar mais alto no fim do tempo, ou \"desce\" se vai estar mais baixo.","O valor sai na hora. Acertou: recebe 1,85x. Errou ou ficou igual: perde o valor. Não dá para desistir no meio.","A faixa de cotações no topo mostra os preços ao vivo em qualquer tela."]],"trabalho":["Como funciona o trabalho",["Clique em \"começar turno\": são 90 segundos.","Clique nos pedidos do mapa para aceitar (a moto leva até 3).","Quando a moto chegar, confirme na hora (espaço) para ganhar gorjeta. Pneu furado: aperte F.","Bom aproveitamento sobe seu nível e os pedidos pagam mais. Serve de renda quando o dinheiro acaba."]],"futebol":["Como funciona o futebol",["Escolha um clube real e pague o valor para assumir.","Em \"próximo jogo\" defina formação e estilo e assista à partida (ou simule rápido).","No mercado, contrate jogadores (negocie o preço) e venda os que sobram; no estádio, aumente a bilheteria.","Fique entre os 4 primeiros para subir de divisão; os 4 últimos caem."]],"loja":["Como funciona a loja",["Tudo que é seu aparece aqui: cavalos, galgos, carros, terras, sacas, cartas, jogadores e o seu clube.","\"Vender agora\" paga na hora o preço da loja.","\"Anunciar\" deixa você escolher o preço: outros jogadores online veem e compram na hora.","Se nenhum jogador comprar, um comprador da loja pode levar, pagando no máximo 5% acima do preço de venda na hora.","Na parte de baixo ficam os anúncios dos outros jogadores."]],"cartas":["Como funcionam as cartas raras",["Abra pacotes ou ganhe cartas na roleta do dia.","Quanto mais rara (bronze, prata, esmeralda, diamante, mestre, challenger), mais vale.","Use como moeda: troque com outros jogadores no inventário, pague terras ou venda para a loja.","Complete o álbum com os 12 campeões."]],"inventario":["Como funciona o inventário",["Aqui está tudo que você pode trocar: carros, terras, animais, jogadores e cartas.","Na feira, negocie a compra e venda: oferta muito baixa faz o negociante desistir.","Com outro jogador online, use \"propor troca\": os dois montam a oferta, ficam prontos e confirmam.","Cartas valem dinheiro e podem pagar terras."]],"haras":["Como funciona o canil e haras",["Compre um animal no leilão do mês.","Treine: cada treino gasta 1 das 4 semanas do mês e cansa o animal.","Inscreva em uma prova da sua classe. Corrida também gasta uma semana.","\"Sem semanas\" = acabaram as 4 semanas do mês do mundo. O mês passa sozinho (relógio no topo, igual para todos) e as semanas voltam.","Só o 1º e o 2º lugar dão lucro. Animal lesionado precisa de veterinário."]],"corridas":["Como funciona a corrida de galgos",["Escolha o cachorro em quem vai apostar e o valor em fichas.","Quanto menor a chance dele, maior o retorno.","Clique em \"apostar e largar\" e acompanhe a corrida."]],"personagem":["Como funciona o personagem",["Escolha o visual e o nome.","Itens pagos (acessórios, roupas) são seus para sempre.","Cada acessório dá uma vantagem permanente: veja a lista \"suas vantagens\"."]],"terras":["Como funcionam as terras",["Escolha um lote à venda e veja o benefício que ele dá ao comprar.","Comprar é o melhor negócio: a terra valoriza, rende vantagens, serve de garantia no banco, planta sem restrição e pode ser arrendada a terceiros.","Arrendar de terceiros custa aluguel todo mês (+8% ao ano), não dá vantagem nenhuma e a lavoura só é permitida com trator, com 20% a mais de custo e 15% da safra para o dono.","Se arrendou e gostou, compre: o aluguel que você já pagou abate o preço (até 40%).","Dá para pagar a compra também com cartas."]],"granja":["Como funciona a granja",["Construa um galpão: quanto maior e mais moderno, mais aves e menos ração por kg (o climatizado não sofre com calor).","Aloje os pintinhos no galpão vazio. Vacinar custa pouco e evita perder muitas aves numa doença.","A cada mês do mundo eles crescem e comem ração (o maior custo). Energia e mão de obra também são pagas todo mês.","Venda no 2º mês (cerca de 2,8 kg por ave): é o ponto de lucro. Depois disso comem muito e quase não ganham peso.","Preço do frango, do pintinho e da ração mudam todo mês: fique de olho."]],"gado":["Como funciona o gado",["Compre bezerros no leilão. Quem tem terra deixa no pasto de graça (cerca de 1 cabeça por hectare) e engorda 18 kg por mês.","Sem terra também dá: o gado vai para o confinamento terceirizado (boitel), paga R$ 95 por cabeça por mês e engorda 22 kg.","Venda quando o boi chegar perto de 450 kg e o preço da arroba estiver bom."]],"mercado":["Como funciona o mercado",["Veja o preço de soja, milho e café, que variam todo mês.","Guarde a colheita no armazém e venda quando o preço subir."]],"carros":["Como funciona a concessionária",["Todo carro tem uma vantagem permanente (entregas, XP, provas...).","Você paga IPVA e seguro todo mês e o carro desvaloriza.","Vender na loja devolve 92% do valor atual."]],"banco":["Como funciona o banco",["Peça empréstimo usando terras e gado como garantia.","Pague as parcelas em dia: 2 atrasadas e o banco toma a terra.","Você também pode emprestar dinheiro a outras pessoas e ganhar juros, com risco de calote."]],"livro":["Livro-caixa",["Aqui fica o registro de tudo que entrou e saiu do seu dinheiro."]]};
 for (const [id, [title, steps]] of Object.entries(HOWTO)) {
   const p = document.getElementById(`p-${id}`);
   if (p) p.insertAdjacentHTML('afterbegin', `<details class="howto" ${matchMedia('(max-width: 40rem)').matches ? '' : 'open'}><summary class="howto__t">${title}</summary><ol>${steps.map(s => `<li>${s}</li>`).join('')}</ol></details>`);   // no celular começa fechado: toque no título para abrir
@@ -919,6 +958,7 @@ for (const [id, [title, steps]] of Object.entries(HOWTO)) {
 // (no máximo 6 de uma vez, quem ficou muito tempo fora é "perdoado"), sem botão para adiantar o próprio mês.
 function worldMonths() {
   const w = Live.world(), t = Live.now(), target = W.current(w, t), s = S();
+  GR.ensure(s);
   if (s.worldSync !== true) { s.month = target; s.worldSync = true; save(); render(); return; }     // primeira vez: entra no mês atual do mundo
   const p = W.plan(s.month, target);
   if (!p.ticks || C.busyRound() || JUI.running() || SUI.isRunning()) return;
@@ -927,6 +967,7 @@ function worldMonths() {
   for (let i = 0; i < p.ticks; i++) {
     const lines = L.tick(s);
     for (const l of ST.monthly(s)) note(l.txt, l.val);
+    for (const l of GR.monthly(s)) note(l.txt, l.val);
     harvests += lines.filter(l => l.txt.startsWith('colheita')).length;
     award('month');
   }
@@ -969,7 +1010,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 4;
+const APP_VERSION = 5;
 let updateShown = false, updateMsg = '';
 async function checkUpdate() {
   if (updateShown) return;
@@ -1020,3 +1061,10 @@ addEventListener('appinstalled', () => { $('#btn-install').hidden = true; say('2
 $('#btn-install')?.addEventListener('click', async () => { if (!installEv) return; installEv.prompt(); await installEv.userChoice.catch(() => {}); installEv = null; $('#btn-install').hidden = true; });
 
 SHUI.init({ itemMedia, ITEM_KIND, announceFn: () => C.announce() });
+
+// menu de abas: rodinha do mouse rola de lado e a aba escolhida sempre aparece inteira
+{
+  const tabs = document.querySelector('.tabs');
+  tabs?.addEventListener('wheel', e => { if (tabs.scrollWidth > tabs.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { tabs.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+  tabs?.addEventListener('click', e => e.target.closest('[role="tab"]')?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }));
+}

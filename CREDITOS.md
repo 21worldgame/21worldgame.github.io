@@ -56,3 +56,10 @@ Os nomes de carros no jogo são paródias; marcas visíveis nas fotos pertencem 
 - corvo: Gustave Doré, ilustração de "O Corvo", domínio público
 - raiz: Caspar David Friedrich, "Dólmen na neve", domínio público
 - vespa: Bernard Dupont, "Rainbow Cuckoo Wasp (Chrysis mionii)", CC BY-SA 2.0
+
+## Granja (Wikimedia Commons)
+
+- granja-galpao: USDA NRCS Texas, "Baby chickens in a grower broiler house", domínio público
+- granja-aviario: Joe Valbuena (USDA), "Broiler house", domínio público
+- granja-frangos: USAID Afghanistan, "Bolan Poultry Farm-3", domínio público
+- granja-pintinhos: Chandapiwa Malema, "Chicks in a poultry house in Sebele", CC BY-SA 4.0

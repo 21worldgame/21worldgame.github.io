@@ -44,6 +44,7 @@
     <symbol id="i-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 4.5h-5L8 10z M12 3v4 M16 10l4.5-1.5 M14.5 14.5l2.5 4 M9.5 14.5l-2.5 4 M8 10L3.5 8.5"/></symbol>
     <symbol id="i-gem" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9z M2 9h20 M9 3l3 18 3-18"/></symbol>
     <symbol id="i-shop" viewBox="0 0 24 24"><path d="M3 9l2-5h14l2 5M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0zM5 13v7h14v-7M10 20v-5h4v5"/></symbol>
+    <symbol id="i-chick" viewBox="0 0 24 24"><path d="M7 14a5 5 0 0 0 10 0c0-3-2-5-5-5S7 11 7 14zM12 9V7a2 2 0 1 1 3 1.7M15 8.5l2 .5M9 19l-1 2M15 19l1 2"/><circle cx="13.3" cy="6.6" r=".4"/></symbol>
     <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
     <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/></symbol>
   </svg>
@@ -82,6 +83,7 @@
         <button role="tab" id="t-personagem" data-tab="personagem" aria-controls="p-personagem" aria-selected="false" tabindex="-1"><svg><use href="#i-user"/></svg>personagem</button>
         <button role="tab" id="t-terras" data-tab="terras" aria-controls="p-terras" aria-selected="false" tabindex="-1"><svg><use href="#i-map"/></svg>terras</button>
         <button role="tab" id="t-gado" data-tab="gado" aria-controls="p-gado" aria-selected="false" tabindex="-1"><svg><use href="#i-herd"/></svg>gado</button>
+        <button role="tab" id="t-granja" data-tab="granja" aria-controls="p-granja" aria-selected="false" tabindex="-1"><svg><use href="#i-chick"/></svg>granja</button>
         <button role="tab" id="t-mercado" data-tab="mercado" aria-controls="p-mercado" aria-selected="false" tabindex="-1"><svg><use href="#i-chart"/></svg>mercado</button>
         <button role="tab" id="t-carros" data-tab="carros" aria-controls="p-carros" aria-selected="false" tabindex="-1"><svg><use href="#i-car"/></svg>concessionária</button>
         <button role="tab" id="t-banco" data-tab="banco" aria-controls="p-banco" aria-selected="false" tabindex="-1"><svg><use href="#i-bank"/></svg>banco</button>
@@ -436,8 +438,19 @@
           <input class="input input--s" name="calves" type="number" min="1" value="10" inputmode="numeric"></label>
         <button class="btn btn--gold" data-act="buy-calves">dar o lance</button>
       </div>
-      <p class="muted small">No pasto cada cabeça engorda 18 kg por mês. A arroba é sobre a carcaça (cerca de 52% do peso vivo), e o boi gordo dá lucro perto dos 450 kg.</p>
+      <p class="muted small">Não tem terra? Pode comprar mesmo assim: o gado vai para o confinamento terceirizado. No pasto próprio cada cabeça engorda 18 kg por mês, de graça. A arroba é sobre a carcaça (cerca de 52% do peso vivo), e o boi gordo dá lucro perto dos 450 kg.</p>
       <div class="cards" id="herd"></div>
+    </section>
+
+    <!-- GRANJA -->
+    <section id="p-granja" role="tabpanel" aria-labelledby="t-granja" class="panel" hidden>
+      <div class="gr-hero glass"><div><h2>granja de frangos</h2><p class="muted">Construa galpões, aloje pintinhos, engorde e venda para o frigorífico. O ponto certo de venda é no 2º mês, com cerca de 2,8 kg por ave.</p></div>
+        <div class="tiles tiles--gr" id="gr-stats"></div></div>
+      <div class="gr-prices" id="gr-prices"></div>
+      <h3>seus galpões</h3>
+      <div class="gr-grid" id="gr-houses"></div>
+      <h3>construir galpão</h3>
+      <div class="gr-grid" id="gr-shop"></div>
     </section>
 
     <!-- MERCADO -->

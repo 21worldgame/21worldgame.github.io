@@ -1649,3 +1649,37 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .pf__bio { margin: 8px 0 0; font-style: italic; opacity: .85; }
 /* nicks com maiúsculas e minúsculas como o jogador escreveu */
 #pf-name, .rk__name, .who, #inv-peers li span, .fcard__seller span, .chat-name { text-transform: none; }
+
+/* menu de abas: no computador quebra em linhas (tudo visível); no celular rola de lado com o dedo */
+@media (min-width: 48rem) {
+  .tabs { flex-wrap: wrap; overflow: visible; row-gap: 0; justify-content: flex-start; }
+  .tabs button { min-height: 40px; padding: 0 12px; }
+}
+@media (max-width: 47.99rem) {
+  .tabs { scroll-snap-type: x proximity; -webkit-mask: linear-gradient(90deg, #000 88%, transparent); mask: linear-gradient(90deg, #000 88%, transparent); }
+  .tabs button { scroll-snap-align: start; }
+}
+
+/* granja */
+.gr-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px; align-items: center; padding: 18px; margin-bottom: 12px; background: linear-gradient(120deg, rgba(5,8,16,.88), rgba(5,8,16,.55)), url(assets/granja-aviario.webp) center/cover; }
+.gr-hero h2 { margin-top: 0; }
+.tiles--gr { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.gr-prices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.gr-price { display: grid; gap: 2px; padding: 10px 14px; border-radius: 12px; background: rgba(56,189,248,.07); border: 1px solid rgba(125,211,252,.22); }
+.gr-price strong { font: 800 1.15rem/1.1 var(--font-display); } .gr-price small { font-size: .7rem; opacity: .7; }
+.gr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.grcard { overflow: hidden; display: grid; grid-template-rows: auto 1fr; }
+.grcard__img { width: 100%; height: 140px; object-fit: cover; }
+.grcard__body { padding: 12px 14px 14px; display: grid; gap: 8px; align-content: start; }
+.grcard__body h4 { margin: 0; text-transform: none; }
+.grcard__body p { margin: 0; }
+.grcard.is-ready { box-shadow: inset 0 0 0 2px rgba(46,230,107,.7), 0 0 20px rgba(46,230,107,.2); }
+.grcard.is-late { box-shadow: inset 0 0 0 2px rgba(255,90,106,.7); }
+@media (max-width: 40rem) { .gr-hero, .gr-prices { grid-template-columns: minmax(0, 1fr); } }
+/* cabeçalho: números grandes não quebram linha */
+@media (min-width: 40.01rem) {
+  .brand, .brand__word { white-space: nowrap; }
+  .stats-hud { display: flex; flex-wrap: nowrap; gap: 18px; min-width: 0; }
+  .stats-hud > div { min-width: 0; }
+  .stats-hud dd { white-space: nowrap; font-size: clamp(.95rem, 1.25vw, 1.2rem); }
+}
