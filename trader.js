@@ -132,19 +132,24 @@ function draw(vis) {
 // ---------- cotações ao vivo no topo de todas as telas ----------
 const COMMOD = { soja: ['Soja (saca)', 'soja'], milho: ['Milho (saca)', 'milho'], cafe: ['Café (saca)', 'cafe'], arroba: ['Arroba do boi', 'arroba'], bezerro: ['Bezerro', 'bezerro'] };
 function tickerItems() {
-  return [...Object.entries(MK.ASSETS).map(([k, a]) => `<span class="tk" data-tk="${k}"><b>${a.ticker}</b><i class="tk__p"></i><i class="tk__c"></i></span>`),
-    ...Object.entries(COMMOD).map(([k, [label]]) => `<span class="tk tk--farm" data-tk="${k}"><b>${label}</b><i class="tk__p"></i><i class="tk__c"></i></span>`)].join('');
+  return [...Object.entries(MK.ASSETS).map(([k, a]) => `<li class="tk" data-tk="${k}"><b>${a.ticker}</b><small>${a.name}</small><i class="tk__p"></i><i class="tk__c"></i></li>`),
+    ...Object.entries(COMMOD).map(([k, [label]]) => `<li class="tk tk--farm" data-tk="${k}"><b>${label}</b><small>mês do mundo</small><i class="tk__p"></i><i class="tk__c"></i></li>`)].join('');
 }
 function buildTicker() {
   const el = $('#ticker'); if (!el) return;
-  el.innerHTML = `<div class="ticker__run">${tickerItems()}${tickerItems()}</div>`;   // duas cópias: rolagem sem emenda
-  el.addEventListener('click', e => { const k = e.target.closest('[data-tk]')?.dataset.tk; if (!k) return; if (MK.ASSETS[k]) { G.goto?.('trader'); pickAsset(k); } else G.goto?.('mercado'); });
+  el.innerHTML = `<h4>valores do dia <small>ao vivo</small></h4><ul>${tickerItems()}</ul><p class="muted small">Clique para operar ou vender.</p>`;
+  const btn = $('#tk-btn'), close = () => { el.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
+  btn.addEventListener('click', e => { e.stopPropagation(); el.hidden = !el.hidden; btn.setAttribute('aria-expanded', String(!el.hidden)); updateTicker(); });
+  document.addEventListener('click', e => { if (!el.hidden && !e.target.closest('.tkmenu')) close(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  el.addEventListener('click', e => { const k = e.target.closest('[data-tk]')?.dataset.tk; if (!k) return; close(); if (MK.ASSETS[k]) { G.goto?.('trader'); pickAsset(k); } else G.goto?.('mercado'); });
   updateTicker();
 }
 function updateTicker() {
   const t = now(), s = G.S;
   for (const [k] of Object.entries(MK.ASSETS)) {
-    const p = MK.price(k, t), ch = MK.change(k, t, 60) * 100;
+    const p = MK.price(k, t), ch = MK.change(k, t, 1440) * 100;
+    const dot = $('#tk-btn .tk-btn__dot'); if (dot && k === 'btc') dot.className = `tk-btn__dot ${ch >= 0 ? 'is-up' : 'is-down'}`;
     document.querySelectorAll(`[data-tk="${k}"]`).forEach(e => { e.querySelector('.tk__p').textContent = MK.fmt(k, p); const c = e.querySelector('.tk__c'); c.textContent = `${ch >= 0 ? '▲' : '▼'}${Math.abs(ch).toFixed(2)}%`; c.className = `tk__c ${ch >= 0 ? 'good' : 'bad'}`; });
   }
   for (const [k] of Object.entries(COMMOD)) {

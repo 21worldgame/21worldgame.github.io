@@ -1487,3 +1487,25 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
   .worldclock b { justify-self: start; font-size: .9rem; }
   .worldclock small { white-space: normal; text-align: left; }
 }
+
+/* cotações: botão pequeno que abre a lista vertical do dia */
+.tkmenu { position: relative; }
+.tk-btn { gap: 7px; }
+.tk-btn__dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; box-shadow: 0 0 0 0 currentColor; }
+.tk-btn__dot.is-up { background: #2ee66b; animation: lpPulse 1.6s infinite; } .tk-btn__dot.is-down { background: #ff5a6a; animation: lpPulse 1.6s infinite; }
+.tkpanel { position: absolute; right: 0; top: calc(100% + 8px); z-index: 60; width: 290px; padding: 12px; border-radius: 14px; background: rgba(10,14,28,.97); border: 1px solid rgba(125,211,252,.3); box-shadow: 0 18px 40px rgba(0,0,0,.6); }
+.tkpanel h4 { margin: 0 0 8px; font-size: .9rem; display: flex; justify-content: space-between; align-items: center; }
+.tkpanel h4 small { font-size: .65rem; color: #2ee66b; text-transform: uppercase; letter-spacing: .08em; }
+.tkpanel ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.tkpanel .tk { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "n p" "s c"; column-gap: 10px; padding: 7px 8px; border-radius: 9px; cursor: pointer; }
+.tkpanel .tk:hover { background: rgba(125,211,252,.1); }
+.tkpanel .tk b { grid-area: n; color: #ffd76a; font-size: .85rem; } .tkpanel .tk--farm b { color: #a7f3c0; }
+.tkpanel .tk small { grid-area: s; font-size: .68rem; opacity: .6; }
+.tkpanel .tk__p { grid-area: p; justify-self: end; font-style: normal; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tkpanel .tk__c { grid-area: c; justify-self: end; font-style: normal; font-size: .75rem; font-weight: 700; }
+.tkpanel p { margin: 8px 0 0; }
+@media (max-width: 40rem) { .tkmenu { order: 4; } .tkpanel { position: fixed; left: 12px; right: 12px; top: 120px; width: auto; } }
+/* sem marrom: caixas de tutorial e de vantagens no mesmo azul-noite da feira */
+.howto { border-color: rgba(125,211,252,.35); background: linear-gradient(90deg, rgba(56,189,248,.12), rgba(139,92,246,.08)); }
+.howto__t::before { background: linear-gradient(135deg, #38bdf8, #8b5cf6); color: #fff; }
+.perks { background: linear-gradient(90deg, rgba(56,189,248,.10), rgba(139,92,246,.06)); border-color: rgba(125,211,252,.3); }
