@@ -46,6 +46,7 @@
     <symbol id="i-shop" viewBox="0 0 24 24"><path d="M3 9l2-5h14l2 5M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0zM5 13v7h14v-7M10 20v-5h4v5"/></symbol>
     <symbol id="i-chick" viewBox="0 0 24 24"><path d="M7 14a5 5 0 0 0 10 0c0-3-2-5-5-5S7 11 7 14zM12 9V7a2 2 0 1 1 3 1.7M15 8.5l2 .5M9 19l-1 2M15 19l1 2"/><circle cx="13.3" cy="6.6" r=".4"/></symbol>
     <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4M12 13v4M8 21h8M9 17h6"/></symbol>
+    <symbol id="i-orange" viewBox="0 0 24 24"><circle cx="12" cy="14" r="7"/><path d="M12 7c0-2 1-3.5 3-4M12 7c-2-2.5-5-2-6-1 2 .5 4 1.5 6 1"/></symbol>
     <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
     <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/></symbol>
   </svg>
@@ -86,6 +87,7 @@
         <button role="tab" id="t-terras" data-tab="terras" aria-controls="p-terras" aria-selected="false" tabindex="-1"><svg><use href="#i-map"/></svg>terras</button>
         <button role="tab" id="t-gado" data-tab="gado" aria-controls="p-gado" aria-selected="false" tabindex="-1"><svg><use href="#i-herd"/></svg>gado</button>
         <button role="tab" id="t-granja" data-tab="granja" aria-controls="p-granja" aria-selected="false" tabindex="-1"><svg><use href="#i-chick"/></svg>granja</button>
+        <button role="tab" id="t-laranja" data-tab="laranja" aria-controls="p-laranja" aria-selected="false" tabindex="-1"><svg><use href="#i-orange"/></svg>laranja</button>
         <button role="tab" id="t-mercado" data-tab="mercado" aria-controls="p-mercado" aria-selected="false" tabindex="-1"><svg><use href="#i-chart"/></svg>mercado</button>
         <button role="tab" id="t-carros" data-tab="carros" aria-controls="p-carros" aria-selected="false" tabindex="-1"><svg><use href="#i-car"/></svg>concessionária</button>
         <button role="tab" id="t-banco" data-tab="banco" aria-controls="p-banco" aria-selected="false" tabindex="-1"><svg><use href="#i-bank"/></svg>banco</button>
@@ -332,8 +334,9 @@
       </div>
       <div class="rk-me glass" id="rk-me"></div>
       <div class="subtabs" role="group" aria-label="categoria"><button class="subtab is-on" data-act="rk-cat" data-id="worth" data-rkcat="worth">patrimônio</button><button class="subtab" data-act="rk-cat" data-id="level" data-rkcat="level">nível</button><button class="subtab" data-act="rk-cat" data-id="farm" data-rkcat="farm">fazendeiros</button><button class="subtab" data-act="rk-cat" data-id="casino" data-rkcat="casino">cassino</button></div>
+      <p class="rk-count" id="rk-count"></p>
       <div class="rk-grid">
-        <ol class="rk-list glass" id="rk-list"></ol>
+        <div><ol class="rk-list glass" id="rk-list"></ol><div class="rk-pages" id="rk-pages"></div></div>
         <aside class="rk-facts" id="rk-facts"></aside>
       </div>
     </section>
@@ -468,6 +471,17 @@
       <div class="gr-grid" id="gr-houses"></div>
       <h3>construir galpão</h3>
       <div class="gr-grid" id="gr-shop"></div>
+    </section>
+
+    <!-- POMAR DE LARANJA -->
+    <section id="p-laranja" role="tabpanel" aria-labelledby="t-laranja" class="panel" hidden>
+      <div class="pm-hero glass"><div><h2>pomar de laranja</h2><p class="muted">Plante na sua terra, cuide com defensivo todo mês e colha a cada 4 meses depois da formação. Sem cuidado a praga derruba a safra e o greening pode matar o pomar.</p></div>
+        <div class="tiles tiles--gr" id="pm-stats"></div></div>
+      <div class="pm-sell glass" id="pm-sell"></div>
+      <h3>seus pomares</h3>
+      <div class="pm-list" id="pm-list"></div>
+      <h3>terras livres para plantar</h3>
+      <div class="pm-free" id="pm-free"></div>
     </section>
 
     <!-- MERCADO -->
@@ -611,6 +625,15 @@
   </dialog>
 
   <!-- partida ao vivo -->
+  <!-- navegação do celular: atalhos fixos embaixo + menu em grade com todas as áreas -->
+  <nav class="mnav" id="mnav" aria-label="atalhos">
+    <button type="button" data-mnav="mesa"><svg><use href="#i-cards"/></svg>cassino</button>
+    <button type="button" data-mnav="ranking"><svg><use href="#i-trophy"/></svg>ranking</button>
+    <button type="button" data-mnav="inventario"><svg><use href="#i-bag"/></svg>inventário</button>
+    <button type="button" data-mnav="loja"><svg><use href="#i-shop"/></svg>loja</button>
+    <button type="button" data-mnav="menu" aria-expanded="false" aria-controls="mnav-sheet"><span class="mnav__dots" aria-hidden="true"></span>menu</button>
+  </nav>
+  <div class="mnav-sheet" id="mnav-sheet" hidden><div class="mnav-sheet__in"><div class="mnav-sheet__head"><b>todas as áreas</b><button type="button" class="btn btn--glass btn--sm" data-mnav="close">fechar</button></div><div class="mnav-grid" id="mnav-grid"></div></div></div>
   <!-- chat global -->
   <button class="chat-fab btn btn--gold" id="chat-fab" type="button" aria-expanded="false" aria-controls="chat-box">chat <span class="chat-fab__n" id="chat-n" hidden></span></button>
   <section class="chat-box glass" id="chat-box" hidden aria-label="chat global">
