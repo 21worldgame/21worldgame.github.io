@@ -65,7 +65,6 @@ function renderPass() {
 
 function renderHud() {
   const s = S(), worth = L.netWorth(s);
-  $('#r-month').textContent = s.month;
   rollTo($('#r-money'), s.money, brl);
   rollTo($('#r-chips'), s.chips, int);
   rollTo($('#r-worth'), worth, brl);
@@ -849,7 +848,7 @@ for (const [id, [title, steps]] of Object.entries(HOWTO)) {
 // (no máximo 6 de uma vez, quem ficou muito tempo fora é "perdoado"), sem botão para adiantar o próprio mês.
 function worldMonths() {
   const w = Live.world(), t = Live.now(), target = W.current(w, t), s = S();
-  if (s.worldSync !== true) { s.month = target; s.worldSync = true; save(); return; }     // primeira vez: entra no mês atual do mundo
+  if (s.worldSync !== true) { s.month = target; s.worldSync = true; save(); render(); return; }     // primeira vez: entra no mês atual do mundo
   const p = W.plan(s.month, target);
   if (!p.ticks || C.busyRound() || JUI.running() || SUI.isRunning()) return;
   if (p.skipped) { s.month += p.skipped; note(`o mundo avançou ${p.skipped} meses enquanto você esteve fora (sem cobranças)`); }
@@ -894,3 +893,40 @@ for (const id of ['mesa', 'corridas', 'trader', 'trabalho', 'futebol', 'haras', 
 document.addEventListener('click', e => { const b = e.target.closest('[data-fs]'); if (b) toggleFs(b.dataset.fs); });
 document.addEventListener('fullscreenchange', setFsLabels);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.querySelector('.is-fs')) toggleFs(); });
+
+// ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
+// O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
+let loadedVersion = null, updateShown = false;
+async function checkUpdate() {
+  if (updateShown) return;
+  try {
+    const r = await fetch(`${location.pathname}?v=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
+    const v = r.headers.get('last-modified') || r.headers.get('etag');
+    if (!r.ok || !v) return;
+    if (loadedVersion === null) { loadedVersion = v; return; }
+    if (v !== loadedVersion) showUpdate();
+  } catch {}
+}
+function showUpdate() {
+  updateShown = true;
+  // janela aberta (modal) deixa o resto da tela sem clique: o aviso entra dentro dela
+  const host = [...document.querySelectorAll('dialog[open]')].pop() || document.body;
+  host.insertAdjacentHTML('beforeend', `<div class="upd" role="alert"><span class="upd__dot" aria-hidden="true"></span>
+    <span><strong>Nova atualização do 21 World!</strong> Recarregue para jogar com as novidades. Seu progresso fica salvo.</span>
+    <button class="btn btn--gold btn--sm" type="button" id="upd-go">recarregar agora</button></div>`);
+  $('#upd-go').addEventListener('click', async () => {
+    $('#upd-go').disabled = true; $('#upd-go').textContent = 'salvando...';
+    save();
+    try { await Promise.race([Auth.push?.(), new Promise(r => setTimeout(r, 3000))]); } catch {}   // manda o progresso para a nuvem antes
+    try { await (await navigator.serviceWorker?.getRegistration())?.update(); } catch {}
+    location.reload();
+  });
+}
+checkUpdate(); setInterval(checkUpdate, 60000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
+
+// ---------- instalar como aplicativo (Android e computador; no iPhone é pelo "Adicionar à Tela de Início") ----------
+let installEv = null;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEv = e; $('#btn-install').hidden = false; });
+addEventListener('appinstalled', () => { $('#btn-install').hidden = true; say('21 World instalado! Abra pelo ícone na tela inicial.'); });
+$('#btn-install')?.addEventListener('click', async () => { if (!installEv) return; installEv.prompt(); await installEv.userChoice.catch(() => {}); installEv = null; $('#btn-install').hidden = true; });
