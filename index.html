@@ -65,6 +65,7 @@
       <button class="btn btn--glass btn--sm hdr-fs" type="button" data-fs="app" aria-pressed="false">tela cheia</button>
       <div class="worldclock glass" id="worldclock" title="Tempo de mundo: o mês passa sozinho, igual para todos os jogadores"><span class="worldclock__t">mundo</span><b id="wc-m">1</b><span class="worldclock__bar" aria-hidden="true"><i id="wc-bar"></i></span><small id="wc-left">--:--</small></div>
     </div>
+    <div class="ticker" id="ticker" aria-label="cotações ao vivo"></div>
     <nav class="container" aria-label="áreas do jogo">
       <div class="tabs" role="tablist">
         <button role="tab" id="t-mesa" data-tab="mesa" aria-controls="p-mesa" aria-selected="true"><svg><use href="#i-cards"/></svg>cassino</button>
@@ -241,20 +242,22 @@
 
     <!-- TRADER -->
     <section id="p-trader" role="tabpanel" aria-labelledby="t-trader" class="panel" hidden>
-      <div class="listhead"><h2>mesa de operações</h2><span class="muted small">Preços simulados ao vivo. Alavancagem multiplica lucro e prejuízo; perdeu a margem, a posição é liquidada.</span></div>
+      <div class="listhead"><h2>mesa de operações</h2><span class="muted small">Preços ao vivo, iguais para todos. Escolha sobe ou desce e o tempo: o valor entra em jogo na hora e só volta se você acertar.</span></div>
       <div class="tr-assets" id="tr-assets"></div>
       <div class="tr-grid">
         <div class="glass tr-chart">
           <div class="tr-head"><div><span class="muted small" id="tr-name"></span><div class="tr-price" id="tr-price"></div></div><span id="tr-ch"></span><span class="muted small" id="tr-hl"></span></div>
+          <div class="seg tr-tf" role="group" aria-label="tempo de cada vela"><button class="segbtn is-on" data-act="tr-tf" data-id="1">velas 1m</button><button class="segbtn" data-act="tr-tf" data-id="5">5m</button><button class="segbtn" data-act="tr-tf" data-id="10">10m</button></div>
           <canvas id="tr-canvas"></canvas>
         </div>
         <aside class="glass tr-ticket">
           <h3>boleta</h3>
-          <label class="field"><span>margem em R$</span><input class="input" name="tr-amt" type="number" min="100" step="100" value="5000" inputmode="numeric"></label>
-          <div class="seg" role="group" aria-label="alavancagem"><button class="segbtn" data-lev="1">1x</button><button class="segbtn" data-lev="2">2x</button><button class="segbtn is-on" data-lev="5">5x</button><button class="segbtn" data-lev="10">10x</button><button class="segbtn" data-lev="20">20x</button></div>
-          <p class="muted small" id="tr-size"></p>
-          <div class="tr-actions"><button class="btn btn--buy btn--lg" data-act="tr-buy">comprar</button><button class="btn btn--sell btn--lg" data-act="tr-sell">vender</button></div>
-          <h3>posições abertas</h3><ul class="tr-list" id="tr-pos"></ul>
+          <label class="field"><span>valor da aposta em R$</span><input class="input" name="tr-amt" type="number" min="100" step="100" value="1000" inputmode="numeric"></label>
+          <span class="muted small">tempo da operação</span>
+          <div class="seg" role="group" aria-label="tempo da operação"><button class="segbtn is-on" data-act="tr-dur" data-id="1">1 min</button><button class="segbtn" data-act="tr-dur" data-id="5">5 min</button><button class="segbtn" data-act="tr-dur" data-id="10">10 min</button></div>
+          <p class="small" id="tr-size"></p>
+          <div class="tr-actions"><button class="btn btn--buy btn--lg" data-act="tr-buy">▲ sobe</button><button class="btn btn--sell btn--lg" data-act="tr-sell">▼ desce</button></div>
+          <h3>em andamento</h3><ul class="tr-list" id="tr-pos"></ul>
           <h3>histórico</h3><ul class="tr-list tr-list--h" id="tr-hist"></ul>
         </aside>
       </div>
@@ -392,6 +395,7 @@
         <h2>guarda-roupa</h2>
         <label class="field"><span>nome do personagem</span>
           <input class="input" id="char-name" name="char-name" maxlength="18" autocomplete="off"></label>
+        <p class="small muted" id="char-name-hint"></p>
         <div id="wardrobe"></div>
         <div class="perks" id="char-perks"></div>
         <p class="muted small">Cada carro e acessório comprado dá uma vantagem permanente (valem todos os que você possui). Nada muda a sorte das cartas ou da roleta.</p>
@@ -401,7 +405,7 @@
     <!-- TERRAS -->
     <section id="p-terras" role="tabpanel" aria-labelledby="t-terras" class="panel">
       <div class="glass mapbox">
-        <div class="mapbox__head"><h3 id="map-title">satélite</h3><span class="muted small">Clique num lote para aproximar. Amarelo: à venda. Verde: seu. Roxo: arrendado.</span><button class="btn btn--glass btn--sm" id="map-back">ver o brasil</button></div>
+        <div class="mapbox__head"><h3 id="map-title">satélite</h3><span class="muted small">💰 à venda · ⭐ sua · 📜 arrendada · 🐂🌾☕🏡 fazendas de outros donos. Passe o mouse para ver o dono; clique para aproximar.</span><button class="btn btn--glass btn--sm" id="map-back">ver o brasil</button></div>
         <div class="map" id="map"></div>
       </div>
       <div class="listhead"><h2>suas terras</h2><span class="muted small" id="lands-sum"></span></div>
@@ -571,9 +575,10 @@
     <header class="chat-box__head"><h3>chat global</h3><span class="muted small" id="chat-online"></span><button class="btn btn--glass btn--sm" id="chat-x" type="button" aria-label="fechar o chat">fechar</button></header>
     <ul class="chat-list" id="chat-list" aria-live="polite"></ul>
     <form class="chat-form" id="chat-form">
-      <label class="visually-hidden" for="chat-in">mensagem</label><input class="input" id="chat-in" maxlength="200" autocomplete="off" placeholder="Venda, compra, troca... sem palavrão">
+      <label class="visually-hidden" for="chat-to">para</label><select class="input chat-to" id="chat-to"><option value="all">todos (global)</option></select>
+      <label class="visually-hidden" for="chat-in">mensagem</label><input class="input" id="chat-in" maxlength="200" autocomplete="off" placeholder="Mensagem... use @Nome para chamar alguém">
       <button class="btn btn--gold btn--sm" type="submit">enviar</button>
-      <label class="check chat-hi"><input type="checkbox" id="chat-hi"><span>destacar por <b id="chat-fee"></b></span></label>
+      <label class="check chat-hi" id="chat-hi-wrap"><input type="checkbox" id="chat-hi"><span>destacar por <b id="chat-fee"></b></span></label>
     </form>
     <p class="muted small chat-lock" id="chat-lock" hidden></p>
   </section>

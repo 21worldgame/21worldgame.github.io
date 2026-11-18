@@ -39,7 +39,7 @@ export async function openLobby(onChange) {
   }, 10000);
   return { selfId: t.selfId, peers, announce(d) { mine = { ...d, cid }; hello.send(mine); },
     sendTrade: (msg, target) => trade.send(msg, { target }), setOnTrade: fn => { onTrade = fn; },
-    sendChat: (msg, to) => chat.send(msg, to), setOnChat: fn => { onChat = fn; }, setOnJoin: fn => { onJoin = fn; } };
+    sendChat: (msg, to) => (to ? chat.send(msg, { target: to }) : chat.send(msg)), setOnChat: fn => { onChat = fn; }, setOnJoin: fn => { onJoin = fn; } };
 }
 
 // sala de uma mesa: o anfitrião manda "state", os jogadores mandam "act"

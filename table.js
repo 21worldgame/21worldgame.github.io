@@ -8,8 +8,8 @@ export const BOTS = [
 const SEATS = 4, TURN_MS = 20000;
 
 export class Table {
-  constructor({ id, name, minBet = 50, onChange = () => {}, speed = 1, rng = Math.random }) {
-    Object.assign(this, { id, name, minBet, onChange, speed, rng });
+  constructor({ id, name, minBet = 50, onChange = () => {}, speed = 1, rng = Math.random, bots = null }) {
+    Object.assign(this, { id, name, minBet, onChange, speed, rng, botNames: bots });
     this.round = 0; this.phase = 'bet'; this.turn = -1; this.hand = 0; this.deadline = 0; this.closed = false; this.shuffling = false;
     this.shoe = BJ.newShoe(rng);
     this.dealer = [];
@@ -17,7 +17,7 @@ export class Table {
     this.pending = [];
   }
 
-  bot(i) { const b = BOTS[i % BOTS.length]; return { kind: 'bot', name: b.name, bet: 0, hands: [], pay: 0 }; }
+  bot(i) { const b = this.botNames ? { name: this.botNames[i % this.botNames.length] } : BOTS[i % BOTS.length]; return { kind: 'bot', name: b.name, bet: 0, hands: [], pay: 0 }; }
   wait(ms) { return new Promise(r => setTimeout(r, ms * this.speed)); }
   emit() { if (!this.closed) this.onChange(this.view()); }
   humans() { return this.seats.filter(s => s.kind === 'human'); }

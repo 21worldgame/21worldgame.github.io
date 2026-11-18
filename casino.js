@@ -12,9 +12,14 @@ import * as RV from './rivals.js';
 import * as BJ from './bj.js';
 
 const SOLO = [
-  { id: 'bot-dorival', name: 'Mesa do Dorival', minBet: 50 },
-  { id: 'bot-azul', name: 'Salão azul', minBet: 100 },
-  { id: 'bot-vip', name: 'Mesa VIP', minBet: 1000 },
+  { id: 'bot-dorival', name: 'Mesa do Dorival', minBet: 50, bots: ['Dorival', 'Rosa', 'Tião', 'Neide'] },
+  { id: 'bot-azul', name: 'Salão azul', minBet: 100, bots: ['Júlia', 'Renato', 'Aline', 'Danilo'] },
+  { id: 'bot-porto', name: 'Mesa do Porto', minBet: 250, bots: ['Marcelo', 'Patrícia', 'Bené', 'Cida'] },
+  { id: 'bot-esm', name: 'Salão Esmeralda', minBet: 500, bots: ['Bianca', 'Gustavo', 'Lurdes', 'Zé'] },
+  { id: 'bot-vip', name: 'Mesa VIP', minBet: 1000, bots: ['Larissa', 'Thiago', 'Marta', 'Jair'] },
+  { id: 'bot-dia', name: 'Sala Diamante', minBet: 2500, bots: ['Camila', 'Rafael', 'Larissa', 'Thiago'] },
+  { id: 'bot-high', name: 'High Roller', minBet: 5000, bots: ['Rafael', 'Camila', 'Gustavo', 'Bianca'] },
+  { id: 'bot-mag', name: 'Mesa do Magnata', minBet: 10000, bots: ['Rafael', 'Camila', 'Thiago', 'Larissa'] },
 ];
 let lobby = null, selfId = null;
 let cur = null;          // mesa aberta
@@ -86,7 +91,7 @@ const summary = v => ({ id: v.id, name: v.name, minBet: v.minBet, phase: v.phase
   seats: v.seats.map(s => ({ kind: s.kind, name: s.name, look: s.look })) });
 
 function tableCard(t, kind, host) {
-  const seats = t.seats || [0, 1, 2, 3].map(i => ({ kind: 'bot', name: ['Dorival', 'Rosa', 'Tião', 'Neide'][i] }));
+  const seats = t.seats || [0, 1, 2, 3].map(i => ({ kind: 'bot', name: (t.bots || ['Dorival', 'Rosa', 'Tião', 'Neide'])[i] }));
   const humans = seats.filter(s => s.kind === 'human').length;
   return `<article class="tcard2 ${kind === 'online' ? 'is-online' : ''}">
     <div class="tcard2__felt"><span class="tag ${kind === 'online' ? 'tag--green' : 'tag--dark'}">${kind === 'online' ? `online, ${humans} ${humans === 1 ? 'jogador' : 'jogadores'}` : 'mesa da casa'}</span>
@@ -106,7 +111,8 @@ export function renderLobby() {
     ...online.map(o => tableCard(o.t, 'online', o.host)),
     ...SOLO.map(t => tableCard(t, 'solo')),
   ].join('');
-  if (lobby) $('#online').innerHTML = `<i class="is-on"></i>${peers.length + 1} ${peers.length ? 'jogadores' : 'jogador'} no salão`;
+  const house = SOLO.length * 4;   // lugares ocupados nas mesas da casa
+  if (lobby) $('#online').innerHTML = `<i class="is-on"></i>${peers.length + 1} ${peers.length ? 'jogadores' : 'jogador'} no salão · ${house} jogando nas mesas da casa`;
   renderRanking();
 }
 let lastRank = new Map();
@@ -118,7 +124,7 @@ export function renderRanking() {
   const meP = profileOf(), myId = Auth.account()?.id;
   const cloud = (Auth.account() ? globalRows || [] : []).filter(r => r.user_id !== myId).map(r => ({ name: r.name, level: r.level, rank: r.rank || '', worth: Number(r.worth), look: r.look || {} }));
   const list = RV.merge({ cloud, me: { ...meP, pid: 'me' }, peers, rivalRows: RV.rivals(month), limit: 10 });
-  $('#ranking-title').textContent = 'ranking global ao vivo (não oficial)';
+  $('#ranking-title').textContent = 'ranking global ao vivo';
   const now = new Map(list.map((x, i) => [x.name, i]));
   el.innerHTML = list.map((x, i) => {
     const was = lastRank.get(x.name), mv = was === undefined ? '' : was > i ? '<i class="rk__mv is-up" title="subiu">▲</i>' : was < i ? '<i class="rk__mv is-down" title="caiu">▼</i>' : '';

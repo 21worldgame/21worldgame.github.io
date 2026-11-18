@@ -30,5 +30,13 @@ export function accept(m) {
   const text = clean(m.text);
   if (!text) return null;
   return { id: String(m.id || '').slice(0, 24), name: String(m.name || 'jogador').replace(/[<>&"]/g, '').slice(0, 18), level: Math.max(1, Math.min(999, Number(m.level) || 1)),
-    text, hi: !!m.hi, at: Math.min(Date.now(), Number(m.at) || Date.now()) };
+    text, hi: !!m.hi && !m.pv, pv: !!m.pv, toName: m.pv ? String(m.toName || '').replace(/[<>&"]/g, '').slice(0, 18) : '', at: Math.min(Date.now(), Number(m.at) || Date.now()) };
+}
+
+// menção: @Nome em qualquer lugar da mensagem (sem diferenciar maiúsculas)
+const fold = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '');
+export function mentions(text, name) {
+  if (!name) return false;
+  const n = fold(name);
+  return String(text || '').split('@').slice(1).some(part => fold(part).startsWith(n));
 }

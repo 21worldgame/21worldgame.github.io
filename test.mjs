@@ -491,3 +491,37 @@ import * as WD from './world.js';
   assert.equal(WD.fmt(61000), '1:01'); assert.equal(WD.fmt(3700000), '1h01');
 }
 console.log('mundo ok');
+// mercado ao vivo: preço determinístico, aposta por tempo, sem devolução se errar
+import * as MK from './market.js';
+{
+  const t0 = Date.UTC(2026, 10, 18, 12);
+  assert.equal(MK.price('btc', t0), MK.price('btc', t0));
+  for (const a of Object.keys(MK.ASSETS)) { const p = MK.price(a, t0); assert.ok(p > MK.ASSETS[a].price * 0.5 && p < MK.ASSETS[a].price * 2, a + ' ' + p); }
+  // sobe e desce perto de 50/50 em 1 minuto (justo antes da taxa da casa)
+  let up = 0, n = 4000; for (let i = 0; i < n; i++) { const t = t0 + i * 61000; if (MK.price('soja', t + 60000) > MK.price('soja', t)) up++; }
+  assert.ok(up / n > 0.44 && up / n < 0.56, 'sobe ' + up / n);
+  // movimento de 1 minuto não é minúsculo nem absurdo
+  let mv = 0; for (let i = 0; i < 500; i++) { const t = t0 + i * 97000; mv += Math.abs(MK.price('boi', t + 60000) / MK.price('boi', t) - 1); }
+  assert.ok(mv / 500 > 0.0002 && mv / 500 < 0.02, 'mov ' + mv / 500);
+  const c = MK.candles('dol', t0, 5, 60); assert.equal(c.length, 60); assert.ok(c.every(k => k.h >= Math.max(k.o, k.c) && k.l <= Math.min(k.o, k.c)));
+  const s = { money: 10000, nextId: 1, trades: [{ id: 99, asset: 'boi', side: 1, lev: 5, margin: 700, entry: 300 }] };
+  assert.ok(MK.open(s, { asset: 'boi', side: 1, stake: 50, minutes: 1 }, t0).err);
+  assert.ok(MK.open(s, { asset: 'boi', side: 1, stake: 500, minutes: 3 }, t0).err);
+  const o = MK.open(s, { asset: 'boi', side: 1, stake: 1000, minutes: 1 }, t0); assert.ok(o.trade); assert.equal(s.money, 9000);
+  assert.equal(MK.settle(s, t0 + 1000).filter(r => !r.old).length, 0);          // ainda não venceu (a antiga devolve a margem)
+  assert.equal(s.money, 9700);
+  const r = MK.settle(s, t0 + 60000)[0];
+  const won = MK.price('boi', t0 + 60000) > MK.price('boi', t0);
+  assert.equal(r.win, won); assert.equal(s.money, 9700 + (won ? 1850 : 0)); assert.equal(s.trades.length, 0);
+}
+console.log('mercado ok');
+// menções e privado no chat
+{
+  assert.ok(CH.mentions('oi @Ana, vende a hilux?', 'Ana'));
+  assert.ok(CH.mentions('@joão silva vem', 'João Silva'));
+  assert.ok(!CH.mentions('oi Ana', 'Ana'));
+  assert.ok(!CH.mentions('@Anabela', 'Bela'));
+  const pv = CH.accept({ text: 'oi', pv: true, toName: '<b>Bia', hi: true });
+  assert.ok(pv.pv && !pv.hi && pv.toName === 'bBia');
+}
+console.log('chat pv ok');

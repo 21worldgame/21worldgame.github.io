@@ -143,7 +143,7 @@ const id = s => s.nextId++;
 const walk = (v, rng, pct) => v * (1 + (rng() * 2 - 1) * pct);
 
 export function refreshOffers(s, rng = Math.random) {
-  s.offers = Array.from({ length: 6 }, () => {
+  s.offers = Array.from({ length: 10 }, () => {
     const reg = REGIONS[Math.floor(rng() * REGIONS.length)];
     const ha = 5 + Math.floor(rng() * 16) * 5;
     const [water, wf] = WATER[Math.floor(rng() * WATER.length)];

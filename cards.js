@@ -76,16 +76,21 @@ const ICON = {
   sombra: 'M50 10c22 0 36 16 36 36 0 14-8 22-14 28v14H28V74c-6-6-14-14-14-28 0-20 14-36 36-36zM36 44a7 7 0 1 0 0.1 0zM64 44a7 7 0 1 0 0.1 0z',
   natureza: 'M50 92C50 60 20 52 16 16c30 2 46 20 34 52 4-28 22-44 36-48-2 30-18 48-36 72z',
 };
+const STARS = { bronze: 1, prata: 2, esmeralda: 3, diamante: 4, mestre: 5, challenger: 6 };
+const EL_LABEL = { fogo: 'fogo', gelo: 'gelo', lua: 'lua', raio: 'raio', sombra: 'sombra', natureza: 'natureza' };
 export function cardHTML(c, { small = false, act = '' } = {}) {
   const ch = champ(c.champ), t = tier(c.tier), [c1, c2] = ELEMENTS[ch.el];
-  const stroke = ch.el === 'gelo' ? `fill="none" stroke="url(#g-${c.id})" stroke-width="7" stroke-linecap="round"` : `fill="url(#g-${c.id})"`;
-  return `<article class="tcard tcard--${t.id}${small ? ' tcard--sm' : ''}" style="--c1:${c1};--c2:${c2}" ${act}>
+  const stroke = ch.el === 'gelo' ? `fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round"` : 'fill="#fff"';
+  const [title, sub] = ch.name.split(', ');
+  return `<article class="tcard tcard--${t.id}${small ? ' tcard--sm' : ''}" style="--c1:${c1};--c2:${c2};--art:url(assets/cards/${ch.id}.webp)" ${act}>
     <div class="tcard__in">
-      <span class="tcard__tier">${t.label}</span>
-      <div class="tcard__art el--${ch.el}"><i class="tcard__fx" aria-hidden="true"></i>
-        <svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g-${c.id}" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs>
-          <path d="${ICON[ch.el]}" ${stroke}/></svg></div>
-      <h4 class="tcard__name">${ch.name}</h4>
-      <p class="tcard__val">R$ ${value(c).toLocaleString('pt-BR')}</p>
+      <div class="tcard__art el--${ch.el}"><i class="tcard__fx" aria-hidden="true"></i><i class="tcard__rays" aria-hidden="true"></i></div>
+      <i class="tcard__holo" aria-hidden="true"></i>
+      <div class="tcard__top"><span class="tcard__tier">${t.label}</span><span class="tcard__el" title="${EL_LABEL[ch.el]}"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="${ICON[ch.el]}" ${stroke}/></svg></span></div>
+      <div class="tcard__foot">
+        <span class="tcard__stars" aria-label="raridade ${STARS[t.id]} de 6">${'★'.repeat(STARS[t.id])}</span>
+        <h4 class="tcard__name">${title}${sub ? `<small>${sub}</small>` : ''}</h4>
+        <p class="tcard__val">R$ ${value(c).toLocaleString('pt-BR')}</p>
+      </div>
     </div></article>`;
 }

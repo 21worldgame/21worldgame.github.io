@@ -243,3 +243,6 @@ grant execute on function public.admin_decide_password(bigint, boolean) to authe
 
 -- ---------- ranking em tempo real ----------
 do $$ begin alter publication supabase_realtime add table public.public_profiles; exception when others then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.admin_grants; exception when others then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.game_config; exception when others then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.announcements; exception when others then null; end $$;

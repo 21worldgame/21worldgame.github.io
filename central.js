@@ -163,10 +163,11 @@ async function openPlayer(id) {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.target)), amount = Math.trunc(Number(f.amount) || 0);
     if (f.kind !== 'message' && !amount) return toast('Digite uma quantidade.', true);
-    const { error } = await sb.from('admin_grants').insert({ user_id: id, kind: f.kind, amount: f.kind === 'message' ? 0 : amount, note: f.note || null });
+    const { data: row, error } = await sb.from('admin_grants').insert({ user_id: id, kind: f.kind, amount: f.kind === 'message' ? 0 : amount, note: f.note || null }).select('id').single();
     if (error) return fail(error, 'enviar');
     await log(`grant_${f.kind}`, id, { amount, note: f.note });
-    toast('Enviado. O jogo do jogador aplica em até 1 minuto.'); openPlayer(id);
+    toast('Enviado! Se o jogador estiver online, cai na conta dele na hora.'); openPlayer(id);
+    if (row?.id) watchGrant(row.id, id);
   };
   $('#ap-rename').onsubmit = async e => {
     e.preventDefault();
@@ -301,3 +302,15 @@ async function loadLog() {
 }
 
 boot().catch(e => fail(e, 'iniciar o painel'));
+
+// acompanha a ordem até o jogo do jogador aplicar (sem precisar recarregar o painel)
+function watchGrant(gid, uid) {
+  let n = 0;
+  const t = setInterval(async () => {
+    const { data } = await sb.from('admin_grants').select('applied_at').eq('id', gid).maybeSingle();
+    if (data?.applied_at) { clearInterval(t); toast('Aplicado no jogo do jogador.'); if ($('#ad-player')?.open) openPlayer(uid); }
+    else if (++n >= 120) { clearInterval(t); toast('O jogador está offline: a ordem será aplicada quando ele entrar.'); }
+  }, 2500);
+}
+// números do painel se atualizam sozinhos
+setInterval(() => { if (!$('#ad-app').hidden && !$('[data-panel="overview"]').hidden) loadOverview(); }, 15000);

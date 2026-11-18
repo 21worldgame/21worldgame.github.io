@@ -35,14 +35,27 @@ export async function start() {
     await applyGrants(sb);
   }
   maintenance();
+  realtime(sb);
   clearInterval(timer);
   timer = setInterval(async () => {
     await loadConfig(sb); await loadAnnouncements(sb); maintenance();
     if (Auth.account()) { if (await checkBan(sb)) return; await applyGrants(sb); }
-  }, 60000);
+  }, 20000);
   return 'ok';
 }
 export const admin = () => isAdmin;
+// tempo real: dinheiro do administrador, eventos e avisos chegam na hora (a consulta a cada 20 s fica de reserva)
+let rtOn = false;
+function realtime(sb) {
+  if (rtOn) return; rtOn = true;
+  try {
+    const me = Auth.account()?.id, ch = sb.channel('live-game');
+    if (me) ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_grants', filter: `user_id=eq.${me}` }, () => applyGrants(sb));
+    ch.on('postgres_changes', { event: '*', schema: 'public', table: 'game_config' }, async () => { await loadConfig(sb); maintenance(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => loadAnnouncements(sb))
+      .subscribe();
+  } catch {}
+}
 
 async function loadConfig(sb) {
   const { data, error } = await sb.from('game_config').select('data').eq('id', 1).maybeSingle();

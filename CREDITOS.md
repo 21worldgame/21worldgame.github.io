@@ -41,3 +41,18 @@ Arquivos de terceiros usados no 21 World. As licenças CC BY e CC BY-SA exigem e
 - Rede: Trystero (MIT).
 
 Os nomes de carros no jogo são paródias; marcas visíveis nas fotos pertencem aos donos.
+
+## Arte das cartas (Wikimedia Commons)
+
+- brasa: Diego Velázquez, "A Forja de Vulcano", domínio público
+- fenix: Hartmann Schedel, Crônica de Nuremberg (fênix), domínio público
+- nevasca: J. M. W. Turner, "Tempestade de neve", domínio público
+- cristal: Alexey Kljatov, "Snowflake macro photography 1", CC BY-SA 4.0
+- selene: Nicolas Poussin, "Selene e Endimião", domínio público
+- eclipse: Michael S Adler, "Total Solar Eclipse 8-21-17", CC BY-SA 4.0
+- trovao: Mårten Eskil Winge, "Thor luta com os gigantes", domínio público
+- faisca: Maxime Raynal, "Port and lighthouse overnight storm with lightning", CC BY 2.0
+- umbra: Pieter Bruegel, o Velho, "O Triunfo da Morte", domínio público
+- corvo: Gustave Doré, ilustração de "O Corvo", domínio público
+- raiz: Caspar David Friedrich, "Dólmen na neve", domínio público
+- vespa: Bernard Dupont, "Rainbow Cuckoo Wasp (Chrysis mionii)", CC BY-SA 2.0

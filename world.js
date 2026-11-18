@@ -29,3 +29,9 @@ export function plan(playerMonth, target) {
 export const setSpeed = (w, monthMs, now = Date.now()) => sanitize({ epoch: now, base: current(w, now), monthMs });
 export const advance = (w, n) => sanitize({ ...w, base: w.base + Math.max(0, Math.floor(n)) });
 export const fmt = ms => { const s = Math.ceil(ms / 1000); return s >= 3600 ? `${Math.floor(s / 3600)}h${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}` : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+
+// calendário do jogo: mês 1 = janeiro do ano 1
+const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+export const monthName = m => MESES[((m - 1) % 12 + 12) % 12];
+export const yearOf = m => Math.floor((m - 1) / 12) + 1;
+export const dateLabel = m => `${monthName(m)} do ano ${yearOf(m)}`;
