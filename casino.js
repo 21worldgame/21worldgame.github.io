@@ -9,6 +9,7 @@ import * as Auth from './auth.js';
 import * as Live from './live.js';
 import * as W from './world.js';
 import * as RV from './rivals.js';
+import * as SH from './shop.js';
 import * as BJ from './bj.js';
 
 const SOLO = [
@@ -84,7 +85,7 @@ export function announce() {
   annTimer = setTimeout(() => {
     if (!lobby) return;
     const tables = cur?.host && cur.pub ? [summary(cur.table.view())] : [];
-    lobby.announce({ profile: profileOf(), tables });
+    lobby.announce({ profile: profileOf(), tables, shop: SH.publicListings(G.S) });
   }, 400);
 }
 const summary = v => ({ id: v.id, name: v.name, minBet: v.minBet, phase: v.phase,

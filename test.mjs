@@ -538,3 +538,46 @@ console.log('chat pv ok');
   const o = CD.openPack(s, 'ouro'); assert.equal(o.cards.length, 3); assert.notEqual(o.cards[2].tier, 'bronze');
 }
 console.log('pacotes ok');
+// loja: vender tudo para a casa, anunciar, comprador da casa nunca paga a ponto de virar máquina de dinheiro
+import * as SH from './shop.js';
+{
+  const s = L.newState(); s.money = 1e7;
+  s.cars.push({ id: 501, model: 'hilux', value: 330000 });
+  s.cards = [{ id: 'k1', tier: 'diamante', champ: 'brasa' }];
+  FT.takeClub(s, 'Barra-SC');
+  const keys = SH.items(s).map(i => i.key);
+  assert.ok(keys.includes('car:501') && keys.includes('card:k1') && keys.includes('club:club'));
+  const m0 = s.money, r = SH.sellToHouse(s, 'car:501');
+  assert.equal(r.amount, Math.round(330000 * L.CAR_BUYBACK)); assert.equal(s.money, m0 + r.amount); assert.equal(s.cars.length, 0);
+  const cv = SH.clubValue(s.fut); assert.ok(cv > 0);
+  const c = SH.sellToHouse(s, 'club:club'); assert.equal(c.amount, cv); assert.equal(s.fut, undefined);
+  // comprador da casa: anunciar caro demais nunca vende; perto do preço da casa vende às vezes
+  assert.equal(SH.npcChance(1000 * SH.NPC_MAX + 1, 1000), 0);
+  assert.ok(SH.npcChance(1000, 1000) > 0);
+  // nunca dá para comprar um carro novo e revender com lucro
+  assert.ok(L.CAR_BUYBACK * SH.NPC_MAX < 1);
+  assert.equal(SH.list(s, 'card:k1', 50), 'preço mínimo R$ 100.');
+  assert.equal(SH.list(s, 'card:k1', 90000), null); assert.ok(SH.list(s, 'card:k1', 90000).includes('anunciado'));
+  let sd = 3; const rr = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 400; i++) SH.npcTick(s, rr);
+  assert.equal(s.cards.length, 1);          // 90 mil por uma carta que a casa paga ~56 mil: ninguém da casa compra
+  SH.unlist(s, s.shop[0].id); assert.equal(SH.list(s, 'card:k1', SH.housePrice(s, SH.find(s, 'card:k1'))), null);
+  let sold = []; for (let i = 0; i < 400 && !sold.length; i++) sold = SH.npcTick(s, rr);
+  assert.equal(sold.length, 1); assert.equal(s.cards.length, 0);
+}
+console.log('loja ok');
+// escalação manual
+{
+  const s = { money: 1e7 }; FT.takeClub(s, 'Remo'); const f = s.fut;
+  const auto = FT.lineup(f.squad, '4-4-2');
+  assert.equal([...auto.gk, ...auto.def, ...auto.mid, ...auto.att].filter(Boolean).length, 11);
+  const ata = f.squad.find(p => p.pos === 'ATA');
+  assert.equal(FT.setSlot(f, 'gk0', ata.id), null);
+  const l = FT.lineup(f.squad, '4-4-2', f.xi);
+  assert.equal(l.gk[0].id, ata.id); assert.ok(l.gk[0].off && l.gk[0].ovr < ata.ovr);       // fora de posição rende menos
+  assert.ok(FT.strength(f.squad, '4-4-2', 'equilibrado', 0, f.xi).def < FT.strength(f.squad, '4-4-2').def);
+  FT.setSlot(f, 'att0', ata.id); assert.equal(f.xi.gk0, undefined);                          // muda de vaga
+  ata.inj = 2; assert.notEqual(FT.lineup(f.squad, '4-4-2', f.xi).att[0]?.id, ata.id);        // lesionado sai sozinho
+  assert.ok(FT.setSlot(f, 'att9', ata.id));
+}
+console.log('escalação ok');

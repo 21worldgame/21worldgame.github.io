@@ -16,6 +16,7 @@ import * as W from './world.js';
 import * as RV from './rivals.js';
 import * as CD from './cards.js';
 import * as CHUI from './chat-ui.js';
+import * as SHUI from './shop-ui.js';
 import { openDeal } from './deal-ui.js';
 import * as Live from './live.js';
 import * as ST from './stable.js';
@@ -415,6 +416,19 @@ function openProfile(pid) {
   if (!dlg.open) dlg.showModal();
 }
 
+// nome e foto de cada tipo de item (inventário, loja e trocas). Tipo novo sem entrada aqui ainda ganha nome e foto genéricos.
+export const ITEM_KIND = { car: 'veículo', animal: 'animal', land: 'terra', good: 'armazém', card: 'carta rara', player: 'jogador de futebol', squad: 'futebol', club: 'clube de futebol' };
+const GOOD_IMG = { soja: 'farm-soja', milho: 'farm-colheita', cafe: 'farm-cafe' };
+export function itemMedia(i) {
+  const d = i.data || {};
+  if (i.kind === 'car' && L.CARS[d.model]) return `<img src="assets/${L.CARS[d.model].img}.webp" alt="" loading="lazy">`;
+  if (i.kind === 'animal') return `<span class="icard__sprite">${RC.sprite(d.kind, RC.COATS[(d.coat || 0) % RC.COATS.length])}</span>`;
+  if (i.kind === 'land' && d.lat) return `<img src="${satThumb(d).url}" alt="" loading="lazy">`;
+  if (i.kind === 'good') return `<img src="assets/${GOOD_IMG[i.good] || 'farm-colheita'}.webp" alt="" loading="lazy">`;
+  if (i.kind === 'card') return `<span class="icard__cardart" style="background-image:url(assets/cards/${d.champ}.webp)"></span>`;
+  if (i.kind === 'player' || i.kind === 'squad' || i.kind === 'club') return '<img src="assets/photo-stadium.webp" alt="" loading="lazy">';
+  return '<img src="assets/photo-chips.webp" alt="" loading="lazy">';
+}
 // inventário: tudo o que o jogador tem, e quem está online para negociar
 function renderInv() {
   const items = TD.inventory(S());
@@ -422,9 +436,8 @@ function renderInv() {
   $('#inv-sum').textContent = `${items.length} itens trocáveis, ${int(S().chips)} fichas e ${brl(S().money)} em dinheiro`;
   const players = items.filter(i => i.kind === 'player'), shown = items.filter(i => i.kind !== 'player');
   if (players.length) shown.push({ kind: 'squad', label: `elenco do ${S().fut.club}: ${players.length} jogadores`, value: players.reduce((t, i) => t + i.value, 0) });
-  $('#inv-items').innerHTML = shown.length ? shown.map(i => `<article class="glass icard icard--${i.kind}">
-    ${i.img ? `<img src="assets/${i.img}.webp" alt="" loading="lazy">` : `<span class="icard__ico" aria-hidden="true"></span>`}
-    <div><span class="tag tag--dark">${{ car: 'veículo', animal: 'animal', land: 'terra', good: 'armazém', squad: 'futebol', player: 'jogador de futebol' }[i.kind]}</span><h4>${esc(i.label)}</h4>${i.value ? `<p class="muted small">vale cerca de ${brl(i.value)}</p>` : ''}</div></article>`).join('')
+  $('#inv-items').innerHTML = shown.length ? shown.map(i => `<article class="glass icard icard--${i.kind}">${itemMedia(i)}
+    <div><span class="tag tag--dark">${ITEM_KIND[i.kind] || i.kind}</span><h4>${esc(i.label)}</h4>${i.value ? `<p class="muted small">vale cerca de ${brl(i.value)}</p>` : ''}</div></article>`).join('')
     : '<p class="empty glass">Nada para trocar ainda. Compre carros, animais, terras ou guarde sacas no armazém.</p>';
   renderFeira();
   const ppl = TUI.online();
@@ -493,13 +506,14 @@ function feiraSell() {
     note(`feira: venda de ${w.label} para ${w.bot}`, price); award('trade'); say(`Vendido por ${brl(price)}.`); save(); render();
   } });
 }
-G.onLobby = l => { TUI.attach(l); CHUI.attach(l); };
+G.onLobby = l => { TUI.attach(l); CHUI.attach(l); SHUI.attach(l); };
+G.onShopMsg = (d, peer) => SHUI.onMsg(d, peer);
 G.onPeers = () => { if (currentTab === 'inventario') renderInv(); };
 document.addEventListener('submit', e => { if (e.target.id === 'tr-chat-form') { e.preventDefault(); TUI.chat(); } });
 
 // desempenho: cada aba só é desenhada quando está aberta (ou quando o usuário entra nela)
 const PANELS = { personagem: () => renderChar(), terras: () => renderTerras(), gado: () => renderGado(), mercado: () => renderMercado(),
-  carros: () => renderCarros(), banco: () => renderBanco(), livro: () => renderLivro(), haras: () => SUI.render(), trabalho: () => JUI.render(), futebol: () => FUI.render(), inventario: () => renderInv(), cartas: () => renderCartas(), mesa: () => C.renderLobby() };
+  carros: () => renderCarros(), banco: () => renderBanco(), livro: () => renderLivro(), haras: () => SUI.render(), trabalho: () => JUI.render(), futebol: () => FUI.render(), inventario: () => renderInv(), cartas: () => renderCartas(), loja: () => SHUI.render(), mesa: () => C.renderLobby() };
 let currentTab = 'mesa';
 function render() {
   renderHud(); renderMissions();
@@ -549,7 +563,14 @@ const ACTS = {
   'fe-sell'() { feiraSell(); },
   'card-close'() { $('#dlg-card').close(); },
   'fe-goto'() { $('.feira').scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+  'shop-sell'(id) { SHUI.sellNow(id); },
+  'shop-list'(id) { SHUI.listItem(id); },
+  'shop-unlist'(id) { SHUI.unlist(id); },
+  'shop-buy'(id) { SHUI.buy(id); },
   'ft-take'(id) { FUI.take(id); },
+  'ft-slot'(id) { FUI.openSlot(id); },
+  'ft-pick'(id) { FUI.pick(id); },
+  'ft-auto'() { FUI.autoXI(); },
   'ft-div'(id) { FUI.setPickDiv(id); },
   'ft-haggle'(id) { FUI.haggle(id); },
   'ft-quick'() { FUI.quick(); },
@@ -731,7 +752,7 @@ document.addEventListener('click', e => {
   if (!b || b.disabled) return;
   const act = b.dataset.act;
   ACTS[act]?.(b.dataset.id, b);
-  if (['rl-double', 'pass-claim', 'st-train', 'trade-invite', 'trade-yes', 'trade-no', 'trade-add', 'trade-chips', 'trade-money', 'trade-remove', 'trade-lock', 'trade-confirm', 'trade-cancel', 'ft-play', 'ft-close', 'ft-quick', 'fe-buy', 'fe-sell', 'fe-goto', 'card-close', 'ft-haggle', 'job-start', 'job-accept', 'job-confirm', 'job-repair', 'double', 'split', 'logout', 'wipe', 'st-enter', 'stable-close', 'sit', 'leave-table', 'invite', 'bet', 'hit', 'stand', 'bet-clear', 'race-go', 'race-pick', 'race-next', 'mute', 'rl-spin', 'rl-clear', 'av-press', 'tr-buy', 'tr-sell', 'tr-dur', 'tr-tf', 'tr-asset', 'spin-daily', 'map-lot', 'show-card'].includes(act)) return;
+  if (['rl-double', 'pass-claim', 'st-train', 'trade-invite', 'trade-yes', 'trade-no', 'trade-add', 'trade-chips', 'trade-money', 'trade-remove', 'trade-lock', 'trade-confirm', 'trade-cancel', 'ft-play', 'ft-close', 'ft-quick', 'shop-sell', 'shop-list', 'shop-unlist', 'shop-buy', 'ft-slot', 'ft-pick', 'ft-auto', 'fe-buy', 'fe-sell', 'fe-goto', 'card-close', 'ft-haggle', 'job-start', 'job-accept', 'job-confirm', 'job-repair', 'double', 'split', 'logout', 'wipe', 'st-enter', 'stable-close', 'sit', 'leave-table', 'invite', 'bet', 'hit', 'stand', 'bet-clear', 'race-go', 'race-pick', 'race-next', 'mute', 'rl-spin', 'rl-clear', 'av-press', 'tr-buy', 'tr-sell', 'tr-dur', 'tr-tf', 'tr-asset', 'spin-daily', 'map-lot', 'show-card'].includes(act)) return;
   checkAch(); save(); render();
 });
 $('#map-back').addEventListener('click', () => { lmap?.flyTo([-14, -51], 4, { duration: 1.4 }); $('#map-title').textContent = 'satélite'; });
@@ -885,7 +906,7 @@ document.addEventListener('pointermove', e => {
 document.addEventListener('pointerout', e => { const card = e.target.closest?.('.tcard'); if (card && !card.contains(e.relatedTarget)) { card.style.removeProperty('--rx'); card.style.removeProperty('--ry'); } });
 
 // mini tutorial sempre visível no topo de cada aba
-const HOWTO = {"mesa":["Como jogar no cassino",["Escolha uma mesa de 21 (ou crie a sua) e sente.","Coloque suas fichas na aposta e confirme. Fichas vêm do caixa (R$ 10 cada).","Peça carta (H), pare (S), dobre ou divida. Chegar mais perto de 21 que o dealer, sem passar, ganha. Blackjack paga 3 para 2.","Na roleta e no Aviator o caminho é o mesmo: aposte fichas e acompanhe o resultado."]],"trader":["Como funciona a mesa de operações",["Escolha o ativo (boi, soja, dólar ou bitcoin) e o tamanho das velas (1, 5 ou 10 min) para ler o gráfico.","Digite o valor e o tempo da operação: 1, 5 ou 10 minutos.","Clique em \"sobe\" se acha que o preço vai estar mais alto no fim do tempo, ou \"desce\" se vai estar mais baixo.","O valor sai na hora. Acertou: recebe 1,85x. Errou ou ficou igual: perde o valor. Não dá para desistir no meio.","A faixa de cotações no topo mostra os preços ao vivo em qualquer tela."]],"trabalho":["Como funciona o trabalho",["Clique em \"começar turno\": são 90 segundos.","Clique nos pedidos do mapa para aceitar (a moto leva até 3).","Quando a moto chegar, confirme na hora (espaço) para ganhar gorjeta. Pneu furado: aperte F.","Bom aproveitamento sobe seu nível e os pedidos pagam mais. Serve de renda quando o dinheiro acaba."]],"futebol":["Como funciona o futebol",["Escolha um clube real e pague o valor para assumir.","Em \"próximo jogo\" defina formação e estilo e assista à partida (ou simule rápido).","No mercado, contrate jogadores (negocie o preço) e venda os que sobram; no estádio, aumente a bilheteria.","Fique entre os 4 primeiros para subir de divisão; os 4 últimos caem."]],"cartas":["Como funcionam as cartas raras",["Abra pacotes ou ganhe cartas na roleta do dia.","Quanto mais rara (bronze, prata, esmeralda, diamante, mestre, challenger), mais vale.","Use como moeda: troque com outros jogadores no inventário, pague terras ou venda para a loja.","Complete o álbum com os 12 campeões."]],"inventario":["Como funciona o inventário",["Aqui está tudo que você pode trocar: carros, terras, animais, jogadores e cartas.","Na feira, negocie a compra e venda: oferta muito baixa faz o negociante desistir.","Com outro jogador online, use \"propor troca\": os dois montam a oferta, ficam prontos e confirmam.","Cartas valem dinheiro e podem pagar terras."]],"haras":["Como funciona o canil e haras",["Compre um animal no leilão do mês.","Treine: cada treino gasta 1 das 4 semanas do mês e cansa o animal.","Inscreva em uma prova da sua classe. Corrida também gasta uma semana.","\"Sem semanas\" = acabaram as 4 semanas do mês do mundo. O mês passa sozinho (relógio no topo, igual para todos) e as semanas voltam.","Só o 1º e o 2º lugar dão lucro. Animal lesionado precisa de veterinário."]],"corridas":["Como funciona a corrida de galgos",["Escolha o cachorro em quem vai apostar e o valor em fichas.","Quanto menor a chance dele, maior o retorno.","Clique em \"apostar e largar\" e acompanhe a corrida."]],"personagem":["Como funciona o personagem",["Escolha o visual e o nome.","Itens pagos (acessórios, roupas) são seus para sempre.","Cada acessório dá uma vantagem permanente: veja a lista \"suas vantagens\"."]],"terras":["Como funcionam as terras",["Escolha um lote à venda e veja o benefício que ele dá ao comprar.","Comprar é o melhor negócio: a terra valoriza, rende vantagens, serve de garantia no banco, planta sem restrição e pode ser arrendada a terceiros.","Arrendar de terceiros custa aluguel todo mês (+8% ao ano), não dá vantagem nenhuma e a lavoura só é permitida com trator, com 20% a mais de custo e 15% da safra para o dono.","Se arrendou e gostou, compre: o aluguel que você já pagou abate o preço (até 40%).","Dá para pagar a compra também com cartas."]],"gado":["Como funciona o gado",["Compre bezerros no leilão e deixe no pasto (1 cabeça por hectare).","Eles engordam todo mês que passa. Venda quando o preço da arroba estiver bom.","Sem pasto suficiente, você paga ração e engorda menos."]],"mercado":["Como funciona o mercado",["Veja o preço de soja, milho e café, que variam todo mês.","Guarde a colheita no armazém e venda quando o preço subir."]],"carros":["Como funciona a concessionária",["Todo carro tem uma vantagem permanente (entregas, XP, provas...).","Você paga IPVA e seguro todo mês e o carro desvaloriza.","Vender na loja devolve 92% do valor atual."]],"banco":["Como funciona o banco",["Peça empréstimo usando terras e gado como garantia.","Pague as parcelas em dia: 2 atrasadas e o banco toma a terra.","Você também pode emprestar dinheiro a outras pessoas e ganhar juros, com risco de calote."]],"livro":["Livro-caixa",["Aqui fica o registro de tudo que entrou e saiu do seu dinheiro."]]};
+const HOWTO = {"mesa":["Como jogar no cassino",["Escolha uma mesa de 21 (ou crie a sua) e sente.","Coloque suas fichas na aposta e confirme. Fichas vêm do caixa (R$ 10 cada).","Peça carta (H), pare (S), dobre ou divida. Chegar mais perto de 21 que o dealer, sem passar, ganha. Blackjack paga 3 para 2.","Na roleta e no Aviator o caminho é o mesmo: aposte fichas e acompanhe o resultado."]],"trader":["Como funciona a mesa de operações",["Escolha o ativo (boi, soja, dólar ou bitcoin) e o tamanho das velas (1, 5 ou 10 min) para ler o gráfico.","Digite o valor e o tempo da operação: 1, 5 ou 10 minutos.","Clique em \"sobe\" se acha que o preço vai estar mais alto no fim do tempo, ou \"desce\" se vai estar mais baixo.","O valor sai na hora. Acertou: recebe 1,85x. Errou ou ficou igual: perde o valor. Não dá para desistir no meio.","A faixa de cotações no topo mostra os preços ao vivo em qualquer tela."]],"trabalho":["Como funciona o trabalho",["Clique em \"começar turno\": são 90 segundos.","Clique nos pedidos do mapa para aceitar (a moto leva até 3).","Quando a moto chegar, confirme na hora (espaço) para ganhar gorjeta. Pneu furado: aperte F.","Bom aproveitamento sobe seu nível e os pedidos pagam mais. Serve de renda quando o dinheiro acaba."]],"futebol":["Como funciona o futebol",["Escolha um clube real e pague o valor para assumir.","Em \"próximo jogo\" defina formação e estilo e assista à partida (ou simule rápido).","No mercado, contrate jogadores (negocie o preço) e venda os que sobram; no estádio, aumente a bilheteria.","Fique entre os 4 primeiros para subir de divisão; os 4 últimos caem."]],"loja":["Como funciona a loja",["Tudo que é seu aparece aqui: cavalos, galgos, carros, terras, sacas, cartas, jogadores e o seu clube.","\"Vender agora\" paga na hora o preço da loja.","\"Anunciar\" deixa você escolher o preço: outros jogadores online veem e compram na hora.","Se nenhum jogador comprar, um comprador da loja pode levar, pagando no máximo 5% acima do preço de venda na hora.","Na parte de baixo ficam os anúncios dos outros jogadores."]],"cartas":["Como funcionam as cartas raras",["Abra pacotes ou ganhe cartas na roleta do dia.","Quanto mais rara (bronze, prata, esmeralda, diamante, mestre, challenger), mais vale.","Use como moeda: troque com outros jogadores no inventário, pague terras ou venda para a loja.","Complete o álbum com os 12 campeões."]],"inventario":["Como funciona o inventário",["Aqui está tudo que você pode trocar: carros, terras, animais, jogadores e cartas.","Na feira, negocie a compra e venda: oferta muito baixa faz o negociante desistir.","Com outro jogador online, use \"propor troca\": os dois montam a oferta, ficam prontos e confirmam.","Cartas valem dinheiro e podem pagar terras."]],"haras":["Como funciona o canil e haras",["Compre um animal no leilão do mês.","Treine: cada treino gasta 1 das 4 semanas do mês e cansa o animal.","Inscreva em uma prova da sua classe. Corrida também gasta uma semana.","\"Sem semanas\" = acabaram as 4 semanas do mês do mundo. O mês passa sozinho (relógio no topo, igual para todos) e as semanas voltam.","Só o 1º e o 2º lugar dão lucro. Animal lesionado precisa de veterinário."]],"corridas":["Como funciona a corrida de galgos",["Escolha o cachorro em quem vai apostar e o valor em fichas.","Quanto menor a chance dele, maior o retorno.","Clique em \"apostar e largar\" e acompanhe a corrida."]],"personagem":["Como funciona o personagem",["Escolha o visual e o nome.","Itens pagos (acessórios, roupas) são seus para sempre.","Cada acessório dá uma vantagem permanente: veja a lista \"suas vantagens\"."]],"terras":["Como funcionam as terras",["Escolha um lote à venda e veja o benefício que ele dá ao comprar.","Comprar é o melhor negócio: a terra valoriza, rende vantagens, serve de garantia no banco, planta sem restrição e pode ser arrendada a terceiros.","Arrendar de terceiros custa aluguel todo mês (+8% ao ano), não dá vantagem nenhuma e a lavoura só é permitida com trator, com 20% a mais de custo e 15% da safra para o dono.","Se arrendou e gostou, compre: o aluguel que você já pagou abate o preço (até 40%).","Dá para pagar a compra também com cartas."]],"gado":["Como funciona o gado",["Compre bezerros no leilão e deixe no pasto (1 cabeça por hectare).","Eles engordam todo mês que passa. Venda quando o preço da arroba estiver bom.","Sem pasto suficiente, você paga ração e engorda menos."]],"mercado":["Como funciona o mercado",["Veja o preço de soja, milho e café, que variam todo mês.","Guarde a colheita no armazém e venda quando o preço subir."]],"carros":["Como funciona a concessionária",["Todo carro tem uma vantagem permanente (entregas, XP, provas...).","Você paga IPVA e seguro todo mês e o carro desvaloriza.","Vender na loja devolve 92% do valor atual."]],"banco":["Como funciona o banco",["Peça empréstimo usando terras e gado como garantia.","Pague as parcelas em dia: 2 atrasadas e o banco toma a terra.","Você também pode emprestar dinheiro a outras pessoas e ganhar juros, com risco de calote."]],"livro":["Livro-caixa",["Aqui fica o registro de tudo que entrou e saiu do seu dinheiro."]]};
 for (const [id, [title, steps]] of Object.entries(HOWTO)) {
   const p = document.getElementById(`p-${id}`);
   if (p) p.insertAdjacentHTML('afterbegin', `<aside class="howto" aria-label="como jogar"><div class="howto__t">${title}</div><ol>${steps.map(s => `<li>${s}</li>`).join('')}</ol></aside>`);
@@ -936,7 +957,7 @@ function toggleFs(id) {
   if (el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).catch(() => { el.classList.add('is-fs'); setFsLabels(); });
   else { el.classList.add('is-fs'); setFsLabels(); }
 }
-for (const id of ['mesa', 'corridas', 'trader', 'trabalho', 'futebol', 'haras', 'cartas']) {
+for (const id of ['mesa', 'corridas', 'trader', 'trabalho', 'futebol', 'haras', 'cartas', 'loja']) {
   document.getElementById(`p-${id}`)?.insertAdjacentHTML('afterbegin', `<button class="btn btn--glass btn--sm fs-btn" type="button" data-fs="p-${id}" aria-pressed="false">tela cheia</button>`);
 }
 document.addEventListener('click', e => { const b = e.target.closest('[data-fs]'); if (b) toggleFs(b.dataset.fs); });
@@ -946,7 +967,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 1;
+const APP_VERSION = 2;
 let updateShown = false, updateMsg = '';
 async function checkUpdate() {
   if (updateShown) return;
@@ -995,3 +1016,5 @@ let installEv = null;
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEv = e; $('#btn-install').hidden = false; });
 addEventListener('appinstalled', () => { $('#btn-install').hidden = true; say('21 World instalado! Abra pelo ícone na tela inicial.'); });
 $('#btn-install')?.addEventListener('click', async () => { if (!installEv) return; installEv.prompt(); await installEv.userChoice.catch(() => {}); installEv = null; $('#btn-install').hidden = true; });
+
+SHUI.init({ itemMedia, ITEM_KIND, announceFn: () => C.announce() });

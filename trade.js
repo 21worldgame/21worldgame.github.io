@@ -1,7 +1,7 @@
 // Inventário e trocas entre jogadores (regras puras, sem DOM nem rede).
 // Item da troca: { kind: 'chips'|'money', amount } | { kind: 'good', good, qty } | { kind: 'car'|'animal'|'land', data }
 import { CARS, region } from './logic.js';
-import { KINDS as ANIMAL } from './stable.js';
+import { KINDS as ANIMAL, value as animalValue } from './stable.js';
 import * as CD from './cards.js';
 import { POS as FPOS, value as fValue, salary as fSalary } from './futebol.js';
 export const GOODS = { soja: 'soja', milho: 'milho', cafe: 'café' };
@@ -11,7 +11,7 @@ export const MAX_ITEMS = 8;
 export function inventory(s) {
   const out = [];
   for (const c of s.cars || []) if (CARS[c.model]) out.push({ kind: 'car', id: c.id, label: CARS[c.model].name, value: c.value, img: CARS[c.model].img, data: c });
-  for (const a of s.stable?.animals || []) out.push({ kind: 'animal', id: a.id, label: `${a.name} (${ANIMAL[a.kind].label})`, value: 0, data: a });
+  for (const a of s.stable?.animals || []) out.push({ kind: 'animal', id: a.id, label: `${a.name} (${ANIMAL[a.kind].label})`, value: animalValue(a), data: a });
   for (const l of s.lands || []) if (l.own) out.push({ kind: 'land', id: l.id, label: `${l.ha} ha, ${l.region}`, value: l.value, data: l });
   for (const c of s.cards || []) out.push({ kind: 'card', id: c.id, label: `carta ${CD.label(c)}`, value: CD.value(c), data: c });
   for (const p of s.fut?.squad || []) out.push({ kind: 'player', id: p.id, label: `${p.name} (${p.pos}, nota ${p.ovr})`, value: fValue(p), data: p });

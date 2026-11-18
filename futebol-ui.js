@@ -15,7 +15,7 @@ export function render() {
   $('#ft-found').hidden = has; $('#ft-club').hidden = !has;
   if (!has) return renderPick();
   const c = f(), st = FT.standings(c.league), me = st.findIndex(t => t.user) + 1, lg = c.league;
-  const str = FT.strength(c.squad, c.formation, c.style, c.morale || 0);
+  const str = FT.strength(c.squad, c.formation, c.style, c.morale || 0, c.xi);
   $('#ft-name').innerHTML = `${crest(c.colors || colorsOf(c.club), 'lg')}${esc(c.club)}`;
   $('#ft-sub').textContent = `${FT.DIVS[c.div]}, temporada ${c.season}, rodada ${Math.min(lg.round + 1, lg.fixtures.length)} de ${lg.fixtures.length}, ${me}º lugar`;
   const mor = c.morale || 0;
@@ -63,11 +63,33 @@ function renderNext() {
 }
 
 function pitch(c) {
-  const l = FT.lineup(c.squad, c.formation), col = c.colors || colorsOf(c.club) || ['#c8102e', '#fff'];
-  const row = (arr, y) => arr.map((p, i) => `<span class="ply" style="left:${((i + 1) / (arr.length + 1)) * 100}%;top:${y}%;--c1:${col[0]};--c2:${col[1]}"><b>${Math.round(p.ovr)}</b><small>${esc(p.name.split(' ')[0])}</small></span>`).join('');
-  return `<div class="pitch">${row(l.att, 16)}${row(l.mid, 44)}${row(l.def, 70)}${row(l.gk, 90)}</div>`;
+  const l = FT.lineup(c.squad, c.formation, c.xi), col = c.colors || colorsOf(c.club) || ['#c8102e', '#fff'];
+  const row = (sec, y) => l[sec].map((p, i) => `<button class="ply${p?.off ? ' is-off' : ''}${c.xi?.[sec + i] ? ' is-fixed' : ''}" type="button" data-act="ft-slot" data-id="${sec}${i}" style="left:${((i + 1) / (l[sec].length + 1)) * 100}%;top:${y}%;--c1:${col[0]};--c2:${col[1]}" title="trocar">
+    <b>${p ? Math.round(p.ovr) : '?'}</b><small>${p ? esc(p.name.split(' ')[0]) : 'vazio'}</small></button>`).join('');
+  return `<div class="pitch">${row('att', 16)}${row('mid', 44)}${row('def', 70)}${row('gk', 90)}</div>
+    <p class="muted small ft-pitch-tip">Toque num jogador para trocar. Fora da posição ele rende 85%. ${c.xi && Object.keys(c.xi).length ? '<button class="btn btn--glass btn--sm" data-act="ft-auto">escalação automática</button>' : ''}</p>`;
 }
-
+let pickSlot = null;
+export function openSlot(slot) {
+  const c = f(), sec = slot.replace(/\d+$/, ''), cur = FT.lineup(c.squad, c.formation, c.xi);
+  const inXI = new Set([...cur.gk, ...cur.def, ...cur.mid, ...cur.att].filter(Boolean).map(p => p.id));
+  const fit = p => ({ gk: ['GOL'], def: ['ZAG', 'LAT'], mid: ['VOL', 'MEI'], att: ['ATA'] }[sec].includes(p.pos));
+  pickSlot = slot;
+  $('#sl-title').textContent = `escolher ${FT.SECTOR_LABEL[sec]}`;
+  $('#sl-list').innerHTML = [...c.squad].sort((a, b) => fit(b) - fit(a) || b.ovr - a.ovr).map(p => {
+    const outp = p.inj || p.sus;
+    return `<li><button class="sl-p${fit(p) ? '' : ' is-off'}" data-act="ft-pick" data-id="${p.id}" ${outp ? 'disabled' : ''}>
+      <span class="posb posb--${p.pos}">${p.pos}</span><span>${esc(p.name)}${inXI.has(p.id) ? ' <small class="muted">(titular)</small>' : ''}${outp ? ` <small class="bad">${p.sus ? 'suspenso' : 'lesionado'}</small>` : ''}</span>
+      <b>${fit(p) ? p.ovr : Math.round(p.ovr * 0.85)}</b></button></li>`;
+  }).join('');
+  $('#dlg-slot').showModal();
+}
+export function pick(id) {
+  const err = FT.setSlot(f(), pickSlot, id);
+  if (err) return say(err[0].toUpperCase() + err.slice(1), true);
+  $('#dlg-slot').close(); save(); render();
+}
+export function autoXI() { f().xi = {}; save(); render(); say('Escalação automática: os melhores de cada posição.'); }
 function renderSquad() {
   const c = f(), order = Object.keys(FT.POS);
   $('#ft-squad').innerHTML = [...c.squad].sort((a, b) => order.indexOf(a.pos) - order.indexOf(b.pos) || b.ovr - a.ovr).map(p => `<tr>

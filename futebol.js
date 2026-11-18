@@ -59,17 +59,39 @@ export function genSquad(avg, rng = Math.random) {
 
 // escalação automática: os melhores de cada setor (lesionado e suspenso ficam fora)
 const out = p => p.inj || p.sus;
-export function lineup(squad, formation = '4-4-2') {
+const SECTOR = { gk: p => p === 'GOL', def: p => DEF.includes(p), mid: p => MID.includes(p), att: p => p === 'ATA' };
+export const SECTOR_LABEL = { gk: 'goleiro', def: 'defesa', mid: 'meio-campo', att: 'ataque' };
+// as vagas da formação: gk0, def0..def3, mid0.., att0..
+export function slots(formation = '4-4-2') {
   const [d, m, a] = FORMATIONS[formation] || FORMATIONS['4-4-2'];
-  const used = new Set(), take = arr => { arr.forEach(p => used.add(p.id)); return arr; };
-  const best = (ok, n) => squad.filter(p => ok(p.pos) && !used.has(p.id) && !out(p)).sort((x, y) => y.ovr - x.ovr).slice(0, n);
-  const gk = take(best(p => p === 'GOL', 1)), def = take(best(p => DEF.includes(p), d)), mid = take(best(p => MID.includes(p), m)), att = take(best(p => p === 'ATA', a));
-  const fill = (arr, n) => { while (arr.length < n) { const x = squad.filter(p => !used.has(p.id) && !out(p)).sort((p, q) => q.ovr - p.ovr)[0]; if (!x) break; used.add(x.id); arr.push({ ...x, ovr: x.ovr * 0.8 }); } return arr; };
-  return { gk: fill(gk, 1), def: fill(def, d), mid: fill(mid, m), att: fill(att, a) };
+  return [['gk', 1], ['def', d], ['mid', m], ['att', a]].flatMap(([k, n]) => Array.from({ length: n }, (_, i) => `${k}${i}`));
 }
-const avg = arr => (arr.length ? arr.reduce((t, p) => t + p.ovr, 0) / arr.length : 30);
-export function strength(squad, formation = '4-4-2', style = 'equilibrado', morale = 0) {
-  const l = lineup(squad, formation), [sa, sd] = STYLES[style] || [0, 0], m = 1 + morale * 0.03;
+// xi = { gk0: idDoJogador, def1: ... } escolhido pelo técnico; vaga vazia ou jogador fora (lesão/suspensão) completa sozinha.
+// Jogador fora da posição dele rende 85% (fora do setor).
+export function lineup(squad, formation = '4-4-2', xi = null) {
+  const [d, m, a] = FORMATIONS[formation] || FORMATIONS['4-4-2'];
+  const res = { gk: Array(1), def: Array(d), mid: Array(m), att: Array(a) }, used = new Set();
+  if (xi) for (const slot of slots(formation)) {
+    const sec = slot.replace(/\d+$/, ''), i = +slot.slice(sec.length), p = xi[slot] && squad.find(x => x.id === xi[slot] && !out(x));
+    if (p && !used.has(p.id)) { res[sec][i] = SECTOR[sec](p.pos) ? p : { ...p, ovr: p.ovr * 0.85, off: true }; used.add(p.id); }
+  }
+  for (const sec of ['gk', 'def', 'mid', 'att']) for (let i = 0; i < res[sec].length; i++) {
+    if (res[sec][i]) continue;
+    const p = squad.filter(x => SECTOR[sec](x.pos) && !used.has(x.id) && !out(x)).sort((x, y) => y.ovr - x.ovr)[0];
+    if (p) { res[sec][i] = p; used.add(p.id); }
+  }
+  // falta gente num setor (lesão, venda): completa com quem sobrou, com nota reduzida
+  for (const sec of ['gk', 'def', 'mid', 'att']) for (let i = 0; i < res[sec].length; i++) {
+    if (res[sec][i]) continue;
+    const x = squad.filter(p => !used.has(p.id) && !out(p)).sort((p, q) => q.ovr - p.ovr)[0];
+    if (x) { used.add(x.id); res[sec][i] = { ...x, ovr: x.ovr * 0.8, off: true }; }
+  }
+  for (const sec of Object.keys(res)) res[sec] = res[sec].map(p => p || null);
+  return res;
+}
+const avg = arr => { const v = arr.filter(Boolean); return v.length ? v.reduce((t, p) => t + p.ovr, 0) / arr.length : 30; };
+export function strength(squad, formation = '4-4-2', style = 'equilibrado', morale = 0, xi = null) {
+  const l = lineup(squad, formation, xi), [sa, sd] = STYLES[style] || [0, 0], m = 1 + morale * 0.03;
   const att = (avg(l.att) * 0.6 + avg(l.mid) * 0.4) * (1 + sa) * m;
   const def = (avg(l.def) * 0.6 + avg(l.gk) * 0.25 + avg(l.mid) * 0.15) * (1 + sd) * m;
   return { att, def, ovr: (att + def) / 2 };
@@ -109,7 +131,7 @@ export function newLeague(div, userClub, rng = Math.random) {
 export const zone = lg => (lg.teams.length >= 20 ? 4 : 2);       // quantos sobem e quantos caem
 export const standings = lg => lg.teams.map(t => ({ ...t, ...lg.table[t.id] }))
   .sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf || a.name.localeCompare(b.name));
-const teamStr = (f, id) => (id === 'user' ? strength(f.squad, f.formation, f.style, f.morale || 0) : { att: f.league.teams.find(t => t.id === id).rating, def: f.league.teams.find(t => t.id === id).rating });
+const teamStr = (f, id) => (id === 'user' ? strength(f.squad, f.formation, f.style, f.morale || 0, f.xi) : { att: f.league.teams.find(t => t.id === id).rating, def: f.league.teams.find(t => t.id === id).rating });
 
 // assumir o comando de um clube real
 export function takeClub(s, name, rng = Math.random) {
@@ -184,7 +206,7 @@ export function answerOffer(s, oid, yes) {
 
 // quem marcou: atacantes e meias têm mais chance
 function scorer(l, rng) {
-  const pool = [...l.att.map(p => [p, 5]), ...l.mid.map(p => [p, 2]), ...l.def.map(p => [p, 0.6])];
+  const pool = [...l.att.filter(Boolean).map(p => [p, 5]), ...l.mid.filter(Boolean).map(p => [p, 2]), ...l.def.filter(Boolean).map(p => [p, 0.6])];
   let r = rng() * pool.reduce((t, [, w]) => t + w, 0);
   for (const [p, w] of pool) if ((r -= w) <= 0) return p;
   return pool[0]?.[0];
@@ -208,10 +230,10 @@ export function playRound(s, rng = Math.random, prizeMult = 1) {
   const lines = [];
   if (mine) {
     const home = mine.h === 'user', side = home ? 'h' : 'a', my = home ? mine.hg : mine.ag, their = home ? mine.ag : mine.hg;
-    const l = lineup(f.squad, f.formation);
+    const l = lineup(f.squad, f.formation, f.xi);
     for (const e of mine.events) if (e.side === side) {
       if (e.kind === 'gol') e.who = scorer(l, rng)?.name;
-      if (e.kind === 'vermelho') { const all = [...l.def, ...l.mid, ...l.att], p = all[Math.floor(rng() * all.length)], real = p && f.squad.find(x => x.id === p.id); if (real) { real.sus = 2; e.who = real.name; } }
+      if (e.kind === 'vermelho') { const all = [...l.def, ...l.mid, ...l.att].filter(Boolean), p = all[Math.floor(rng() * all.length)], real = p && f.squad.find(x => x.id === p.id); if (real) { real.sus = 2; e.who = real.name; } }
     }
     if (home) {
       const t = Math.round(TICKET[f.div] * (1 + 0.2 * ((f.stadium || 1) - 1)) * PK.mult(s, 'ticket') * (0.7 + Math.min(0.6, lg.table.user.pts / Math.max(1, lg.table.user.p) / 5)));
@@ -252,4 +274,14 @@ export function endSeason(s, rng = Math.random, prizeMult = 1) {
   const sponsor = SPONSOR[f.div]; s.money += sponsor; f.earned += sponsor;
   refreshMarket(f, rng);
   return { pos, prize, move, sponsor };
+}
+
+export function setSlot(f, slot, id) {
+  if (!slots(f.formation).includes(slot)) return 'vaga inválida.';
+  f.xi ??= {};
+  if (!id) { delete f.xi[slot]; return null; }
+  if (!f.squad.some(p => p.id === id)) return 'jogador não está no elenco.';
+  for (const k of Object.keys(f.xi)) if (f.xi[k] === id) delete f.xi[k];      // sai da vaga anterior
+  f.xi[slot] = id;
+  return null;
 }

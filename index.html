@@ -43,6 +43,7 @@
     <symbol id="i-bike" viewBox="0 0 24 24"><circle cx="5.5" cy="17" r="3"/><circle cx="18.5" cy="17" r="3"/><path d="M5.5 17l4-7h5l4 7M9.5 10l-1.5-3H5M14.5 10l1-3h2"/></symbol>
     <symbol id="i-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 4.5h-5L8 10z M12 3v4 M16 10l4.5-1.5 M14.5 14.5l2.5 4 M9.5 14.5l-2.5 4 M8 10L3.5 8.5"/></symbol>
     <symbol id="i-gem" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9z M2 9h20 M9 3l3 18 3-18"/></symbol>
+    <symbol id="i-shop" viewBox="0 0 24 24"><path d="M3 9l2-5h14l2 5M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0zM5 13v7h14v-7M10 20v-5h4v5"/></symbol>
     <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
     <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/></symbol>
   </svg>
@@ -75,6 +76,7 @@
         <button role="tab" id="t-trabalho" data-tab="trabalho" aria-controls="p-trabalho" aria-selected="false" tabindex="-1"><svg><use href="#i-bike"/></svg>trabalho</button>
         <button role="tab" id="t-futebol" data-tab="futebol" aria-controls="p-futebol" aria-selected="false" tabindex="-1"><svg><use href="#i-ball"/></svg>futebol</button>
         <button role="tab" id="t-inventario" data-tab="inventario" aria-controls="p-inventario" aria-selected="false" tabindex="-1"><svg><use href="#i-bag"/></svg>inventário</button>
+        <button role="tab" id="t-loja" data-tab="loja" aria-controls="p-loja" aria-selected="false" tabindex="-1"><svg><use href="#i-shop"/></svg>loja</button>
         <button role="tab" id="t-cartas" data-tab="cartas" aria-controls="p-cartas" aria-selected="false" tabindex="-1"><svg><use href="#i-gem"/></svg>cartas raras</button>
         <button role="tab" id="t-haras" data-tab="haras" aria-controls="p-haras" aria-selected="false" tabindex="-1"><svg><use href="#i-horse"/></svg>canil e haras</button>
         <button role="tab" id="t-personagem" data-tab="personagem" aria-controls="p-personagem" aria-selected="false" tabindex="-1"><svg><use href="#i-user"/></svg>personagem</button>
@@ -316,6 +318,15 @@
           <div id="fe-list"></div><div id="fe-want"></div></section>
         <aside class="glass inv-online"><h3>jogadores online</h3><p class="muted small">Negocie carros, animais, terras, jogadores de futebol, sacas, fichas e dinheiro. Os dois montam a oferta, ficam "prontos" e confirmam. Se alguém mexer na oferta, os dois precisam confirmar de novo.</p><ul class="inv-peers" id="inv-peers"></ul></aside>
       </div>
+    </section>
+
+    <!-- LOJA -->
+    <section id="p-loja" role="tabpanel" aria-labelledby="t-loja" class="panel" hidden>
+      <div class="listhead"><h2>loja</h2><span class="muted small">Venda na hora para a loja ou anuncie pelo seu preço: cavalos, galgos, carros, terras, cartas, jogadores e até o seu clube.</span></div>
+      <h3>suas coisas</h3>
+      <div class="shop-grid" id="shop-mine"></div>
+      <h3>à venda por outros jogadores</h3>
+      <div class="shop-grid" id="shop-others"></div>
     </section>
 
     <!-- CARTAS RARAS -->
@@ -583,6 +594,11 @@
     </form>
     <p class="muted small chat-lock" id="chat-lock" hidden></p>
   </section>
+  <dialog class="dlg dlg--slot" id="dlg-slot" aria-labelledby="sl-title">
+    <h2 id="sl-title">escolher jogador</h2>
+    <ul class="sl-list" id="sl-list"></ul>
+    <button class="btn btn--glass btn--sm" data-close>cancelar</button>
+  </dialog>
   <dialog class="dlg dlg--card" id="dlg-card" aria-labelledby="cd-reveal-txt">
     <div class="cd-reveal" id="cd-reveal"></div>
     <p class="cd-reveal-txt" id="cd-reveal-txt"></p>
