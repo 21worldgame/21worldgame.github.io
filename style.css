@@ -1601,3 +1601,48 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .shop-players { grid-column: 1 / -1; margin-top: 4px; }
 .shop-players summary { cursor: pointer; padding: 10px 14px; border-radius: 12px; background: rgba(56,189,248,.08); border: 1px solid rgba(125,211,252,.25); font-weight: 700; }
 .shop-players[open] summary { margin-bottom: 12px; }
+
+/* celular: tela de entrada empilhada (propaganda em cima, cadastro embaixo), sem nada sobreposto */
+@media (max-width: 52rem) {
+  .dlg--landing[open] { display: block; overflow-y: auto; overscroll-behavior: contain; }
+  .dlg--landing .lp { overflow: hidden; min-height: 0; height: auto; }
+  .dlg--landing .lp__in { position: relative; height: auto; overflow: visible; padding: 20px 16px 18px; gap: 12px; }
+  .dlg--landing .au__panel { position: relative; overflow: visible; padding: 18px 16px 28px; }
+  .lp__h { font-size: clamp(1.8rem, 9vw, 2.4rem); line-height: 1.08; }
+  .lp__sub { font-size: .95rem; line-height: 1.45; }
+  .lp__bonus { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .lp__bonus li { padding: 8px; }
+  .lp__bonus b { font-size: .85rem; line-height: 1.15; }
+  .lp__bonus span { font-size: .7rem; line-height: 1.2; }
+  .lp__cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .lp__cards figcaption { font-size: .72rem; line-height: 1.15; }
+}
+
+/* tutoriais: título clicável (no celular começam fechados) */
+.howto > summary { list-style: none; cursor: pointer; }
+.howto > summary::-webkit-details-marker { display: none; }
+.howto > summary::after { content: "▾"; margin-left: auto; opacity: .7; transition: transform .2s; }
+.howto[open] > summary::after { transform: rotate(180deg); }
+.howto:not([open]) { padding-block: 9px; }
+@media (max-width: 40rem) {
+  .panel { padding-top: 4px; }
+  .fs-btn { position: absolute; top: 0; right: 0; z-index: 6; width: 42px; height: 42px; margin: 0; padding: 0; justify-content: center; font-size: 0; }
+  .fs-btn::before { margin: 0; }
+  .panel > .howto { margin-top: 0; padding-right: 54px; }
+  .panel:fullscreen .fs-btn, .panel.is-fs .fs-btn { width: auto; font-size: .8rem; padding-inline: 12px; }
+  .ft-hero h2 { font-size: 1.5rem; line-height: 1.1; }
+  .ft-hero { padding: 14px; }
+  .listhead h2, .panel h2 { font-size: 1.35rem; line-height: 1.15; }
+  .cd-hero h2 { font-size: 1.45rem; }
+  .worldclock { padding: 6px 12px; }
+}
+@media (max-width: 40rem) {
+  .ft-found { padding: 0; background: none; border: 0; box-shadow: none; }
+  .subtabs .subtab, .seg .segbtn { white-space: nowrap; }
+  .subtabs { overflow-x: auto; max-width: 100%; }
+}
+@media (max-width: 24rem) {
+  .brand__word { display: none; }
+  #btn-install { padding: 6px 10px; font-size: .74rem; }
+}
+.cd-packbtn--simples { background: linear-gradient(135deg, #1e3a5f, #2563eb); }
