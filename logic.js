@@ -174,24 +174,28 @@ export function refreshOffers(s, rng = Math.random) {
 export const landCap = l => Math.floor(l.ha * (l.cap ?? 1));
 export const capacity = s => s.lands.filter(l => !l.leasedOut && !l.crop && !l.orchard && !l.cane).reduce((a, l) => a + landCap(l), 0);
 export const carsValue = s => (s.cars || []).reduce((a, c) => a + c.value, 0);
-export const heads = s => s.herd.reduce((a, h) => a + h.heads, 0);
+export const heads = s => s.herd.reduce((a, h) => a + (h?.heads || 0), 0);
 export const BOITEL_COST = 95, BOITEL_GAIN = 22;   // R$ por cabeça por mês e kg por mês no confinamento
 export const YIELD = 0.52; // rendimento de carcaça: a arroba do boi gordo é sobre a carcaça, não o peso vivo
 export const arrobas = kg => (kg * YIELD) / KG_ARROBA;
-export const herdValue = s => s.herd.reduce((a, h) => a + h.heads * arrobas(h.kg) * s.prices.arroba, 0);
+export const herdValue = s => s.herd.reduce((a, h) => a + (h ? h.heads * arrobas(h.kg || 0) * (s.prices.arroba || 0) : 0), 0);
 export const debt = s => s.loans.reduce((a, l) => a + l.bal, 0);
 export const creditLimit = s =>
   Math.max(0, Math.floor(s.lands.filter(l => l.own).reduce((a, l) => a + l.value, 0) * 0.5 + herdValue(s) * 0.2 - debt(s)));
 
+// soma protegida: um item com dado faltando (save antigo) vale 0 em vez de virar NaN e quebrar a tela
+const num = v => (Number.isFinite(v) ? v : 0);
+const part = fn => { try { return num(fn()); } catch { return 0; } };
 export function netWorth(s) {
-  const lands = s.lands.filter(l => l.own).reduce((a, l) => a + l.value, 0);
-  const stock = Object.entries(s.stock).reduce((a, [k, q]) => a + q * s.prices[k], 0);
-  const lent = s.lent.reduce((a, l) => a + l.bal, 0);
-  return Math.round(s.money + s.chips * CHIP + lands + herdValue(s) + stock + lent + carsValue(s) + animalsValue(s) + (s.cards || []).reduce((a, c) => a + cardValue(c), 0) + granjaValue(s) + s.lands.filter(l => l.own).reduce((a, l) => a + orchardValue(s, l) + caneValue(s, l), 0) + (s.caneHarvester?.value || 0) + plantValue(s) - debt(s));
+  const own = (s.lands || []).filter(l => l && l.own);
+  return Math.round(part(() => s.money) + part(() => s.chips * CHIP) + own.reduce((a, l) => a + num(l.value), 0) + part(() => herdValue(s))
+    + Object.entries(s.stock || {}).reduce((a, [k, q]) => a + num(q * (s.prices?.[k] ?? 0)), 0) + (s.lent || []).reduce((a, l) => a + num(l?.bal), 0)
+    + part(() => carsValue(s)) + part(() => animalsValue(s)) + (s.cards || []).reduce((a, c) => a + part(() => cardValue(c)), 0) + part(() => granjaValue(s))
+    + own.reduce((a, l) => a + part(() => orchardValue(s, l) + caneValue(s, l)), 0) + num(s.caneHarvester?.value) + part(() => plantValue(s)) - part(() => debt(s)));
 }
 
 export const TITLES = [[0, 'iniciante'], [150000, 'fazendeiro'], [500000, 'barão do gado'], [2000000, 'magnata']];
-export const rank = worth => TITLES.filter(([min]) => worth >= min).pop()[1];
+export const rank = worth => (TITLES.filter(([min]) => worth >= min).pop() || TITLES[0])[1];
 
 // Passa um mês. Devolve as linhas do livro-caixa.
 export function tick(s, rng = Math.random) {

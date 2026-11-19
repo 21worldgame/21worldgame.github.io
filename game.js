@@ -1025,16 +1025,20 @@ tabs.forEach((t, i) => {
   });
 });
 
-show(location.hash.slice(1));
+// abertura blindada: se um dado antigo do save quebrar alguma parte, o jogo abre mesmo assim (e mostra o erro para corrigirmos)
+const bootErrs = [];
+const safe = (what, fn) => { try { fn(); } catch (e) { console.error(what, e); bootErrs.push(`${what}: ${e?.message || e}`); } };
+safe('aba inicial', () => show(location.hash.slice(1)));
 // aplicativo instalável e cache dos arquivos (só no site publicado, em https)
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 window.__booted = true;   // a página sabe que o jogo abriu (ver o socorro da abertura no index.html)
 requestAnimationFrame(() => setTimeout(() => { $('#splash')?.classList.add('is-gone'); setTimeout(() => $('#splash')?.remove(), 600); }, 250));
-RC.initRacing();
-RL.initRoulette();
-TR.initTrader();
-render();
-C.initCasino();
+safe('corridas', () => RC.initRacing());
+safe('roleta', () => RL.initRoulette());
+safe('investimentos', () => TR.initTrader());
+safe('tela', () => render());
+safe('salão', () => C.initCasino());
+if (bootErrs.length) { window.__bootErrs = bootErrs; try { localStorage.setItem('21world.lastBootError', JSON.stringify({ at: Date.now(), v: APP_VERSION, errs: bootErrs })); } catch {} setTimeout(() => say(`Uma parte do jogo não carregou (${bootErrs[0].slice(0, 120)}). Mande um print para o suporte.`, true), 1500); }
 // login: sem Supabase configurado segue local; com ele, a tela de entrada aparece antes de tudo
 Auth.boot().then(async st => {
   if (st === 'gate' || st === 'recovery') return;
@@ -1155,7 +1159,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 14;
+const APP_VERSION = 15;
 let updateShown = false, updateMsg = '';
 async function checkUpdate() {
   if (updateShown) return;

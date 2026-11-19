@@ -1,5 +1,6 @@
 // Estado salvo, utilidades de tela e comemorações compartilhadas pelos módulos de interface.
 import * as L from './logic.js';
+import * as FT from './futebol.js';
 import * as P from './progress.js';
 import { DEFAULT } from './avatar.js';
 import * as ST from './stable.js';
@@ -31,9 +32,24 @@ function normalize(s) {
   s.owned ??= []; s.cars ??= [];
   for (const c of s.cars) c.model = L.OLD_CARS[c.model] || c.model;
   s.cars = s.cars.filter(c => L.CARS[c.model]);
+  for (const k of ['money', 'chips']) if (!Number.isFinite(s[k])) s[k] = 0;
+  s.herd = s.herd.filter(h => h && Number.isFinite(h.heads));
+  s.prices = { ...L.newState(() => 0.5).prices, ...(s.prices || {}) };
+  if (s.fut?.club && (!Array.isArray(s.fut.squad) || !s.fut.league?.teams)) repairClub(s);
   ST.ensure(s);
   P.ensure(s, today());
   return s;
+}
+// clube de uma versão antiga do jogo: mantém o clube e refaz o que faltar (elenco, campeonato), sem cobrar nada
+function repairClub(s) {
+  const c = FT.club(s.fut.club);
+  if (!c) { s.futOld = s.fut; delete s.fut; return; }
+  const div = FT.divOf(c.n);
+  s.fut = { formation: '4-4-2', style: 'equilibrado', market: [], offers: [], history: [], earned: 0, trophies: 0, stadium: 1, morale: 0, season: 1, ...s.fut, club: c.n, colors: c.c, div };
+  if (!Array.isArray(s.fut.squad) || s.fut.squad.length < 14) s.fut.squad = [...(Array.isArray(s.fut.squad) ? s.fut.squad : []), ...FT.genSquad(c.r - 3)].slice(0, 26);
+  if (!s.fut.league?.teams) s.fut.league = FT.newLeague(div, c.n);
+  if (!Array.isArray(s.fut.market)) s.fut.market = [];
+  delete s.fut.xi;
 }
 function load() {
   let s;

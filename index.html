@@ -28,6 +28,9 @@
   // socorro da abertura: arquivo velho guardado no navegador misturado com arquivo novo trava o jogo na tela "carregando".
   // Se em 10 s o jogo não abriu, baixa tudo de novo (sem cache) e recarrega uma vez; se ainda assim travar, mostra um botão.
   (function () {
+    var errs = [];
+    addEventListener('error', function (e) { errs.push(String(e.message || (e.error && e.error.message) || 'erro')); });
+    addEventListener('unhandledrejection', function (e) { errs.push(String((e.reason && e.reason.message) || e.reason || 'erro')); });
     function fix() {
       var urls = performance.getEntriesByType('resource').map(function (e) { return e.name; }).filter(function (u) { return u.indexOf(location.origin) === 0 && /\.(js|css)(\?|$)/.test(u); });
       urls.push(location.origin + location.pathname.replace(/[^/]*$/, '') + 'game.js');
@@ -42,7 +45,7 @@
       var tried = false; try { tried = sessionStorage.getItem('21world.bootFix') === '1'; sessionStorage.setItem('21world.bootFix', '1'); } catch (e) {}
       if (!tried) return fix();
       var s = document.getElementById('splash');
-      if (s && !document.getElementById('splash-fix')) s.removeAttribute('aria-hidden'), s.insertAdjacentHTML('beforeend', '<button id="splash-fix" type="button" onclick="window.__fix21()" style="margin-top:18px;padding:12px 20px;border-radius:12px;border:0;background:#facc15;color:#1a1300;font:800 1rem system-ui;cursor:pointer">o jogo não abriu? toque para recarregar</button>');
+      if (s && !document.getElementById('splash-fix')) s.removeAttribute('aria-hidden'), s.insertAdjacentHTML('beforeend', '<button id="splash-fix" type="button" onclick="window.__fix21()" style="margin-top:18px;padding:12px 20px;border-radius:12px;border:0;background:#facc15;color:#1a1300;font:800 1rem system-ui;cursor:pointer">o jogo não abriu? toque para recarregar</button>' + (errs.length ? '<small id="splash-err" style="max-width:90vw;margin-top:10px;color:#fca5a5;font:600 12px system-ui;text-align:center;word-break:break-word">erro: ' + errs.slice(0, 2).join(' | ').replace(/[<>&]/g, '').slice(0, 300) + '</small>' : ''));
     }, 10000);
   })();
   </script>

@@ -16,7 +16,7 @@ export const MAX_LISTINGS = 8;
 // valor do clube inteiro: elenco + a vaga na divisão + o estádio
 export function clubValue(f) {
   if (!f?.club) return 0;
-  const squad = f.squad.reduce((t, p) => t + FT.value(p), 0) * 0.8;
+  const squad = (f.squad || []).reduce((t, p) => t + FT.value(p), 0) * 0.8;
   const spot = FT.clubPrice(f.club) * 0.6;
   let stadium = 0; for (let l = 1; l < (f.stadium || 1); l++) stadium += FT.TICKET[f.div] * 8 * l * 0.5;
   return Math.round(squad + spot + stadium);
@@ -24,7 +24,7 @@ export function clubValue(f) {
 // tudo que dá para vender: o inventário de trocas + o clube inteiro
 export function items(s) {
   const out = inventory(s).map(i => ({ ...i, key: `${i.kind}:${i.id}` }));
-  for (const h of s.granja?.houses || []) out.push({ kind: 'aviario', id: h.id, key: `aviario:${h.id}`, label: `${GR.HOUSES[h.type].label} (granja)`, value: h.value, data: h });
+  for (const h of (s.granja?.houses || []).filter(h => h && GR.HOUSES[h.type])) out.push({ kind: 'aviario', id: h.id, key: `aviario:${h.id}`, label: `${GR.HOUSES[h.type].label} (granja)`, value: h.value, data: h });
   if (s.fut?.club) out.push({ kind: 'club', id: 'club', key: 'club:club', label: `clube ${s.fut.club} (${FT.DIVS[s.fut.div]})`, value: clubValue(s.fut) });
   return out;
 }

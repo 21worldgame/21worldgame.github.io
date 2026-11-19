@@ -14,6 +14,7 @@ export const HOUSE_DEPREC = 0.005, HOUSE_RESALE = 0.9;
 
 export function ensure(s) {
   s.granja ??= { houses: [], lots: [] };
+  s.granja.houses = (s.granja.houses || []).filter(h => h && HOUSES[h.type]); s.granja.lots = (s.granja.lots || []).filter(Boolean);   // galpão de tipo que não existe mais não quebra a tela
   s.prices ??= {};
   for (const [k, v] of Object.entries(PRICES)) s.prices[k] ??= v;
   return s.granja;
