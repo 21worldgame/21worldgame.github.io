@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
+  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
   <script type="module" src="game.js"></script>
 </head>
 <body>
@@ -67,6 +68,7 @@
       <button class="btn btn--glass btn--pass" data-act="open-pass"><span class="pass-ico" aria-hidden="true"></span>passe <b id="pass-tier">0</b>/30<span class="pill" id="pass-badge" hidden>!</span></button>
       <div class="tkmenu"><button class="btn btn--glass btn--sm tk-btn" id="tk-btn" type="button" aria-expanded="false" aria-controls="ticker"><span class="tk-btn__dot" aria-hidden="true"></span>cotações</button>
         <div class="tkpanel glass" id="ticker" hidden aria-label="valores do dia"></div></div>
+      <button class="btn btn--3d" data-act="open-3d" title="entrar na cidade 3D">mundo 3D</button>
       <button class="btn btn--glass btn--missions" data-act="open-missions"><svg><use href="#i-target"/></svg>missões<span class="pill" id="missions-badge" hidden>0</span></button>
       <button class="btn btn--gold btn--sm" type="button" id="btn-install" hidden>instalar app</button>
       <button class="btn btn--glass btn--sm hdr-fs" type="button" data-fs="app" aria-pressed="false">tela cheia</button>
