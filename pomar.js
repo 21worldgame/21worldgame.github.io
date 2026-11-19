@@ -9,7 +9,7 @@ export const ORANGE = {
   price: 38,          // R$ por caixa (preço inicial do mercado)
 };
 export const ensure = s => { s.prices ??= {}; s.prices.laranja ??= ORANGE.price; s.stock ??= {}; s.stock.laranja ??= 0; };
-export const canPlant = l => l.own && !l.leasedOut && !l.crop && !l.orchard;
+export const canPlant = l => l.own && !l.leasedOut && !l.crop && !l.orchard && !l.cane;
 
 export function plant(s, land) {
   ensure(s);

@@ -1790,3 +1790,11 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .rkrow__av { position: relative; overflow: visible !important; }
 .rkrow__av svg { border-radius: 50%; overflow: hidden; }
 .rkrow__on { position: absolute; right: -1px; bottom: -1px; width: 11px; height: 11px; border-radius: 50%; background: #2ee66b; box-shadow: 0 0 0 2px #0b1020; z-index: 1; }
+
+/* canavial */
+.cn-hero { background: linear-gradient(120deg, rgba(5,8,16,.9), rgba(5,8,16,.55)), url(assets/farm-cana.svg) center/cover; }
+.cn-logi { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 14px; align-items: center; padding: 14px 18px; margin-bottom: 14px; border: 1px solid rgba(132,204,22,.4); }
+.cn-logi > div { display: grid; gap: 2px; } .cn-logi strong { font: 800 1rem/1.2 var(--font-display); }
+.orchard.cane { background: rgba(132,204,22,.08); border-color: rgba(132,204,22,.4); }
+.btn--cane { border-color: rgba(132,204,22,.6); color: #bef264; }
+@media (max-width: 40rem) { .cn-logi { grid-template-columns: minmax(0, 1fr); } }

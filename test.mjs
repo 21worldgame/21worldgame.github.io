@@ -673,3 +673,36 @@ console.log('laranja e abate ok');
   assert.equal(s2.lands[0].orchard, undefined, 'greening sem controle deveria matar o pomar');
 }
 console.log('descuido ok');
+// canavial: corta na época, rende menos a cada corte, se paga com cuidado e dá prejuízo sem tratos
+import * as CN from './cana.js';
+{
+  const mk = () => { const s = L.newState(() => 0.5); CN.ensure(s); s.month = 1; s.money = 1e7; s.lands.push({ id: 81, own: true, region: 'r', ha: 50, value: 800000, use: 'lavoura', cap: 1, leasedOut: false }); return s; };
+  const run = (s, n, rng) => { for (let i = 0; i < n; i++) { CN.monthly(s, rng); s.month++; } };
+  const s = mk(), l = s.lands[0];
+  assert.equal(CN.plant(s, l), null); assert.ok(CN.plant(s, l).includes('ocupada'));
+  assert.equal(L.capacity(s), 0); assert.ok(PM.plant(s, l).includes('ocupada'));
+  run(s, CN.CANE.first, () => 0.5);
+  assert.equal(l.cane.cuts, 1, 'primeiro corte');
+  const t1 = CN.expectedTons(l); run(s, CN.CANE.cycle, () => 0.5);
+  assert.equal(l.cane.cuts, 2); assert.ok(CN.expectedTons(l) < t1, 'soca rende menos');
+  // em 5 cortes, com cuidado, paga plantio e tratos
+  const s2 = mk(), m0 = s2.money; CN.plant(s2, s2.lands[0]); run(s2, CN.CANE.first + CN.CANE.cycle * 4, () => 0.5);
+  assert.ok(s2.money > m0, 'canavial cuidado deveria dar lucro: ' + (s2.money - m0));
+  // sem tratos dá prejuízo
+  const s3 = mk(), m3 = s3.money; CN.plant(s3, s3.lands[0]); CN.toggleCare(s3.lands[0]);
+  let sd = 6; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+  run(s3, CN.CANE.first + CN.CANE.cycle * 4, r);
+  assert.ok(s3.money < m3, 'canavial abandonado deveria dar prejuízo');
+}
+console.log('cana ok');
+// logística da cana: usina perto, caminhão e colhedora própria baixam o custo por tonelada
+{
+  const s = L.newState(); s.money = 1e7;
+  const sp = { uf: 'sp' }, pa = { uf: 'pa' };
+  assert.ok(CN.logistics(s, sp).total < CN.logistics(s, pa).total, 'usina longe deveria custar mais');
+  const before = CN.logistics(s, pa).total; s.cars.push({ id: 1, model: 'scania', value: 1 });
+  assert.ok(CN.logistics(s, pa).total < before, 'caminhão próprio deveria baratear o frete');
+  const b2 = CN.logistics(s, pa).total; assert.equal(CN.buyHarvester(s), null); assert.ok(CN.logistics(s, pa).total < b2);
+  assert.ok(CN.sellHarvester(s) < CN.HARVESTER.price);
+}
+console.log('logística da cana ok');

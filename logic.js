@@ -2,6 +2,7 @@ import { value as cardValue } from './cards.js';
 import * as PK from './perks.js';
 import { granjaValue } from './granja.js';
 import { orchardValue } from './pomar.js';
+import { caneValue } from './cana.js';
 import { plantValue } from './abate.js';
 // Regras puras do 21 World (sem DOM) — usadas pelo jogo e pelo test.mjs.
 import { animalsValue } from './stable.js';
@@ -95,7 +96,7 @@ export function buyRented(s, land) {
   return null;
 }
 export function plant(s, land, crop) {
-  if (land.crop || land.leasedOut) return 'esta terra já está ocupada.';
+  if (land.crop || land.leasedOut || land.orchard || land.cane) return 'esta terra já está ocupada.';
   if (!land.own && !hasVehicle(s, 'trator')) return 'terra arrendada só aceita lavoura de quem tem trator (a máquina e os insumos ficam por sua conta).';
   const cost = plantCost(s, crop, land.ha, !land.own);
   if (cost > s.money) return 'dinheiro insuficiente para o plantio.';
@@ -166,7 +167,7 @@ export function refreshOffers(s, rng = Math.random) {
 
 // lotação do pasto: cabeças por hectare conforme aptidão e água; terra plantada não é pasto
 export const landCap = l => Math.floor(l.ha * (l.cap ?? 1));
-export const capacity = s => s.lands.filter(l => !l.leasedOut && !l.crop && !l.orchard).reduce((a, l) => a + landCap(l), 0);
+export const capacity = s => s.lands.filter(l => !l.leasedOut && !l.crop && !l.orchard && !l.cane).reduce((a, l) => a + landCap(l), 0);
 export const carsValue = s => (s.cars || []).reduce((a, c) => a + c.value, 0);
 export const heads = s => s.herd.reduce((a, h) => a + h.heads, 0);
 export const BOITEL_COST = 95, BOITEL_GAIN = 22;   // R$ por cabeça por mês e kg por mês no confinamento
@@ -181,7 +182,7 @@ export function netWorth(s) {
   const lands = s.lands.filter(l => l.own).reduce((a, l) => a + l.value, 0);
   const stock = Object.entries(s.stock).reduce((a, [k, q]) => a + q * s.prices[k], 0);
   const lent = s.lent.reduce((a, l) => a + l.bal, 0);
-  return Math.round(s.money + s.chips * CHIP + lands + herdValue(s) + stock + lent + carsValue(s) + animalsValue(s) + (s.cards || []).reduce((a, c) => a + cardValue(c), 0) + granjaValue(s) + s.lands.filter(l => l.own).reduce((a, l) => a + orchardValue(s, l), 0) + plantValue(s) - debt(s));
+  return Math.round(s.money + s.chips * CHIP + lands + herdValue(s) + stock + lent + carsValue(s) + animalsValue(s) + (s.cards || []).reduce((a, c) => a + cardValue(c), 0) + granjaValue(s) + s.lands.filter(l => l.own).reduce((a, l) => a + orchardValue(s, l) + caneValue(s, l), 0) + (s.caneHarvester?.value || 0) + plantValue(s) - debt(s));
 }
 
 export const TITLES = [[0, 'iniciante'], [150000, 'fazendeiro'], [500000, 'barão do gado'], [2000000, 'magnata']];
