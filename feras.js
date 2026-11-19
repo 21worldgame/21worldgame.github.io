@@ -38,7 +38,7 @@ export function ensure(s) { s.feras ??= { box: [], team: [], gems: 0, route: 'ca
 export function start(s, id) {
   const st = ensure(s); if (st.box.length) return 'você já tem feras.';
   if (!STARTERS.includes(id)) return 'escolha uma das três iniciais.';
-  const f = newFera(id, 3); st.box.push(f); st.team = [f.id]; return null;
+  const f = newFera(id, 5); st.box.push(f); st.team = [f.id]; return null;
 }
 // fera selvagem da rota (nível e espécie sorteados)
 export function wild(route, rng = Math.random, cap = 99) {

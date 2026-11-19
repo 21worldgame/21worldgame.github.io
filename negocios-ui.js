@@ -3,6 +3,7 @@ import * as NG from './negocios.js';
 import { G, $, esc, brl, int, say, save, note, confetti } from './store.js';
 
 const CATS = { banks: { label: 'bancos', list: NG.BANKS, icon: '🏦' }, isps: { label: 'provedores de internet', list: NG.ISPS, icon: '📡' }, markets: { label: 'supermercados', list: NG.MARKETS, icon: '🛒' } };
+const PHOTO = { banks: 'biz-banks', isps: 'biz-isps', markets: 'biz-markets' };
 const logo = (c, txt) => `<span class="biz-logo" style="--c:${c.color}">${esc(txt.split(' ').map(w => w[0]).join('').slice(0, 3))}</span>`;
 
 // ---------- loja: marcas à venda ----------
@@ -11,8 +12,8 @@ export function shopHTML() {
   const block = (cat, desc) => `<h3>${CATS[cat].icon} ${CATS[cat].label}</h3><p class="muted small">${desc}</p><div class="biz-grid">${Object.entries(CATS[cat].list).map(([id, c]) => {
     const own = s.biz[cat].some(b => b.brand === id);
     const extra = cat === 'banks' ? `${c.staff} funcionários · ${int(c.req)} pedidos de empréstimo por mês` : cat === 'isps' ? `cidade com ${int(c.homes)} casas` : `~${int(c.clients)} clientes por mês · ${c.staff} funcionários`;
-    return `<article class="glass biz-card${own ? ' is-own' : ''}">${logo(c, c.name)}<div><h4>${esc(c.name)}</h4><p class="small muted">${extra}</p><p class="price">${brl(c.price)}</p>
-      ${own ? '<span class="tag tag--gold">é sua</span>' : `<button class="btn btn--gold btn--sm" data-biz="buy" data-cat="${cat}" data-id="${id}">comprar a marca</button>`}</div></article>`; }).join('')}</div>`;
+    return `<article class="shopcard${own ? ' is-own' : ''}"><div class="shopcard__photo" style="--img:url(assets/${PHOTO[cat]}.webp);--c:${c.color}">${logo(c, c.name)}${own ? '<span class="shopcard__badge shopcard__badge--gold">é sua</span>' : ''}</div>
+      <div class="shopcard__body"><h4>${esc(c.name)}</h4><p class="small muted">${extra}</p><div class="shopcard__buy"><span class="shopcard__price">${brl(c.price)}</span>${own ? '' : `<button class="btn btn--gold" data-biz="buy" data-cat="${cat}" data-id="${id}">comprar a marca</button>`}</div></div></article>`; }).join('')}</div>`;
   return block('banks', 'Você compra só a marca: o caixa para emprestar sai do seu bolso, e a folha e as despesas também. Os clientes pedem empréstimos pequenos, que crescem devagar com o tempo.')
     + block('isps', 'Construa a rede de fibra (caro), escolha a mensalidade (barata) e veja os assinantes entrando. Lucro mensal pequeno, valorização no longo prazo.')
     + block('markets', 'Clientes, ticket médio, mercadoria, perdas, funcionários e aluguel: preço baixo atrai gente, preço alto espanta.');
@@ -22,9 +23,9 @@ export function whHTML() {
   const used = NG.tons(s), cap = NG.capacity(s);
   return `<div class="glass wh-bar"><div><b>armazém: ${int(used)} t de ${int(cap)} t</b><span class="bar"><i style="transform:scaleX(${Math.min(1, used / cap).toFixed(3)})"></i></span></div>
     <p class="small muted">Grátis: ${NG.FREE_TONS} t${s.biz.legacy ? ` + ${int(s.biz.legacy)} t do seu depósito antigo` : ''}. Colheita ou compra além do espaço é vendida na hora com 15% de desconto. Os galpões ficam mais caros conforme o mundo avança.</p></div>
-    <div class="biz-grid">${Object.entries(NG.WAREHOUSES).map(([id, w]) => `<article class="glass biz-card"><span class="biz-logo" style="--c:#78716c">${w.cap >= 8000 ? 'SIL' : 'GAL'}</span><div><h4>${w.label}</h4>
-      <p class="small muted">guarda ~${int(w.cap * 1000 / 60)} sacas · manutenção ${brl(NG.whPrice(id, s.month) * NG.WH_UPKEEP)}/mês</p><p class="price">${brl(NG.whPrice(id, s.month))}</p>
-      <button class="btn btn--gold btn--sm" data-biz="buywh" data-id="${id}">comprar galpão</button></div></article>`).join('')}</div>
+    <div class="biz-grid">${Object.entries(NG.WAREHOUSES).map(([id, w]) => `<article class="shopcard"><div class="shopcard__photo" style="--img:url(assets/wh-${id}.webp)"><span class="shopcard__badge">${int(w.cap)} toneladas</span></div>
+      <div class="shopcard__body"><h4>${w.label}</h4><p class="small muted">guarda ~${int(w.cap * 1000 / 60)} sacas · manutenção ${brl(NG.whPrice(id, s.month) * NG.WH_UPKEEP)}/mês · o preço sobe com o tempo</p>
+      <div class="shopcard__buy"><span class="shopcard__price">${brl(NG.whPrice(id, s.month))}</span><button class="btn btn--gold" data-biz="buywh" data-id="${id}">comprar galpão</button></div></div></article>`).join('')}</div>
     ${s.biz.wh.length ? `<h4>seus galpões</h4><ul class="biz-list">${s.biz.wh.map(w => `<li><span>${NG.WAREHOUSES[w.type].label}</span><b>${brl(w.value)}</b><button class="btn btn--glass btn--sm" data-biz="sellwh" data-id="${w.id}">vender (${brl(w.value * 0.8)})</button></li>`).join('')}</ul>` : ''}`;
 }
 
@@ -62,7 +63,7 @@ export function render() {
       <div class="row"><label class="field"><span>preços</span><select class="input" data-biz-markup="${b.id}">${Object.entries(NG.MARKUP).map(([k, x]) => `<option value="${k}" ${b.markup === +k ? 'selected' : ''}>${x.label} (margem ${k}%)</option>`).join('')}</select></label>
         <button class="btn btn--glass btn--sm" data-biz="sell" data-cat="markets" data-id="${b.id}">vender mercado</button></div></div></article>`);
   }
-  el.innerHTML = cards.join('') || '<p class="empty glass">Você ainda não tem negócios. Compre a marca de um banco, provedor ou supermercado na loja (categoria empresas). <button class="btn btn--gold btn--sm" data-loja-go="empresas">ir para a loja</button></p>';
+  el.innerHTML = (G.mineOwnCard?.() || '') + cards.join('') || '<p class="empty glass">Você ainda não tem negócios. Compre a marca de um banco, provedor ou supermercado na loja (categoria empresas). <button class="btn btn--gold btn--sm" data-loja-go="empresas">ir para a loja</button></p>';
   $('#neg-wh').innerHTML = whHTML();
 }
 

@@ -62,7 +62,9 @@ export function render() {
   $('#shop-cats').innerHTML = [['all', 'tudo'], ...Object.entries(SH.CATS)].map(([k, v]) => `<button class="shop-cat${cat === k ? ' is-on' : ''}" data-act="shop-cat" data-id="${k}">${v}${k !== 'all' && counts[k] ? ` <small>${counts[k]}</small>` : ''}</button>`).join('');
   const its = all.filter(i => i.kind !== 'player' && inCat(SH.catOf(i))), players = inCat('futebol') ? all.filter(i => i.kind === 'player') : [];
   const card = it => cardFor(s, it, mine);
-  $('#shop-mine').innerHTML = its.length || players.length ? its.map(card).join('') + (players.length ? `<details class="shop-players"><summary>jogadores do seu clube (${players.length}): vender ou anunciar um por um</summary><div class="shop-grid">${players.map(card).join('')}</div></details>` : '') : (all.length ? '<p class="empty glass">Nada seu nesta categoria.</p>' : '<p class="empty glass">Você ainda não tem nada para vender. Compre carros, animais, terras, cartas ou um clube.</p>');
+  const myL = (s.shop || []).filter(l => inCat(SH.catOf({ kind: l.kind })));
+  $('#shop-mine').innerHTML = myL.length ? myL.map(l => `<article class="scard scard--other is-listed"><div class="scard__body"><span class="scard__kind">${esc(kindName[l.kind] || l.kind)}</span><h4>${esc(l.label)}</h4><p class="small muted">anunciado há ${Math.max(1, Math.round((Date.now() - l.at) / 60000))} min · todos online estão vendo</p><p class="scard__price">${brl(l.price)}</p><button class="btn btn--glass btn--sm" data-act="shop-unlist" data-id="${esc(l.id)}">tirar anúncio</button></div></article>`).join('')
+    : '<p class="empty glass">Você não tem anúncios. Anuncie pelo <button class="btn btn--gold btn--sm" data-tab-go="inventario">inventário</button></p>';
   const others = (lobby ? [...lobby.peers.entries()].flatMap(([pid, p]) => (p.shop || []).map(l => ({ ...l, pid, seller: p.profile?.name || 'jogador' }))) : []).filter(l => inCat(SH.catOf({ kind: l.kind })));
   const npcHTML = npcs.filter(l => inCat(l.cat)).map(npcCard).join('');
   const offs = (s.offersIn || []).filter(o => Date.now() - o.at < SH.OFFER_TTL);

@@ -103,7 +103,6 @@
         <button role="tab" id="t-ranking" data-tab="ranking" aria-controls="p-ranking" aria-selected="false" tabindex="-1"><svg><use href="#i-trophy"/></svg>ranking</button>
         <button role="tab" id="t-corridas" data-tab="corridas" aria-controls="p-corridas" aria-selected="false" tabindex="-1"><svg><use href="#i-flag"/></svg>corridas</button>
         <button role="tab" id="t-trader" data-tab="trader" aria-controls="p-trader" aria-selected="false" tabindex="-1"><svg><use href="#i-candle"/></svg>investimentos</button>
-        <button role="tab" id="t-trabalho" data-tab="trabalho" aria-controls="p-trabalho" aria-selected="false" tabindex="-1"><svg><use href="#i-bike"/></svg>trabalho</button>
         <button role="tab" id="t-futebol" data-tab="futebol" aria-controls="p-futebol" aria-selected="false" tabindex="-1"><svg><use href="#i-ball"/></svg>futebol</button>
         <button role="tab" id="t-inventario" data-tab="inventario" aria-controls="p-inventario" aria-selected="false" tabindex="-1"><svg><use href="#i-bag"/></svg>inventário</button>
         <button role="tab" id="t-loja" data-tab="loja" aria-controls="p-loja" aria-selected="false" tabindex="-1"><svg><use href="#i-shop"/></svg>loja</button>
@@ -355,25 +354,6 @@
     </section>
 
     <!-- TRABALHO -->
-    <section id="p-trabalho" role="tabpanel" aria-labelledby="t-trabalho" class="panel" hidden>
-      <div class="listhead"><h2>central de entregas</h2><span class="muted small" id="job-stats"></span></div>
-      <div class="glass job-head">
-        <div><span class="muted small">entregador nível</span><strong class="job-lvl" id="job-level">1</strong></div>
-        <div class="job-xp"><span class="bar"><i id="job-xp"></i></span><span class="muted small" id="job-xp-txt"></span></div>
-        <button class="btn btn--gold btn--lg" data-act="job-start" id="job-start">começar turno de 90 s</button>
-      </div>
-      <p class="muted small">Pedidos aparecem no mapa e somem se ninguém aceitar. A moto leva até 3. Quando chega, você tem 3 segundos para confirmar a entrega (barra de espaço confirma). Confirmou rápido, ganha gorjeta. Fique de olho na chuva e no pneu furado.</p>
-      <div id="job-live" hidden>
-        <div class="job-bar glass"><span>tempo <b id="job-clock">90 s</b></span><span>ganho no turno <b id="job-earned">R$ 0</b></span><span id="job-weather">tempo bom</span></div>
-        <div class="job-grid">
-          <div class="job-map" id="job-map"><span class="job-depot" aria-hidden="true">base</span><div id="job-pins"></div>
-            <div class="job-flat" id="job-flat" hidden><p id="job-flat-txt"></p><button class="btn btn--gold btn--lg" data-act="job-repair">consertar (F)</button></div></div>
-          <aside class="glass job-side"><h3>na moto</h3><ul class="job-route" id="job-route"></ul><h3>acontecendo</h3><ul class="job-log" id="job-log"></ul></aside>
-        </div>
-      </div>
-      <div class="job-result" id="job-result" hidden></div>
-      <div id="job-board"></div>
-    </section>
 
     <!-- FUTEBOL -->
     <section id="p-futebol" role="tabpanel" aria-labelledby="t-futebol" class="panel" hidden>
@@ -456,7 +436,7 @@
         <div class="shop-cats" id="shop-cats" role="group" aria-label="categorias"></div>
         <h3>à venda agora</h3>
         <div class="shop-grid" id="shop-others"></div>
-        <h3>suas coisas (vender ou anunciar)</h3>
+        <h3>seus anúncios <small class="muted">(para anunciar algo seu, vá ao inventário)</small></h3>
         <div class="shop-grid" id="shop-mine"></div>
       </div>
     </section>
@@ -480,6 +460,8 @@
       <div class="subtabs" role="group" aria-label="espécie">
         <button class="subtab is-on" data-act="st-kind" data-id="dog">galgos</button><button class="subtab" data-act="st-kind" data-id="horse">cavalos</button>
       </div>
+      <h3 class="lei-title">🐎 leilão de cavalos de raça <small class="muted">um atrás do outro, o dia inteiro</small></h3>
+      <div id="lei-box"></div>
       <p class="muted small">Compre um animal, treine as semanas livres de cada mês e inscreva nas provas. Cada prova é limitada pela nota do animal, e o treino cansa: animal cansado treina e corre pior e pode se lesionar. Os atributos crescem até o potencial.</p>
       <h3 id="st-mine-title">seus animais</h3>
       <div class="cards cards--animals" id="st-mine"></div>
@@ -861,6 +843,8 @@
       <li>Você tem 20 segundos por jogada. Se o tempo acabar, a mesa para por você.</li>
     </ul>
   </dialog>
+
+  <dialog class="dlg dlg--elite" id="dlg-elite" aria-labelledby="el-title"><div class="elite-crown" aria-hidden="true">👑</div><h2 id="el-title"></h2><div id="el-body"></div><form method="dialog"><button class="btn btn--gold btn--lg">entendi, vamos crescer</button></form></dialog>
 
   <!-- missões -->
   <dialog class="dlg" id="dlg-missions" aria-labelledby="ms-title">

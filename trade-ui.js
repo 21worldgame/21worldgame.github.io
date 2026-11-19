@@ -27,6 +27,7 @@ export function invite(pid) {
 function onMsg(d, peerId) {
   if (!d || typeof d !== 'object') return;
   if (String(d.t).startsWith('shop')) return G.onShopMsg?.(d, peerId);   // compras da loja usam o mesmo canal
+  if (d.t === 'lbid') return G.onAuctionMsg?.(d, peerId);                 // lances do leilão de cavalos
   if (d.t === 'invite') {
     if (ss) return lobby.sendTrade({ t: 'decline', id: d.id, busy: true }, peerId);
     ss = { peer: peerId, name: String(d.name || 'jogador').replace(/[<>&"]/g, '').slice(0, 18), id: String(d.id).slice(0, 12), mine: [], theirs: [], lock: { me: false, them: false }, ok: { me: false, them: false }, chat: [], open: false, incoming: true };

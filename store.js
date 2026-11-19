@@ -69,6 +69,7 @@ export function forgetUser() { try { localStorage.removeItem(UID_KEY); } catch {
 export function reset() { G.S = blankState(G.S.avatar?.name && G.S.avatar.name !== 'você' ? G.S.avatar.name : ''); save(); }
 export function note(txt, val = 0) { G.S.log.unshift({ m: G.S.month, txt, val: Math.round(val) }); }
 export function pay(v, why) {
+  const e = L.eliteOf(G.S); if (e) { v = Math.round(v * (1 + e.price)); why += ` (+${Math.round(e.price * 100)}% de taxa para os mais ricos)`; }
   if (v > G.S.money) { say(`Dinheiro insuficiente para ${why}.`, true); return false; }
   G.S.money -= v; note(why, -v); return true;
 }

@@ -65,3 +65,17 @@ Os nomes de carros no jogo são paródias; marcas visíveis nas fotos pertencem 
 - granja-pintinhos: Chandapiwa Malema, "Chicks in a poultry house in Sebele", CC BY-SA 4.0
 - farm-laranja: inkknife_2000, "Orange Grove on Lugonia, Redlands, CA", CC BY-SA 2.0
 - farm-frigorifico: JacobinoWunsh, "Frigorífico Carrasco 04", CC BY-SA 4.0
+
+
+## Fotos da loja, suínos, negócios, mina e canavial (Wikimedia Commons)
+- assets/wh-g500.webp: "Dumas Seed Company warehouse.JPG", de Dvaux, CC BY-SA 3.0 (https://commons.wikimedia.org/wiki/File:Dumas_Seed_Company_warehouse.JPG)
+- assets/wh-g8000.webp: "Carrington grain storage silos.jpg", de Macr, Mark McIntosh, CC BY-SA 3.0 (https://commons.wikimedia.org/wiki/File:Carrington_grain_storage_silos.jpg)
+- assets/barn-pequeno.webp: "Piglets in a Shelter at a Farm.jpg", de Andikan Efiok Eduok, CC BY-SA 4.0 (https://commons.wikimedia.org/wiki/File:Piglets_in_a_Shelter_at_a_Farm.jpg)
+- assets/barn-medio.webp: "Pigs in a barn - geograph.org.uk - 7751111.jpg", de Trevor Littlewood, CC BY-SA 2.0 (https://commons.wikimedia.org/wiki/File:Pigs_in_a_barn_-_geograph.org.uk_-_7751111.jpg)
+- assets/barn-tecnificado.webp: "K1681-15 (8411791397).jpg", de USDAgov, Public domain (https://commons.wikimedia.org/wiki/File:K1681-15_(8411791397).jpg)
+- assets/biz-banks.webp: "Taylor Bank Building, facade (21617137902).jpg", de Preservation Maryland, CC BY-SA 2.0 (https://commons.wikimedia.org/wiki/File:Taylor_Bank_Building,_facade_(21617137902).jpg)
+- assets/biz-isps.webp: "NBN Co fibre optic cable.jpg", de Bidgee, CC BY-SA 3.0 au (https://commons.wikimedia.org/wiki/File:NBN_Co_fibre_optic_cable.jpg)
+- assets/biz-markets.webp: "Aisle in L Intermarche supermarket in Quebec City.jpg", de Wilfredor, CC BY-SA 4.0 (https://commons.wikimedia.org/wiki/File:Aisle_in_L_Intermarche_supermarket_in_Quebec_City.jpg)
+- assets/mina-ouro.webp: "Sunrise Dam Gold Mine open pit 11.jpg", de Calistemon, CC BY-SA 4.0 (https://commons.wikimedia.org/wiki/File:Sunrise_Dam_Gold_Mine_open_pit_11.jpg)
+- assets/farm-cana.webp: "Sugarcane harvesting equipment Piracicaba 05 2009 5845.JPG", de Mariordo Mario Roberto Duran Ortiz, CC BY 3.0 (https://commons.wikimedia.org/wiki/File:Sugarcane_harvesting_equipment_Piracicaba_05_2009_5845.JPG)
+- assets/wh-g2000.webp: "Gifford, IL silo and grain elevator.jpg", de TheTechnician27, CC0 (https://commons.wikimedia.org/wiki/File:Gifford,_IL_silo_and_grain_elevator.jpg)

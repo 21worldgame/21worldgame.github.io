@@ -2,6 +2,7 @@ import { value as cardValue } from './cards.js';
 import { value as suinosValue } from './suinos.js';
 import { value as bizValue } from './negocios.js';
 import { boxValue as ferasValue } from './feras.js';
+import { value as minaValue } from './mina.js';
 import * as PK from './perks.js';
 import { granjaValue } from './granja.js';
 import { orchardValue } from './pomar.js';
@@ -194,7 +195,7 @@ export function netWorth(s) {
   return Math.round(part(() => s.money) + part(() => s.chips * CHIP) + own.reduce((a, l) => a + num(l.value), 0) + part(() => herdValue(s))
     + Object.entries(s.stock || {}).reduce((a, [k, q]) => a + num(q * (s.prices?.[k] ?? 0)), 0) + (s.lent || []).reduce((a, l) => a + num(l?.bal), 0)
     + part(() => carsValue(s)) + part(() => animalsValue(s)) + (s.cards || []).reduce((a, c) => a + part(() => cardValue(c)), 0) + part(() => granjaValue(s))
-    + own.reduce((a, l) => a + part(() => orchardValue(s, l) + caneValue(s, l)), 0) + num(s.caneHarvester?.value) + part(() => plantValue(s)) + part(() => suinosValue(s)) + part(() => bizValue(s)) + part(() => ferasValue(s)) - part(() => debt(s)));
+    + own.reduce((a, l) => a + part(() => orchardValue(s, l) + caneValue(s, l)), 0) + num(s.caneHarvester?.value) + part(() => plantValue(s)) + part(() => suinosValue(s)) + part(() => bizValue(s)) + part(() => ferasValue(s)) + part(() => minaValue(s)) - part(() => debt(s)));
 }
 
 export const TITLES = [[0, 'iniciante'], [150000, 'fazendeiro'], [500000, 'barão do gado'], [2000000, 'magnata']];
@@ -262,4 +263,23 @@ export function tick(s, rng = Math.random) {
   refreshOffers(s, rng);
   s.log = [...log.reverse(), ...s.log].slice(0, 200);
   return log;
+}
+
+// ---------- os mais ricos do mundo: quanto maior a fortuna, mais caro fica tudo (para não abrir desigualdade demais) ----------
+// price: acréscimo em toda compra · bills: multiplica as contas do mês · tax: imposto mensal sobre o que passa do piso da faixa
+export const ELITE = [
+  { min: 3e6, name: 'jornada dos mais ricos', price: 0.08, bills: 1.25, tax: 0.0003 },
+  { min: 1e7, name: 'magnata do mundo', price: 0.14, bills: 1.5, tax: 0.0006 },
+  { min: 5e7, name: 'bilionário em formação', price: 0.2, bills: 1.8, tax: 0.001 },
+  { min: 2e8, name: 'dono do mundo', price: 0.28, bills: 2.2, tax: 0.0015 },
+];
+export const eliteIdx = s => { const w = netWorth(s); let i = -1; ELITE.forEach((e, k) => { if (w >= e.min) i = k; }); return i; };
+export const eliteOf = s => ELITE[eliteIdx(s)] || null;
+// contas extras do mês: imposto sobre a fortuna + o quanto as contas normais encarecem
+export function eliteBills(s, spent) {
+  const e = eliteOf(s); if (!e) return [];
+  const w = netWorth(s), tax = Math.round((w - e.min) * e.tax), extra = Math.round(spent * (e.bills - 1)), out = [];
+  if (tax > 0) { s.money -= tax; out.push({ txt: `imposto sobre grandes fortunas (${e.name})`, val: -tax }); }
+  if (extra > 0) { s.money -= extra; out.push({ txt: `contas mais caras para quem está no topo (+${Math.round((e.bills - 1) * 100)}%)`, val: -extra }); }
+  return out;
 }

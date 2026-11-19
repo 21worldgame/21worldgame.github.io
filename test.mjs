@@ -270,36 +270,6 @@ import * as BJ from './bj.js';
   assert.ok(BJ.dealerPeeks({ r: 'A' }) && BJ.dealerPeeks({ r: 'K' }) && !BJ.dealerPeeks({ r: '9' }));
   const shoe = BJ.newShoe(); shoe.cards.length = 70; assert.ok(BJ.needsShuffle(shoe));
 }
-// central de entregas
-import * as JB from './jobs.js';
-{
-  let sd = 3; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
-  // quem presta atenção (aceita e confirma na hora) ganha; quem não faz nada não ganha nada
-  const good = JB.newShift(1, r);
-  while (!good.over) {
-    JB.step(good, 0.1, r);
-    for (const o of [...good.orders]) JB.accept(good, o.id);
-    for (const x of [...good.route]) if (x.arrived) JB.confirm(good, x.id);
-    if (good.flat) JB.repair(good);
-  }
-  assert.ok(good.earned > 1500 && good.delivered >= 10, 'turno bom ' + good.earned + ' ' + good.delivered);
-  assert.ok(good.tips > 0 && JB.grade(good) > 0.6);
-  const lazy = JB.newShift(1, r);
-  while (!lazy.over) JB.step(lazy, 0.1, r);
-  assert.equal(lazy.earned, 0); assert.ok(lazy.missed >= 10);
-  // aceita mas não confirma: cliente cancela
-  const dist = JB.newShift(1, r);
-  while (!dist.over) { JB.step(dist, 0.1, r); for (const o of [...dist.orders]) JB.accept(dist, o.id); if (dist.flat) JB.repair(dist); }
-  assert.equal(dist.earned, 0); assert.ok(dist.failed >= 3);
-  // moto cheia e pneu furado
-  const s = JB.newShift(1, r); for (let i = 0; i < 5; i++) s.orders.push({ id: 100 + i, pay: 100, until: 99, travel: 5 });
-  assert.equal(JB.accept(s, 100), null); JB.accept(s, 101); JB.accept(s, 102);
-  assert.ok(JB.accept(s, 103).includes('cheia'));
-  s.flat = { clicks: 0, need: 3 }; const before = s.route[0].left; JB.step(s, 1, r);
-  assert.equal(s.route[0].left, before);
-  JB.repair(s); JB.repair(s); assert.ok(JB.repair(s) && !s.flat);
-  assert.ok(JB.levelMult(5) > JB.levelMult(1));
-}
 // clube de futebol
 import * as FT from './futebol.js';
 import * as BT from './bots.js';
@@ -349,7 +319,7 @@ import * as PK from './perks.js';
   const d3 = FT.dealFor(s.fut, s.fut.market[0].id, r); const c3 = BT.haggle(d3, Math.round(d3.limit * 0.9)); assert.equal(c3.result, 'counter'); assert.ok(c3.price >= d3.limit);
   // vantagens: carro e acessório somam
   const pk = { cars: [{ model: 'onix' }, { model: 'onix' }, { model: 'veyron' }], owned: ['acc:corrente de ouro'] };
-  assert.equal(PK.mult(pk, 'job'), 1.15); assert.equal(+PK.mult(pk, 'daily').toFixed(2), 1.55); assert.equal(PK.mult({ owned: ['acc:relógio de luxo'], cars: [{ model: 'g63' }] }, 'loan'), 1 - 0.35);
+  assert.equal(+PK.mult(pk, 'xp').toFixed(2), 1.19); assert.equal(+PK.mult(pk, 'daily').toFixed(2), 1.6); assert.equal(PK.mult({ owned: ['acc:relógio de luxo'], cars: [{ model: 'g63' }] }, 'loan'), 1 - 0.35);
   // mercado
   const p = s.fut.market[0]; const mb = s.money; assert.equal(FT.buy(s, p.id), null); assert.equal(s.money, mb - p.price);
   const sold = FT.sell(s, p.id); assert.ok(sold > 0 && sold < p.price);
@@ -919,3 +889,49 @@ console.log('truco ok');
   assert.ok(r4 > r1 * 2);
 }
 console.log('suínos, negócios, galpões e feras ok');
+
+// ---------- os mais ricos pagam mais ----------
+{
+  const L3 = await import('./logic.js');
+  const poor = L3.newState(() => 0.5); assert.equal(L3.eliteOf(poor), null); assert.deepEqual(L3.eliteBills(poor, 1e5), []);
+  const rich = L3.newState(() => 0.5); rich.money = 12e6;
+  assert.equal(L3.eliteOf(rich).name, 'magnata do mundo');
+  const m0 = rich.money, lines = L3.eliteBills(rich, 100000);
+  assert.equal(lines.length, 2); assert.ok(rich.money < m0);
+  assert.equal(lines[1].val, -50000, 'contas +50% para magnata');
+  const top = L3.newState(() => 0.5); top.money = 3e8; assert.ok(L3.eliteOf(top).price > L3.eliteOf(rich).price, 'quanto mais rico, mais caro');
+}
+console.log('mais ricos ok');
+
+// ---------- leilão de cavalos de raça ----------
+{
+  const LE = await import('./leilao.js');
+  const slot = 2000000, L = LE.lot(slot);
+  assert.ok(LE.BREEDS[L.horse.breed] && L.horse.stars >= 1 && L.horse.stars <= 5 && L.value > 0);
+  assert.equal(LE.lot(slot).horse.name, L.horse.name, 'mesmo lote para todos');
+  const t0 = LE.opensAt(slot), end = LE.endsAt(slot);
+  assert.equal(LE.state(L, t0 - 1000).phase, 'preview');
+  const a = LE.state(L, end), b = LE.state(L, end); assert.deepEqual(a, b, 'lances dos jogadores do mundo iguais para todos');
+  assert.ok(a.price <= Math.max(...L.bidders.map(x => x.max)), 'ninguém do mundo passa do próprio limite');
+  // pessoa dá um lance alto no fim e leva
+  const big = a.price + L.inc * 5, w = LE.state(L, end, [{ at: end - 2000, name: 'Ana', pid: 'p1', amt: big }]);
+  assert.equal(w.leader.name, 'Ana'); assert.equal(w.price, big);
+  // lance abaixo do mínimo não vale
+  assert.notEqual(LE.state(L, end, [{ at: t0 + 500, name: 'Ana', pid: 'p1', amt: 1 }]).leader?.name, 'Ana');
+  const s = { money: big + 10 }; assert.equal(LE.deliver(s, L, big), null); assert.equal(s.stable.animals.length, 1); assert.equal(s.stable.animals[0].breed, L.horse.breed);
+}
+console.log('leilão ok');
+
+// ---------- mina de ouro ----------
+{
+  const MI = await import('./mina.js');
+  let sd = 21; const rng = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const s = { money: 1e9, prices: {} }; assert.equal(MI.buy(s), null); assert.match(MI.buy(s), /já é dono/);
+  const m0 = s.money; MI.monthly(s, rng); assert.equal(m0 - s.money, MI.MINE.upkeep, 'sem equipes: só a manutenção, e não acha nada');
+  assert.equal(s.mina.phase, 'prospeccao');
+  MI.setCrews(s, 10); let n = 0; while (s.mina.phase === 'prospeccao' && n++ < 400) MI.monthly(s, rng);
+  assert.equal(s.mina.phase, 'extracao'); assert.ok(s.mina.vein >= 18);
+  const before = s.money; MI.monthly(s, rng); assert.ok(s.money > before, 'extração dá lucro no mês');
+  assert.equal(MI.sell(s), MI.MINE.price * MI.MINE.resale); assert.equal(s.mina, undefined);
+}
+console.log('mina ok');

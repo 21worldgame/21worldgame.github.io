@@ -1792,7 +1792,7 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .rkrow__on { position: absolute; right: -1px; bottom: -1px; width: 11px; height: 11px; border-radius: 50%; background: #2ee66b; box-shadow: 0 0 0 2px #0b1020; z-index: 1; }
 
 /* canavial */
-.cn-hero { background: linear-gradient(120deg, rgba(5,8,16,.9), rgba(5,8,16,.55)), url(assets/farm-cana.svg) center/cover; }
+.cn-hero { background: linear-gradient(120deg, rgba(5,8,16,.9), rgba(5,8,16,.55)), url(assets/farm-cana.webp) center/cover; }
 .cn-logi { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 14px; align-items: center; padding: 14px 18px; margin-bottom: 14px; border: 1px solid rgba(132,204,22,.4); }
 .cn-logi > div { display: grid; gap: 2px; } .cn-logi strong { font: 800 1rem/1.2 var(--font-display); }
 .orchard.cane { background: rgba(132,204,22,.08); border-color: rgba(132,204,22,.4); }
@@ -2081,3 +2081,49 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .gr-list { display: grid; gap: 12px; margin-bottom: 18px; }
 .gr-card { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 14px; padding: 14px; } .gr-card > img { width: 100%; height: 130px; object-fit: cover; border-radius: 12px; } .gr-card h4 { margin: 0 0 4px; }
 @media (max-width: 40rem) { .gr-card { grid-template-columns: minmax(0, 1fr); } }
+
+.dlg--elite { max-width: 34rem; text-align: center; border: 1px solid rgba(250, 204, 21, .6); background: radial-gradient(ellipse at 50% 0%, rgba(250, 204, 21, .25), transparent 60%), #0b1020; box-shadow: 0 0 60px rgba(250, 204, 21, .35); }
+.dlg--elite h2 { color: #fde047; } .dlg--elite ul { text-align: left; } .elite-crown { font-size: 3.4rem; animation: winner 1.4s infinite; }
+
+/* leilão de cavalos de raça */
+.lei-title small { font-weight: 600; font-size: .8rem; }
+.lei { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, .8fr); gap: 16px; padding: 18px; margin-bottom: 18px; border: 1px solid rgba(250, 204, 21, .35);
+  background: radial-gradient(ellipse at 0% 0%, rgba(250, 204, 21, .15), transparent 55%), linear-gradient(160deg, var(--glass-2), var(--glass)); }
+.lei.is-live { box-shadow: 0 0 0 1px rgba(239, 68, 68, .5), 0 0 30px -8px rgba(239, 68, 68, .6); }
+.lei__horse { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 14px; align-items: center; } .lei__horse h3 { margin: 4px 0; } .lei__horse p { margin: 2px 0; }
+.lei__sprite svg { width: 150px; height: auto; }
+.lei__tag { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 99px; background: rgba(239, 68, 68, .18); color: #fca5a5; font-weight: 800; font-size: .75rem; text-transform: uppercase; }
+.lei__tag i { width: 7px; height: 7px; border-radius: 50%; background: #ef4444; animation: fbpulse 1s infinite; }
+.lei__stars { color: #facc15; letter-spacing: 2px; }
+.lei__bid { display: grid; gap: 6px; align-content: start; } .lei__clock { font-weight: 800; color: #fde68a; } .lei__price { font: 900 1.9rem/1.1 var(--font-display); color: #4ade80; }
+.lei__hist { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 3px; max-height: 9rem; overflow: auto; font-size: .82rem; } .lei__hist li.is-human b { color: #fde047; }
+.lei__next h4 { margin: 0 0 6px; } .lei__next ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: .82rem; }
+@media (max-width: 60rem) { .lei { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 40rem) { .lei__horse { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; } }
+
+/* mina de ouro */
+.mina-card { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(250, 204, 21, .55);
+  background: radial-gradient(ellipse at 0% 0%, rgba(250, 204, 21, .3), transparent 55%), linear-gradient(160deg, #1c1408, #0b0f19); box-shadow: 0 0 40px -12px rgba(250, 204, 21, .6); }
+.mina-card h3 { margin: 4px 0; font: 900 1.5rem/1.1 var(--font-display); color: #fde047; } .mina-card.is-own { box-shadow: 0 0 0 2px #facc15, 0 0 40px -10px rgba(250, 204, 21, .8); }
+.mina-art { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 22px; background: radial-gradient(circle at 35% 30%, #fde68a, #b45309); font-size: 2.6rem; position: relative; box-shadow: 0 10px 30px -10px rgba(250, 204, 21, .8); }
+.mina-art span { position: absolute; right: 6px; bottom: 4px; font: 900 .9rem/1 var(--font-display); color: #451a03; } .mina-art--sm { width: 64px; height: 64px; font-size: 1.8rem; border-radius: 16px; }
+.mina-tag { display: inline-block; padding: 2px 10px; border-radius: 99px; background: rgba(250, 204, 21, .2); color: #fde047; font: 800 .72rem/1.5 var(--font-body); text-transform: uppercase; letter-spacing: .06em; }
+@media (max-width: 40rem) { .mina-card { grid-template-columns: minmax(0, 1fr); } }
+
+/* cards da loja com foto (galpões, barracões, empresas) */
+.shopcard { display: grid; grid-template-rows: auto 1fr; border-radius: 18px; overflow: hidden; border: 1px solid var(--glass-edge); background: linear-gradient(170deg, #111827, #070b14); transition: transform .2s var(--ease-out), box-shadow .2s, border-color .2s; }
+.shopcard:hover { transform: translateY(-5px); border-color: #facc15; box-shadow: 0 22px 44px -22px rgba(250, 204, 21, .7); }
+.shopcard.is-own { border-color: #facc15; }
+.shopcard__photo { position: relative; height: 170px; background: linear-gradient(180deg, transparent 45%, rgba(7, 11, 20, .95)), var(--img) center / cover; }
+.shopcard:hover .shopcard__photo { background-size: auto, 112%; }
+.shopcard__photo .biz-logo { position: absolute; left: 14px; bottom: -22px; width: 58px; height: 58px; border: 3px solid #0b1020; }
+.shopcard__badge { position: absolute; top: 10px; right: 10px; padding: 4px 12px; border-radius: 99px; background: rgba(2, 6, 23, .82); color: #fde68a; font: 800 .78rem/1.4 var(--font-body); backdrop-filter: blur(6px); }
+.shopcard__badge--gold { background: #facc15; color: #1a1300; }
+.shopcard__body { display: grid; gap: 6px; padding: 30px 16px 16px; align-content: start; } .shopcard__body h4 { margin: 0; font: 900 1.1rem/1.2 var(--font-display); }
+.shopcard__photo:not(:has(.biz-logo)) + .shopcard__body { padding-top: 14px; }
+.shopcard__buy { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: auto; padding-top: 6px; }
+.shopcard__price { font: 900 1.35rem/1 var(--font-display); color: #facc15; text-shadow: 0 0 18px rgba(250, 204, 21, .35); }
+.mina-photo { position: relative; width: 240px; min-height: 180px; border-radius: 16px; background: var(--img) center / cover; box-shadow: inset 0 0 0 1px rgba(250, 204, 21, .4); }
+.mina-photo .mina-art { position: absolute; left: 10px; bottom: 10px; }
+@media (max-width: 40rem) { .mina-photo { width: 100%; } }
+.shopcard__photo[style*="--c"] { background: linear-gradient(180deg, transparent 45%, rgba(7, 11, 20, .95)), linear-gradient(135deg, color-mix(in oklab, var(--c) 55%, transparent), transparent 70%), var(--img) center / cover; }

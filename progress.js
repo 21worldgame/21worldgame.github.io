@@ -25,7 +25,6 @@ export const MISSIONS = [
   { id: 'lend', txt: 'Empreste para alguém', ev: 'lend', goal: 1, reward: 300 },
   { id: 'online', txt: 'Jogue uma mão numa mesa online', ev: 'onlineHand', goal: 1, reward: 600 },
   { id: 'ft3', txt: 'Jogue 3 rodadas com o seu clube', ev: 'ftMatch', goal: 3, reward: 500 },
-  { id: 'job2', txt: 'Faça 2 turnos de entregas', ev: 'job', goal: 2, reward: 400 },
   { id: 'train1', txt: 'Treine um dos seus animais', ev: 'train', goal: 1, reward: 300 },
   { id: 'stake1', txt: 'Inscreva um animal seu numa prova', ev: 'stakeRun', goal: 1, reward: 450 },
   { id: 'roleta3', txt: 'Gire a roleta 3 vezes', ev: 'roulette', goal: 3, reward: 300 },
@@ -73,6 +72,7 @@ export function ensure(s, today) {
   s.xp ??= 0; s.level ??= 1; s.ach ??= []; s.counts ??= {};
   s.stats ??= { hands: 0, wins: 0, best: 0, races: 0, raceWins: 0 };
   s.daily ??= { last: null, streak: 0 };
+  if (s.missions?.list) s.missions.list = s.missions.list.filter(m => MISSIONS.some(x => x.id === m.id));   // missão que saiu do jogo some da lista
   if (s.missions?.date !== today) {
     let h = 0; for (const ch of today) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
     const pool = [...MISSIONS], list = [];

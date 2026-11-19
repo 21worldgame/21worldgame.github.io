@@ -1,14 +1,14 @@
 // Vantagens de quem tem carro e acessórios (regras puras). Vale o que a pessoa POSSUI, não só o que está usando.
 // Cada efeito é um multiplicador somado: dois itens de +10% dão +20%.
 export const EFFECTS = {
-  job: 'pagamento das entregas', tip: 'gorjetas', jobTime: 'tempo para aceitar pedidos', xp: 'XP ganho', daily: 'roleta do dia',
+  xp: 'XP ganho', daily: 'roleta do dia',
   loan: 'juros do banco', race: 'prêmios das provas', ticket: 'bilheteria do clube', cattle: 'preço de venda do gado', plant: 'custo do plantio',
 };
 // carros (chave = modelo em logic.CARS); trator e caminhão já têm vantagem própria em logic.js
 export const CAR_PERKS = {
-  onix: { job: 0.15 },
-  hilux: { job: 0.2, cattle: 0.03 },
-  sw4: { job: 0.1, xp: 0.05 },
+  onix: { xp: 0.04, daily: 0.05 },
+  hilux: { cattle: 0.05 },
+  sw4: { xp: 0.08 },
   porsche: { race: 0.1, xp: 0.05 },
   g63: { loan: -0.15, ticket: 0.1 },
   huracan: { race: 0.15, daily: 0.2, xp: 0.08 },
@@ -17,11 +17,11 @@ export const CAR_PERKS = {
 // acessórios (chave = id em avatar.CATALOG.acc)
 export const ACC_PERKS = {
   brinco: { xp: 0.03 },
-  'óculos escuros': { tip: 0.15 },
-  'fone gamer': { jobTime: 0.25 },
-  'boné de marca': { tip: 0.1, xp: 0.02 },
+  'óculos escuros': { daily: 0.08 },
+  'fone gamer': { xp: 0.05 },
+  'boné de marca': { xp: 0.04 },
   'chapéu de peão': { cattle: 0.04 },
-  'pulseira de prata': { job: 0.05 },
+  'pulseira de prata': { race: 0.05 },
   'relógio de luxo': { loan: -0.2 },
   'corrente de ouro': { daily: 0.15, ticket: 0.05 },
   'anel de diamante': { race: 0.12 },

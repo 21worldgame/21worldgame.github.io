@@ -21,7 +21,8 @@ export function render() {
     return `<article class="glass gr-card"><img src="assets/${B.img}.webp" alt="" loading="lazy"><div><h4>${esc(B.label)}</h4><p class="small muted">até ${int(B.cap)} suínos · conversão ${B.conv.toString().replace('.', ',')} kg de ração por kg · mortalidade ${(B.mort * 100).toFixed(1)}%/mês · custo fixo ${brl(B.fixed)}/mês</p>${lot}
       <button class="btn btn--glass btn--sm" data-su="sellbarn" data-id="${b.id}">vender barracão (${brl(b.value * SU.RESALE)})</button></div></article>`;
   }).join('') : '<p class="empty glass">Você ainda não tem barracão. Compre um abaixo.</p>';
-  $('#sn2-shop').innerHTML = Object.entries(SU.BARNS).map(([k, B]) => `<article class="glass biz-card"><span class="biz-logo" style="--c:#ec4899">${int(B.cap)}</span><div><h4>${B.label}</h4><p class="small muted">até ${int(B.cap)} suínos · conversão ${B.conv.toString().replace('.', ',')}</p><p class="price">${brl(B.price)}</p><button class="btn btn--gold btn--sm" data-su="buy" data-id="${k}">comprar</button></div></article>`).join('');
+  $('#sn2-shop').innerHTML = Object.entries(SU.BARNS).map(([k, B]) => `<article class="shopcard"><div class="shopcard__photo" style="--img:url(assets/${B.img}.webp)"><span class="shopcard__badge">${int(B.cap)} suínos</span></div>
+    <div class="shopcard__body"><h4>${B.label}</h4><p class="small muted">conversão ${B.conv.toString().replace('.', ',')} kg de ração por kg · mortalidade ${(B.mort * 100).toFixed(1)}%/mês</p><div class="shopcard__buy"><span class="shopcard__price">${brl(B.price)}</span><button class="btn btn--gold" data-su="buy" data-id="${k}">comprar</button></div></div></article>`).join('');
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-su]'); if (!b) return;
