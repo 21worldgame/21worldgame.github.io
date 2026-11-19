@@ -1028,6 +1028,7 @@ tabs.forEach((t, i) => {
 show(location.hash.slice(1));
 // aplicativo instalável e cache dos arquivos (só no site publicado, em https)
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+window.__booted = true;   // a página sabe que o jogo abriu (ver o socorro da abertura no index.html)
 requestAnimationFrame(() => setTimeout(() => { $('#splash')?.classList.add('is-gone'); setTimeout(() => $('#splash')?.remove(), 600); }, 250));
 RC.initRacing();
 RL.initRoulette();
@@ -1154,7 +1155,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 13;
+const APP_VERSION = 14;
 let updateShown = false, updateMsg = '';
 async function checkUpdate() {
   if (updateShown) return;

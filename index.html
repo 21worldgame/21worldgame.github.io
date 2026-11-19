@@ -24,6 +24,28 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
+  <script>
+  // socorro da abertura: arquivo velho guardado no navegador misturado com arquivo novo trava o jogo na tela "carregando".
+  // Se em 10 s o jogo não abriu, baixa tudo de novo (sem cache) e recarrega uma vez; se ainda assim travar, mostra um botão.
+  (function () {
+    function fix() {
+      var urls = performance.getEntriesByType('resource').map(function (e) { return e.name; }).filter(function (u) { return u.indexOf(location.origin) === 0 && /\.(js|css)(\?|$)/.test(u); });
+      urls.push(location.origin + location.pathname.replace(/[^/]*$/, '') + 'game.js');
+      var jobs = urls.map(function (u) { return fetch(u, { cache: 'reload' }).catch(function () {}); });
+      if (navigator.serviceWorker) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }).catch(function () {}));
+      if (window.caches) jobs.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }).catch(function () {}));
+      Promise.all(jobs).then(function () { location.reload(); });
+    }
+    window.__fix21 = fix;
+    setTimeout(function () {
+      if (window.__booted) return;
+      var tried = false; try { tried = sessionStorage.getItem('21world.bootFix') === '1'; sessionStorage.setItem('21world.bootFix', '1'); } catch (e) {}
+      if (!tried) return fix();
+      var s = document.getElementById('splash');
+      if (s && !document.getElementById('splash-fix')) s.removeAttribute('aria-hidden'), s.insertAdjacentHTML('beforeend', '<button id="splash-fix" type="button" onclick="window.__fix21()" style="margin-top:18px;padding:12px 20px;border-radius:12px;border:0;background:#facc15;color:#1a1300;font:800 1rem system-ui;cursor:pointer">o jogo não abriu? toque para recarregar</button>');
+    }, 10000);
+  })();
+  </script>
   <script type="module" src="game.js"></script>
 </head>
 <body>

@@ -1,6 +1,6 @@
 // Service worker do 21 World: abre rápido (arquivos do jogo em cache) e atualiza em segundo plano.
 // Nunca guarda chamadas do Supabase (login, saves) nem do mapa: essas sempre vão para a rede.
-const VERSION = '21world-v26';
+const VERSION = '21world-v27';
 const CORE = ['./', 'index.html', 'style.css', 'tokens.css', 'base.css', 'game.js', 'logic.js', 'store.js', 'progress.js', 'casino.js', 'table.js', 'bj.js',
   'avatar.js', 'net.js', 'auth.js', 'authrules.js', 'live.js', 'supabase-config.js', 'manifest.webmanifest', 'assets/brand/logo-mark.svg', 'assets/brand/icon-192.png'];
 
@@ -20,11 +20,9 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   if (url.origin === location.origin) {
     // arquivos do jogo: sempre a versão nova da rede (para nunca misturar arquivos de versões diferentes);
-    // a cópia guardada só entra sem internet ou se a rede demorar mais de 4 s
+    // a cópia guardada só entra sem internet (rede lenta espera: misturar versões travava o jogo na abertura)
     e.respondWith(caches.open(VERSION).then(async c => {
-      const net = fetch(req, { cache: 'no-cache' }).then(r => { if (r.ok) c.put(req, r.clone()); return r; });
-      const slow = new Promise(res => setTimeout(res, 4000)).then(() => c.match(req));
-      try { return (await Promise.race([net, slow])) || (await net); } catch { return (await c.match(req)) || Response.error(); }
+      try { const r = await fetch(req, { cache: 'no-cache' }); if (r.ok) c.put(req, r.clone()); return r; } catch { return (await c.match(req)) || Response.error(); }
     }));
   } else if (LIBS.test(req.url)) {
     // bibliotecas com versão fixa e fontes: guarda de vez
