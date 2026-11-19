@@ -8,7 +8,6 @@ import * as sfx from './sfx.js';
 import * as GM from './games.js';
 import * as AV from './aviator.js';
 import * as FB from './aposta-ui.js';
-import * as M3 from './mundo3d.js';
 import * as RL from './roulette.js';
 import * as TR from './trader.js';
 import * as Auth from './auth.js';
@@ -733,7 +732,6 @@ const ACTS = {
   'shop-unlist'(id) { SHUI.unlist(id); },
   'shop-buy'(id) { SHUI.buy(id); },
   'shop-cat'(id) { SHUI.setCat(id); },
-  'open-3d'() { M3.open(); },
   'shop-npc'(id) { SHUI.buyNpc(id); },
   'ft-take'(id) { FUI.take(id); },
   'ft-slot'(id) { FUI.openSlot(id); },
@@ -922,7 +920,7 @@ document.addEventListener('click', e => {
   if (!b || b.disabled) return;
   const act = b.dataset.act;
   ACTS[act]?.(b.dataset.id, b);
-  if (['rl-double', 'pass-claim', 'st-train', 'trade-invite', 'trade-yes', 'trade-no', 'trade-add', 'trade-chips', 'trade-money', 'trade-remove', 'trade-lock', 'trade-confirm', 'trade-cancel', 'ft-play', 'ft-close', 'ft-quick', 'rk-cat', 'rk-page', 'rk-online', 'open-3d', 'shop-cat', 'shop-sell', 'shop-list', 'shop-unlist', 'shop-buy', 'ft-slot', 'ft-pick', 'ft-auto', 'fe-buy', 'fe-sell', 'fe-goto', 'card-close', 'ft-haggle', 'job-start', 'job-accept', 'job-confirm', 'job-repair', 'double', 'split', 'logout', 'wipe', 'st-enter', 'stable-close', 'sit', 'leave-table', 'invite', 'bet', 'hit', 'stand', 'bet-clear', 'race-go', 'race-pick', 'race-next', 'mute', 'rl-spin', 'rl-clear', 'av-press', 'tr-buy', 'tr-sell', 'tr-dur', 'tr-tf', 'tr-asset', 'spin-daily', 'map-lot', 'show-card'].includes(act)) return;
+  if (['rl-double', 'pass-claim', 'st-train', 'trade-invite', 'trade-yes', 'trade-no', 'trade-add', 'trade-chips', 'trade-money', 'trade-remove', 'trade-lock', 'trade-confirm', 'trade-cancel', 'ft-play', 'ft-close', 'ft-quick', 'rk-cat', 'rk-page', 'rk-online', 'shop-cat', 'shop-sell', 'shop-list', 'shop-unlist', 'shop-buy', 'ft-slot', 'ft-pick', 'ft-auto', 'fe-buy', 'fe-sell', 'fe-goto', 'card-close', 'ft-haggle', 'job-start', 'job-accept', 'job-confirm', 'job-repair', 'double', 'split', 'logout', 'wipe', 'st-enter', 'stable-close', 'sit', 'leave-table', 'invite', 'bet', 'hit', 'stand', 'bet-clear', 'race-go', 'race-pick', 'race-next', 'mute', 'rl-spin', 'rl-clear', 'av-press', 'tr-buy', 'tr-sell', 'tr-dur', 'tr-tf', 'tr-asset', 'spin-daily', 'map-lot', 'show-card'].includes(act)) return;
   checkAch(); save(); render();
 });
 $('#map-back').addEventListener('click', () => { lmap?.flyTo([-14, -51], 4, { duration: 1.4 }); $('#map-title').textContent = 'satélite'; });
@@ -1031,7 +1029,6 @@ Auth.boot().then(async st => {
   if (st === 'gate' || st === 'recovery') return;
   const live = await Live.start().catch(() => 'off');
   if (live !== 'banned') maybeDaily();
-  if (live !== 'banned' && M3.preferred()) M3.open();   // quem escolheu o 3D volta direto para a cidade
 });
 
 // efeito ao clicar: anel dourado + faíscas (só em botões; respeita "reduzir movimento")
@@ -1147,7 +1144,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 11;
+const APP_VERSION = 12;
 let updateShown = false, updateMsg = '';
 async function checkUpdate() {
   if (updateShown) return;
