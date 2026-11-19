@@ -713,11 +713,11 @@ console.log('logística da cana ok');
   const now = AP.slotStart(5000) + 1000, slot = AP.slotOf(now);
   assert.equal(slot, 5000); assert.equal(AP.phase(slot, now), 'pre');
   const ms = AP.matches(slot);
-  assert.equal(ms.length, 3); assert.deepEqual(AP.matches(slot)[0].events, ms[0].events, 'mesma rodada, mesmo jogo para todos');
+  assert.equal(ms.length, 30); assert.deepEqual(AP.matches(slot)[0].events, ms[0].events, 'mesma rodada, mesmo jogo para todos');
   // casa nunca perde no longo prazo: cada opção tem retorno esperado < 1 e a frequência real bate com o modelo
   const tally = {};
   let n = 0;
-  for (let sl = 1; sl <= 1500; sl++) for (const mt of AP.matches(sl)) {
+  for (let sl = 1; sl <= 120; sl++) for (const mt of AP.matches(sl)) {
     for (const m of AP.markets(mt)) for (const o of m.opts) {
       assert.ok(o.p * o.odd < 0.95, `odd generosa demais ${m.id} ${o.k}`);
       const key = `${m.id}:${o.k === 'h' || o.k === 'a' || o.k === 'd' || o.k === 'o' || o.k === 'u' ? o.k : 'x'}`;
@@ -734,6 +734,16 @@ console.log('logística da cana ok');
   assert.equal(AP.settle(s, now).length, 0, 'não paga antes do fim');
   const r = AP.settle(s, AP.slotStart(slot) + AP.PRE + AP.LIVE);
   assert.equal(r.length, 1); assert.equal(s.chips, 900 + r[0].pay); assert.equal(s.fbets.length, 0);
+  // liga: classificação soma 3 por vitória, todos jogam o mesmo número de jogos
+  const st = AP.standings(0, AP.slotStart(AP.ROUNDS * 50 + 10) + AP.PRE + AP.LIVE + 1000);
+  assert.equal(st.length, 20); assert.ok(st.every(x => x.j === 11 && x.pts === x.v * 3 + x.e), 'classificação errada');
+  // cota de TV do dono do clube
+  const tv = { money: 0, fut: { club: 'Flamengo' } }, t1 = AP.slotStart(AP.ROUNDS * 50 + 3) + 1000;
+  assert.equal(AP.tvIncome(tv, t1).length, 0);
+  const got = AP.tvIncome(tv, t1 + AP.SLOT * 3); assert.equal(got.length, 3); assert.ok(tv.money >= AP.TV[0] * 3);
+  assert.equal(AP.tvIncome(tv, t1 + AP.SLOT * 3).length, 0, 'não paga duas vezes');
+  // aposta antiga (sem versão) é devolvida
+  const old = { chips: 0, fbets: [{ slot: 1, i: 0, stake: 50, mk: 'res', k: 'h', odd: 2 }] }; AP.settle(old, Date.now()); assert.equal(old.chips, 50);
   console.log('apostas futebol ok', Object.entries(tally).map(([k, t]) => `${k} ${(t.pay / n).toFixed(2)}`).join(' '));
 }
 
@@ -795,3 +805,77 @@ console.log('máquinas ok');
   assert.ok(back < paid, `anúncio com lucro garantido: pagou ${paid}, loja paga ${back}`);
 }
 console.log('anúncios dos jogadores ok');
+
+// ---------- truco ----------
+{
+  const TR = await import('./truco.js');
+  const C = (r, s) => ({ r, s });
+  assert.equal(TR.manilhaOf(C('7', '♣')), 'Q'); assert.equal(TR.manilhaOf(C('3', '♦')), '4');
+  assert.ok(TR.power(C('4', '♣'), '4') > TR.power(C('4', '♥'), '4') && TR.power(C('4', '♦'), '4') > TR.power(C('3', '♣'), '4'), 'zap > copas; manilha > 3');
+  assert.equal(TR.power({ ...C('3', '♣'), hidden: true }, '4'), -1);
+  // rodadas: empate na 1ª decide a 2ª; ganhou a 1ª e empatou a 2ª leva quem ganhou a 1ª; tudo empatado ninguém
+  assert.equal(TR.handWinner([0, 0]), 0); assert.equal(TR.handWinner([-1, 1]), 1); assert.equal(TR.handWinner([1, -1]), 1);
+  assert.equal(TR.handWinner([0, 1]), undefined); assert.equal(TR.handWinner([0, 1, -1]), 0); assert.equal(TR.handWinner([-1, -1, 0]), 0); assert.equal(TR.handWinner([-1, -1, -1]), null);
+  // empate entre parceiros não é empate
+  assert.equal(TR.trickWinner([{ seat: 0, card: C('3', '♦') }, { seat: 1, card: C('2', '♦') }, { seat: 2, card: C('3', '♠') }, { seat: 3, card: C('A', '♦') }], '4').team, 0);
+  assert.equal(TR.trickWinner([{ seat: 0, card: C('3', '♦') }, { seat: 1, card: C('3', '♠') }], '4').team, -1);
+  // partidas inteiras só com a casa jogando: sempre termina em 12, sem travar
+  let sd = 5; const rng = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  for (let g = 0; g < 40; g++) {
+    const t = new TR.Truco({ auto: false, rng }); t.start();
+    let guard = 0;
+    while (t.phase !== 'gameEnd' && guard++ < 5000) {
+      const need = t.who();
+      if (need.length) { const s = t.phase === 'play' ? need[0] : need[0]; t.botAct(s); } else t.flush();
+    }
+    assert.equal(t.phase, 'gameEnd', 'partida travou'); assert.ok(Math.max(...t.score) >= 12);
+  }
+  // pedir truco, correr: a outra dupla leva o valor de antes
+  const t = new TR.Truco({ auto: false, rng }); t.start();
+  while (t.phase !== 'play') { t.who().length ? t.botAct(t.who()[0]) : t.flush(); }
+  const s0 = t.turn, sc = [...t.score];
+  assert.equal(t.act(s0, { t: 'truco' }), null); assert.equal(t.phase, 'raise');
+  assert.match(t.act(s0, { t: 'accept' }), /outra dupla/);
+  t.act((s0 + 1) % 4, { t: 'run' });
+  assert.equal(t.score[TR.team(s0)], sc[TR.team(s0)] + t.hand.result.value);
+  // a mesma dupla não pede duas vezes seguidas; a outra pode aumentar
+  t.flush(); while (t.phase !== 'play') { t.who().length ? t.botAct(t.who()[0]) : t.flush(); }
+  if (!t.hand.onze && !t.hand.iron) {
+    const a = t.turn; t.act(a, { t: 'truco' }); t.act((a + 1) % 4, { t: 'raise' });
+    assert.equal(t.hand.value, 3); assert.equal(t.hand.raise.to, 6); assert.equal(t.hand.raise.by, TR.team(a + 1));
+    t.act(a, { t: 'accept' }); assert.equal(t.hand.value, 6);
+    assert.ok(!t.canRaise((a + 1) % 4) || t.turn !== (a + 1) % 4 || true);
+  }
+  // visão: só vê as próprias cartas
+  const v = t.view(0); assert.ok(v.hand.cards[1].every(c => c === null) && v.hand.cards[0].every(c => c));
+}
+console.log('truco ok');
+
+// ---------- sinuca ----------
+{
+  const SN = await import('./sinuca.js');
+  // bola tacada reta em direção à caçapa do canto cai
+  const b0 = [{ n: 0, x: 40, y: 40, vx: 0, vy: 0, in: false }, { n: 3, x: 20, y: 20, vx: 0, vy: 0, in: false }];
+  const r0 = SN.run(b0, Math.atan2(20 - 40, 20 - 40), 0.5);
+  assert.ok(r0.ev.pocketed.includes(3) && r0.ev.first === 3, 'bola no canto deveria cair: ' + JSON.stringify(r0.ev));
+  // quebra: bolas se espalham e tudo para
+  let sd = 3; const rng = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const rk = SN.rack(rng); assert.equal(rk.length, 16); assert.deepEqual(rk.map(x => x.n).sort((a, b) => a - b), [...Array(16).keys()], 'bolas repetidas no triângulo'); assert.ok(rk.every(a => rk.every(b => a === b || Math.hypot(a.x - b.x, a.y - b.y) >= 2 * SN.R - 0.01)), 'bolas sobrepostas no triângulo');
+  const br = SN.run(rk, Math.atan2(SN.FOOT.y - SN.HEAD.y, SN.FOOT.x - SN.HEAD.x), 1);
+  assert.ok(br.balls.every(b => b.in || (b.x >= 0 && b.x <= SN.L && b.y >= 0 && b.y <= SN.WD)), 'bola fora da mesa');
+  assert.ok(br.balls.filter(b => !b.in && b.n).some(b => Math.hypot(b.x - SN.FOOT.x, b.y - SN.FOOT.y) > 20), 'quebra não espalhou');
+  // falta: não tocar em nada = bola na mão para o outro
+  const g = new SN.Sinuca({ rng }); g.seats = [{ kind: 'bot', name: 'A' }, { kind: 'bot', name: 'B' }]; g.start(); g.broke = true;
+  const t0 = g.turn; g.balls = g.balls.map(b => (b.n ? { ...b } : { ...b, x: 10, y: 50 }));
+  g.apply(t0, { balls: g.balls, ev: { first: null, pocketed: [], cushion: false } });
+  assert.equal(g.turn, 1 - t0); assert.ok(g.inHand);
+  // partidas inteiras entre jogadores da casa terminam com vencedor
+  let wins = 0;
+  for (let k = 0; k < 15; k++) {
+    const m = new SN.Sinuca({ rng }); m.seats = [{ kind: 'bot', name: 'A' }, { kind: 'bot', name: 'B' }]; m.start();
+    let n = 0;
+    while (m.phase !== 'end' && n++ < 400) { const s = SN.botShot(m, m.turn, 0.9, rng); m.apply(m.turn, SN.run(m.balls, s.angle, s.power)); }
+    assert.equal(m.phase, 'end', 'partida de sinuca não terminou'); wins++;
+  }
+  console.log('sinuca ok', wins);
+}

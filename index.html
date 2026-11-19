@@ -74,10 +74,10 @@
     </div>
     <nav class="container" aria-label="áreas do jogo">
       <div class="tabs" role="tablist">
-        <button role="tab" id="t-mesa" data-tab="mesa" aria-controls="p-mesa" aria-selected="true"><svg><use href="#i-cards"/></svg>cassino</button>
+        <button role="tab" id="t-mesa" data-tab="mesa" aria-controls="p-mesa" aria-selected="true"><svg><use href="#i-cards"/></svg>salão de jogos</button>
         <button role="tab" id="t-ranking" data-tab="ranking" aria-controls="p-ranking" aria-selected="false" tabindex="-1"><svg><use href="#i-trophy"/></svg>ranking</button>
         <button role="tab" id="t-corridas" data-tab="corridas" aria-controls="p-corridas" aria-selected="false" tabindex="-1"><svg><use href="#i-flag"/></svg>corridas</button>
-        <button role="tab" id="t-trader" data-tab="trader" aria-controls="p-trader" aria-selected="false" tabindex="-1"><svg><use href="#i-candle"/></svg>trader</button>
+        <button role="tab" id="t-trader" data-tab="trader" aria-controls="p-trader" aria-selected="false" tabindex="-1"><svg><use href="#i-candle"/></svg>investimentos</button>
         <button role="tab" id="t-trabalho" data-tab="trabalho" aria-controls="p-trabalho" aria-selected="false" tabindex="-1"><svg><use href="#i-bike"/></svg>trabalho</button>
         <button role="tab" id="t-futebol" data-tab="futebol" aria-controls="p-futebol" aria-selected="false" tabindex="-1"><svg><use href="#i-ball"/></svg>futebol</button>
         <button role="tab" id="t-inventario" data-tab="inventario" aria-controls="p-inventario" aria-selected="false" tabindex="-1"><svg><use href="#i-bag"/></svg>inventário</button>
@@ -105,7 +105,7 @@
     <!-- CASSINO: salão de mesas e a mesa -->
     <section id="p-mesa" role="tabpanel" aria-labelledby="t-mesa" class="panel">
       <div class="subtabs" role="group" aria-label="jogos do cassino">
-        <button class="subtab is-on" data-sub="21">vinte e um</button><button class="subtab" data-sub="roleta">roleta</button><button class="subtab" data-sub="aviator">aviator</button><button class="subtab subtab--hot" data-sub="bet">futebol ao vivo</button>
+        <button class="subtab is-on" data-sub="21">vinte e um</button><button class="subtab" data-sub="roleta">roleta</button><button class="subtab" data-sub="aviator">aviator</button><button class="subtab subtab--hot" data-sub="truco">truco</button><button class="subtab subtab--hot" data-sub="sinuca">sinuca</button>
       </div>
       <div id="sub-21" class="sub">
       <div id="lobby" class="lobby">
@@ -253,14 +253,53 @@
         </div>
       </div>
       <!-- APOSTAS NO FUTEBOL -->
-      <div id="sub-bet" class="sub" hidden>
-        <div class="fb-games" id="fb-games"></div>
-        <div class="fb-grid">
-          <div class="glass fb-board" id="fb-board"></div>
-          <aside class="fb-side">
-            <div class="glass fb-slip"><h3>bilhete</h3><div id="fb-slip"></div></div>
-            <div class="glass fb-mine" id="fb-mine"></div>
-          </aside>
+      <!-- TRUCO -->
+      <div id="sub-truco" class="sub" hidden>
+        <div id="tr-lobby">
+          <div class="lhero lhero--truco"><div class="lhero__txt"><span class="lhero__kicker"><i></i>truco paulista</span><h2>truco</h2><p>Monte a dupla, chame o truco e leve a mesa. Jogue contra a casa ou crie uma mesa e chame os amigos: o primeiro que entrar é o seu parceiro.</p></div>
+            <div class="lhero__pot"><span>dupla vencedora</span><strong>1,9x</strong><small>a entrada de cada jogador</small></div></div>
+          <div class="cards cards--tables" id="tr-tables"></div>
+          <details class="lobby__friends"><summary>jogar com amigos: criar mesa de truco ou entrar com código</summary>
+            <div class="glass lobby__bar">
+              <form id="tr-create" class="row" onsubmit="return false"><label class="field"><span>nome da mesa</span><input class="input" name="tname" maxlength="24" placeholder="truco dos amigos"></label>
+                <label class="field"><span>entrada (fichas)</span><select class="input" name="tstake"><option>50</option><option selected>200</option><option>1000</option><option>5000</option></select></label>
+                <label class="field"><span>quem vê</span><select class="input" name="tvis"><option value="pub">todos no salão</option><option value="priv">só com o link</option></select></label>
+                <button class="btn btn--gold" type="button" data-tr="create">criar mesa de truco</button></form>
+              <div class="row"><label class="field"><span>código de convite</span><input class="input" id="tr-code" maxlength="12" autocomplete="off" placeholder="ex.: k3f9q2"></label><button class="btn btn--glass" type="button" data-tr="code">entrar</button></div>
+            </div></details>
+        </div>
+        <div id="tr-room" class="tr-room" hidden>
+          <div class="roombar"><button class="btn btn--glass" data-tr="leave">sair da mesa</button><h2 id="tr-name">truco</h2><div class="tr-score" id="tr-score"></div><button class="btn btn--glass" data-tr="invite" id="tr-invite" hidden>convidar</button></div>
+          <div class="tr-felt"><div id="tr-seats"></div><div class="tr-center" id="tr-center"></div><div class="tr-shout" id="tr-shout" aria-live="assertive"></div></div>
+          <p class="tstatus" id="tr-msg" aria-live="polite"></p>
+          <div class="tr-hand" id="tr-hand"></div>
+          <div class="tr-actions" id="tr-actions"></div>
+        </div>
+      </div>
+
+      <!-- SINUCA -->
+      <div id="sub-sinuca" class="sub" hidden>
+        <div id="sn-lobby">
+          <div class="lhero lhero--sinuca"><div class="lhero__txt"><span class="lhero__kicker"><i></i>bola 8</span><h2>sinuca</h2><p>Lisas ou listradas, encaçapa as suas e termina na 8. Desafie a casa ou crie uma mesa e jogue ao vivo com um amigo.</p></div>
+            <div class="lhero__pot"><span>quem vence leva</span><strong>1,9x</strong><small>a entrada</small></div></div>
+          <div class="cards cards--tables" id="sn-tables"></div>
+          <details class="lobby__friends"><summary>jogar com amigos: criar mesa de sinuca ou entrar com código</summary>
+            <div class="glass lobby__bar">
+              <form id="sn-create" class="row" onsubmit="return false"><label class="field"><span>nome da mesa</span><input class="input" name="sname" maxlength="24" placeholder="sinuca dos amigos"></label>
+                <label class="field"><span>entrada (fichas)</span><select class="input" name="sstake"><option>50</option><option selected>300</option><option>1500</option><option>6000</option></select></label>
+                <label class="field"><span>quem vê</span><select class="input" name="svis"><option value="pub">todos no salão</option><option value="priv">só com o link</option></select></label>
+                <button class="btn btn--gold" type="button" data-sn="create">criar mesa de sinuca</button></form>
+              <div class="row"><label class="field"><span>código de convite</span><input class="input" id="sn-code" maxlength="12" autocomplete="off" placeholder="ex.: k3f9q2"></label><button class="btn btn--glass" type="button" data-sn="code">entrar</button></div>
+            </div></details>
+        </div>
+        <div id="sn-room" class="sn-room" hidden>
+          <div class="roombar"><button class="btn btn--glass" data-sn="leave">sair da mesa</button><h2 id="sn-name">sinuca</h2><button class="btn btn--glass" data-sn="invite" id="sn-invite" hidden>convidar</button></div>
+          <div class="sn-players" id="sn-players"></div>
+          <canvas id="sn-cv" class="sn-cv" aria-label="mesa de sinuca: mire tocando na mesa"></canvas>
+          <p class="tstatus" id="sn-msg" aria-live="polite"></p>
+          <div class="sn-ctrl"><label class="field sn-power"><span>força</span><input type="range" id="sn-power" min="5" max="100" value="55"></label>
+            <button class="btn btn--gold btn--lg" id="sn-shoot" data-sn="shoot">tacar</button><button class="btn btn--glass" id="sn-again" data-sn="again" hidden>jogar de novo</button></div>
+          <p class="muted small">Mire movendo o dedo ou o mouse na mesa (setas ajustam fino), escolha a força e taque. Espaço também taca.</p>
         </div>
       </div>
     </section>
@@ -311,6 +350,21 @@
 
     <!-- FUTEBOL -->
     <section id="p-futebol" role="tabpanel" aria-labelledby="t-futebol" class="panel" hidden>
+      <div class="subtabs" role="group" aria-label="futebol"><button class="subtab subtab--hot is-on" data-fsub="live">ao vivo e apostas</button><button class="subtab" data-fsub="clube">meu clube</button></div>
+      <div id="fsub-live">
+        <div class="fb-headrow" id="fb-head"></div>
+        <div id="fb-myclub"></div>
+        <div class="fb-games" id="fb-games"></div>
+        <div class="fb-grid">
+          <div class="glass fb-board" id="fb-board"></div>
+          <aside class="fb-side">
+            <div class="glass fb-slip"><h3>bilhete</h3><div id="fb-slip"></div></div>
+            <div class="glass fb-mine" id="fb-mine"></div>
+          </aside>
+        </div>
+        <div class="glass fb-tablebox" id="fb-table"></div>
+      </div>
+      <div id="fsub-clube" hidden>
       <div id="ft-found" class="ft-found">
         <div class="ft-hero glass"><h2>assuma um clube do futebol brasileiro</h2>
           <p>Escolha um clube real da Série A, B ou C, monte o elenco, negocie contratações, amplie o estádio e jogue o Brasileirão de 38 rodadas. Os 4 primeiros sobem e os 4 últimos caem. Bilheteria, patrocínio, prêmios e vendas de jogadores viram dinheiro para você.</p></div>
@@ -327,6 +381,7 @@
         <div data-ftpanel="tabela" hidden><div class="glass scroll"><table><thead><tr><th class="num">#</th><th>clube</th><th class="num">J</th><th class="num">V</th><th class="num">E</th><th class="num">D</th><th class="num">gols</th><th class="num">pts</th></tr></thead><tbody id="ft-table"></tbody></table></div><h3>histórico</h3><ul class="ft-hist" id="ft-hist"></ul></div>
         <div data-ftpanel="mercado" hidden><p class="muted small">O mercado renova a cada temporada. Clique em "negociar" para pechinchar com o clube dono do passe: ofereça pouco demais e ele desiste. Jogador jovem com potencial alto cresce a cada ano.</p><div class="glass scroll"><table><thead><tr><th>pos</th><th>jogador</th><th class="num">idade</th><th class="num">nota</th><th class="num">potencial</th><th class="num">salário</th><th></th></tr></thead><tbody id="ft-market"></tbody></table></div></div>
         <div data-ftpanel="propostas" hidden><div class="offers" id="ft-offers"></div></div>
+      </div>
       </div>
     </section>
 
@@ -658,7 +713,7 @@
   <!-- partida ao vivo -->
   <!-- navegação do celular: atalhos fixos embaixo + menu em grade com todas as áreas -->
   <nav class="mnav" id="mnav" aria-label="atalhos">
-    <button type="button" data-mnav="mesa"><svg><use href="#i-cards"/></svg>cassino</button>
+    <button type="button" data-mnav="mesa"><svg><use href="#i-cards"/></svg>jogos</button>
     <button type="button" data-mnav="ranking"><svg><use href="#i-trophy"/></svg>ranking</button>
     <button type="button" data-mnav="inventario"><svg><use href="#i-bag"/></svg>inventário</button>
     <button type="button" data-mnav="loja"><svg><use href="#i-shop"/></svg>loja</button>

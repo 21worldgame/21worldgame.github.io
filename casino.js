@@ -81,12 +81,16 @@ export async function initCasino() {
 let globalRows = null;
 function loadGlobalRanking() { if (!Auth.account()) return; Auth.ranking(8000).then(rows => { if (rows) { globalRows = rows; renderRanking(); } }).catch(() => {}); }
 let annTimer;
+// outros jogos (truco, sinuca) leem quem está no salão por aqui
+export const peerList = () => (lobby ? [...lobby.peers.entries()] : []);
+export const selfPid = () => selfId;
 export function announce() {
   clearTimeout(annTimer);
   annTimer = setTimeout(() => {
     if (!lobby) return;
     const tables = cur?.host && cur.pub ? [summary(cur.table.view())] : [];
-    lobby.announce({ profile: profileOf(), tables, shop: SH.publicListings(G.S) });
+    const games = Object.values(G.gameHosts || {}).map(f => f()).filter(Boolean);   // mesas de truco e sinuca que eu hospedo
+    lobby.announce({ profile: profileOf(), tables, games, shop: SH.publicListings(G.S) });
   }, 400);
 }
 const summary = v => ({ id: v.id, name: v.name, minBet: v.minBet, phase: v.phase,

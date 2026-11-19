@@ -4,7 +4,7 @@ import { netWorth, heads } from './logic.js';
 
 export const XP = { hand: 10, win: 25, '21': 40, calves: 15, sellherd: 30, plant: 30, harvest: 40, land: 50, car: 60,
   month: 5, race: 8, raceWin: 30, lend: 20, onlineHand: 20,
-  trade: 40, ftFound: 50, ftMatch: 10, ftWin: 20, ftTitle: 200, job: 20, jobPerfect: 40, buyAnimal: 30, train: 10, stakeRun: 15, stakeWin: 60, stakeGP: 120, roulette: 6, rouletteWin: 20, aviator: 6, cashout: 15, trade: 10, tradeWin: 30, car: 60 };
+  trade: 40, ftFound: 50, ftMatch: 10, ftWin: 20, ftTitle: 200, job: 20, jobPerfect: 40, buyAnimal: 30, train: 10, stakeRun: 15, stakeWin: 60, stakeGP: 120, roulette: 6, rouletteWin: 20, aviator: 6, cashout: 15, trade: 10, tradeWin: 30, car: 60, truco: 60, sinuca: 60, fbBet: 8, fbWin: 25 };
 // multiplicador de XP vindo dos eventos do painel administrativo
 let XP_MULT = 1;
 export const setXpMult = m => { XP_MULT = m > 0 ? m : 1; };
@@ -32,9 +32,16 @@ export const MISSIONS = [
   { id: 'roletawin', txt: 'Ganhe uma rodada na roleta', ev: 'rouletteWin', goal: 1, reward: 400 },
   { id: 'cashout2', txt: 'Saque 2 vezes no Aviator', ev: 'cashout', goal: 2, reward: 400 },
   { id: 'trade', txt: 'Feche uma operação com lucro no trader', ev: 'tradeWin', goal: 1, reward: 600 },
+  { id: 'truco1', txt: 'Vença uma partida de truco', ev: 'truco', goal: 1, reward: 700 },
+  { id: 'sinuca1', txt: 'Vença uma partida de sinuca', ev: 'sinuca', goal: 1, reward: 700 },
+  { id: 'fbbet2', txt: 'Faça 2 apostas no futebol ao vivo', ev: 'fbBet', goal: 2, reward: 400 },
+  { id: 'fbwin', txt: 'Acerte uma aposta no futebol ao vivo', ev: 'fbWin', goal: 1, reward: 600 },
 ];
 
 export const ACHIEVEMENTS = [
+  { id: 'truqueiro', txt: 'Truqueiro: 10 partidas de truco vencidas', ev: 'truco', goal: 10 },
+  { id: 'sinuca10', txt: 'Mestre da sinuca: 10 vitórias', ev: 'sinuca', goal: 10 },
+  { id: 'pe-quente-fut', txt: 'Pé quente no futebol: 5 apostas certas', ev: 'fbWin', goal: 5 },
   { id: 'first-hand', txt: 'Primeira mão', ev: 'hand', goal: 1 },
   { id: 'hands100', txt: '100 mãos jogadas', ev: 'hand', goal: 100 },
   { id: 'bj', txt: 'Vinte e um', ev: '21', goal: 1 },

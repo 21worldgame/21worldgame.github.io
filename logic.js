@@ -199,7 +199,7 @@ export function tick(s, rng = Math.random) {
   const add = (txt, val = 0) => { s.money += val; log.push({ m: s.month, txt, val: Math.round(val) }); };
 
   s.prev = { ...s.prices };
-  for (const k of Object.keys(s.prices)) s.prices[k] = Math.round(walk(s.prices[k], rng, 0.06));
+  for (const k of Object.keys(s.prices)) { const v = walk(s.prices[k], rng, 0.06); s.prices[k] = v < 100 ? Math.round(v * 100) / 100 : Math.round(v); }   // preço pequeno (frango, ração) anda em centavos
   for (const l of s.lands) l.value = Math.round(l.value * (1 + 0.006 + (rng() * 2 - 1) * 0.02));
 
   // gado: engorda no pasto; o excedente come ração
