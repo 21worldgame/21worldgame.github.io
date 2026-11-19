@@ -1,4 +1,7 @@
 import { value as cardValue } from './cards.js';
+import { value as suinosValue } from './suinos.js';
+import { value as bizValue } from './negocios.js';
+import { boxValue as ferasValue } from './feras.js';
 import * as PK from './perks.js';
 import { granjaValue } from './granja.js';
 import { orchardValue } from './pomar.js';
@@ -191,7 +194,7 @@ export function netWorth(s) {
   return Math.round(part(() => s.money) + part(() => s.chips * CHIP) + own.reduce((a, l) => a + num(l.value), 0) + part(() => herdValue(s))
     + Object.entries(s.stock || {}).reduce((a, [k, q]) => a + num(q * (s.prices?.[k] ?? 0)), 0) + (s.lent || []).reduce((a, l) => a + num(l?.bal), 0)
     + part(() => carsValue(s)) + part(() => animalsValue(s)) + (s.cards || []).reduce((a, c) => a + part(() => cardValue(c)), 0) + part(() => granjaValue(s))
-    + own.reduce((a, l) => a + part(() => orchardValue(s, l) + caneValue(s, l)), 0) + num(s.caneHarvester?.value) + part(() => plantValue(s)) - part(() => debt(s)));
+    + own.reduce((a, l) => a + part(() => orchardValue(s, l) + caneValue(s, l)), 0) + num(s.caneHarvester?.value) + part(() => plantValue(s)) + part(() => suinosValue(s)) + part(() => bizValue(s)) + part(() => ferasValue(s)) - part(() => debt(s)));
 }
 
 export const TITLES = [[0, 'iniciante'], [150000, 'fazendeiro'], [500000, 'barão do gado'], [2000000, 'magnata']];

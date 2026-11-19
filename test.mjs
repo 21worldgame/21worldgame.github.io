@@ -879,3 +879,43 @@ console.log('truco ok');
   }
   console.log('sinuca ok', wins);
 }
+
+
+// ---------- suínos, negócios, galpões e feras ----------
+{
+  const SU = await import('./suinos.js'), NG = await import('./negocios.js'), FR = await import('./feras.js');
+  let sd = 11; const rng = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  // suínos: lote vendido no ponto (4º mês) dá lucro no barracão médio; lote sem vacina pode perder animais
+  const s = { money: 1e8, month: 1 }; assert.equal(SU.buyBarn(s, 'medio'), null); const id = s.suinos.barns[0].id;
+  assert.match(SU.house(s, id, 5000), /aloje/); assert.equal(SU.house(s, id, 1000, true), null); assert.match(SU.house(s, id, 10), /já tem/);
+  const m0 = s.money + SU.housing(s, 1000, true); for (let i = 0; i < 4; i++) SU.monthly(s, rng);
+  assert.ok(SU.kgAt(4) > 115 && SU.kgAt(4) < 125); const v = SU.sellLot(s, id); assert.ok(v > 0);
+  assert.match(SU.sellBarn({ suinos: { barns: [], lots: [] } }, 'x').err, /não encontrado/);
+  // banco: só a marca, caixa vem do dono; sem caixa não empresta; com caixa empresta e recebe
+  const b = { money: 5e7, month: 1, stock: {} }; assert.equal(NG.buy(b, 'banks', 'roxinho'), null); assert.match(NG.buy(b, 'banks', 'roxinho'), /já é dono/);
+  const bank = b.biz.banks[0]; NG.monthly(b, rng); assert.equal(bank.loans.length, 0, 'sem caixa não empresta');
+  NG.deposit(b, bank.id, 2e6); NG.monthly(b, rng); assert.ok(bank.loans.length === 1 && bank.capital < 2e6);
+  assert.match(NG.withdraw(b, bank.id, 1e9), /não tem/);
+  // pedidos de empréstimo são pequenos e crescem devagar com o tempo do mundo
+  const avg = l => l.bal / l.n; const early = avg(bank.loans[0]); b.month = 200; NG.monthly(b, rng); assert.ok(avg(bank.loans.at(-1)) > early && avg(bank.loans.at(-1)) < early * 3);
+  // provedor: sem rede não tem assinante; com rede cresce
+  const p = { money: 1e8, month: 1, stock: {} }; NG.buy(p, 'isps', 'netroca'); const isp = p.biz.isps[0]; NG.monthly(p, rng); assert.equal(isp.subs, 0);
+  NG.build(p, isp.id, 4); for (let i = 0; i < 6; i++) NG.monthly(p, rng); assert.ok(isp.subs > 100 && isp.subs <= isp.ports);
+  // galpões: estoque além da capacidade é vendido com desconto; quem já tinha estoque grande ganha capacidade herdada
+  const w = { money: 1e8, month: 1, stock: { soja: 500, milho: 0, cafe: 0 }, prices: { soja: 130, milho: 60, cafe: 1400, laranja: 38 } };
+  NG.ensure(w); assert.equal(w.biz.legacy, 0); w.stock.soja = 3000; const o = NG.enforce(w); assert.ok(o.length && NG.tons(w) <= NG.capacity(w) + 0.1);
+  const big = { money: 0, month: 1, stock: { soja: 5000 } }; NG.ensure(big); assert.ok(NG.capacity(big) >= NG.tons(big), 'estoque antigo não pode ser vendido à força');
+  assert.ok(NG.whPrice('g500', 60) > NG.whPrice('g500', 1), 'galpão sobe de preço com o tempo');
+  NG.buyWh(w, 'g500'); assert.equal(NG.room(w, 'soja') > 8000, true);
+  // feras: começa com uma inicial, caça, ganha gemas, sobe de nível; troca de gemas tem limite diário
+  const f = { money: 0 }; assert.equal(FR.start(f, 'brasinha'), null); assert.match(FR.start(f, 'bolhudo'), /já tem/);
+  for (let i = 0; i < 400; i++) FR.defeat(f, FR.wild('campo', rng), rng);
+  assert.ok(f.feras.gems > 300 && f.feras.box[0].lv > 3 && f.feras.box.length > 1, 'caçada não rendeu');
+  assert.match(FR.setRoute(f, 'abismo'), /nível/);
+  f.feras.gems = 1e6; const ex = FR.exchange(f, 1e6, '2026-11-19'); assert.equal(ex.rs, FR.DAILY_CAP); assert.match(FR.exchange(f, 10, '2026-11-19').err, /limite/);
+  assert.ok(FR.exchange(f, 10, '2026-11-20').rs > 0, 'limite volta no dia seguinte');
+  // raridade: rota funda dá mais raras
+  let r1 = 0, r4 = 0; for (let i = 0; i < 20000; i++) { if (FR.rollRarity(1, rng) !== 'comum') r1++; if (FR.rollRarity(4, rng) !== 'comum') r4++; }
+  assert.ok(r4 > r1 * 2);
+}
+console.log('suínos, negócios, galpões e feras ok');

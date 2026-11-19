@@ -107,16 +107,18 @@
         <button role="tab" id="t-futebol" data-tab="futebol" aria-controls="p-futebol" aria-selected="false" tabindex="-1"><svg><use href="#i-ball"/></svg>futebol</button>
         <button role="tab" id="t-inventario" data-tab="inventario" aria-controls="p-inventario" aria-selected="false" tabindex="-1"><svg><use href="#i-bag"/></svg>inventário</button>
         <button role="tab" id="t-loja" data-tab="loja" aria-controls="p-loja" aria-selected="false" tabindex="-1"><svg><use href="#i-shop"/></svg>loja</button>
+        <button role="tab" id="t-negocios" data-tab="negocios" aria-controls="p-negocios" aria-selected="false" tabindex="-1"><svg><use href="#i-bank"/></svg>negócios</button>
+        <button role="tab" id="t-feras" data-tab="feras" aria-controls="p-feras" aria-selected="false" tabindex="-1"><svg><use href="#i-gem"/></svg>feras</button>
         <button role="tab" id="t-cartas" data-tab="cartas" aria-controls="p-cartas" aria-selected="false" tabindex="-1"><svg><use href="#i-gem"/></svg>cartas raras</button>
         <button role="tab" id="t-haras" data-tab="haras" aria-controls="p-haras" aria-selected="false" tabindex="-1"><svg><use href="#i-horse"/></svg>canil e haras</button>
         <button role="tab" id="t-personagem" data-tab="personagem" aria-controls="p-personagem" aria-selected="false" tabindex="-1"><svg><use href="#i-user"/></svg>personagem</button>
         <button role="tab" id="t-terras" data-tab="terras" aria-controls="p-terras" aria-selected="false" tabindex="-1"><svg><use href="#i-map"/></svg>terras</button>
         <button role="tab" id="t-gado" data-tab="gado" aria-controls="p-gado" aria-selected="false" tabindex="-1"><svg><use href="#i-herd"/></svg>gado</button>
         <button role="tab" id="t-granja" data-tab="granja" aria-controls="p-granja" aria-selected="false" tabindex="-1"><svg><use href="#i-chick"/></svg>granja</button>
+        <button role="tab" id="t-suinos" data-tab="suinos" aria-controls="p-suinos" aria-selected="false" tabindex="-1"><svg><use href="#i-herd"/></svg>suínos</button>
         <button role="tab" id="t-laranja" data-tab="laranja" aria-controls="p-laranja" aria-selected="false" tabindex="-1"><svg><use href="#i-orange"/></svg>laranja</button>
         <button role="tab" id="t-cana" data-tab="cana" aria-controls="p-cana" aria-selected="false" tabindex="-1"><svg><use href="#i-cane"/></svg>cana</button>
         <button role="tab" id="t-mercado" data-tab="mercado" aria-controls="p-mercado" aria-selected="false" tabindex="-1"><svg><use href="#i-chart"/></svg>mercado</button>
-        <button role="tab" id="t-carros" data-tab="carros" aria-controls="p-carros" aria-selected="false" tabindex="-1"><svg><use href="#i-car"/></svg>concessionária</button>
         <button role="tab" id="t-banco" data-tab="banco" aria-controls="p-banco" aria-selected="false" tabindex="-1"><svg><use href="#i-bank"/></svg>banco</button>
         <button role="tab" id="t-livro" data-tab="livro" aria-controls="p-livro" aria-selected="false" tabindex="-1"><svg><use href="#i-book"/></svg>livro-caixa</button>
       </div>
@@ -414,7 +416,7 @@
     <section id="p-inventario" role="tabpanel" aria-labelledby="t-inventario" class="panel" hidden>
       <div class="listhead"><h2>inventário</h2><span class="muted small" id="inv-sum"></span></div>
       <div class="inv-grid">
-        <div class="cards cards--inv" id="inv-items"></div>
+        <div class="inv-sell"><div class="shop-cats" id="inv-cats" role="group" aria-label="categorias do inventário"></div><div class="shop-grid" id="inv-items"></div></div>
         <section class="feira"><div class="listhead"><h3>feira de negócios</h3><span class="muted small" id="fe-idx"></span></div>
           <p class="muted small">Negociantes vendem seminovos, sacas e acessórios e às vezes querem comprar o que é seu. O preço acompanha a economia dos jogadores: quanto mais rico o ranking, mais caro. Negocie: oferta baixa demais faz o negociante desistir. As bancas mudam todo mês do jogo.</p>
           <div id="fe-list"></div><div id="fe-want"></div></section>
@@ -439,12 +441,24 @@
 
     <!-- LOJA -->
     <section id="p-loja" role="tabpanel" aria-labelledby="t-loja" class="panel" hidden>
-      <div class="listhead"><h2>loja</h2><span class="muted small">Venda na hora para a loja ou anuncie pelo seu preço: cavalos, galgos, carros, terras, cartas, jogadores e até o seu clube.</span></div>
-      <div class="shop-cats" id="shop-cats" role="group" aria-label="categorias"></div>
-      <h3>suas coisas</h3>
-      <div class="shop-grid" id="shop-mine"></div>
-      <h3>anúncios dos jogadores</h3>
-      <div class="shop-grid" id="shop-others"></div>
+      <div class="loja-hero"><div><h2>loja 21</h2><p class="muted">Carros, caminhões, máquinas, galpões, empresas e o Feirão 21, onde os jogadores anunciam de tudo.</p></div></div>
+      <nav class="loja-nav" aria-label="seções da loja">
+        <button class="loja-tab is-on" data-loja="carros">🚗 carros</button><button class="loja-tab" data-loja="pesados">🚚 caminhões e tratores</button><button class="loja-tab" data-loja="agro">🌾 máquinas agrícolas</button>
+        <button class="loja-tab" data-loja="galpoes">🏭 galpões</button><button class="loja-tab" data-loja="empresas">🏦 empresas</button><button class="loja-tab loja-tab--hot" data-loja="feirao">🛒 Feirão 21</button></nav>
+      <div data-lojap="carros"><div class="cards cards--cars" id="showroom"></div><h3>sua garagem</h3><div class="cards cards--cars" id="garage"></div></div>
+      <div data-lojap="pesados" hidden><p class="muted small">Trator barateia o plantio e permite plantar em terra arrendada; caminhão vende gado sem frete e barateia o frete da cana.</p><div class="cards cards--cars" id="heavy"></div></div>
+      <div data-lojap="agro" hidden><div id="maq"></div></div>
+      <div data-lojap="galpoes" hidden><div id="loja-wh"></div></div>
+      <div data-lojap="empresas" hidden><div id="loja-biz"></div></div>
+      <div data-lojap="feirao" hidden>
+        <div class="feirao-head"><h3>Feirão 21</h3><span class="muted small">Anúncios de jogadores online aparecem na hora para todo mundo (no celular também). Os jogadores do mundo anunciam mais caro e fazem propostas pelos seus anúncios.</span></div>
+        <div id="shop-offers"></div>
+        <div class="shop-cats" id="shop-cats" role="group" aria-label="categorias"></div>
+        <h3>à venda agora</h3>
+        <div class="shop-grid" id="shop-others"></div>
+        <h3>suas coisas (vender ou anunciar)</h3>
+        <div class="shop-grid" id="shop-mine"></div>
+      </div>
     </section>
 
     <!-- CARTAS RARAS -->
@@ -600,13 +614,27 @@
     </section>
 
     <!-- CONCESSIONÁRIA -->
-    <section id="p-carros" role="tabpanel" aria-labelledby="t-carros" class="panel">
-      <div class="listhead"><h2>concessionária</h2><span class="muted small">Carro desvaloriza 1,5% ao mês e paga IPVA e seguro. Trator e caminhão rendem na fazenda.</span></div>
-      <div class="cards cards--cars" id="showroom"></div>
-      <h3>máquinas agrícolas</h3>
-      <div id="maq"></div>
-      <h3>sua garagem</h3>
-      <div class="cards cards--cars" id="garage"></div>
+
+    <!-- SUÍNOS -->
+    <section id="p-suinos" role="tabpanel" aria-labelledby="t-suinos" class="panel" hidden>
+      <div class="listhead"><h2>suinocultura</h2><span class="muted small">Barracão, leitões, ração e o ponto certo de venda (por volta do 4º mês, ~120 kg).</span></div>
+      <div class="tiles" id="sn2-prices"></div>
+      <h3>seus barracões</h3><div class="gr-list" id="sn2-barns"></div>
+      <h3>comprar barracão</h3><div class="biz-grid" id="sn2-shop"></div>
+    </section>
+
+    <!-- NEGÓCIOS -->
+    <section id="p-negocios" role="tabpanel" aria-labelledby="t-negocios" class="panel" hidden>
+      <div class="listhead"><h2>seus negócios</h2><span class="muted small">Bancos, provedores de internet, supermercados e galpões. Compre as marcas na loja (categoria empresas).</span></div>
+      <div class="tiles" id="neg-stats"></div>
+      <div class="biz-owns" id="neg-list"></div>
+      <h3>armazém e galpões</h3><div id="neg-wh"></div>
+    </section>
+
+    <!-- FERAS -->
+    <section id="p-feras" role="tabpanel" aria-labelledby="t-feras" class="panel" hidden>
+      <div class="listhead"><h2>Feras 21</h2><span class="muted small">Suas feras caçam sozinhas enquanto esta tela fica aberta e visível. Gemas viram dinheiro; feras raras valem muito na loja.</span></div>
+      <div id="fr-root"></div>
     </section>
 
     <!-- BANCO -->

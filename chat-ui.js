@@ -17,7 +17,7 @@ export function attach(l) {
   lobby = l;
   if (!l.setOnChat) return;
   l.setOnChat((d, peer) => { if (d?.t === 'hist' && Array.isArray(d.list)) d.list.slice(-30).forEach(m => add({ ...m, pv: false }, false)); else add(d, false, peer); });
-  setInterval(() => { if (isOpen() && document.activeElement !== $('#chat-to')) { fillTo(); $('#chat-online').textContent = `${online().length} online`; } }, 2500);   // lista de quem está online sempre em dia
+  setInterval(() => { if (isOpen() && document.activeElement !== $('#chat-to')) { fillTo(); $('#chat-online').textContent = onlineLabel(); } }, 2500);   // lista de quem está online sempre em dia
   l.setOnJoin(id => { const pub = msgs.filter(m => !m.sys && !m.pv).slice(-20); if (pub.length) l.sendChat({ t: 'hist', list: pub }, id); });
 }
 async function refreshIdx() { try { idx = FE.econIndex(((await Auth.ranking?.()) || []).map(r => Number(r.worth))); } catch {} }
@@ -38,6 +38,8 @@ function add(raw, mine, peer) {
   }
   draw();
 }
+// quantos estão no salão agora: pessoas conectadas + jogadores do mundo online (o mesmo número do salão e do ranking)
+const onlineLabel = () => `${NPC.onlineSet(Live.now()).size + online().length + 1} online`;
 function badge() { const n = $('#chat-n'); n.textContent = unread; n.hidden = !unread; }
 function fillTo() {
   const sel = $('#chat-to'); if (!sel) return;
@@ -60,7 +62,7 @@ function draw() {
       ${esc(m.text).replace(/@([^\s@]{2,18})/g, '<b class="chat-at">@$1</b>')}</li>`;
   }).join('') || '<li class="is-sys">Ninguém falou ainda. Anuncie o que você vende ou procura!</li>';
   if (stick) el.scrollTop = el.scrollHeight;
-  $('#chat-online').textContent = lobby ? `${people.length} online` : 'conectando...';
+  $('#chat-online').textContent = onlineLabel();
   $('#chat-fee').textContent = brl(CH.highlightFee(idx));
   fillTo();
   const lvl = G.S.level || 1, locked = lvl < CH.MIN_LEVEL;

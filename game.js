@@ -10,6 +10,13 @@ import * as AV from './aviator.js';
 import * as FB from './aposta-ui.js';
 import * as TRU from './truco-ui.js';
 import * as SNU from './sinuca-ui.js';
+import * as NG from './negocios.js';
+import * as SH from './shop.js';
+import * as NGU from './negocios-ui.js';
+import * as SU from './suinos.js';
+import * as SUU from './suinos-ui.js';
+import * as FR from './feras.js';
+import * as FRU from './feras-ui.js';
 import * as RL from './roulette.js';
 import * as TR from './trader.js';
 import * as Auth from './auth.js';
@@ -426,10 +433,10 @@ function renderGranja() {
 }
 
 // ---------- mercado ----------
-const GOODS = { soja: 'soja', milho: 'milho', cafe: 'café', laranja: 'laranja', cana: 'cana-de-açúcar', arroba: 'boi gordo', bezerro: 'bezerro', frango: 'frango vivo' };
-const PHOTO = { soja: 'farm-soja', milho: 'farm-colheita', cafe: 'farm-cafe', laranja: 'farm-laranja', arroba: 'farm-pasto2', bezerro: 'farm-bezerro', cana: 'maq-colhedora', frango: 'granja-frangos', pintinho: 'granja-pintinhos', racao: 'granja-aviario' };
-const UNIT = { soja: 'saca 60 kg', milho: 'saca 60 kg', cafe: 'saca 60 kg', laranja: 'caixa 40,8 kg', arroba: 'arroba', bezerro: 'cabeça', cana: 'tonelada', frango: 'kg vivo', pintinho: 'cabeça', racao: 'kg' };
-const NOTE = { arroba: 'Preço da venda do seu gado (aba gado).', bezerro: 'Preço do leilão de bezerros (aba gado).', cana: 'Pago pela usina no corte (aba cana).', frango: 'Preço do lote na venda (aba granja).', pintinho: 'Custo para alojar (aba granja).', racao: 'Maior custo da granja.' };
+const GOODS = { soja: 'soja', milho: 'milho', cafe: 'café', laranja: 'laranja', cana: 'cana-de-açúcar', arroba: 'boi gordo', bezerro: 'bezerro', frango: 'frango vivo', suino: 'suíno vivo' };
+const PHOTO = { soja: 'farm-soja', milho: 'farm-colheita', cafe: 'farm-cafe', laranja: 'farm-laranja', arroba: 'farm-pasto2', bezerro: 'farm-bezerro', suino: 'farm-pasto', cana: 'maq-colhedora', frango: 'granja-frangos', pintinho: 'granja-pintinhos', racao: 'granja-aviario' };
+const UNIT = { soja: 'saca 60 kg', milho: 'saca 60 kg', cafe: 'saca 60 kg', laranja: 'caixa 40,8 kg', arroba: 'arroba', bezerro: 'cabeça', suino: 'kg vivo', cana: 'tonelada', frango: 'kg vivo', pintinho: 'cabeça', racao: 'kg' };
+const NOTE = { suino: 'Preço do lote de suínos (aba suínos).', arroba: 'Preço da venda do seu gado (aba gado).', bezerro: 'Preço do leilão de bezerros (aba gado).', cana: 'Pago pela usina no corte (aba cana).', frango: 'Preço do lote na venda (aba granja).', pintinho: 'Custo para alojar (aba granja).', racao: 'Maior custo da granja.' };
 function mkLive() {
   const now = Live.now();
   $('#mk-live').innerHTML = Object.entries(MK.ASSETS).map(([k, a]) => { const ch = MK.change(k, now) * 100; return `<div class="mk-live__i"><span class="muted small">${a.name} · ${a.ticker}</span><strong>${a.unit === 'R$' ? 'R$ ' : ''}${MK.fmt(k, MK.price(k, now))}${a.unit !== 'R$' ? ` <small>${a.unit}</small>` : ''}</strong><span class="delta ${ch >= 0 ? 'is-up' : 'is-down'}">${ch >= 0 ? '▲' : '▼'} ${Math.abs(ch).toFixed(2)}% na hora</span></div>`; }).join('');
@@ -438,7 +445,7 @@ setInterval(() => { if (!$('#p-mercado')?.hidden) mkLive(); }, 3000);
 function renderMercado() {
   const s = S();
   mkLive();
-  GR.ensure(s); PM.ensure(s); CN.ensure(s);
+  GR.ensure(s); PM.ensure(s); CN.ensure(s); SU.ensure(s);
   $('#goods').innerHTML = Object.entries(GOODS).filter(([k]) => s.prices[k] ?? GR.PRICES[k]).map(([k, label]) => {
     const p = s.prices[k] ?? GR.PRICES[k], pv = s.prev?.[k] ?? p, ch = (p / pv - 1) * 100, trade = k in s.stock && k !== 'cana';
     const money = v => (v < 100 ? `R$ ${v.toFixed(2).replace('.', ',')}` : brl(v));
@@ -460,7 +467,7 @@ function renderMercado() {
 const carImg = c => `assets/${c.img}.webp`;
 function renderCarros() {
   const s = S();
-  $('#showroom').innerHTML = Object.entries(L.CARS).filter(([, c]) => c.type !== 'maquina').map(([id, c]) => {
+  const PESADOS = ['trator', 'caminhao'], carCard = ([id, c]) => {
     const owned = s.cars.some(x => x.model === id);
     return `<article class="glass ccard">
       <div class="ccard__photo"><img src="${carImg(c)}" alt="${esc(c.name)}" loading="lazy">
@@ -472,7 +479,9 @@ function renderCarros() {
         <p class="small good perk">vantagem: ${esc([c.perk, PK.label(PK.CAR_PERKS[id])].filter(Boolean).join(', '))}</p>
         <button class="btn btn--gold" data-act="buy-car" data-id="${id}">comprar</button>
       </div></article>`;
-  }).join('');
+  };
+  $('#showroom').innerHTML = Object.entries(L.CARS).filter(([, c]) => c.type !== 'maquina' && !PESADOS.includes(c.type)).map(carCard).join('');
+  $('#heavy').innerHTML = Object.entries(L.CARS).filter(([, c]) => PESADOS.includes(c.type)).map(carCard).join('');
   renderMaq(s);
   $('#garage').innerHTML = s.cars.length ? s.cars.map(car => {
     const c = L.CARS[car.model], lost = 1 - car.value / c.price;
@@ -501,6 +510,24 @@ function renderMaq(s) {
     + (hasC ? `<h4 class="maq__t">para o seu canavial</h4><div class="cards cards--cars">${colh}${list('cana')}</div>` : '')
     || '<p class="empty glass">Máquinas de laranja aparecem aqui quando você planta um pomar; as de cana, quando planta um canavial (abas laranja e cana).</p>';
 }
+
+// ---------- loja unificada: carros, pesados, máquinas, galpões, empresas e Feirão 21 ----------
+let lojaCat = 'carros';
+function renderLoja(c) {
+  if (c) lojaCat = c;
+  document.querySelectorAll('[data-loja]').forEach(b => b.classList.toggle('is-on', b.dataset.loja === lojaCat));
+  document.querySelectorAll('[data-lojap]').forEach(p => { p.hidden = p.dataset.lojap !== lojaCat; });
+  if (lojaCat === 'carros' || lojaCat === 'pesados' || lojaCat === 'agro') renderCarros();
+  if (lojaCat === 'galpoes') $('#loja-wh').innerHTML = NGU.whHTML();
+  if (lojaCat === 'empresas') $('#loja-biz').innerHTML = NGU.shopHTML();
+  if (lojaCat === 'feirao') SHUI.render();
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-loja], [data-loja-go]'); if (!t) return;
+  const c = t.dataset.loja || t.dataset.lojaGo;
+  if (t.dataset.lojaGo) G.goto('loja');
+  renderLoja(c);
+});
 
 // ---------- banco ----------
 function renderBanco() {
@@ -562,7 +589,7 @@ function openProfile(pid) {
 }
 
 // nome e foto de cada tipo de item (inventário, loja e trocas). Tipo novo sem entrada aqui ainda ganha nome e foto genéricos.
-export const ITEM_KIND = { car: 'veículo', animal: 'animal', land: 'terra', good: 'armazém', card: 'carta rara', player: 'jogador de futebol', squad: 'futebol', club: 'clube de futebol', aviario: 'granja' };
+export const ITEM_KIND = { car: 'veículo', animal: 'animal', land: 'terra', good: 'armazém', card: 'carta rara', player: 'jogador de futebol', squad: 'futebol', club: 'clube de futebol', aviario: 'granja', fera: 'fera', galpao: 'galpão', empresa: 'empresa' };
 const GOOD_IMG = { soja: 'farm-soja', milho: 'farm-colheita', cafe: 'farm-cafe', laranja: 'farm-laranja' };
 export function itemMedia(i) {
   const d = i.data || {};
@@ -572,19 +599,24 @@ export function itemMedia(i) {
   if (i.kind === 'good') return `<img src="assets/${GOOD_IMG[i.good] || 'farm-colheita'}.webp" alt="" loading="lazy">`;
   if (i.kind === 'card') return `<span class="icard__cardart" style="background-image:url(assets/cards/${d.champ}.webp)"></span>`;
   if (i.kind === 'player' || i.kind === 'squad' || i.kind === 'club') return '<img src="assets/photo-stadium.webp" alt="" loading="lazy">';
+  if (i.kind === 'fera') return `<span class="icard__sprite">${FRU.feraSVG(d.sp, 90)}</span>`;
+  if (i.kind === 'galpao') return '<img src="assets/farm-colheita.webp" alt="" loading="lazy">';
+  if (i.kind === 'empresa') return '<img src="assets/photo-vegas.webp" alt="" loading="lazy">';
   if (i.kind === 'aviario') return `<img src="assets/${GR.HOUSES[d.type]?.img || 'granja-galpao'}.webp" alt="" loading="lazy">`;
   return '<img src="assets/photo-chips.webp" alt="" loading="lazy">';
 }
 // inventário: tudo o que o jogador tem, e quem está online para negociar
+let invCat = 'all';
+document.addEventListener('click', e => { const b = e.target.closest('[data-invcat]'); if (b) { invCat = b.dataset.invcat; renderInv(); } });
 function renderInv() {
   const items = TD.inventory(S());
   const total = items.reduce((t, i) => t + (i.value || 0), 0);
   $('#inv-sum').textContent = `${items.length} itens trocáveis, ${int(S().chips)} fichas e ${brl(S().money)} em dinheiro`;
   const players = items.filter(i => i.kind === 'player'), shown = items.filter(i => i.kind !== 'player');
   if (players.length) shown.push({ kind: 'squad', label: `elenco do ${S().fut.club}: ${players.length} jogadores`, value: players.reduce((t, i) => t + i.value, 0) });
-  $('#inv-items').innerHTML = shown.length ? shown.map(i => `<article class="glass icard icard--${i.kind}">${itemMedia(i)}
-    <div><span class="tag tag--dark">${ITEM_KIND[i.kind] || i.kind}</span><h4>${esc(i.label)}</h4>${i.value ? `<p class="muted small">vale cerca de ${brl(i.value)}</p>` : ''}</div></article>`).join('')
-    : '<p class="empty glass">Nada para trocar ainda. Compre carros, animais, terras ou guarde sacas no armazém.</p>';
+  const n = SHUI.invCats();
+  $('#inv-cats').innerHTML = [['all', 'tudo'], ...Object.entries(SH.CATS)].filter(([k]) => k === 'all' || n[k]).map(([k, v]) => `<button class="shop-cat${invCat === k ? ' is-on' : ''}" data-invcat="${k}">${v}${k !== 'all' ? ` <small>${n[k]}</small>` : ''}</button>`).join('');
+  $('#inv-items').innerHTML = SHUI.mineHTML(invCat);
   renderFeira();
   const ppl = TUI.online();
   $('#inv-peers').innerHTML = ppl.length ? ppl.map(p => `<li><span class="who__av">${avatarSVG(p.look || {}, { label: p.name })}</span><span>${esc(p.name)}<small class="muted"> nível ${p.level}</small></span>
@@ -654,12 +686,12 @@ function feiraSell() {
 }
 G.onLobby = l => { TUI.attach(l); CHUI.attach(l); SHUI.attach(l); };
 G.onShopMsg = (d, peer) => SHUI.onMsg(d, peer);
-G.onPeers = () => { if (currentTab === 'inventario') renderInv(); };
+G.onPeers = () => { if (currentTab === 'inventario') renderInv(); SHUI.onPeers(); };
 document.addEventListener('submit', e => { if (e.target.id === 'tr-chat-form') { e.preventDefault(); TUI.chat(); } });
 
 // desempenho: cada aba só é desenhada quando está aberta (ou quando o usuário entra nela)
 const PANELS = { personagem: () => renderChar(), terras: () => renderTerras(), gado: () => renderGado(), mercado: () => renderMercado(),
-  carros: () => renderCarros(), banco: () => renderBanco(), livro: () => renderLivro(), haras: () => SUI.render(), trabalho: () => JUI.render(), futebol: () => FUI.render(), inventario: () => renderInv(), ranking: () => RKUI.render(), laranja: () => renderPomar(), cana: () => renderCana(), cartas: () => renderCartas(), granja: () => renderGranja(), loja: () => SHUI.render(), mesa: () => C.renderLobby() };
+  carros: () => renderLoja('carros'), suinos: () => SUU.render(), negocios: () => NGU.render(), feras: () => FRU.render(), banco: () => renderBanco(), livro: () => renderLivro(), haras: () => SUI.render(), trabalho: () => JUI.render(), futebol: () => FUI.render(), inventario: () => renderInv(), ranking: () => RKUI.render(), laranja: () => renderPomar(), cana: () => renderCana(), cartas: () => renderCartas(), granja: () => renderGranja(), loja: () => renderLoja(), mesa: () => C.renderLobby() };
 let currentTab = 'mesa';
 function render() {
   renderHud(); renderMissions();
@@ -735,6 +767,8 @@ const ACTS = {
   'shop-buy'(id) { SHUI.buy(id); },
   'shop-cat'(id) { SHUI.setCat(id); },
   'shop-npc'(id) { SHUI.buyNpc(id); },
+  'shop-offer-yes'(id) { SHUI.acceptOffer(id); },
+  'shop-offer-no'(id) { SHUI.rejectOffer(id); },
   'ft-take'(id) { FUI.take(id); },
   'ft-slot'(id) { FUI.openSlot(id); },
   'ft-pick'(id) { FUI.pick(id); },
@@ -860,7 +894,7 @@ const ACTS = {
     const v = h.heads * L.arrobas(h.kg) * S().prices.arroba * (1 - L.cattleFee(S())) * PK.mult(S(), 'cattle');
     S().herd.splice(S().herd.indexOf(h), 1); S().money += v; note(`venda de ${h.heads} cabeças`, v); say(`Lote vendido por ${brl(v)}.`); award('sellherd');
   },
-  'buy-good'(k) { const n = qty(`q-${k}`); if (n && pay(n * S().prices[k], `compra de ${n} sacas de ${GOODS[k]}`)) { S().stock[k] += n; say('Mercadoria no armazém.'); } },
+  'buy-good'(k) { const n = qty(`q-${k}`); NG.ensure(S()); if (n > NG.room(S(), k)) return say(`Não cabe no armazém: dá para guardar mais ${int(NG.room(S(), k))}. Compre galpões na loja.`, true); if (n && pay(n * S().prices[k], `compra de ${n} sacas de ${GOODS[k]}`)) { S().stock[k] += n; say('Mercadoria no armazém.'); } },
   'sell-good'(k) {
     const n = Math.min(qty(`q-${k}`), S().stock[k]);
     if (!n) return say(`Você não tem ${GOODS[k]} no armazém.`, true);
@@ -1092,7 +1126,7 @@ document.addEventListener('pointermove', e => {
 document.addEventListener('pointerout', e => { const card = e.target.closest?.('.tcard'); if (card && !card.contains(e.relatedTarget)) { card.style.removeProperty('--rx'); card.style.removeProperty('--ry'); } });
 
 // mini tutorial sempre visível no topo de cada aba
-const HOWTO = {"mesa":["Como jogar no salão de jogos",["Escolha uma mesa de 21 (ou crie a sua) e sente.","Coloque suas fichas na aposta e confirme. Fichas vêm do caixa (R$ 10 cada).","Peça carta (H), pare (S), dobre ou divida. Chegar mais perto de 21 que o dealer, sem passar, ganha. Blackjack paga 3 para 2.","Na roleta e no Aviator o caminho é o mesmo: aposte fichas e acompanhe o resultado.","No truco você e um parceiro enfrentam uma dupla: peça truco, aceite, corra ou aumente. Partida até 12 pontos; a dupla vencedora leva 1,9x a entrada.","Na sinuca (bola 8) mire tocando na mesa, escolha a força e taque. Encaçape as suas (lisas ou listradas) e termine na 8.","Truco e sinuca também têm mesas online: crie a sua e mande o link para os amigos."]],"trader":["Como funciona a mesa de operações",["Escolha o ativo (boi, soja, dólar ou bitcoin) e o tamanho das velas (1, 5 ou 10 min) para ler o gráfico.","Digite o valor e o tempo da operação: 1, 5 ou 10 minutos.","Clique em \"sobe\" se acha que o preço vai estar mais alto no fim do tempo, ou \"desce\" se vai estar mais baixo.","O valor sai na hora. Acertou: recebe 1,85x. Errou ou ficou igual: perde o valor. Não dá para desistir no meio.","A faixa de cotações no topo mostra os preços ao vivo em qualquer tela."]],"trabalho":["Como funciona o trabalho",["Clique em \"começar turno\": são 90 segundos.","Clique nos pedidos do mapa para aceitar (a moto leva até 3).","Quando a moto chegar, confirme na hora (espaço) para ganhar gorjeta. Pneu furado: aperte F.","Bom aproveitamento sobe seu nível e os pedidos pagam mais. Serve de renda quando o dinheiro acaba."]],"futebol":["Como funciona o futebol",["Ao vivo e apostas: as Séries A, B e C rodam sozinhas, uma rodada a cada 4 minutos. Veja a classificação, o relatório dos times e aposte nos jogos da próxima rodada (resultado, gols, escanteios, cartões, saída de bola ou placar exato).","Dono de clube recebe cota de TV a cada jogo do seu time no Brasileirão ao vivo, com bônus quando vence.","Escolha um clube real e pague o valor para assumir.","Em \"próximo jogo\" defina formação e estilo e assista à partida (ou simule rápido).","No mercado, contrate jogadores (negocie o preço) e venda os que sobram; no estádio, aumente a bilheteria.","Fique entre os 4 primeiros para subir de divisão; os 4 últimos caem."]],"ranking":["Como funciona o ranking",["O ranking junta todos os jogadores do 21 World e muda ao vivo.","Veja quanto falta para passar quem está na sua frente.","Troque a categoria: patrimônio, nível, fazendeiros (hectares) e cassino (maior prêmio).","Toque em qualquer jogador para ver o perfil."]],"loja":["Como funciona a loja",["Tudo que é seu aparece aqui: cavalos, galgos, carros, terras, sacas, cartas, jogadores e o seu clube.","\"Vender agora\" paga na hora o preço da loja.","\"Anunciar\" deixa você escolher o preço: outros jogadores online veem e compram na hora.","Se nenhum jogador comprar, um comprador da loja pode levar, pagando no máximo 5% acima do preço de venda na hora.","Na parte de baixo ficam os anúncios dos outros jogadores: carros, máquinas, terras, cavalos, gado, produtos, cartas e jogadores de futebol. Os anúncios mudam a cada 10 minutos.","Use as categorias no topo para achar mais rápido."]],"cartas":["Como funcionam as cartas raras",["Abra pacotes ou ganhe cartas na roleta do dia.","Quanto mais rara (bronze, prata, esmeralda, diamante, mestre, challenger), mais vale.","Use como moeda: troque com outros jogadores no inventário, pague terras ou venda para a loja.","Complete o álbum com os 12 campeões.","Cartas valorizam todo mês do mundo: quanto mais rara, mais valoriza (até 40 meses). Segure as raras para vender caro depois.","Pacotes têm estoque limitado por mês: quando esgota, só no mês seguinte."]],"inventario":["Como funciona o inventário",["Aqui está tudo que você pode trocar: carros, terras, animais, jogadores e cartas.","Na feira, negocie a compra e venda: oferta muito baixa faz o negociante desistir.","Com outro jogador online, use \"propor troca\": os dois montam a oferta, ficam prontos e confirmam.","Cartas valem dinheiro e podem pagar terras."]],"haras":["Como funciona o canil e haras",["Compre um animal no leilão do mês.","Treine: cada treino gasta 1 das 4 semanas do mês e cansa o animal.","Inscreva em uma prova da sua classe. Corrida também gasta uma semana.","\"Sem semanas\" = acabaram as 4 semanas do mês do mundo. O mês passa sozinho (relógio no topo, igual para todos) e as semanas voltam.","Só o 1º e o 2º lugar dão lucro. Animal lesionado precisa de veterinário."]],"corridas":["Como funciona a corrida de galgos",["Escolha o cachorro em quem vai apostar e o valor em fichas.","Quanto menor a chance dele, maior o retorno.","Clique em \"apostar e largar\" e acompanhe a corrida."]],"personagem":["Como funciona o personagem",["Escolha o visual e o nome.","Itens pagos (acessórios, roupas) são seus para sempre.","Cada acessório dá uma vantagem permanente: veja a lista \"suas vantagens\"."]],"terras":["Como funcionam as terras",["Escolha um lote à venda e veja o benefício que ele dá ao comprar.","Comprar é o melhor negócio: a terra valoriza, rende vantagens, serve de garantia no banco, planta sem restrição e pode ser arrendada a terceiros.","Arrendar de terceiros custa aluguel todo mês (+8% ao ano), não dá vantagem nenhuma e a lavoura só é permitida com trator, com 20% a mais de custo e 15% da safra para o dono.","Se arrendou e gostou, compre: o aluguel que você já pagou abate o preço (até 40%).","Dá para pagar a compra também com cartas.","Na terra própria dá para plantar pomar de laranja: forma em 6 meses e colhe a cada 4. Deixe o defensivo ligado: sem ele a praga sobe, a safra cai até ser perdida inteira e o greening pode matar o pomar (perde todo o investimento)."]],"cana":["Como funciona o canavial",["Canavial só na terra própria: R$ 11 mil por hectare para plantar.","Primeiro corte (cana-planta) em 10 meses; depois corta de novo a cada 10 meses (soca). Cada corte rende uns 12% menos: depois de 5 cortes, reforme.","No corte a cana vai direto para a usina: ela paga por tonelada e você paga corte, carregamento e frete (quanto mais longe a usina, mais caro).","Colhedora própria barateia o corte e caminhão próprio barateia o frete.","Deixe os tratos culturais ligados: sem eles a broca e o mato derrubam a produção. Na seca (julho a outubro) pode pegar fogo."]],"laranja":["Como funciona o pomar de laranja",["Pomar só na terra própria: compre terra na aba terras e plante aqui (R$ 18 mil por hectare).","São 6 meses de formação; depois colhe a cada 4 meses, cerca de 330 caixas por hectare, direto para o armazém.","Deixe o defensivo ligado (R$ 650 por hectare por mês): ele segura a praga.","Sem defensivo a praga sobe: a safra cai e com praga muito alta você perde a colheita inteira. O greening pode matar o pomar.","Venda as caixas aqui ou no mercado quando o preço estiver bom."]],"granja":["Como funciona a granja",["Construa um galpão: quanto maior e mais moderno, mais aves e menos ração por kg (o climatizado não sofre com calor).","Aloje os pintinhos no galpão vazio. Vacinar custa pouco e evita perder muitas aves numa doença.","A cada mês do mundo eles crescem e comem ração (o maior custo). Energia e mão de obra também são pagas todo mês.","Venda no 2º mês (cerca de 2,8 kg por ave): é o ponto de lucro. Depois disso comem muito e quase não ganham peso.","Preço do frango, do pintinho e da ração mudam todo mês: fique de olho."]],"gado":["Como funciona o gado",["Compre bezerros no leilão. Quem tem terra deixa no pasto de graça (cerca de 1 cabeça por hectare) e engorda 18 kg por mês.","Sem terra também dá: o gado vai para o confinamento terceirizado (boitel), paga R$ 95 por cabeça por mês e engorda 22 kg.","Venda quando o boi chegar perto de 450 kg e o preço da arroba estiver bom.","Na venda escolha: revender vivo ou abater. Abater em terceiros paga um pouco mais; no seu frigorífico paga bem mais e ainda vende o couro (até 300 bois por mês).","Com frigorífico próprio dá para comprar boi gordo pronto e abater na hora."]],"mercado":["Como funciona o mercado",["Veja o preço de soja, milho e café, que variam todo mês.","Guarde a colheita no armazém e venda quando o preço subir."]],"carros":["Como funciona a concessionária",["Todo carro tem uma vantagem permanente (entregas, XP, provas...).","Você paga IPVA e seguro todo mês e o carro desvaloriza.","Vender na loja devolve 92% do valor atual.","Tem pomar de laranja ou canavial? Aparecem as máquinas da sua cultura: pulverizador e plataforma para a laranja; colhedora, transbordo e rodotrem para a cana. Cada uma barateia um custo de verdade."]],"banco":["Como funciona o banco",["Peça empréstimo usando terras e gado como garantia.","Pague as parcelas em dia: 2 atrasadas e o banco toma a terra.","Você também pode emprestar dinheiro a outras pessoas e ganhar juros, com risco de calote."]],"livro":["Livro-caixa",["Aqui fica o registro de tudo que entrou e saiu do seu dinheiro."]]};
+const HOWTO = {"mesa":["Como jogar no salão de jogos",["Escolha uma mesa de 21 (ou crie a sua) e sente.","Coloque suas fichas na aposta e confirme. Fichas vêm do caixa (R$ 10 cada).","Peça carta (H), pare (S), dobre ou divida. Chegar mais perto de 21 que o dealer, sem passar, ganha. Blackjack paga 3 para 2.","Na roleta e no Aviator o caminho é o mesmo: aposte fichas e acompanhe o resultado.","No truco você e um parceiro enfrentam uma dupla: peça truco, aceite, corra ou aumente. Partida até 12 pontos; a dupla vencedora leva 1,9x a entrada.","Na sinuca (bola 8) mire tocando na mesa, escolha a força e taque. Encaçape as suas (lisas ou listradas) e termine na 8.","Truco e sinuca também têm mesas online: crie a sua e mande o link para os amigos."]],"trader":["Como funciona a mesa de operações",["Escolha o ativo (boi, soja, dólar ou bitcoin) e o tamanho das velas (1, 5 ou 10 min) para ler o gráfico.","Digite o valor e o tempo da operação: 1, 5 ou 10 minutos.","Clique em \"sobe\" se acha que o preço vai estar mais alto no fim do tempo, ou \"desce\" se vai estar mais baixo.","O valor sai na hora. Acertou: recebe 1,85x. Errou ou ficou igual: perde o valor. Não dá para desistir no meio.","A faixa de cotações no topo mostra os preços ao vivo em qualquer tela."]],"trabalho":["Como funciona o trabalho",["Clique em \"começar turno\": são 90 segundos.","Clique nos pedidos do mapa para aceitar (a moto leva até 3).","Quando a moto chegar, confirme na hora (espaço) para ganhar gorjeta. Pneu furado: aperte F.","Bom aproveitamento sobe seu nível e os pedidos pagam mais. Serve de renda quando o dinheiro acaba."]],"futebol":["Como funciona o futebol",["Ao vivo e apostas: as Séries A, B e C rodam sozinhas, uma rodada a cada 4 minutos. Veja a classificação, o relatório dos times e aposte nos jogos da próxima rodada (resultado, gols, escanteios, cartões, saída de bola ou placar exato).","Dono de clube recebe cota de TV a cada jogo do seu time no Brasileirão ao vivo, com bônus quando vence.","Escolha um clube real e pague o valor para assumir.","Em \"próximo jogo\" defina formação e estilo e assista à partida (ou simule rápido).","No mercado, contrate jogadores (negocie o preço) e venda os que sobram; no estádio, aumente a bilheteria.","Fique entre os 4 primeiros para subir de divisão; os 4 últimos caem."]],"ranking":["Como funciona o ranking",["O ranking junta todos os jogadores do 21 World e muda ao vivo.","Veja quanto falta para passar quem está na sua frente.","Troque a categoria: patrimônio, nível, fazendeiros (hectares) e cassino (maior prêmio).","Toque em qualquer jogador para ver o perfil."]],"loja":["Como funciona a loja",["Tudo que é seu aparece aqui: cavalos, galgos, carros, terras, sacas, cartas, jogadores e o seu clube.","\"Vender agora\" paga na hora o preço da loja.","\"Anunciar\" deixa você escolher o preço: outros jogadores online veem e compram na hora.","Se nenhum jogador comprar, um comprador da loja pode levar, pagando no máximo 5% acima do preço de venda na hora.","Na parte de baixo ficam os anúncios dos outros jogadores: carros, máquinas, terras, cavalos, gado, produtos, cartas e jogadores de futebol. Os anúncios mudam a cada 10 minutos.","Use as categorias no topo para achar mais rápido."]],"cartas":["Como funcionam as cartas raras",["Abra pacotes ou ganhe cartas na roleta do dia.","Quanto mais rara (bronze, prata, esmeralda, diamante, mestre, challenger), mais vale.","Use como moeda: troque com outros jogadores no inventário, pague terras ou venda para a loja.","Complete o álbum com os 12 campeões.","Cartas valorizam todo mês do mundo: quanto mais rara, mais valoriza (até 40 meses). Segure as raras para vender caro depois.","Pacotes têm estoque limitado por mês: quando esgota, só no mês seguinte."]],"inventario":["Como funciona o inventário",["Aqui está tudo que você pode trocar: carros, terras, animais, jogadores e cartas.","Na feira, negocie a compra e venda: oferta muito baixa faz o negociante desistir.","Com outro jogador online, use \"propor troca\": os dois montam a oferta, ficam prontos e confirmam.","Cartas valem dinheiro e podem pagar terras."]],"haras":["Como funciona o canil e haras",["Compre um animal no leilão do mês.","Treine: cada treino gasta 1 das 4 semanas do mês e cansa o animal.","Inscreva em uma prova da sua classe. Corrida também gasta uma semana.","\"Sem semanas\" = acabaram as 4 semanas do mês do mundo. O mês passa sozinho (relógio no topo, igual para todos) e as semanas voltam.","Só o 1º e o 2º lugar dão lucro. Animal lesionado precisa de veterinário."]],"corridas":["Como funciona a corrida de galgos",["Escolha o cachorro em quem vai apostar e o valor em fichas.","Quanto menor a chance dele, maior o retorno.","Clique em \"apostar e largar\" e acompanhe a corrida."]],"personagem":["Como funciona o personagem",["Escolha o visual e o nome.","Itens pagos (acessórios, roupas) são seus para sempre.","Cada acessório dá uma vantagem permanente: veja a lista \"suas vantagens\"."]],"terras":["Como funcionam as terras",["Escolha um lote à venda e veja o benefício que ele dá ao comprar.","Comprar é o melhor negócio: a terra valoriza, rende vantagens, serve de garantia no banco, planta sem restrição e pode ser arrendada a terceiros.","Arrendar de terceiros custa aluguel todo mês (+8% ao ano), não dá vantagem nenhuma e a lavoura só é permitida com trator, com 20% a mais de custo e 15% da safra para o dono.","Se arrendou e gostou, compre: o aluguel que você já pagou abate o preço (até 40%).","Dá para pagar a compra também com cartas.","Na terra própria dá para plantar pomar de laranja: forma em 6 meses e colhe a cada 4. Deixe o defensivo ligado: sem ele a praga sobe, a safra cai até ser perdida inteira e o greening pode matar o pomar (perde todo o investimento)."]],"cana":["Como funciona o canavial",["Canavial só na terra própria: R$ 11 mil por hectare para plantar.","Primeiro corte (cana-planta) em 10 meses; depois corta de novo a cada 10 meses (soca). Cada corte rende uns 12% menos: depois de 5 cortes, reforme.","No corte a cana vai direto para a usina: ela paga por tonelada e você paga corte, carregamento e frete (quanto mais longe a usina, mais caro).","Colhedora própria barateia o corte e caminhão próprio barateia o frete.","Deixe os tratos culturais ligados: sem eles a broca e o mato derrubam a produção. Na seca (julho a outubro) pode pegar fogo."]],"laranja":["Como funciona o pomar de laranja",["Pomar só na terra própria: compre terra na aba terras e plante aqui (R$ 18 mil por hectare).","São 6 meses de formação; depois colhe a cada 4 meses, cerca de 330 caixas por hectare, direto para o armazém.","Deixe o defensivo ligado (R$ 650 por hectare por mês): ele segura a praga.","Sem defensivo a praga sobe: a safra cai e com praga muito alta você perde a colheita inteira. O greening pode matar o pomar.","Venda as caixas aqui ou no mercado quando o preço estiver bom."]],"granja":["Como funciona a granja",["Construa um galpão: quanto maior e mais moderno, mais aves e menos ração por kg (o climatizado não sofre com calor).","Aloje os pintinhos no galpão vazio. Vacinar custa pouco e evita perder muitas aves numa doença.","A cada mês do mundo eles crescem e comem ração (o maior custo). Energia e mão de obra também são pagas todo mês.","Venda no 2º mês (cerca de 2,8 kg por ave): é o ponto de lucro. Depois disso comem muito e quase não ganham peso.","Preço do frango, do pintinho e da ração mudam todo mês: fique de olho."]],"gado":["Como funciona o gado",["Compre bezerros no leilão. Quem tem terra deixa no pasto de graça (cerca de 1 cabeça por hectare) e engorda 18 kg por mês.","Sem terra também dá: o gado vai para o confinamento terceirizado (boitel), paga R$ 95 por cabeça por mês e engorda 22 kg.","Venda quando o boi chegar perto de 450 kg e o preço da arroba estiver bom.","Na venda escolha: revender vivo ou abater. Abater em terceiros paga um pouco mais; no seu frigorífico paga bem mais e ainda vende o couro (até 300 bois por mês).","Com frigorífico próprio dá para comprar boi gordo pronto e abater na hora."]],"mercado":["Como funciona o mercado",["Veja o preço de soja, milho e café, que variam todo mês.","Guarde a colheita no armazém e venda quando o preço subir."]],"loja":["Como funciona a loja 21",["Tudo o que se compra fica aqui, em seções: carros, caminhões e tratores, máquinas agrícolas, galpões e empresas (bancos, provedores e supermercados).","No Feirão 21 os jogadores anunciam de tudo. Anúncio de jogador online aparece na hora para todo mundo, no celular também.","Para vender: anuncie pelo seu preço (no Feirão ou direto no inventário) ou venda na hora para a loja.","Os jogadores do mundo anunciam sempre mais caro e fazem propostas pelos seus anúncios; se você estiver endividado, eles oferecem menos."]],"suinos":["Como funciona a suinocultura",["Compre um barracão: os maiores e tecnificados gastam menos ração por kg e perdem menos animais.","Aloje leitões de ~23 kg (vacine: sem vacina um surto pode levar parte do lote).","Eles engordam ~24 kg por mês comendo ração (o maior custo). Venda por volta do 4º mês (~120 kg): depois disso a engorda cai.","Preço do suíno, do leitão e da ração mudam todo mês."]],"negocios":["Como funcionam os negócios",["Compre a marca na loja (categoria empresas): vem só a marca, sem dinheiro em caixa. Folha e despesas saem do seu bolso todo mês.","Banco: coloque dinheiro no caixa para emprestar. Os clientes pedem valores pequenos, que crescem devagar com o tempo. Juros mais altos = mais calote.","Provedor: construa portas de fibra (caro) e escolha a mensalidade. Assinantes entram e cancelam todo mês.","Supermercado: escolha o nível de preço. Preço baixo atrai clientes; preço alto espanta.","Lucro pequeno, mas a marca valoriza devagar: é investimento de longo prazo.","Galpões aumentam o armazém: sem espaço, a colheita que sobra é vendida na hora com desconto."]],"feras":["Como funcionam as Feras 21",["Escolha sua fera inicial. Com esta tela aberta e visível, ela caça sozinha.","Cada fera derrotada dá gemas e experiência; às vezes uma fera selvagem é capturada (raras valem muito).","Monte um time de até 3 e libere rotas mais fundas (mais gemas e mais raras).","Troque gemas por dinheiro (limite por dia) ou venda feras na loja."]],"carros":["Como funciona a concessionária",["Todo carro tem uma vantagem permanente (entregas, XP, provas...).","Você paga IPVA e seguro todo mês e o carro desvaloriza.","Vender na loja devolve 92% do valor atual.","Tem pomar de laranja ou canavial? Aparecem as máquinas da sua cultura: pulverizador e plataforma para a laranja; colhedora, transbordo e rodotrem para a cana. Cada uma barateia um custo de verdade."]],"banco":["Como funciona o banco",["Peça empréstimo usando terras e gado como garantia.","Pague as parcelas em dia: 2 atrasadas e o banco toma a terra.","Você também pode emprestar dinheiro a outras pessoas e ganhar juros, com risco de calote."]],"livro":["Livro-caixa",["Aqui fica o registro de tudo que entrou e saiu do seu dinheiro."]]};
 for (const [id, [title, steps]] of Object.entries(HOWTO)) {
   const p = document.getElementById(`p-${id}`);
   if (p) p.insertAdjacentHTML('afterbegin', `<details class="howto" ${matchMedia('(max-width: 40rem)').matches ? '' : 'open'}><summary class="howto__t">${title}</summary><ol>${steps.map(s => `<li>${s}</li>`).join('')}</ol></details>`);   // no celular começa fechado: toque no título para abrir
@@ -1103,7 +1137,7 @@ for (const [id, [title, steps]] of Object.entries(HOWTO)) {
 // (no máximo 6 de uma vez, quem ficou muito tempo fora é "perdoado"), sem botão para adiantar o próprio mês.
 function worldMonths() {
   const w = Live.world(), t = Live.now(), target = W.current(w, t), s = S();
-  GR.ensure(s); PM.ensure(s); AB.ensure(s); CN.ensure(s); CD.setMonth(s.month); CD.ensure(s);
+  GR.ensure(s); PM.ensure(s); AB.ensure(s); CN.ensure(s); SU.ensure(s); NG.ensure(s); CD.setMonth(s.month); CD.ensure(s);
   if (s.worldSync !== true) { s.month = target; s.worldSync = true; CD.setMonth(s.month); save(); render(); return; }     // primeira vez: entra no mês atual do mundo
   const p = W.plan(s.month, target);
   if (!p.ticks || C.busyRound() || JUI.running() || SUI.isRunning()) return;
@@ -1115,6 +1149,9 @@ function worldMonths() {
     for (const l of GR.monthly(s)) note(l.txt, l.val);
     for (const l of PM.monthly(s)) note(l.txt, l.val);
     for (const l of CN.monthly(s)) note(l.txt, l.val);
+    for (const l of SU.monthly(s)) note(l.txt, l.val);
+    for (const l of NG.monthly(s)) note(l.txt, l.val);
+    for (const l of NG.enforce(s)) { note(l.txt, l.val); say(l.txt[0].toUpperCase() + l.txt.slice(1) + '. Compre galpões na loja.', true); }
     for (const l of AB.monthly(s)) note(l.txt, l.val);
     harvests += lines.filter(l => l.txt.startsWith('colheita')).length;
     award('month');
@@ -1159,7 +1196,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 15;
+const APP_VERSION = 16;
 let updateShown = false, updateMsg = '';
 async function checkUpdate() {
   if (updateShown) return;
