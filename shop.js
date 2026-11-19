@@ -9,7 +9,6 @@ import * as GR from './granja.js';
 import * as PM from './pomar.js';
 import * as CN from './cana.js';
 import * as NG from './negocios.js';
-import * as FR from './feras.js';
 import { debt } from './logic.js';
 
 export const HOUSE_RATE = { car: CAR_BUYBACK, land: 0.95, card: CD.SELL, player: 0.8 };
@@ -29,7 +28,6 @@ export function items(s) {
   const out = inventory(s).map(i => ({ ...i, key: `${i.kind}:${i.id}` }));
   for (const h of (s.granja?.houses || []).filter(h => h && GR.HOUSES[h.type])) out.push({ kind: 'aviario', id: h.id, key: `aviario:${h.id}`, label: `${GR.HOUSES[h.type].label} (granja)`, value: h.value, data: h });
   if (s.fut?.club) out.push({ kind: 'club', id: 'club', key: 'club:club', label: `clube ${s.fut.club} (${FT.DIVS[s.fut.div]})`, value: clubValue(s.fut) });
-  for (const f of s.feras?.box || []) out.push({ kind: 'fera', id: f.id, key: `fera:${f.id}`, label: `fera ${FR.sp(f.sp).name} (${FR.RARITY[FR.sp(f.sp).rar].label}, nv ${f.lv})`, value: FR.value(f), data: f });
   for (const w of s.biz?.wh || []) out.push({ kind: 'galpao', id: w.id, key: `galpao:${w.id}`, label: NG.WAREHOUSES[w.type].label, value: w.value, data: w });
   for (const c of ['banks', 'isps', 'markets']) for (const b of s.biz?.[c] || []) { const C = ({ banks: NG.BANKS, isps: NG.ISPS, markets: NG.MARKETS })[c][b.brand]; out.push({ kind: 'empresa', id: b.id, key: `empresa:${b.id}`, cat: c, label: `${C.name} (${({ banks: 'banco', isps: 'provedor', markets: 'supermercado' })[c]})`, value: NG.saleValue(s, c, b), data: b }); }
   return out;
@@ -43,7 +41,6 @@ export function housePrice(s, it) {
   if (it.kind === 'player') return Math.round(FT.value(it.data) * 0.8);
   if (it.kind === 'club') return clubValue(s.fut);
   if (it.kind === 'aviario') return Math.round(it.data.value * GR.HOUSE_RESALE);
-  if (it.kind === 'fera') return Math.round(FR.value(it.data) * 0.7);
   if (it.kind === 'galpao') return Math.round(it.data.value * 0.8);
   if (it.kind === 'empresa') return NG.saleValue(s, it.cat, it.data);
   return 0;
@@ -53,7 +50,6 @@ export function blocked(s, it) {
   if (it.kind === 'land' && it.data.crop) return 'terra com lavoura plantada: espere a colheita.';
   if (it.kind === 'aviario' && GR.lotOf(s, it.id)) return 'venda o lote de frangos antes.';
   if (it.kind === 'player' && s.fut.squad.length <= 14) return 'o elenco precisa de pelo menos 14 jogadores.';
-  if (it.kind === 'fera' && (s.feras?.box || []).length <= 1) return 'você precisa ficar com pelo menos uma fera.';
   if (it.kind === 'galpao' && NG.tons(s) > NG.capacity(s) - NG.WAREHOUSES[it.data.type].cap) return 'o estoque não cabe sem esse galpão: venda parte antes.';
   return null;
 }
@@ -69,7 +65,6 @@ export function remove(s, it) {
   if (it.kind === 'player') s.fut.squad = s.fut.squad.filter(p => p.id !== it.id);
   if (it.kind === 'club') delete s.fut;
   if (it.kind === 'aviario') s.granja.houses = s.granja.houses.filter(h => h.id !== it.id);
-  if (it.kind === 'fera') { s.feras.box = s.feras.box.filter(f => f.id !== it.id); s.feras.team = s.feras.team.filter(x => x !== it.id); if (!s.feras.team.length && s.feras.box[0]) s.feras.team = [s.feras.box[0].id]; }
   if (it.kind === 'galpao') s.biz.wh = s.biz.wh.filter(w => w.id !== it.id);
   if (it.kind === 'empresa') s.biz[it.cat] = s.biz[it.cat].filter(b => b.id !== it.id);
   s.shop = (s.shop || []).filter(l => l.key !== it.key);
@@ -119,7 +114,7 @@ import * as L from './logic.js';
 import * as NPCS from './npcs.js';
 import { apply as tradeApply } from './trade.js';
 export const NPC_WIN = 10 * 60 * 1000;
-export const CATS = { veiculo: 'veículos', maquina: 'máquinas', terra: 'terras', animal: 'cavalos e galgos', gado: 'gado', produto: 'produtos', carta: 'cartas', futebol: 'futebol', granja: 'granja', fera: 'feras', galpao: 'galpões', empresa: 'empresas' };
+export const CATS = { veiculo: 'veículos', maquina: 'máquinas', terra: 'terras', animal: 'cavalos e galgos', gado: 'gado', produto: 'produtos', carta: 'cartas', futebol: 'futebol', granja: 'granja', galpao: 'galpões', empresa: 'empresas' };
 function seeded(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const r100 = v => Math.round(v / 100) * 100;
 export function npcListings(s, now = Date.now()) {
@@ -150,7 +145,7 @@ export function buyNpc(s, id, now = Date.now()) {
   return { item: l };
 }
 // categoria de um item seu (para os filtros da loja)
-export const catOf = it => it.kind === 'fera' ? 'fera' : it.kind === 'galpao' ? 'galpao' : it.kind === 'empresa' ? 'empresa' : it.kind === 'car' ? (CARS[it.data?.model]?.type === 'maquina' ? 'maquina' : 'veiculo') : it.kind === 'land' ? 'terra' : it.kind === 'animal' ? 'animal'
+export const catOf = it => it.kind === 'galpao' ? 'galpao' : it.kind === 'empresa' ? 'empresa' : it.kind === 'car' ? (CARS[it.data?.model]?.type === 'maquina' ? 'maquina' : 'veiculo') : it.kind === 'land' ? 'terra' : it.kind === 'animal' ? 'animal'
   : it.kind === 'good' ? 'produto' : it.kind === 'card' ? 'carta' : it.kind === 'player' || it.kind === 'club' ? 'futebol' : it.kind === 'aviario' ? 'granja' : 'produto';
 
 // ---------- propostas dos jogadores do mundo pelos seus anúncios ----------

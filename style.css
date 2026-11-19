@@ -2054,37 +2054,6 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .inv-sell { display: grid; gap: 10px; align-content: start; }
 /* suínos */
 .sn2-lot { display: grid; gap: 6px; margin: 8px 0; padding: 10px; border-radius: 12px; background: rgba(255,255,255,.04); }
-/* feras */
-.fr-start { padding: 22px; text-align: center; } .fr-starters { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
-.fera-card { display: grid; justify-items: center; gap: 2px; padding: 10px 12px; border-radius: 16px; border: 2px solid color-mix(in oklab, var(--rc, #94a3b8) 70%, transparent); background: radial-gradient(circle at 50% 30%, color-mix(in oklab, var(--rc, #94a3b8) 25%, transparent), rgba(2, 6, 23, .6)); color: inherit; font: inherit; cursor: pointer; transition: transform .15s; }
-.fera-card:hover { transform: translateY(-3px); } .fera-card small { color: var(--color-muted); } .fera-card.is-team { box-shadow: 0 0 0 3px #facc15, 0 0 18px rgba(250, 204, 21, .5); }
-.fera--lendario { animation: lendglow 2s infinite; } @keyframes lendglow { 50% { box-shadow: 0 0 26px rgba(245, 158, 11, .8); } }
-.fr-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 19rem); gap: 14px; margin-bottom: 16px; }
-.fr-arena { position: relative; min-height: 300px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 40px 16px 20px; overflow: hidden;
-  background: radial-gradient(ellipse at 50% 120%, rgba(34, 197, 94, .35), transparent 60%), linear-gradient(#0c1a2e, #0a2a1a); }
-.fr-route { position: absolute; top: 10px; left: 14px; font-weight: 800; } .fr-route small { color: var(--color-muted); font-weight: 600; }
-.fr-state { position: absolute; top: 10px; right: 14px; font-size: .85rem; color: #86efac; } .fr-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: #22c55e; animation: fbpulse 1s infinite; }
-.fr-side { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; } .fr-vs { font: 900 1.6rem/1 var(--font-display); color: #fca5a5; }
-.fr-fighter { display: grid; justify-items: center; gap: 4px; } .fr-fighter small { font-size: .78rem; }
-.fr-side--me .fera-svg { animation: frbob 1.2s ease-in-out infinite; } .fr-side--foe .fera-svg { transform: scaleX(-1); }
-.fr-fighter.is-hit .fera-svg { filter: brightness(1.8) saturate(.5); }
-@keyframes frbob { 50% { transform: translateY(-5px); } }
-.fr-hp, .fr-xp { width: 90px; height: 7px; border-radius: 9px; background: rgba(255,255,255,.15); overflow: hidden; } .fr-hp i, .fr-xp i { display: block; height: 100%; background: #22c55e; transform-origin: left; transition: transform .3s; } .fr-xp i { background: #38bdf8; }
-.fr-floats { position: absolute; inset: 0; pointer-events: none; }
-.fr-float { position: absolute; top: 45%; font: 900 1rem/1 var(--font-display); color: #fca5a5; font-style: normal; animation: frfloat .9s ease-out forwards; } .fr-float.gem { color: #67e8f9; font-size: 1.15rem; }
-@keyframes frfloat { to { transform: translateY(-60px); opacity: 0; } }
-.fr-bank { padding: 16px; display: grid; gap: 8px; align-content: start; } .fr-gems { font: 900 2rem/1 var(--font-display); color: #67e8f9; }
-.fr-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: .82rem; max-height: 9rem; overflow: auto; }
-.fr-box { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 10px; } .fr-slot { display: grid; gap: 6px; }
-@media (max-width: 60rem) { .fr-top { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 40rem) { .fr-arena { grid-template-columns: minmax(0, 1fr); gap: 8px; } .fr-vs { text-align: center; } .biz-own { grid-template-columns: minmax(0, 1fr); } }
-.gr-list { display: grid; gap: 12px; margin-bottom: 18px; }
-.gr-card { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 14px; padding: 14px; } .gr-card > img { width: 100%; height: 130px; object-fit: cover; border-radius: 12px; } .gr-card h4 { margin: 0 0 4px; }
-@media (max-width: 40rem) { .gr-card { grid-template-columns: minmax(0, 1fr); } }
-
-.dlg--elite { max-width: 34rem; text-align: center; border: 1px solid rgba(250, 204, 21, .6); background: radial-gradient(ellipse at 50% 0%, rgba(250, 204, 21, .25), transparent 60%), #0b1020; box-shadow: 0 0 60px rgba(250, 204, 21, .35); }
-.dlg--elite h2 { color: #fde047; } .dlg--elite ul { text-align: left; } .elite-crown { font-size: 3.4rem; animation: winner 1.4s infinite; }
-
 /* leilão de cavalos de raça */
 .lei-title small { font-weight: 600; font-size: .8rem; }
 .lei { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, .8fr); gap: 16px; padding: 18px; margin-bottom: 18px; border: 1px solid rgba(250, 204, 21, .35);

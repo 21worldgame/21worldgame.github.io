@@ -853,7 +853,7 @@ console.log('truco ok');
 
 // ---------- suínos, negócios, galpões e feras ----------
 {
-  const SU = await import('./suinos.js'), NG = await import('./negocios.js'), FR = await import('./feras.js');
+  const SU = await import('./suinos.js'), NG = await import('./negocios.js');
   let sd = 11; const rng = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
   // suínos: lote vendido no ponto (4º mês) dá lucro no barracão médio; lote sem vacina pode perder animais
   const s = { money: 1e8, month: 1 }; assert.equal(SU.buyBarn(s, 'medio'), null); const id = s.suinos.barns[0].id;
@@ -877,18 +877,8 @@ console.log('truco ok');
   const big = { money: 0, month: 1, stock: { soja: 5000 } }; NG.ensure(big); assert.ok(NG.capacity(big) >= NG.tons(big), 'estoque antigo não pode ser vendido à força');
   assert.ok(NG.whPrice('g500', 60) > NG.whPrice('g500', 1), 'galpão sobe de preço com o tempo');
   NG.buyWh(w, 'g500'); assert.equal(NG.room(w, 'soja') > 8000, true);
-  // feras: começa com uma inicial, caça, ganha gemas, sobe de nível; troca de gemas tem limite diário
-  const f = { money: 0 }; assert.equal(FR.start(f, 'brasinha'), null); assert.match(FR.start(f, 'bolhudo'), /já tem/);
-  for (let i = 0; i < 400; i++) FR.defeat(f, FR.wild('campo', rng), rng);
-  assert.ok(f.feras.gems > 300 && f.feras.box[0].lv > 3 && f.feras.box.length > 1, 'caçada não rendeu');
-  assert.match(FR.setRoute(f, 'abismo'), /nível/);
-  f.feras.gems = 1e6; const ex = FR.exchange(f, 1e6, '2026-11-19'); assert.equal(ex.rs, FR.DAILY_CAP); assert.match(FR.exchange(f, 10, '2026-11-19').err, /limite/);
-  assert.ok(FR.exchange(f, 10, '2026-11-20').rs > 0, 'limite volta no dia seguinte');
-  // raridade: rota funda dá mais raras
-  let r1 = 0, r4 = 0; for (let i = 0; i < 20000; i++) { if (FR.rollRarity(1, rng) !== 'comum') r1++; if (FR.rollRarity(4, rng) !== 'comum') r4++; }
-  assert.ok(r4 > r1 * 2);
 }
-console.log('suínos, negócios, galpões e feras ok');
+console.log('suínos, negócios e galpões ok');
 
 // ---------- os mais ricos pagam mais ----------
 {

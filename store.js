@@ -29,6 +29,12 @@ function normalize(s) {
   for (const k of ['lands', 'herd', 'loans', 'lent', 'offers', 'borrowers', 'log']) if (!Array.isArray(s[k])) s[k] = [];
   s.stock = { soja: 0, milho: 0, cafe: 0, ...(s.stock || {}) };
   s.avatar ??= { ...DEFAULT };
+  if (s.feras) {   // Feras 21 saiu do jogo: devolve o valor de venda das feras e das gemas
+    const V = { chamarrao: 45000, raizeiro: 45000, relampejo: 45000, marejo: 9000, folhagor: 9000, trovoar: 9000, rochedo: 9000, sombrito: 9000, vulcanor: 220000, tsunamix: 220000, montanhor: 220000, eclipsor: 220000, solarion: 1500000, kraquion: 1500000 };
+    const back = Math.round((s.feras.box || []).reduce((t, f) => t + (V[f.sp] || 2500) * (1 + ((f.lv || 1) - 1) * 0.04) * 0.7, 0) + (Number(s.feras.gems) || 0) * 3);
+    if (back > 0) { s.money = (Number(s.money) || 0) + back; (s.log ||= []).unshift({ txt: 'Feras 21 saiu do jogo: valor das suas feras e gemas devolvido', val: back }); }
+    delete s.feras; s.shop = (s.shop || []).filter(l => l.kind !== 'fera');
+  }
   s.owned ??= []; s.cars ??= [];
   for (const c of s.cars) c.model = L.OLD_CARS[c.model] || c.model;
   s.cars = s.cars.filter(c => L.CARS[c.model]);
