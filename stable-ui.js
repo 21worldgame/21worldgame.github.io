@@ -24,7 +24,7 @@ function animalCard(a) {
     : a.fat >= 60 ? '<span class="tag tag--gold">cansado</span>' : '<span class="tag tag--green">em forma</span>';
   const trainBtns = Object.entries(ST.STATS).map(([k, label]) => `<button class="btn btn--glass btn--sm" data-act="st-train" data-id="${a.id}" data-k="${k}" ${can ? '' : 'disabled'} title="${label}: ${brl(cost)}">${label}</button>`).join('');
   return `<article class="glass acard${a.inj ? ' is-inj' : ''}${ret ? ' is-ret' : ''}">
-    <div class="acard__stage">${RC.sprite(a.kind, coatOf(a))}<span class="tag tag--dark acard__kind">${K.label}, ${years(a.age)}</span>${status}</div>
+    <div class="acard__stage"><img class="acard__photo" src="${ST.photo(a)}" alt="${esc(a.name)}" loading="lazy"><span class="tag tag--dark acard__kind">${K.label}, ${years(a.age)}</span>${status}</div>
     <div class="acard__body">
       <div class="acard__head"><h4>${esc(a.name)}</h4><span class="rate ${tier(r)}" title="nota geral">${r}</span></div>
       ${statBars(a)}
@@ -43,7 +43,7 @@ function animalCard(a) {
 function offerCard(o) {
   const K = ST.KINDS[o.kind], r = ST.rating(o);
   return `<article class="glass acard acard--offer">
-    <div class="acard__stage">${RC.sprite(o.kind, coatOf(o))}<span class="tag tag--dark acard__kind">${K.label}, ${years(o.age)}</span></div>
+    <div class="acard__stage"><img class="acard__photo" src="${ST.photo(o)}" alt="${esc(o.name)}" loading="lazy"><span class="tag tag--dark acard__kind">${K.label}, ${years(o.age)}</span></div>
     <div class="acard__body">
       <div class="acard__head"><h4>${esc(o.name)}</h4><span class="rate ${tier(r)}" title="nota geral">${r}</span></div>
       ${Object.entries(ST.STATS).map(([k, label]) => `<div class="stat"><span class="stat__k">${label}</span><span class="stat__v">${Math.round(o[k])}</span><span class="stat__bar"><i class="stat__now" style="width:${o[k]}%"></i></span></div>`).join('')}

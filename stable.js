@@ -180,3 +180,10 @@ export function monthly(s, rng = Math.random) {
   refreshOffers(s, rng);
   return lines;
 }
+
+// fotos reais (Wikimedia, créditos em CREDITOS.md): cavalo de raça pela raça; os demais pela pelagem
+const HORSE_BREED = { psi: 'h-psi', qm: 'h-qm2', arabe: 'h-arabe', mangalarga: 'h-mangalarga', crioulo: 'h-crioulo' };
+const HORSE_COAT = ['h-qm', 'h-crioulo2', 'h-qm2', 'h-crioulo', 'h-arabe', 'h-mangalarga'];
+export const DOG_COAT = ['d-2', 'd-3', 'd-4', 'd-5', 'd-6'];
+const pick = a => (a.coat || 0) + [...String(a.name || '')].reduce((t, c) => t + c.charCodeAt(0), 0);   // pelagem + nome: animais diferentes, fotos diferentes
+export const photo = a => `assets/animals/${a.kind === 'horse' ? HORSE_BREED[a.breed] || HORSE_COAT[pick(a) % HORSE_COAT.length] : DOG_COAT[pick(a) % DOG_COAT.length]}.webp`;

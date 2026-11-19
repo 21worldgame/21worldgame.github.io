@@ -56,7 +56,7 @@ export function render() {
   if (s2 === sig) return; sig = s2;
   const next = [1, 2, 3].map(k => { const n = lotOf(slot + k); return `<li><b>${new Date((slot + k) * LE.SLOT).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</b> ${esc(LE.BREEDS[n.horse.breed].name)} ${'★'.repeat(n.horse.stars)} <span class="muted">avaliado em ${brl(n.value)}</span></li>`; }).join('');
   el.innerHTML = `<div class="lei glass${st.phase === 'live' ? ' is-live' : ''}">
-    <div class="lei__horse"><span class="lei__sprite">${RC.sprite('horse', RC.COATS[(a.coat || 0) % RC.COATS.length])}</span>
+    <div class="lei__horse"><span class="lei__photo"><img src="${ST.photo(a)}" alt="${esc(a.name)}"><i class="lei__breed">${esc(B.name)}</i></span>
       <div><span class="lei__tag">${st.phase === 'live' ? '<i></i>leilão ao vivo' : st.phase === 'preview' ? 'apresentação' : 'encerrado'}</span>
         <h3>${esc(a.name)}</h3><p><b>${esc(B.name)}</b> <span class="lei__stars">${'★'.repeat(a.stars)}${'☆'.repeat(5 - a.stars)}</span> <span class="muted small">${esc(B.note)}</span></p>
         <p class="small">velocidade ${a.spd} · resistência ${a.sta} · largada ${a.acc} · potencial ${a.pot} · nota ${ST.rating(a)} · ${Math.floor(a.age / 12)} anos</p>

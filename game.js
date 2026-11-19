@@ -595,7 +595,7 @@ const GOOD_IMG = { soja: 'farm-soja', milho: 'farm-colheita', cafe: 'farm-cafe',
 export function itemMedia(i) {
   const d = i.data || {};
   if (i.kind === 'car' && L.CARS[d.model]) return `<img src="assets/${L.CARS[d.model].img}.webp" alt="" loading="lazy">`;
-  if (i.kind === 'animal') return `<span class="icard__sprite">${RC.sprite(d.kind, RC.COATS[(d.coat || 0) % RC.COATS.length])}</span>`;
+  if (i.kind === 'animal') return `<img src="${ST.photo(d)}" alt="" loading="lazy">`;
   if (i.kind === 'land' && d.lat) return `<img src="${satThumb(d).url}" alt="" loading="lazy">`;
   if (i.kind === 'good') return `<img src="assets/${GOOD_IMG[i.good] || 'farm-colheita'}.webp" alt="" loading="lazy">`;
   if (i.kind === 'card') return `<span class="icard__cardart" style="background-image:url(assets/cards/${d.champ}.webp)"></span>`;
@@ -1208,7 +1208,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 17;
+const APP_VERSION = 18;
 let updateShown = false, updateMsg = '';
 async function checkUpdate() {
   if (updateShown) return;

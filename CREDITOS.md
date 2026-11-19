@@ -79,3 +79,18 @@ Os nomes de carros no jogo são paródias; marcas visíveis nas fotos pertencem 
 - assets/mina-ouro.webp: "Sunrise Dam Gold Mine open pit 11.jpg", de Calistemon, CC BY-SA 4.0 (https://commons.wikimedia.org/wiki/File:Sunrise_Dam_Gold_Mine_open_pit_11.jpg)
 - assets/farm-cana.webp: "Sugarcane harvesting equipment Piracicaba 05 2009 5845.JPG", de Mariordo Mario Roberto Duran Ortiz, CC BY 3.0 (https://commons.wikimedia.org/wiki/File:Sugarcane_harvesting_equipment_Piracicaba_05_2009_5845.JPG)
 - assets/wh-g2000.webp: "Gifford, IL silo and grain elevator.jpg", de TheTechnician27, CC0 (https://commons.wikimedia.org/wiki/File:Gifford,_IL_silo_and_grain_elevator.jpg)
+
+
+## Fotos de cavalos e galgos (Wikimedia Commons)
+- assets/animals/h-psi.webp: "Prix Charles Philippe 2019 01.jpg", de Tsaag Valren, CC BY-SA 4.0 (https://commons.wikimedia.org/wiki/File:Prix_Charles_Philippe_2019_01.jpg)
+- assets/animals/h-qm.webp: "An American Quarter Horse.jpg", de Oleg Yunakov, CC BY-SA 4.0 (https://commons.wikimedia.org/wiki/File:An_American_Quarter_Horse.jpg)
+- assets/animals/h-qm2.webp: "Red roan Quarter Horse.jpg", de Betty Wills (Atsme), CC BY-SA 4.0 (https://commons.wikimedia.org/wiki/File:Red_roan_Quarter_Horse.jpg)
+- assets/animals/h-arabe.webp: "Beautiful Egyptian Arabian Stallion (8308400671).jpg", de Heather Moreton from Louisville, KY, USA, CC BY 2.0 (https://commons.wikimedia.org/wiki/File:Beautiful_Egyptian_Arabian_Stallion_(8308400671).jpg)
+- assets/animals/h-mangalarga.webp: "Mangalarga Marchador.jpg", de Fábio Vidigal, CC BY-SA 2.5 (https://commons.wikimedia.org/wiki/File:Mangalarga_Marchador.jpg)
+- assets/animals/h-crioulo.webp: "Cavalo crioulo em monte alegre dos campos.JPG", de Gabriel vicente oliveira, CC BY-SA 3.0 (https://commons.wikimedia.org/wiki/File:Cavalo_crioulo_em_monte_alegre_dos_campos.JPG)
+- assets/animals/h-crioulo2.webp: "Cavalo crioulo 240606 REFON.jpg", de José Reynaldo da Fonseca, CC BY 2.5 (https://commons.wikimedia.org/wiki/File:Cavalo_crioulo_240606_REFON.jpg)
+- assets/animals/d-2.webp: "Greyhound brindle standing.jpg", de FLickr user Scott Feldstein, CC BY 2.0 (https://commons.wikimedia.org/wiki/File:Greyhound_brindle_standing.jpg)
+- assets/animals/d-3.webp: "Spanish Greyhound trotting.jpg", de Joselodos, CC0 (https://commons.wikimedia.org/wiki/File:Spanish_Greyhound_trotting.jpg)
+- assets/animals/d-4.webp: "Greyhound Racing amk.jpg", de AngMoKio, CC BY-SA 3.0 (https://commons.wikimedia.org/wiki/File:Greyhound_Racing_amk.jpg)
+- assets/animals/d-5.webp: "Greyhound Benghazi's - 3.JPG", de Vincent Eisfeld, CC BY-SA 4.0 (https://commons.wikimedia.org/wiki/File:Greyhound_Benghazi%27s_-_3.JPG)
+- assets/animals/d-6.webp: "Greyhound Close-up.jpg", de Vincent Eisfeld, CC BY-SA 4.0 (https://commons.wikimedia.org/wiki/File:Greyhound_Close-up.jpg)
