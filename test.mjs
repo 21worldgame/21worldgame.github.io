@@ -896,10 +896,19 @@ console.log('suínos, negócios, galpões e feras ok');
   const poor = L3.newState(() => 0.5); assert.equal(L3.eliteOf(poor), null); assert.deepEqual(L3.eliteBills(poor, 1e5), []);
   const rich = L3.newState(() => 0.5); rich.money = 12e6;
   assert.equal(L3.eliteOf(rich).name, 'magnata do mundo');
-  const m0 = rich.money, lines = L3.eliteBills(rich, 100000);
-  assert.equal(lines.length, 2); assert.ok(rich.money < m0);
-  assert.equal(lines[1].val, -50000, 'contas +50% para magnata');
+  const m0 = rich.money, lines = L3.eliteBills(rich, 100000, 200000);
+  assert.equal(lines.length, 3); assert.ok(rich.money < m0);
+  assert.equal(lines[0].val, -28000, 'magnata perde 14% dos ganhos');
+  assert.equal(lines[2].val, -80000, 'contas +80% para magnata');
   const top = L3.newState(() => 0.5); top.money = 3e8; assert.ok(L3.eliteOf(top).price > L3.eliteOf(rich).price, 'quanto mais rico, mais caro');
+}
+{
+  const L3 = await import('./logic.js');
+  const a = L3.newState(() => 0.5); a.money = 12e6; const b = L3.newState(() => 0.5); b.money = 12e6; b.top1 = true;
+  assert.ok(L3.eliteOf(b).price > L3.eliteOf(a).price && L3.eliteOf(b).gain > L3.eliteOf(a).gain, 'o 1º paga mais');
+  const ST3 = await import('./stable.js'), st = { stable: { animals: [], offers: [] } };
+  for (let i = 0; i < ST3.PHOTO_POOL.dog.length; i++) { const d = { kind: 'dog', name: 'Rex', coat: 0 }; st.stable.animals.push(d); ST3.photo(d, st); }
+  assert.equal(new Set(st.stable.animals.map(x => x.ph)).size, ST3.PHOTO_POOL.dog.length, 'nenhum galgo repete a foto');
 }
 console.log('mais ricos ok');
 

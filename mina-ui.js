@@ -1,4 +1,4 @@
-// Mina de ouro: vitrine na loja (empresas) e administração na aba negócios. Dono único guardado no servidor (supabase/mina.sql).
+// Mina de ouro: vitrine na loja (empresas) e administração na aba negócios. Dono único guardado no servidor.
 import * as MI from './mina.js';
 import * as Auth from './auth.js';
 import { G, $, esc, brl, int, say, save, note, confetti, profileOf } from './store.js';
@@ -20,7 +20,7 @@ const mine = () => owner.ok && owner.id && owner.id === Auth.account()?.id && G.
 
 export function shopCard() {
   const s = G.S, taken = owner.ok && owner.id, isMe = mine();
-  const status = !owner.loaded ? 'consultando o cartório…' : !owner.ok ? 'mina ainda não liberada no servidor (o administrador precisa rodar o supabase/mina.sql)'
+  const status = !owner.loaded ? 'consultando o cartório…' : !owner.ok ? 'a mineradora está em vistoria: volta à venda em breve'
     : isMe ? 'é sua' : taken ? `dono atual: <b>${esc(owner.name || 'um jogador')}</b>` : '<b class="good">à venda: ninguém é dono</b>';
   return `<article class="glass mina-card${isMe ? ' is-own' : ''}"><div class="mina-photo" style="--img:url(assets/mina-ouro.webp)"><span class="mina-art mina-art--sm" aria-hidden="true">⛏️<span>Au</span></span></div>
     <div><span class="mina-tag">única no jogo inteiro</span><h3>${MI.MINE.name}</h3>

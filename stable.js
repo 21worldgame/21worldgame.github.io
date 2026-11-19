@@ -181,9 +181,24 @@ export function monthly(s, rng = Math.random) {
   return lines;
 }
 
-// fotos reais (Wikimedia, créditos em CREDITOS.md): cavalo de raça pela raça; os demais pela pelagem
-const HORSE_BREED = { psi: 'h-psi', qm: 'h-qm2', arabe: 'h-arabe', mangalarga: 'h-mangalarga', crioulo: 'h-crioulo' };
-const HORSE_COAT = ['h-qm', 'h-crioulo2', 'h-qm2', 'h-crioulo', 'h-arabe', 'h-mangalarga'];
-export const DOG_COAT = ['d-2', 'd-3', 'd-4', 'd-5', 'd-6'];
-const pick = a => (a.coat || 0) + [...String(a.name || '')].reduce((t, c) => t + c.charCodeAt(0), 0);   // pelagem + nome: animais diferentes, fotos diferentes
-export const photo = a => `assets/animals/${a.kind === 'horse' ? HORSE_BREED[a.breed] || HORSE_COAT[pick(a) % HORSE_COAT.length] : DOG_COAT[pick(a) % DOG_COAT.length]}.webp`;
+// fotos reais (Wikimedia, créditos em CREDITOS.md). Regra: nenhum animal repete a foto de outro do mesmo dono.
+// Cada animal guarda a sua (a.ph) na primeira vez que aparece, escolhida entre as que o dono ainda não usa.
+const H = (b, n) => [`h-${b}`, ...Array.from({ length: n - 1 }, (_, k) => `h-${b}${k + 2}`)];
+const POOL = {
+  psi: ['h-psi', 'h-psi2', 'h-psi4', 'h-psi5', 'h-psi6'], qm: H('qm', 7), arabe: ['h-arabe', 'h-arabe2', 'h-arabe4', 'h-arabe5'],
+  mangalarga: H('mangalarga', 6), crioulo: H('crioulo', 4),
+  dog: ['d-2', 'd-3', 'd-4', 'd-5', 'd-6', 'd-7', 'd-8', 'd-10', 'd-11', 'd-12', 'd-13', 'd-14', 'd-15'],
+};
+POOL.horse = [...POOL.psi, ...POOL.qm, ...POOL.arabe, ...POOL.mangalarga, ...POOL.crioulo];
+export const PHOTO_POOL = POOL;
+const pick = a => (a.coat || 0) + [...String(a.name || '')].reduce((t, c) => t + c.charCodeAt(0), 0);
+export function photo(a, s) {
+  const pool = a.kind === 'horse' ? POOL[a.breed] || POOL.horse : POOL.dog;
+  if (!pool.includes(a.ph)) {
+    const taken = new Set([...(s?.stable?.animals || []), ...(s?.stable?.offers || [])].filter(x => x !== a).map(x => x.ph));
+    let k = pick(a) % pool.length;
+    for (let n = 0; n < pool.length && taken.has(pool[k]); n++) k = (k + 1) % pool.length;
+    a.ph = pool[k];
+  }
+  return `assets/animals/${a.ph}.webp`;
+}

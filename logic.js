@@ -72,7 +72,38 @@ export const REGIONS = [
   { name: 'sul de minas', uf: 'mg', perHa: 40000, use: 'café', lat: -21.37, lon: -45.51, city: 'Três Pontas' },
   { name: 'oeste da bahia', uf: 'ba', perHa: 16000, use: 'lavoura', lat: -12.1, lon: -45.8, city: 'Luís Eduardo Magalhães' },
   { name: 'sudeste do pará', uf: 'pa', perHa: 7000, use: 'pasto', lat: -7.1, lon: -49.95, city: 'Xinguara' },
+  { name: 'interior de são paulo', uf: 'sp', perHa: 95000, use: 'lavoura', lat: -21.18, lon: -47.81, city: 'Ribeirão Preto' },
+  { name: 'oeste paulista', uf: 'sp', perHa: 62000, use: 'pasto', lat: -22.12, lon: -51.39, city: 'Presidente Prudente' },
+  { name: 'serra gaúcha', uf: 'rs', perHa: 78000, use: 'lavoura', lat: -29.17, lon: -51.52, city: 'Bento Gonçalves' },
+  { name: 'planalto gaúcho', uf: 'rs', perHa: 70000, use: 'lavoura', lat: -28.26, lon: -52.41, city: 'Passo Fundo' },
+  { name: 'campanha gaúcha', uf: 'rs', perHa: 38000, use: 'pasto', lat: -31.33, lon: -54.1, city: 'Bagé' },
+  { name: 'oeste catarinense', uf: 'sc', perHa: 64000, use: 'lavoura', lat: -27.1, lon: -52.62, city: 'Chapecó' },
+  { name: 'campos gerais, paraná', uf: 'pr', perHa: 80000, use: 'lavoura', lat: -24.79, lon: -50.01, city: 'Castro' },
+  { name: 'triângulo mineiro', uf: 'mg', perHa: 56000, use: 'lavoura', lat: -19.75, lon: -47.93, city: 'Uberaba' },
+  { name: 'cerrado mineiro', uf: 'mg', perHa: 50000, use: 'café', lat: -18.94, lon: -46.99, city: 'Patrocínio' },
+  { name: 'montanhas capixabas', uf: 'es', perHa: 46000, use: 'café', lat: -20.34, lon: -41.13, city: 'Venda Nova do Imigrante' },
+  { name: 'serra fluminense', uf: 'rj', perHa: 52000, use: 'pasto', lat: -22.25, lon: -43.7, city: 'Valença' },
+  { name: 'entorno do df', uf: 'df', perHa: 60000, use: 'lavoura', lat: -15.95, lon: -47.55, city: 'Brasília (PAD-DF)' },
+  { name: 'matopiba, maranhão', uf: 'ma', perHa: 28000, use: 'lavoura', lat: -7.53, lon: -46.04, city: 'Balsas' },
+  { name: 'cerrado do piauí', uf: 'pi', perHa: 25000, use: 'lavoura', lat: -7.23, lon: -44.55, city: 'Uruçuí' },
+  { name: 'vale do são francisco', uf: 'pe', perHa: 65000, use: 'lavoura', lat: -9.39, lon: -40.6, city: 'Petrolina' },
+  { name: 'chapada do apodi', uf: 'rn', perHa: 32000, use: 'lavoura', lat: -5.66, lon: -37.8, city: 'Apodi' },
+  { name: 'cariri cearense', uf: 'ce', perHa: 22000, use: 'pasto', lat: -7.21, lon: -39.31, city: 'Juazeiro do Norte' },
+  { name: 'zona da mata alagoana', uf: 'al', perHa: 42000, use: 'lavoura', lat: -9.78, lon: -36.2, city: 'São Miguel dos Campos' },
+  { name: 'brejo paraibano', uf: 'pb', perHa: 20000, use: 'pasto', lat: -6.85, lon: -35.6, city: 'Guarabira' },
+  { name: 'sertão sergipano', uf: 'se', perHa: 19000, use: 'pasto', lat: -10.22, lon: -37.42, city: 'Nossa Senhora da Glória' },
+  { name: 'sul da bahia', uf: 'ba', perHa: 34000, use: 'lavoura', lat: -14.86, lon: -39.59, city: 'Ibicaraí' },
+  { name: 'cone sul de rondônia', uf: 'ro', perHa: 33000, use: 'lavoura', lat: -12.74, lon: -60.15, city: 'Vilhena' },
+  { name: 'vale do acre', uf: 'ac', perHa: 16000, use: 'pasto', lat: -9.97, lon: -67.6, city: 'Rio Branco' },
+  { name: 'várzea amazonense', uf: 'am', perHa: 14000, use: 'pasto', lat: -3.14, lon: -58.44, city: 'Itacoatiara' },
+  { name: 'lavrado de roraima', uf: 'rr', perHa: 17000, use: 'lavoura', lat: -2.82, lon: -60.67, city: 'Boa Vista' },
+  { name: 'cerrado do amapá', uf: 'ap', perHa: 15000, use: 'pasto', lat: 0.71, lon: -51.41, city: 'Porto Grande' },
+  { name: 'pantanal, mato grosso do sul', uf: 'ms', perHa: 16000, use: 'pasto', lat: -20.47, lon: -55.79, city: 'Aquidauana' },
+  { name: 'araguaia, mato grosso', uf: 'mt', perHa: 24000, use: 'pasto', lat: -14.05, lon: -52.16, city: 'Água Boa' },
+  { name: 'norte do tocantins', uf: 'to', perHa: 14000, use: 'pasto', lat: -7.19, lon: -48.2, city: 'Araguaína' },
+  { name: 'nordeste paraense', uf: 'pa', perHa: 19000, use: 'lavoura', lat: -2.99, lon: -47.35, city: 'Paragominas' },
 ];
+export const LAND_PREMIUM = 1.35;   // terra no 21 World é disputada: sempre acima da tabela
 export const placeLot = (reg, rng) => ({ lat: +(reg.lat + (rng() - 0.5) * 0.45).toFixed(5), lon: +(reg.lon + (rng() - 0.5) * 0.45).toFixed(5) });
 export const region = name => REGIONS.find(r => r.name === name) || REGIONS[0];
 const CAP_BY_USE = { pasto: 1.2, lavoura: 0.9, 'café': 0.6 };           // cabeças por hectare
@@ -156,14 +187,14 @@ const id = s => s.nextId++;
 const walk = (v, rng, pct) => v * (1 + (rng() * 2 - 1) * pct);
 
 export function refreshOffers(s, rng = Math.random) {
-  s.offers = Array.from({ length: 10 }, () => {
+  s.offers = Array.from({ length: 24 }, () => {
     const reg = REGIONS[Math.floor(rng() * REGIONS.length)];
-    const ha = 5 + Math.floor(rng() * 16) * 5;
+    const ha = rng() < 0.2 ? 100 + Math.floor(rng() * 19) * 50 : 5 + Math.floor(rng() * 16) * 5;   // 1 em 5 é fazenda grande (100 a 1.000 ha)
     const [water, wf] = WATER[Math.floor(rng() * WATER.length)];
     const improv = IMPROV.filter(() => rng() < 0.35);
     const bonus = improv.reduce((a, [, b]) => a + b, 0) + (wf < 1 ? -0.12 : 0);
     return { id: id(s), region: reg.name, uf: reg.uf, use: reg.use, ha, water, improv: improv.map(([n]) => n), ...placeLot(reg, rng),
-      cap: +(CAP_BY_USE[reg.use] * wf).toFixed(2), value: Math.round(walk(reg.perHa, rng, 0.15) * ha * (1 + bonus)) };
+      cap: +(CAP_BY_USE[reg.use] * wf).toFixed(2), value: Math.round(walk(reg.perHa, rng, 0.15) * LAND_PREMIUM * ha * (1 + bonus)) };
   });
   const names = ['seu Antônio', 'dona Lurdes', 'Jair do posto', 'Marta da feira', 'Zé Carreteiro', 'Cida Leiteira'];
   const start = Math.floor(rng() * names.length);
@@ -266,19 +297,24 @@ export function tick(s, rng = Math.random) {
 }
 
 // ---------- os mais ricos do mundo: quanto maior a fortuna, mais caro fica tudo (para não abrir desigualdade demais) ----------
-// price: acréscimo em toda compra · bills: multiplica as contas do mês · tax: imposto mensal sobre o que passa do piso da faixa
+// price: acréscimo em toda compra · bills: multiplica as contas do mês · tax: imposto mensal sobre tudo o que passa de R$ 3 mi
+// gain: parte dos ganhos do mês que fica com o mundo (pedágio dos mais ricos)
 export const ELITE = [
-  { min: 3e6, name: 'jornada dos mais ricos', price: 0.08, bills: 1.25, tax: 0.0003 },
-  { min: 1e7, name: 'magnata do mundo', price: 0.14, bills: 1.5, tax: 0.0006 },
-  { min: 5e7, name: 'bilionário em formação', price: 0.2, bills: 1.8, tax: 0.001 },
-  { min: 2e8, name: 'dono do mundo', price: 0.28, bills: 2.2, tax: 0.0015 },
+  { min: 3e6, name: 'jornada dos mais ricos', price: 0.12, bills: 1.4, tax: 0.0006, gain: 0.08 },
+  { min: 1e7, name: 'magnata do mundo', price: 0.2, bills: 1.8, tax: 0.0012, gain: 0.14 },
+  { min: 5e7, name: 'bilionário em formação', price: 0.3, bills: 2.3, tax: 0.002, gain: 0.2 },
+  { min: 2e8, name: 'dono do mundo', price: 0.42, bills: 3, tax: 0.003, gain: 0.27 },
+  { min: 1e9, name: 'imperador do 21 World', price: 0.6, bills: 4, tax: 0.004, gain: 0.35 },
 ];
 export const eliteIdx = s => { const w = netWorth(s); let i = -1; ELITE.forEach((e, k) => { if (w >= e.min) i = k; }); return i; };
-export const eliteOf = s => ELITE[eliteIdx(s)] || null;
+// o 1º do ranking paga ainda mais (s.top1 vem do ranking do servidor): a coroa pesa
+export const TOP1 = { price: 0.25, bills: 1, tax: 2, gain: 0.15 };
+export const eliteOf = s => { const e = ELITE[eliteIdx(s)]; if (!e) return null; return s.top1 ? { ...e, name: `1º do mundo (${e.name})`, price: e.price + TOP1.price, bills: e.bills + TOP1.bills, tax: e.tax * TOP1.tax, gain: e.gain + TOP1.gain } : e; };
 // contas extras do mês: imposto sobre a fortuna + o quanto as contas normais encarecem
-export function eliteBills(s, spent) {
+export function eliteBills(s, spent, earned = 0) {
   const e = eliteOf(s); if (!e) return [];
-  const w = netWorth(s), tax = Math.round((w - e.min) * e.tax), extra = Math.round(spent * (e.bills - 1)), out = [];
+  const w = netWorth(s), tax = Math.round((w - ELITE[0].min) * e.tax), extra = Math.round(spent * (e.bills - 1)), cut = Math.round(Math.max(0, earned) * e.gain), out = [];
+  if (cut > 0) { s.money -= cut; out.push({ txt: `pedágio dos mais ricos: ${Math.round(e.gain * 100)}% dos ganhos do mês`, val: -cut }); }
   if (tax > 0) { s.money -= tax; out.push({ txt: `imposto sobre grandes fortunas (${e.name})`, val: -tax }); }
   if (extra > 0) { s.money -= extra; out.push({ txt: `contas mais caras para quem está no topo (+${Math.round((e.bills - 1) * 100)}%)`, val: -extra }); }
   return out;

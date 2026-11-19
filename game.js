@@ -183,7 +183,7 @@ function renderChar() {
   $('#char-name').disabled = locked;
   $('#char-name-hint').textContent = locked ? `Nome trocado no mês ${S().nameAt}. Próxima troca no mês ${S().nameAt + 10} do mundo (faltam ${S().nameAt + 10 - S().month}).` : 'Você pode trocar o nome a cada 10 meses do mundo. Ele fica salvo quando você sai do campo.';
   const b = PK.bonuses(S());
-  $('#char-perks').innerHTML = `<h3>suas vantagens</h3>${Object.keys(b).length ? `<ul>${Object.entries(b).map(([k, v]) => `<li><b class="${v > 0 === (k !== 'loan') ? 'good' : 'bad'}">${v > 0 ? '+' : ''}${Math.round(v * 100)}%</b> ${PK.EFFECTS[k]}</li>`).join('')}</ul>` : '<p class="muted small">Nenhuma ainda. Compre carros na concessionária ou acessórios aqui.</p>'}`;
+  $('#char-perks').innerHTML = `<h3>suas vantagens</h3>${Object.keys(b).length ? `<ul>${Object.entries(b).map(([k, v]) => `<li><b class="${v > 0 === (k !== 'loan') ? 'good' : 'bad'}">${v > 0 ? '+' : ''}${Math.round(v * 100)}%</b> ${PK.EFFECTS[k]}</li>`).join('')}</ul>` : '<p class="muted small">Nenhuma ainda. Compre carros na loja ou acessórios aqui.</p>'}`;
   $('#wardrobe').innerHTML = Object.entries(CATALOG).map(([k, g]) => `
     <fieldset class="opts"><legend>${g.label}</legend>
       ${g.opts.map(o => {
@@ -243,7 +243,7 @@ function landCard(l, kind) {
       crop = `<div class="crop"><span class="small">${c.label} plantada, colhe em ${l.crop.left} ${l.crop.left === 1 ? 'mês' : 'meses'}</span><span class="bar"><i style="transform:scaleX(${k})"></i></span></div>`;
     } else {
       crop = `<div class="crop row"><label class="visually-hidden" for="crop-${l.id}">lavoura</label>
-        ${kind === 'rent' && !L.hasVehicle(s, 'trator') ? '<span class="small muted">Terra arrendada: só pasto. Para plantar aqui você precisa de um trator (concessionária).</span>' : `<select class="input input--crop" id="crop-${l.id}">${Object.entries(L.CROPS).map(([k, c]) => `<option value="${k}">${c.label}: ${brl(L.plantCost(s, k, l.ha, kind === 'rent'))}</option>`).join('')}</select>
+        ${kind === 'rent' && !L.hasVehicle(s, 'trator') ? '<span class="small muted">Terra arrendada: só pasto. Para plantar aqui você precisa de um trator (loja 21).</span>' : `<select class="input input--crop" id="crop-${l.id}">${Object.entries(L.CROPS).map(([k, c]) => `<option value="${k}">${c.label}: ${brl(L.plantCost(s, k, l.ha, kind === 'rent'))}</option>`).join('')}</select>
         <button class="btn btn--glass btn--sm" data-act="plant" data-id="${l.id}">plantar</button>`}</div>${kind === 'own' ? `<button class="btn btn--glass btn--sm btn--orange" data-act="pm-plant" data-id="${l.id}">plantar pomar de laranja (${brl(l.ha * PM.ORANGE.plant)})</button><button class="btn btn--glass btn--sm btn--cane" data-act="cn-plant" data-id="${l.id}">plantar cana (${brl(l.ha * CN.CANE.plant)})</button>` : ''}`;
     }
   }
@@ -595,14 +595,14 @@ const GOOD_IMG = { soja: 'farm-soja', milho: 'farm-colheita', cafe: 'farm-cafe',
 export function itemMedia(i) {
   const d = i.data || {};
   if (i.kind === 'car' && L.CARS[d.model]) return `<img src="assets/${L.CARS[d.model].img}.webp" alt="" loading="lazy">`;
-  if (i.kind === 'animal') return `<img src="${ST.photo(d)}" alt="" loading="lazy">`;
+  if (i.kind === 'animal') return `<img src="${ST.photo(d, S())}" alt="" loading="lazy">`;
   if (i.kind === 'land' && d.lat) return `<img src="${satThumb(d).url}" alt="" loading="lazy">`;
   if (i.kind === 'good') return `<img src="assets/${GOOD_IMG[i.good] || 'farm-colheita'}.webp" alt="" loading="lazy">`;
   if (i.kind === 'card') return `<span class="icard__cardart" style="background-image:url(assets/cards/${d.champ}.webp)"></span>`;
   if (i.kind === 'player' || i.kind === 'squad' || i.kind === 'club') return '<img src="assets/photo-stadium.webp" alt="" loading="lazy">';
   if (i.kind === 'fera') return `<span class="icard__sprite">${FRU.feraSVG(d.sp, 90)}</span>`;
-  if (i.kind === 'galpao') return '<img src="assets/farm-colheita.webp" alt="" loading="lazy">';
-  if (i.kind === 'empresa') return '<img src="assets/photo-vegas.webp" alt="" loading="lazy">';
+  if (i.kind === 'galpao') return `<img src="assets/wh-${d.type}.webp" alt="" loading="lazy">`;
+  if (i.kind === 'empresa') return `<img src="assets/biz/${d.brand}.webp" alt="" loading="lazy">`;
   if (i.kind === 'aviario') return `<img src="assets/${GR.HOUSES[d.type]?.img || 'granja-galpao'}.webp" alt="" loading="lazy">`;
   return '<img src="assets/photo-chips.webp" alt="" loading="lazy">';
 }
@@ -903,7 +903,7 @@ const ACTS = {
     const c = L.CARS[id];
     if (c.type === 'maquina' && S().cars.some(x => x.model === id)) return say('Essa máquina já está na sua fazenda.', true);
     if (!confirm(`Comprar ${c.name} por ${brl(c.price)}?`)) return;
-    if (!pay(c.price, `concessionária: ${c.name}`)) return;
+    if (!pay(c.price, `loja 21: ${c.name}`)) return;
     S().cars.push({ id: S().nextId++, model: id, value: c.price });
     say(`${c.name} na sua garagem.`); confetti(60); award('car');
     if (c.price >= 1e7) award('hypercar');
@@ -1134,12 +1134,24 @@ function eliteCheck() {
     const d = $('#dlg-elite'); if (!d) return;
     $('#el-title').textContent = i === 0 ? 'Agora você começa sua jornada de mais ricos do mundo!' : `Nova faixa: ${e.name}`;
     $('#el-body').innerHTML = `<p>Seu patrimônio passou de <b>${brl(e.min)}</b>. Você está entre os mais ricos do 21 World, e o mundo cobra por isso:</p>
-      <ul><li>tudo o que você compra custa <b>${Math.round(e.price * 100)}% a mais</b>;</li><li>as contas do mês ficam <b>${Math.round((e.bills - 1) * 100)}% mais caras</b>;</li><li>imposto sobre grandes fortunas de <b>${(e.tax * 100).toFixed(2).replace('.', ',')}% ao mês</b> sobre o que passar de ${brl(e.min)}.</li></ul>
+      <ul><li>tudo o que você compra custa <b>${Math.round(e.price * 100)}% a mais</b>;</li><li>as contas do mês ficam <b>${Math.round((e.bills - 1) * 100)}% mais caras</b>;</li><li>o mundo fica com <b>${Math.round(e.gain * 100)}% de tudo o que você ganha</b> no mês;</li><li>imposto sobre grandes fortunas de <b>${(e.tax * 100).toFixed(2).replace('.', ',')}% ao mês</b> sobre tudo o que passar de ${brl(L.ELITE[0].min)}.</li></ul>
       <p class="muted small">Quanto mais alto, mais pesado. É assim que o jogo segura a distância entre os jogadores.</p>`;
     d.showModal(); confetti(120);
   } else say(i < 0 ? 'Você saiu da faixa dos mais ricos: taxas e preços voltaram ao normal.' : `Você voltou para a faixa ${L.ELITE[i].name}.`);
 }
 setTimeout(() => eliteCheck(), 4000);
+// coroa do 1º lugar: quem lidera o ranking paga mais caro em tudo
+function topCheck() {
+  const me = Auth.account()?.id; if (!me) return;
+  Auth.ranking?.().then(rows => {
+    if (!rows?.length) return;
+    const top = rows[0].user_id === me, s = S();
+    if (top === !!s.top1) return;
+    s.top1 = top; save();
+    say(top ? `Você é o 1º do ranking! A coroa pesa: compras +${Math.round(L.TOP1.price * 100)}% a mais, contas e imposto dobrados e +${Math.round(L.TOP1.gain * 100)}% de pedágio sobre os ganhos.` : 'Você saiu do 1º lugar: a taxa extra da coroa acabou.', top);
+  }).catch(() => {});
+}
+setInterval(topCheck, 60000); setTimeout(topCheck, 8000);
 
 // ---------- tempo de mundo: o mês passa sozinho, igual para todos ----------
 // Um relógio único (config do servidor) define o mês do mundo. O jogo do jogador acompanha: roda os meses que faltam
@@ -1166,7 +1178,7 @@ function worldMonths() {
     harvests += lines.filter(l => l.txt.startsWith('colheita')).length;
     award('month');
   }
-  { const spent = -s.log.slice(0, Math.max(0, s.log.length - logBefore)).filter(l => l.val < 0).reduce((t, l) => t + l.val, 0); for (const l of L.eliteBills(s, spent)) note(l.txt, l.val); }   // os mais ricos pagam mais
+  { const mo = s.log.slice(0, Math.max(0, s.log.length - logBefore)), spent = -mo.filter(l => l.val < 0).reduce((t, l) => t + l.val, 0), earned = mo.filter(l => l.val > 0).reduce((t, l) => t + l.val, 0); for (const l of L.eliteBills(s, spent, earned)) note(l.txt, l.val); }   // os mais ricos pagam mais
   eliteCheck();
   if (harvests) award('harvest', harvests);
   CD.setMonth(s.month);
@@ -1208,7 +1220,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 18;
+const APP_VERSION = 19;
 let updateShown = false, updateMsg = '';
 async function checkUpdate() {
   if (updateShown) return;

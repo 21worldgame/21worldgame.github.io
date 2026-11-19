@@ -3,7 +3,6 @@ import * as NG from './negocios.js';
 import { G, $, esc, brl, int, say, save, note, confetti } from './store.js';
 
 const CATS = { banks: { label: 'bancos', list: NG.BANKS, icon: '🏦' }, isps: { label: 'provedores de internet', list: NG.ISPS, icon: '📡' }, markets: { label: 'supermercados', list: NG.MARKETS, icon: '🛒' } };
-const PHOTO = { banks: 'biz-banks', isps: 'biz-isps', markets: 'biz-markets' };
 const logo = (c, txt) => `<span class="biz-logo" style="--c:${c.color}">${esc(txt.split(' ').map(w => w[0]).join('').slice(0, 3))}</span>`;
 
 // ---------- loja: marcas à venda ----------
@@ -12,7 +11,7 @@ export function shopHTML() {
   const block = (cat, desc) => `<h3>${CATS[cat].icon} ${CATS[cat].label}</h3><p class="muted small">${desc}</p><div class="biz-grid">${Object.entries(CATS[cat].list).map(([id, c]) => {
     const own = s.biz[cat].some(b => b.brand === id);
     const extra = cat === 'banks' ? `${c.staff} funcionários · ${int(c.req)} pedidos de empréstimo por mês` : cat === 'isps' ? `cidade com ${int(c.homes)} casas` : `~${int(c.clients)} clientes por mês · ${c.staff} funcionários`;
-    return `<article class="shopcard${own ? ' is-own' : ''}"><div class="shopcard__photo" style="--img:url(assets/${PHOTO[cat]}.webp);--c:${c.color}">${logo(c, c.name)}${own ? '<span class="shopcard__badge shopcard__badge--gold">é sua</span>' : ''}</div>
+    return `<article class="shopcard${own ? ' is-own' : ''}"><div class="shopcard__photo" style="--img:url(assets/biz/${id}.webp);--c:${c.color}">${logo(c, c.name)}${own ? '<span class="shopcard__badge shopcard__badge--gold">é sua</span>' : ''}</div>
       <div class="shopcard__body"><h4>${esc(c.name)}</h4><p class="small muted">${extra}</p><div class="shopcard__buy"><span class="shopcard__price">${brl(c.price)}</span>${own ? '' : `<button class="btn btn--gold" data-biz="buy" data-cat="${cat}" data-id="${id}">comprar a marca</button>`}</div></div></article>`; }).join('')}</div>`;
   return block('banks', 'Você compra só a marca: o caixa para emprestar sai do seu bolso, e a folha e as despesas também. Os clientes pedem empréstimos pequenos, que crescem devagar com o tempo.')
     + block('isps', 'Construa a rede de fibra (caro), escolha a mensalidade (barata) e veja os assinantes entrando. Lucro mensal pequeno, valorização no longo prazo.')
@@ -39,7 +38,7 @@ export function render() {
   const cards = [];
   for (const b of s.biz.banks) {
     const C = NG.BANKS[b.brand], book = b.loans.reduce((t, l) => t + l.bal, 0), P = NG.POLICY[b.policy];
-    cards.push(`<article class="glass biz-own">${logo(C, C.name)}<div class="biz-own__b"><h4>${esc(C.name)} <small class="muted">banco</small></h4>
+    cards.push(`<article class="glass biz-own"><span class="biz-own__ph" style="--img:url(assets/biz/${b.brand}.webp)">${logo(C, C.name)}</span><div class="biz-own__b"><h4>${esc(C.name)} <small class="muted">banco</small></h4>
       <div class="biz-kpis"><span><small>caixa para emprestar</small><b>${brl(b.capital)}</b></span><span><small>emprestado na rua</small><b>${brl(book)}</b></span><span><small>juros</small><b>${(P.rate * 100).toFixed(1)}% ao mês</b></span><span><small>despesa mensal</small><b class="bad">${brl(C.staff * NG.SALARY + C.price * NG.BANK_FIXED)}</b></span><span><small>valor de venda</small><b>${brl(NG.saleValue(s, 'banks', b))}</b></span></div>
       <div class="row"><label class="field"><span>política</span><select class="input" data-biz-policy="${b.id}">${Object.entries(NG.POLICY).map(([k, p]) => `<option value="${k}" ${b.policy === k ? 'selected' : ''}>${p.label}: ${(p.rate * 100).toFixed(1)}%/mês, calote ${(p.bad * 100).toFixed(1)}%</option>`).join('')}</select></label>
         <label class="field"><span>valor</span><input class="input input--s" id="bk-${b.id}" type="number" min="1000" step="10000" value="500000" inputmode="numeric"></label>
@@ -49,7 +48,7 @@ export function render() {
   }
   for (const b of s.biz.isps) {
     const C = NG.ISPS[b.brand], fill = b.ports ? b.subs / b.ports : 0;
-    cards.push(`<article class="glass biz-own">${logo(C, C.name)}<div class="biz-own__b"><h4>${esc(C.name)} <small class="muted">provedor</small></h4>
+    cards.push(`<article class="glass biz-own"><span class="biz-own__ph" style="--img:url(assets/biz/${b.brand}.webp)">${logo(C, C.name)}</span><div class="biz-own__b"><h4>${esc(C.name)} <small class="muted">provedor</small></h4>
       <div class="biz-kpis"><span><small>assinantes</small><b>${int(b.subs)}</b></span><span><small>portas de fibra</small><b>${int(b.ports)} / ${int(C.homes)}</b></span><span><small>ocupação</small><b>${Math.round(fill * 100)}%</b></span><span><small>investido na rede</small><b>${brl(b.net)}</b></span><span><small>valor de venda</small><b>${brl(NG.saleValue(s, 'isps', b))}</b></span></div>
       <div class="row"><label class="field"><span>mensalidade</span><select class="input" data-biz-plan="${b.id}">${Object.keys(NG.PLANS).map(p => `<option value="${p}" ${b.plan === +p ? 'selected' : ''}>R$ ${p} ${p === '49' ? '(atrai mais, cancela menos)' : p === '89' ? '(atrai menos)' : ''}</option>`).join('')}</select></label>
         <button class="btn btn--gold btn--sm" data-biz="build" data-id="${b.id}" data-n="1">construir ${NG.PORT_PACK} portas (${brl(NG.PORT_PACK * NG.PORT_COST)})</button><button class="btn btn--glass btn--sm" data-biz="build" data-id="${b.id}" data-n="4">+${NG.PORT_PACK * 4} (${brl(NG.PORT_PACK * 4 * NG.PORT_COST)})</button>
@@ -58,7 +57,7 @@ export function render() {
   }
   for (const b of s.biz.markets) {
     const C = NG.MARKETS[b.brand];
-    cards.push(`<article class="glass biz-own">${logo(C, C.name)}<div class="biz-own__b"><h4>${esc(C.name)} <small class="muted">supermercado</small></h4>
+    cards.push(`<article class="glass biz-own"><span class="biz-own__ph" style="--img:url(assets/biz/${b.brand}.webp)">${logo(C, C.name)}</span><div class="biz-own__b"><h4>${esc(C.name)} <small class="muted">supermercado</small></h4>
       <div class="biz-kpis"><span><small>reputação</small><b>${Math.round(b.rep * 100)}%</b></span><span><small>clientes por mês</small><b>${int(C.clients * b.rep)}</b></span><span><small>funcionários</small><b>${C.staff}</b></span><span><small>valor de venda</small><b>${brl(NG.saleValue(s, 'markets', b))}</b></span></div>
       <div class="row"><label class="field"><span>preços</span><select class="input" data-biz-markup="${b.id}">${Object.entries(NG.MARKUP).map(([k, x]) => `<option value="${k}" ${b.markup === +k ? 'selected' : ''}>${x.label} (margem ${k}%)</option>`).join('')}</select></label>
         <button class="btn btn--glass btn--sm" data-biz="sell" data-cat="markets" data-id="${b.id}">vender mercado</button></div></div></article>`);
