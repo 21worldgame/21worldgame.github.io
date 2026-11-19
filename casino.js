@@ -72,7 +72,7 @@ export async function initCasino() {
   renderLobby();
   G.onLogin = loadGlobalRanking; loadGlobalRanking(); setInterval(loadGlobalRanking, 12000);
   Auth.onRankChange(loadGlobalRanking);
-  setInterval(() => { renderRanking(); if (lobby) $('#online').innerHTML = `<i class="is-on"></i>${NPC.onlineSet(Live.now()).size + lobby.peers.size + 1} jogadores online`; }, 4000);   // os números do mundo andam sozinhos
+  setInterval(() => { if (!$('#lobby').hidden && $('#lobby-hero')) $('#lobby-hero').innerHTML = lobbyHero(NPC.onlineSet(Live.now()).size + (lobby?.peers.size || 0) + 1); renderRanking(); if (lobby) $('#online').innerHTML = `<i class="is-on"></i>${NPC.onlineSet(Live.now()).size + lobby.peers.size + 1} jogadores online`; }, 4000);   // os números do mundo andam sozinhos
   G.onRender = renderRanking;
   const code = new URLSearchParams(location.search).get('mesa');
   if (code) { G.goto('mesa'); joinOnline(code); }
@@ -92,18 +92,31 @@ export function announce() {
 const summary = v => ({ id: v.id, name: v.name, minBet: v.minBet, phase: v.phase,
   seats: v.seats.map(s => ({ kind: s.kind, name: s.name, look: s.look })) });
 
+const TIERS = ['bronze', 'prata', 'ouro', 'esmeralda', 'vip', 'diamante', 'high', 'magnata'];
+const lookOf = s => (s.kind === 'human' ? s.look : NPC.byNick(s.name)?.look || NPC_LOOKS.Dorival);
 function tableCard(t, kind, host) {
   const seats = t.seats || [0, 1, 2, 3].map(i => ({ kind: 'bot', name: (t.bots || ['Coringa021', 'SemanaUm', 'RecomecoBR', 'PrimeiroMes'])[i] }));
-  const humans = seats.filter(s => s.kind === 'human').length;
-  return `<article class="tcard2 ${kind === 'online' ? 'is-online' : ''}">
-    <div class="tcard2__felt"><span class="tag ${kind === 'online' ? 'tag--green' : 'tag--dark'}">${kind === 'online' ? `online, ${humans} ${humans === 1 ? 'jogador' : 'jogadores'}` : 'mesa da casa'}</span>
-      <span class="tag tag--gold">mínima ${int(t.minBet)}</span></div>
-    <div class="tcard2__body">
-      <h4>${esc(t.name)}</h4>
-      <p class="muted small">${host ? `anfitrião: ${esc(host)}` : 'jogue agora, sem esperar ninguém'}</p>
-      <ul class="seatdots">${seats.map(s => `<li class="${s.kind}" title="${esc(s.name)}">${s.kind === 'human' && s.look ? avatarSVG(s.look, { label: s.name }) : ''}</li>`).join('')}</ul>
-      <button class="btn ${kind === 'online' ? 'btn--gold' : 'btn--glass'}" data-act="sit" data-kind="${kind}" data-id="${esc(t.id)}">sentar</button>
-    </div></article>`;
+  const humans = seats.filter(s => s.kind === 'human').length, tier = kind === 'online' ? 'online' : TIERS[SOLO.indexOf(t)] || 'bronze';
+  const pot = Math.round(t.minBet * (6 + ((Live.now() / 60000 + t.minBet) % 9)));   // fichas em jogo agora, mexe com o tempo
+  return `<article class="tcard3 tcard3--${tier}">
+    <div class="tcard3__top"><span class="tcard3__live"><i></i>${kind === 'online' ? `online · ${humans} ${humans === 1 ? 'jogador' : 'jogadores'}` : 'ao vivo'}</span><span class="tcard3__stake">${int(t.minBet)} / ${int(t.minBet * 20)}</span></div>
+    <div class="tcard3__table"><div class="tcard3__felt"><b>${esc(t.name)}</b><small>${int(pot)} fichas na mesa</small></div>
+      ${seats.slice(0, 4).map((s, i) => `<span class="tcard3__seat tcard3__seat--${i}" title="${esc(s.name)}"><span class="tcard3__av">${avatarSVG(lookOf(s) || {}, { label: s.name })}</span><em>${esc(s.name)}</em></span>`).join('')}
+      <span class="tcard3__seat tcard3__seat--you"><span class="tcard3__av tcard3__av--free">+</span><em>seu lugar</em></span></div>
+    <div class="tcard3__foot"><span class="muted small">${host ? `anfitrião: ${esc(host)}` : `${Math.min(4, seats.length)} jogadores · 1 lugar livre`}</span>
+      <button class="btn ${kind === 'online' || SOLO.indexOf(t) < 2 ? 'btn--gold' : 'btn--glass'}" data-act="sit" data-kind="${kind}" data-id="${esc(t.id)}">jogar</button></div></article>`;
+}
+// faixa do salão: online, pote do dia e prêmios recentes dos jogadores
+function lobbyHero(on) {
+  const now = Live.now(), day = Math.floor((now - 3 * 3600e3) / 864e5), sinceDay = ((now - 3 * 3600e3) % 864e5) / 864e5;
+  const jackpot = Math.round(250000 + sinceDay * 1900000 + (day % 7) * 40000);
+  const slot = Math.floor(now / 7000), ids = [...NPC.onlineSet(now)], pickN = k => NPC.byId(ids[(slot * 7 + k * 13) % ids.length])?.nick || 'AceDeOuro';
+  const wins = [0, 1, 2].map(k => { const tb = SOLO[(slot + k * 3) % SOLO.length]; return `<li><b>${esc(pickN(k))}</b> levou <strong>${int(tb.minBet * (3 + ((slot + k) % 5) * 2))}</strong> fichas na ${esc(tb.name)}</li>`; }).join('');
+  return `<div class="lhero__txt"><span class="lhero__kicker"><i></i>${on} jogadores online agora</span><h2>salão de jogos</h2>
+      <p>Sente numa mesa de 21, gire a roleta, voe no aviator ou aposte no futebol ao vivo.</p>
+      <button class="btn btn--gold btn--lg" data-act="sit" data-kind="solo" data-id="${SOLO[1].id}">jogar agora</button></div>
+    <div class="lhero__pot"><span>pote do dia</span><strong>${int(jackpot)}</strong><small>fichas distribuídas hoje nas mesas</small></div>
+    <ul class="lhero__wins">${wins}</ul>`;
 }
 
 export function renderLobby() {
@@ -113,7 +126,9 @@ export function renderLobby() {
     ...online.map(o => tableCard(o.t, 'online', o.host)),
     ...SOLO.map(t => tableCard(t, 'solo')),
   ].join('');
-  if (lobby) $('#online').innerHTML = `<i class="is-on"></i>${NPC.onlineSet(Live.now()).size + peers.length + 1} jogadores online`;
+  const onN = NPC.onlineSet(Live.now()).size + peers.length + 1;
+  if (lobby) $('#online').innerHTML = `<i class="is-on"></i>${onN} jogadores online`;
+  if ($('#lobby-hero')) $('#lobby-hero').innerHTML = lobbyHero(onN);
   renderRanking();
 }
 let lastRank = new Map();
@@ -287,7 +302,7 @@ function clearTable() {
     <div class="seat__cards" id="cards-${i}"></div>
     <div class="spot" id="spot-${i}"><span class="spot__mark" aria-hidden="true"></span><span class="spot__chips"></span><span class="spot__amt"></span></div>
     <div class="seat__tags upright"><span class="seat__val" id="val-${i}" hidden></span><span class="seat__result" id="res-${i}" hidden></span></div>
-    <button class="seat__who" data-profile=""><span class="plate"></span><span class="seat__timer" aria-hidden="true"><i></i></span></button></li>`).join('');
+    <button class="seat__who" data-profile=""><span class="seat__av"></span><span class="plate"></span><span class="seat__timer" aria-hidden="true"><i></i></span></button></li>`).join('');
   shown.forEach(a => (a.length = 0));
   dealerShown = []; $('#dealer-cards').innerHTML = ''; $('#dealer-val').hidden = true;
   $('#banner').hidden = true;
@@ -368,6 +383,7 @@ function applyView(v) {
     if (seat.dataset.sig !== sig) {
       seat.dataset.sig = sig;
       seat.querySelector('.plate').innerHTML = `${esc(s.name)}${i === me && s.name !== 'você' ? ' <small>você</small>' : ''}`;
+      seat.querySelector('.seat__av').innerHTML = avatarSVG((i === me ? profileOf().look : lookOf(s)) || {}, { label: s.name });
       seat.querySelector('.seat__who').dataset.profile = s.kind === 'human' ? (i === me ? 'me' : s.pid) : '';
       seat.classList.toggle('seat--you', i === me);
       seat.classList.toggle('seat--human', s.kind === 'human' && i !== me);

@@ -22,6 +22,7 @@ export function plant(s, land) {
   return null;
 }
 export function uproot(land) { delete land.orchard; }
+export const hasMachine = (s, m) => (s.cars || []).some(c => c.model === m);
 export function toggleSpray(land) { if (land.orchard) land.orchard.spray = !land.orchard.spray; return land.orchard?.spray; }
 export const nextHarvest = o => (o.age < ORANGE.grow ? ORANGE.grow - o.age : ORANGE.cycle - ((o.age - ORANGE.grow) % ORANGE.cycle));
 // praga alta derruba fruta: com praga muito alta você perde a safra inteira
@@ -36,7 +37,7 @@ export function monthly(s, rng = Math.random) {
   const out = [], add = (txt, val = 0) => { s.money += val; out.push({ txt, val: Math.round(val) }); };
   for (const l of s.lands || []) {
     const o = l.orchard; if (!o) continue;
-    const cost = Math.round(l.ha * ORANGE.spray);
+    const cost = Math.round(l.ha * ORANGE.spray * (hasMachine(s, 'pulv') ? 0.7 : 1));
     if (o.spray && s.money >= cost) { add(`pomar: defensivo e adubação, ${l.ha} ha`, -cost); o.pest = Math.max(0, o.pest - 1); }
     else {
       o.pest = Math.min(6, o.pest + 1);
@@ -47,7 +48,7 @@ export function monthly(s, rng = Math.random) {
     o.age++;
     if (o.age >= ORANGE.grow && (o.age - ORANGE.grow) % ORANGE.cycle === 0) {
       const hail = rng() < 0.04;                                          // chuva de granizo derruba parte da fruta
-      const cx = Math.round(expected(l) * (0.85 + rng() * 0.3) * (hail ? 0.6 : 1));
+      const cx = Math.round(expected(l) * (0.85 + rng() * 0.3) * (hail ? 0.6 : 1) * (hasMachine(s, 'plataforma') ? 1.1 : 1));
       s.stock.laranja = (s.stock.laranja || 0) + cx; o.harvests++;
       add(cx ? `colheita de laranja: ${cx} caixas, ${l.region}${hail ? ' (granizo derrubou parte da fruta)' : ''}` : `colheita perdida em ${l.region}: a praga derrubou toda a laranja`);
     }

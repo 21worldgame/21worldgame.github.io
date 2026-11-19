@@ -23,7 +23,16 @@ export const LAND_RATE = 0.9;     // como pagamento de terra, a carta vale 90%
 
 const tier = id => TIERS.find(t => t.id === id) || TIERS[0];
 export const champ = id => CHAMPS.find(c => c.id === id) || CHAMPS[0];
-export const value = c => Math.round(tier(c.tier).base * champ(c.champ).k / 100) * 100;
+// valorização: a carta guarda o mês do mundo em que nasceu e valoriza todo mês; quanto mais rara, mais valoriza (até 40 meses)
+export const GROW = { bronze: 0.003, prata: 0.005, esmeralda: 0.007, diamante: 0.008, mestre: 0.011, challenger: 0.015 };
+export const GROW_CAP = 40;
+let MONTH = 0;
+export const setMonth = m => { MONTH = Number(m) || 0; };
+export const baseValue = c => Math.round(tier(c.tier).base * champ(c.champ).k / 100) * 100;
+export const age = (c, m = MONTH) => Math.max(0, Math.min(GROW_CAP, m - (c.born ?? m)));
+export const growth = (c, m = MONTH) => (1 + GROW[tier(c.tier).id]) ** age(c, m);
+export const value = (c, m = MONTH) => Math.round((baseValue(c) * growth(c, m)) / 100) * 100;
+export const ensure = s => { for (const c of s.cards || []) c.born ??= s.month || MONTH; };
 export const label = c => `${champ(c.champ).name} (${tier(c.tier).label})`;
 
 export function draw(rng = Math.random, minTier = 0) {
@@ -33,7 +42,8 @@ export function draw(rng = Math.random, minTier = 0) {
 }
 export function give(s, card) {
   s.cards ??= [];
-  const c = { id: `k${(s.nextId = (s.nextId || 1) + 1)}`, tier: tier(card.tier).id, champ: champ(card.champ).id };
+  const now = s.month ?? MONTH, born = Number.isFinite(card.born) ? Math.max(now - GROW_CAP, Math.min(now, card.born)) : now;
+  const c = { id: `k${(s.nextId = (s.nextId || 1) + 1)}`, tier: tier(card.tier).id, champ: champ(card.champ).id, born };
   s.cards.push(c);
   return c;
 }
@@ -41,9 +51,9 @@ export function give(s, card) {
 // (você recebe várias cartas e às vezes tira uma rara), mas vender na loja ou pagar terra com elas nunca dá lucro garantido.
 const COMUM = { bronze: 64, prata: 29, esmeralda: 6, diamante: 0.9, mestre: 0.09, challenger: 0.01 };
 export const PACKS = {
-  simples: { label: 'pacote simples', price: 8000, slots: [COMUM], hint: '1 carta' },
-  ouro: { label: 'pacote ouro', price: 30000, slots: [COMUM, COMUM, { prata: 84, esmeralda: 13.5, diamante: 2.2, mestre: 0.27, challenger: 0.03 }], hint: '3 cartas, 1 garantida prata ou melhor' },
-  lendario: { label: 'pacote lendário', price: 200000, slots: [COMUM, COMUM, COMUM, { esmeralda: 80, diamante: 17, mestre: 2.6, challenger: 0.4 }, { diamante: 92, mestre: 7, challenger: 1 }], hint: '5 cartas, 1 esmeralda+ e 1 diamante+ garantidas' },
+  simples: { label: 'pacote simples', price: 8000, stock: 6, slots: [COMUM], hint: '1 carta' },
+  ouro: { label: 'pacote ouro', price: 30000, stock: 3, slots: [COMUM, COMUM, { prata: 84, esmeralda: 13.5, diamante: 2.2, mestre: 0.27, challenger: 0.03 }], hint: '3 cartas, 1 garantida prata ou melhor' },
+  lendario: { label: 'pacote lendário', price: 200000, stock: 1, slots: [COMUM, COMUM, COMUM, { esmeralda: 80, diamante: 17, mestre: 2.6, challenger: 0.4 }, { diamante: 92, mestre: 7, challenger: 1 }], hint: '5 cartas, 1 esmeralda+ e 1 diamante+ garantidas' },
 };
 function drawFrom(w, rng) {
   const ent = Object.entries(w), tot = ent.reduce((t, [, x]) => t + x, 0);
@@ -55,11 +65,15 @@ export function packEV(id) {
   const kAvg = CHAMPS.reduce((t, c) => t + c.k, 0) / CHAMPS.length;
   return PACKS[id].slots.reduce((sum, w) => { const tot = Object.values(w).reduce((a, b) => a + b, 0); return sum + Object.entries(w).reduce((a, [t, x]) => a + tier(t).base * kAvg * x / tot, 0); }, 0);
 }
+// estoque de pacotes por mês do mundo: é isso que mantém as cartas raras
+export function packsLeft(s, id) { if (s.packs?.m !== (s.month || 0)) s.packs = { m: s.month || 0, n: {} }; return PACKS[id].stock - (s.packs.n[id] || 0); }
 export function openPack(s, id = 'ouro', rng = Math.random) {
   const P = PACKS[id];
   if (!P) return { err: 'pacote inválido.' };
+  if (packsLeft(s, id) <= 0) return { err: `${P.label} esgotado neste mês do mundo. Cartas são raras: o estoque volta no mês que vem.` };
   if (s.money < P.price) return { err: 'dinheiro insuficiente para o pacote.' };
   s.money -= P.price;
+  s.packs.n[id] = (s.packs.n[id] || 0) + 1;
   return { cards: P.slots.map(w => give(s, drawFrom(w, rng))) };
 }
 export function buyPack(s, rng = Math.random) { const r = openPack(s, 'ouro', rng); return r.err ? r : { card: r.cards[0], cards: r.cards }; }
@@ -86,7 +100,7 @@ export function payWith(s, price) {
   return { used, change };
 }
 // carta que chega de outro jogador: só tier e campeão conhecidos
-export const sanitize = d => (TIERS.some(t => t.id === d?.tier) && CHAMPS.some(c => c.id === d?.champ) ? { tier: d.tier, champ: d.champ, id: String(d.id || '') } : null);
+export const sanitize = d => (TIERS.some(t => t.id === d?.tier) && CHAMPS.some(c => c.id === d?.champ) ? { tier: d.tier, champ: d.champ, id: String(d.id || ''), ...(Number.isFinite(Number(d.born)) && d.born !== null && d.born !== '' ? { born: Number(d.born) } : {}) } : null);
 
 // arte da carta: emblema do elemento em SVG + moldura animada da raridade (CSS)
 const ICON = {
@@ -111,7 +125,7 @@ export function cardHTML(c, { small = false, act = '' } = {}) {
       <div class="tcard__foot">
         <span class="tcard__stars" aria-label="raridade ${STARS[t.id]} de 6">${'★'.repeat(STARS[t.id])}</span>
         <h4 class="tcard__name">${title}${sub ? `<small>${sub}</small>` : ''}</h4>
-        <p class="tcard__val">R$ ${value(c).toLocaleString('pt-BR')}</p>
+        <p class="tcard__val">R$ ${value(c).toLocaleString('pt-BR')}${growth(c) > 1.005 ? `<small class="tcard__up">▲ ${Math.round((growth(c) - 1) * 100)}%</small>` : ''}</p>
       </div>
     </div></article>`;
 }

@@ -706,3 +706,92 @@ console.log('cana ok');
   assert.ok(CN.sellHarvester(s) < CN.HARVESTER.price);
 }
 console.log('logística da cana ok');
+
+// ---------- apostas no futebol ----------
+{
+  const AP = await import('./aposta.js');
+  const now = AP.slotStart(5000) + 1000, slot = AP.slotOf(now);
+  assert.equal(slot, 5000); assert.equal(AP.phase(slot, now), 'pre');
+  const ms = AP.matches(slot);
+  assert.equal(ms.length, 3); assert.deepEqual(AP.matches(slot)[0].events, ms[0].events, 'mesma rodada, mesmo jogo para todos');
+  // casa nunca perde no longo prazo: cada opção tem retorno esperado < 1 e a frequência real bate com o modelo
+  const tally = {};
+  let n = 0;
+  for (let sl = 1; sl <= 1500; sl++) for (const mt of AP.matches(sl)) {
+    for (const m of AP.markets(mt)) for (const o of m.opts) {
+      assert.ok(o.p * o.odd < 0.95, `odd generosa demais ${m.id} ${o.k}`);
+      const key = `${m.id}:${o.k === 'h' || o.k === 'a' || o.k === 'd' || o.k === 'o' || o.k === 'u' ? o.k : 'x'}`;
+      if (m.id === 'placar') continue;
+      tally[key] ??= { w: 0, pay: 0 }; tally[key].w += AP.wins(mt, m.id, o.k) ? 1 : 0; tally[key].pay += AP.wins(mt, m.id, o.k) ? o.odd : 0;
+    }
+    n++;
+  }
+  for (const [k, t] of Object.entries(tally)) assert.ok(t.pay / n < 1, `retorno real acima de 1 em ${k}: ${(t.pay / n).toFixed(3)}`);
+  const s = { chips: 1000 };
+  assert.match(AP.place(s, now, slot, 0, 'res', 'h', 5), /mínima/);
+  assert.equal(AP.place(s, now, slot, 0, 'res', 'h', 100), null); assert.equal(s.chips, 900);
+  assert.match(AP.place(s, AP.slotStart(slot) + AP.PRE + 1, slot, 0, 'res', 'h', 100), /fecharam/);
+  assert.equal(AP.settle(s, now).length, 0, 'não paga antes do fim');
+  const r = AP.settle(s, AP.slotStart(slot) + AP.PRE + AP.LIVE);
+  assert.equal(r.length, 1); assert.equal(s.chips, 900 + r[0].pay); assert.equal(s.fbets.length, 0);
+  console.log('apostas futebol ok', Object.entries(tally).map(([k, t]) => `${k} ${(t.pay / n).toFixed(2)}`).join(' '));
+}
+
+// ---------- cartas valorizam com o tempo e pacotes têm estoque mensal ----------
+{
+  const s = { money: 1e7, month: 10, nextId: 1 };
+  CD.setMonth(10);
+  const c = CD.give(s, { tier: 'mestre', champ: 'brasa' }), b = CD.give(s, { tier: 'bronze', champ: 'brasa' });
+  const v0 = CD.value(c);
+  CD.setMonth(34);
+  assert.ok(CD.value(c) > v0 * 1.25, 'mestre deveria valorizar bem em 24 meses');
+  assert.ok(CD.growth(c) > CD.growth(b), 'carta mais rara valoriza mais');
+  CD.setMonth(500); const cap = CD.value(c); CD.setMonth(900); assert.equal(CD.value(c), cap, 'valorização tem teto');
+  // mesmo no teto, vender pacote para a loja não dá lucro garantido
+  for (const [k, P] of Object.entries(CD.PACKS)) {
+    const kAvg = CD.CHAMPS.reduce((t, x) => t + x.k, 0) / CD.CHAMPS.length;
+    const evCap = P.slots.reduce((sum, w) => { const tot = Object.values(w).reduce((a, x) => a + x, 0); return sum + Object.entries(w).reduce((a, [t, x]) => a + CD.TIERS.find(y => y.id === t).base * kAvg * (1 + CD.GROW[t]) ** CD.GROW_CAP * x / tot, 0); }, 0);
+    assert.ok(evCap * CD.SELL < P.price, `${k}: vender no teto dá lucro (${Math.round(evCap * CD.SELL)})`);
+  }
+  CD.setMonth(10); s.month = 10;
+  for (let i = 0; i < CD.PACKS.ouro.stock; i++) assert.ok(!CD.openPack(s, 'ouro').err);
+  assert.match(CD.openPack(s, 'ouro').err, /esgotado/);
+  s.month = 11; assert.ok(!CD.openPack(s, 'ouro').err, 'estoque volta no mês seguinte');
+  const tr = CD.sanitize({ tier: 'prata', champ: 'raiz', born: -999 }); const g = CD.give(s, tr);
+  assert.ok(g.born >= s.month - CD.GROW_CAP, 'carta de troca não nasce antes do teto');
+  CD.setMonth(0);
+}
+console.log('cartas valorizam ok');
+
+// ---------- máquinas de laranja e cana ----------
+{
+  const PMx = await import('./pomar.js'), CNx = await import('./cana.js');
+  const land = { id: 1, own: true, ha: 10, uf: 'mt', region: 'x' };
+  const a = { cars: [] }, b = { cars: [{ model: 'transbordo' }, { model: 'rodotrem' }] };
+  const la = CNx.logistics(a, land), lb = CNx.logistics(b, land);
+  assert.ok(lb.load < la.load && lb.freight < la.freight * 0.6, 'transbordo e rodotrem baratear a logística');
+  const mk = cars => ({ money: 1e6, cars, stock: {}, lands: [{ ...land, orchard: { age: 0, health: 1, pest: 0, spray: true, harvests: 0 } }] });
+  const s1 = mk([]), s2 = mk([{ model: 'pulv' }]);
+  PMx.monthly(s1, () => 0.5); PMx.monthly(s2, () => 0.5);
+  assert.ok(1e6 - s2.money < (1e6 - s1.money) * 0.75, 'pulverizador baratear o defensivo');
+}
+console.log('máquinas ok');
+
+// ---------- anúncios dos jogadores do mundo ----------
+{
+  const SHx = await import('./shop.js'), L2 = await import('./logic.js');
+  const s = L2.newState(() => 0.4); s.money = 1e8; s.stable = { animals: [], offers: [], next: 1 }; s.stock.laranja = 0;
+  const now = 1.8e12, ls = SHx.npcListings(s, now);
+  assert.ok(new Set(ls.map(l => l.cat)).size >= 8, 'anúncios de várias categorias');
+  assert.deepEqual(SHx.npcListings(s, now).map(l => l.label), ls.map(l => l.label), 'iguais para todos na mesma janela');
+  for (const l of ls) {
+    const before = s.money, r = SHx.buyNpc(s, l.id, now);
+    assert.ok(!r.err, `${l.label}: ${r.err}`);
+    assert.equal(before - s.money, l.price);
+    assert.ok(!SHx.npcListings(s, now).some(x => x.id === l.id), 'vendido some do anúncio');
+  }
+  // revender tudo na loja na hora devolve menos do que custou
+  const paid = ls.reduce((t, l) => t + l.price, 0), back = SHx.items(s).reduce((t, it) => t + SHx.housePrice(s, it), 0) + s.herd.reduce((t, h) => t + h.heads * s.prices.bezerro, 0);
+  assert.ok(back < paid, `anúncio com lucro garantido: pagou ${paid}, loja paga ${back}`);
+}
+console.log('anúncios dos jogadores ok');

@@ -5,6 +5,8 @@ import * as FE from './feira.js';
 import * as Auth from './auth.js';
 import { G, $, esc, brl, say, save, note, profileOf } from './store.js';
 import * as sfx from './sfx.js';
+import * as NPC from './npcs.js';
+import * as Live from './live.js';
 
 let lobby = null, lastAt = 0, unread = 0, idx = 1, to = 'all';
 const msgs = [], seen = new Set();
@@ -86,6 +88,21 @@ function send(e) {
   $('#chat-in').value = ''; $('#chat-hi').checked = false;
   if (CH.clean(text) !== text.trim().replace(/\s+/g, ' ')) say('Algumas palavras foram trocadas por *** (sem palavrão no chat).');
 }
+
+// jogadores do mundo falando no chat de tempos em tempos (mesma fala para todos, sem lotar)
+let npcSlot = 0;
+function npcTalk(first = false) {
+  const now = Live.now(), cur = Math.floor(now / CH.NPC_GAP);
+  for (let sl = first ? cur - 4 : npcSlot + 1; sl <= cur; sl++) {
+    const nicks = [...NPC.onlineSet(sl * CH.NPC_GAP)].sort().map(id => NPC.byId(id)?.nick).filter(Boolean), l = CH.npcLine(sl, nicks);
+    if (l && l.at > now) break;
+    npcSlot = sl;
+    if (!l) continue;
+    const n = NPC.byNick(l.name);
+    add({ ...l, level: n ? NPC.levelFor(NPC.worthAt(n, G.S?.month || 1)) : 5 }, false);
+  }
+}
+setTimeout(() => npcTalk(true), 1500); setInterval(npcTalk, 5000);
 
 document.getElementById('chat-fab')?.addEventListener('click', () => toggle());
 document.getElementById('chat-x')?.addEventListener('click', () => toggle(false));

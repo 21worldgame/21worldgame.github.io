@@ -74,7 +74,7 @@ export const levelFor = worth => Math.max(1, Math.min(60, Math.round(Math.log10(
 // perfil completo (para a janela de perfil)
 export function profile(n, month) {
   const worth = worthAt(n, month), lv = levelFor(worth), r = k => hash(n.i * 31 + k);
-  const hands = Math.round(80 + lv * 45 + r(1) * 400), cars = Object.keys(CARS).filter(c => CARS[c].price < worth * 0.6).slice(-1 - Math.floor(r(2) * 2));
+  const hands = Math.round(80 + lv * 45 + r(1) * 400), cars = Object.keys(CARS).filter(c => CARS[c].type !== 'maquina' && CARS[c].price < worth * 0.6).slice(-1 - Math.floor(r(2) * 2));
   return {
     npc: true, id: n.id, name: n.nick, look: n.look, level: lv, rank: rank(worth), worth, bio: n.bio,
     stats: { hands, wins: Math.round(hands * (0.38 + r(3) * 0.08)), best: Math.round(200 + r(4) * worth / 200), races: Math.round(r(5) * 60), raceWins: Math.round(r(6) * 14) },

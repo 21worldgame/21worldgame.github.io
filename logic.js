@@ -116,6 +116,11 @@ export const CARS = {
   porsche: { name: 'Porshe 912 Carreira', type: 'esportivo', price: 1100000, cat: 'esportivo', img: 'car-porsche', hp: 385, top: 293 },
   g63: { name: 'Mercedez G36 AMJ', type: 'suv', price: 2000000, cat: 'luxo', img: 'car-g63', hp: 585, top: 220 },
   huracan: { name: 'Lamborgini Huracão', type: 'super', price: 3600000, cat: 'superesportivo', img: 'car-huracan', hp: 640, top: 325 },
+  // máquinas agrícolas: aparecem na concessionária para quem tem pomar ou canavial
+  pulv: { name: 'Jactu Arbos 3030 (pulverizador)', type: 'maquina', crop: 'laranja', price: 380000, cat: 'laranja', img: 'maq-pulv', hp: 0, top: 25, perk: 'defensivo do pomar 30% mais barato' },
+  plataforma: { name: 'Plataforma Citrus PC-22', type: 'maquina', crop: 'laranja', price: 260000, cat: 'laranja', img: 'maq-plataforma', hp: 0, top: 20, perk: 'colhe 10% mais laranja (menos fruta no chão)' },
+  transbordo: { name: 'Transbordo Antoniossi 12 t', type: 'maquina', crop: 'cana', price: 320000, cat: 'cana', img: 'maq-transbordo', hp: 0, top: 30, perk: 'carregamento da cana de R$ 6 para R$ 2 por tonelada' },
+  rodotrem: { name: 'Volvu FH rodotrem canavieiro', type: 'maquina', crop: 'cana', price: 1400000, cat: 'cana', img: 'maq-rodotrem', hp: 540, top: 90, perk: 'frete da cana até a usina 45% mais barato' },
   veyron: { name: 'Bugati Veiron 61.4', type: 'super', price: 15000000, cat: 'hiperesportivo', img: 'car-veyron', hp: 1001, top: 407 },
 };
 export const OLD_CARS = { vento: 'onix', bravo: 'hilux', serra: 'sw4', campeiro: 'deere', boiadeiro: 'scania', falcao: 'porsche', tempesta: 'huracan' };

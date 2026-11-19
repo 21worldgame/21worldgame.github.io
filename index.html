@@ -105,12 +105,15 @@
     <!-- CASSINO: salão de mesas e a mesa -->
     <section id="p-mesa" role="tabpanel" aria-labelledby="t-mesa" class="panel">
       <div class="subtabs" role="group" aria-label="jogos do cassino">
-        <button class="subtab is-on" data-sub="21">vinte e um</button><button class="subtab" data-sub="roleta">roleta</button><button class="subtab" data-sub="aviator">aviator</button>
+        <button class="subtab is-on" data-sub="21">vinte e um</button><button class="subtab" data-sub="roleta">roleta</button><button class="subtab" data-sub="aviator">aviator</button><button class="subtab subtab--hot" data-sub="bet">futebol ao vivo</button>
       </div>
       <div id="sub-21" class="sub">
       <div id="lobby" class="lobby">
         <div class="lobby__main">
-          <div class="listhead"><h2>salão de jogos</h2><span class="online" id="online"><i></i>conectando ao salão</span></div>
+          <div class="listhead listhead--salao"><span class="online" id="online"><i></i>conectando ao salão</span></div>
+          <div class="lhero" id="lobby-hero"></div>
+          <div class="cards cards--tables" id="tables"></div>
+          <details class="lobby__friends"><summary>jogar com amigos: criar mesa online ou entrar com código</summary>
           <div class="glass lobby__bar">
             <form id="create-form" class="row">
               <label class="field"><span>nome da mesa</span><input class="input" name="tname" maxlength="24" placeholder="mesa dos amigos"></label>
@@ -123,7 +126,7 @@
               <button class="btn btn--glass" type="submit">entrar</button>
             </form>
           </div>
-          <div class="cards cards--tables" id="tables"></div>
+          </details>
         </div>
         <aside class="lobby__side">
           <div class="glass sidebox"><h3>missões de hoje</h3><ul class="mlist" id="missions-mini"></ul></div>
@@ -249,6 +252,17 @@
             <ul id="av-players"></ul></aside>
         </div>
       </div>
+      <!-- APOSTAS NO FUTEBOL -->
+      <div id="sub-bet" class="sub" hidden>
+        <div class="fb-games" id="fb-games"></div>
+        <div class="fb-grid">
+          <div class="glass fb-board" id="fb-board"></div>
+          <aside class="fb-side">
+            <div class="glass fb-slip"><h3>bilhete</h3><div id="fb-slip"></div></div>
+            <div class="glass fb-mine" id="fb-mine"></div>
+          </aside>
+        </div>
+      </div>
     </section>
 
     <!-- TRADER -->
@@ -346,9 +360,10 @@
     <!-- LOJA -->
     <section id="p-loja" role="tabpanel" aria-labelledby="t-loja" class="panel" hidden>
       <div class="listhead"><h2>loja</h2><span class="muted small">Venda na hora para a loja ou anuncie pelo seu preço: cavalos, galgos, carros, terras, cartas, jogadores e até o seu clube.</span></div>
+      <div class="shop-cats" id="shop-cats" role="group" aria-label="categorias"></div>
       <h3>suas coisas</h3>
       <div class="shop-grid" id="shop-mine"></div>
-      <h3>à venda por outros jogadores</h3>
+      <h3>anúncios dos jogadores</h3>
       <div class="shop-grid" id="shop-others"></div>
     </section>
 
@@ -500,6 +515,7 @@
     <!-- MERCADO -->
     <section id="p-mercado" role="tabpanel" aria-labelledby="t-mercado" class="panel">
       <div class="listhead"><h2>bolsa do negociante</h2><span class="muted small">Os preços mudam todo mês. A bolsa cobra 1% na venda. Sua colheita entra no armazém.</span></div>
+      <div class="mk-live glass" id="mk-live"></div>
       <div class="cards cards--3" id="goods"></div>
     </section>
 
@@ -507,6 +523,8 @@
     <section id="p-carros" role="tabpanel" aria-labelledby="t-carros" class="panel">
       <div class="listhead"><h2>concessionária</h2><span class="muted small">Carro desvaloriza 1,5% ao mês e paga IPVA e seguro. Trator e caminhão rendem na fazenda.</span></div>
       <div class="cards cards--cars" id="showroom"></div>
+      <h3>máquinas agrícolas</h3>
+      <div id="maq"></div>
       <h3>sua garagem</h3>
       <div class="cards cards--cars" id="garage"></div>
     </section>

@@ -5,7 +5,9 @@ import * as TD from './trade.js';
 import { G, $, esc, brl, say, save, note, award, confetti, profileOf } from './store.js';
 import * as sfx from './sfx.js';
 
-let lobby = null, media = () => '', kindName = {}, announce = () => {};
+let lobby = null, media = () => '', kindName = {}, announce = () => {}, cat = 'all';
+export const setCat = c => { cat = c || 'all'; render(); };
+const inCat = c => cat === 'all' || c === cat;
 const pending = new Set();
 export function init({ itemMedia, ITEM_KIND, announceFn }) {
   media = itemMedia; kindName = ITEM_KIND; announce = announceFn;
@@ -23,7 +25,10 @@ function npc() {
 
 export function render() {
   const s = G.S, all = SH.items(s), mine = new Map((s.shop || []).map(l => [l.key, l]));
-  const its = all.filter(i => i.kind !== 'player'), players = all.filter(i => i.kind === 'player');
+  const npcs = SH.npcListings(s, Date.now());
+  const counts = {}; for (const i of all) counts[SH.catOf(i)] = (counts[SH.catOf(i)] || 0) + 1; for (const l of npcs) counts[l.cat] = (counts[l.cat] || 0) + 1;
+  $('#shop-cats').innerHTML = [['all', 'tudo'], ...Object.entries(SH.CATS)].map(([k, v]) => `<button class="shop-cat${cat === k ? ' is-on' : ''}" data-act="shop-cat" data-id="${k}">${v}${k !== 'all' && counts[k] ? ` <small>${counts[k]}</small>` : ''}</button>`).join('');
+  const its = all.filter(i => i.kind !== 'player' && inCat(SH.catOf(i))), players = inCat('futebol') ? all.filter(i => i.kind === 'player') : [];
   const card = it => {
     const l = mine.get(it.key), house = SH.housePrice(s, it), b = SH.blocked(s, it);
     return `<article class="scard${l ? ' is-listed' : ''}">
@@ -37,15 +42,31 @@ export function render() {
              <button class="btn btn--glass btn--sm" data-act="shop-sell" data-id="${esc(it.key)}">vender agora por ${brl(house)}</button>`}
       </div></article>`;
   };
-  $('#shop-mine').innerHTML = all.length ? its.map(card).join('') + (players.length ? `<details class="shop-players"><summary>jogadores do seu clube (${players.length}): vender ou anunciar um por um</summary><div class="shop-grid">${players.map(card).join('')}</div></details>` : '') : '<p class="empty glass">Você ainda não tem nada para vender. Compre carros, animais, terras, cartas ou um clube.</p>';
-  const others = lobby ? [...lobby.peers.entries()].flatMap(([pid, p]) => (p.shop || []).map(l => ({ ...l, pid, seller: p.profile?.name || 'jogador' }))) : [];
-  $('#shop-others').innerHTML = others.length ? others.map(l => `<article class="scard scard--other">
+  $('#shop-mine').innerHTML = its.length || players.length ? its.map(card).join('') + (players.length ? `<details class="shop-players"><summary>jogadores do seu clube (${players.length}): vender ou anunciar um por um</summary><div class="shop-grid">${players.map(card).join('')}</div></details>` : '') : (all.length ? '<p class="empty glass">Nada seu nesta categoria.</p>' : '<p class="empty glass">Você ainda não tem nada para vender. Compre carros, animais, terras, cartas ou um clube.</p>');
+  const others = (lobby ? [...lobby.peers.entries()].flatMap(([pid, p]) => (p.shop || []).map(l => ({ ...l, pid, seller: p.profile?.name || 'jogador' }))) : []).filter(l => inCat(SH.catOf({ kind: l.kind })));
+  const npcHTML = npcs.filter(l => inCat(l.cat)).map(npcCard).join('');
+  $('#shop-others').innerHTML = others.length || npcHTML ? npcHTML + others.map(l => `<article class="scard scard--other">
       <div class="scard__body"><span class="scard__kind">${esc(kindName[l.kind] || l.kind)}</span><h4>${esc(String(l.label).slice(0, 60))}</h4>
         <p class="small muted">vendido por ${esc(String(l.seller).slice(0, 18))}</p><p class="scard__price">${brl(Number(l.price) || 0)}</p>
         <button class="btn btn--gold btn--sm" data-act="shop-buy" data-id="${esc(l.pid)}|${esc(l.id)}|${Number(l.price) || 0}" ${pending.has(l.id) ? 'disabled' : ''}>${pending.has(l.id) ? 'aguardando...' : 'comprar'}</button></div></article>`).join('')
     : '<p class="empty glass">Nenhum jogador online está anunciando agora. Os seus anúncios aparecem aqui para os outros jogadores, e se ninguém comprar, um comprador da loja pode levar (pagando no máximo 5% acima do que a loja paga na hora).</p>';
 }
 
+function npcCard(l) {
+  const m = l.cat === 'veiculo' || l.cat === 'maquina' ? `<img src="assets/${l.img}.webp" alt="" loading="lazy">` : l.cat === 'terra' ? media({ kind: 'land', data: l.land }) : l.cat === 'animal' ? media({ kind: 'animal', data: l.animal })
+    : l.cat === 'gado' ? '<img src="assets/farm-bezerro.webp" alt="" loading="lazy">' : l.cat === 'produto' ? media({ kind: 'good', good: l.good }) : l.cat === 'carta' ? media({ kind: 'card', data: l.card }) : media({ kind: 'player' });
+  return `<article class="scard scard--other">
+    <div class="scard__media">${m}<span class="scard__kind">${esc(SH.CATS[l.cat])}</span></div>
+    <div class="scard__body"><h4>${esc(l.label)}</h4><p class="small muted">anunciado por <b>${esc(l.seller)}</b></p><p class="scard__price">${brl(l.price)}</p>
+      <button class="btn btn--gold btn--sm" data-act="shop-npc" data-id="${esc(l.id)}">comprar</button></div></article>`;
+}
+export function buyNpc(id) {
+  const l = SH.npcListings(G.S, Date.now()).find(x => x.id === id); if (!l) return say('Esse anúncio já saiu do ar.', true);
+  if (!confirm(`Comprar ${l.label} de ${l.seller} por ${brl(l.price)}?`)) return;
+  const r = SH.buyNpc(G.S, id, Date.now());
+  if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true);
+  note(`loja: comprou ${l.label} de ${l.seller}`, -l.price); say(`Comprado de ${l.seller}: ${l.label}.`); sfx.play('stack', 0.6); confetti(30);
+}
 export function sellNow(key) {
   const it = SH.find(G.S, key); if (!it) return;
   if (!confirm(`Vender ${it.label} agora por ${brl(SH.housePrice(G.S, it))}?`)) return;

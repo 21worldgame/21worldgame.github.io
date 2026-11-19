@@ -20,9 +20,9 @@ export const HARVESTER = { price: 1200000, upkeep: 8000, deprec: 0.006 };   // c
 export const LOGI = { cutThird: 25, cutOwn: 12, load: 6, freightKm: 0.35, truckSave: 0.35 };
 export const kmOf = land => USINA_KM[land.uf] ?? 100;
 export function logistics(s, land) {
-  const cut = s.caneHarvester ? LOGI.cutOwn : LOGI.cutThird, truck = (s.cars || []).some(c => c.model === 'scania');
-  const freight = +(kmOf(land) * LOGI.freightKm * (truck ? 1 - LOGI.truckSave : 1)).toFixed(2);
-  return { cut, load: LOGI.load, freight, km: kmOf(land), truck, own: !!s.caneHarvester, total: +(cut + LOGI.load + freight).toFixed(2) };
+  const has = m => (s.cars || []).some(c => c.model === m), cut = s.caneHarvester ? LOGI.cutOwn : LOGI.cutThird, rodo = has('rodotrem'), truck = rodo || has('scania');
+  const freight = +(kmOf(land) * LOGI.freightKm * (rodo ? 0.55 : truck ? 1 - LOGI.truckSave : 1)).toFixed(2), load = has('transbordo') ? 2 : LOGI.load;
+  return { cut, load, freight, km: kmOf(land), truck, rodo, own: !!s.caneHarvester, total: +(cut + load + freight).toFixed(2) };
 }
 export function buyHarvester(s) {
   if (s.caneHarvester) return 'você já tem uma colhedora.';

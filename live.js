@@ -1,6 +1,6 @@
 // Ligação do jogo com o painel administrativo: configuração e eventos, avisos, suspensões e ordens do admin.
 // Se as tabelas do supabase/admin.sql ainda não existirem, tudo aqui fica quieto e o jogo segue normal.
-import { G, $, esc, brl, int, say, save, note, badge, levelUp, blankState } from './store.js';
+import { G, $, esc, brl, int, say, save, note, badge, levelUp, blankState, profileOf } from './store.js';
 import * as P from './progress.js';
 import * as Auth from './auth.js';
 import * as W from './world.js';
@@ -54,6 +54,18 @@ function realtime(sb) {
     ch.on('postgres_changes', { event: '*', schema: 'public', table: 'game_config' }, async () => { await loadConfig(sb); maintenance(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => loadAnnouncements(sb))
       .subscribe();
+  } catch {}
+  presence(sb);
+}
+// presença em tempo real: o painel admin vê quem está com o jogo aberto agora (some sozinho ao fechar a aba)
+function presence(sb) {
+  try {
+    const key = `t${Math.random().toString(36).slice(2, 10)}`, since = Date.now();
+    const ch = sb.channel('online-players', { config: { presence: { key } } });
+    const info = () => { const a = Auth.account(), p = G.S ? profileOf() : {}; return { uid: a?.id || null, name: String(p.name || 'visitante').slice(0, 24), level: p.level || 1, worth: Math.round(p.worth || 0), tab: location.hash.slice(1) || 'cassino', since, mobile: matchMedia('(max-width: 40rem)').matches }; };
+    ch.subscribe(st => { if (st === 'SUBSCRIBED') ch.track(info()); });
+    setInterval(() => ch.track(info()), 30000);
+    addEventListener('hashchange', () => ch.track(info()));
   } catch {}
 }
 

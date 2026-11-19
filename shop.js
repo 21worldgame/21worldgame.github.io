@@ -97,3 +97,44 @@ export function npcTick(s, rng = Math.random) {
 }
 // vitrine pública (vai para os outros jogadores pelo salão): só o que eles precisam ver
 export const publicListings = s => (s.shop || []).filter(l => l.kind !== 'club' && l.kind !== 'aviario').slice(0, MAX_LISTINGS).map(l => ({ id: l.id, kind: l.kind, label: String(l.label).slice(0, 60), price: l.price }));
+
+// ---------- anúncios dos jogadores do mundo (todas as categorias) ----------
+// trocam a cada 10 min, iguais para todo mundo; a compra entrega o item de verdade.
+// Preço sempre acima do que a loja recompra: comprar do anúncio e revender na hora nunca dá lucro.
+import * as L from './logic.js';
+import * as NPCS from './npcs.js';
+import { apply as tradeApply } from './trade.js';
+export const NPC_WIN = 10 * 60 * 1000;
+export const CATS = { veiculo: 'veículos', maquina: 'máquinas', terra: 'terras', animal: 'cavalos e galgos', gado: 'gado', produto: 'produtos', carta: 'cartas', futebol: 'futebol', granja: 'granja' };
+function seeded(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const r100 = v => Math.round(v / 100) * 100;
+export function npcListings(s, now = Date.now()) {
+  const win = Math.floor(now / NPC_WIN), r = seeded(win * 7717 + 3), out = [], month = s.month || 1;
+  const ids = [...NPCS.onlineSet(win * NPC_WIN)].sort(), seller = () => NPCS.byId(ids[Math.floor(r() * ids.length)])?.nick || 'AceDeOuro';
+  const cars = Object.entries(CARS).filter(([, c]) => c.type !== 'maquina' && c.price <= 4e6), maqs = Object.entries(CARS).filter(([, c]) => c.type === 'maquina');
+  const add = (cat, label, price, items, extra = {}) => out.push({ id: `n${win}-${out.length}`, cat, label, price: r100(price), items, seller: seller(), ...extra });
+  for (let k = 0; k < 2; k++) { const [m, c] = cars[Math.floor(r() * cars.length)], v = r100(c.price * (0.7 + r() * 0.2)); add('veiculo', `${c.name} seminovo`, v * 1.06, [{ kind: 'car', data: { model: m, value: v } }], { img: c.img }); }
+  { const [m, c] = maqs[Math.floor(r() * maqs.length)], v = r100(c.price * (0.75 + r() * 0.15)); add('maquina', `${c.name} usado`, v * 1.06, [{ kind: 'car', data: { model: m, value: v } }], { img: c.img }); }
+  for (let k = 0; k < 2; k++) { const tmp = { nextId: 1, offers: [] }; L.refreshOffers(tmp, r); const o = tmp.offers[0]; add('terra', `${o.ha} ha, ${o.region}`, o.value * 1.06, [{ kind: 'land', data: { ...o, own: true, leasedOut: false } }], { land: o }); }
+  for (const kind of ['horse', 'dog']) { const a = ST.newAnimal(kind, 44 + Math.floor(r() * 30), r, 0); add('animal', `${ST.KINDS[kind].label} ${a.name}, nota ${ST.rating(a)}`, ST.value(a) * 1.12, [{ kind: 'animal', data: a }], { animal: a }); }
+  { const n = 10 + Math.floor(r() * 31); add('gado', `${n} bezerros nelore desmamados`, n * (s.prices?.bezerro || 2600) * 1.06, [], { heads: n }); }
+  for (const g of ['soja', 'milho', 'cafe', 'laranja'].sort(() => r() - 0.5).slice(0, 2)) { const q = (g === 'cafe' ? 20 : 200) + Math.floor(r() * (g === 'cafe' ? 80 : 800)), p = s.prices?.[g] || { soja: 130, milho: 60, cafe: 1400, laranja: 38 }[g]; add('produto', `${q} ${g === 'laranja' ? 'caixas de laranja' : `sacas de ${g === 'cafe' ? 'café' : g}`}`, q * p * 1.05, [{ kind: 'good', good: g, qty: q }], { good: g }); }
+  for (let k = 0; k < 2; k++) { const c = { ...CD.draw(r, k), born: Math.max(0, month - Math.floor(r() * 24)) }; add('carta', `carta ${CD.label(c)}`, CD.value(c, month) * (1.02 + r() * 0.12), [{ kind: 'card', data: c }], { card: c }); }
+  { const pos = Object.keys(FT.POS)[Math.floor(r() * 6)], p = FT.genPlayer(pos, 55 + Math.floor(r() * 25), r); add('futebol', `${FT.POS[pos]} ${p.name}, nota ${p.ovr}`, FT.value(p) * 1.1, [{ kind: 'player', data: p }]); }
+  const sold = new Set(s.npcSold?.win === win ? s.npcSold.ids : []);
+  return out.filter(l => !sold.has(l.id));
+}
+export function buyNpc(s, id, now = Date.now()) {
+  const l = npcListings(s, now).find(x => x.id === id);
+  if (!l) return { err: 'esse anúncio já saiu do ar.' };
+  if (l.price > s.money) return { err: 'dinheiro insuficiente.' };
+  if (l.heads) { s.money -= l.price; s.herd.push({ id: s.nextId++, heads: l.heads, kg: 190 }); }
+  else { const e = tradeApply(s, [{ kind: 'money', amount: l.price }], l.items); if (e) return { err: e }; }
+  const win = Math.floor(now / NPC_WIN);
+  if (s.npcSold?.win !== win) s.npcSold = { win, ids: [] };
+  s.npcSold.ids.push(id);
+  return { item: l };
+}
+// categoria de um item seu (para os filtros da loja)
+export const catOf = it => it.kind === 'car' ? (CARS[it.data?.model]?.type === 'maquina' ? 'maquina' : 'veiculo') : it.kind === 'land' ? 'terra' : it.kind === 'animal' ? 'animal'
+  : it.kind === 'good' ? 'produto' : it.kind === 'card' ? 'carta' : it.kind === 'player' || it.kind === 'club' ? 'futebol' : it.kind === 'aviario' ? 'granja' : 'produto';

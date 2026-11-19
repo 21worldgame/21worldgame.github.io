@@ -50,6 +50,23 @@ async function enter(user) {
   $('#ad-who').textContent = `Conectado como ${user.email}`;
   show('overview');
   pwBadge(); setInterval(pwBadge, 60000);
+  watchOnline();
+}
+// ---------- quem está online (presença em tempo real, sem tabela) ----------
+let online = [];
+function watchOnline() {
+  const ch = sb.channel('online-players');
+  ch.on('presence', { event: 'sync' }, () => { online = Object.values(ch.presenceState()).map(a => a[0]).filter(Boolean); renderOnline(); }).subscribe();
+  setInterval(renderOnline, 20000);
+}
+function renderOnline() {
+  const el = $('#ad-online'); if (!el) return;
+  const mins = t => { const m = Math.max(0, Math.round((Date.now() - t) / 60000)); return m < 1 ? 'agora' : m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`; };
+  const list = [...online].sort((a, b) => (b.worth || 0) - (a.worth || 0));
+  $('#ad-on-n').textContent = list.length;
+  el.innerHTML = list.map(p => `<tr ${p.uid ? `data-user="${esc(p.uid)}"` : ''}><td><strong>${esc(p.name)}</strong></td><td>${p.uid ? '<span class="tag tag--green">conta logada</span> <small class="muted">clique para ver</small>' : '<span class="tag tag--gold">visitante sem conta</span>'}</td>
+    <td class="num">${int(p.level)}</td><td class="num">${brl(p.worth || 0)}</td><td>${esc(p.tab || '')}</td><td>${p.mobile ? 'celular' : 'computador'}</td><td>${mins(p.since)}</td></tr>`).join('')
+    || '<tr><td colspan="7" class="muted">Ninguém com o jogo aberto agora.</td></tr>';
 }
 // ---------- pedidos de senha ----------
 async function pwBadge() {

@@ -16,7 +16,7 @@ const CATS = {
   casino: { label: 'cassino', val: r => r.best || 0, fmt: v => `${int(v)} fichas` },
 };
 export const setCat = c => { if (CATS[c]) { cat = c; page = 0; render(); } };
-export const setPage = p => { page = Math.max(0, Number(p) || 0); render(); document.getElementById('rk-list')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); };
+export const setPage = p => { page = Math.max(0, Number(p) || 0); render(); document.getElementById('rk-count')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); };
 export const toggleOnline = () => { onlyOn = !onlyOn; page = 0; render(); };
 
 // junta os dados extras (hectares, maior prêmio) que cada fonte tem
