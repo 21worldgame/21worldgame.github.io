@@ -13,6 +13,8 @@ import * as SNU from './sinuca-ui.js';
 import * as PKU from './poker-ui.js';
 import * as CT from './contador.js';
 import * as CTU from './contador-ui.js';
+import * as SFU from './staff-ui.js';
+import * as SF from './staff.js';
 import { botsFor as BOTS } from './botpool.js';
 import * as NG from './negocios.js';
 import * as SH from './shop.js';
@@ -730,7 +732,7 @@ document.addEventListener('submit', e => { if (e.target.id === 'tr-chat-form') {
 
 // desempenho: cada aba só é desenhada quando está aberta (ou quando o usuário entra nela)
 const PANELS = { personagem: () => renderChar(), terras: () => renderTerras(), gado: () => renderGado(), mercado: () => renderMercado(),
-  carros: () => renderLoja('carros'), suinos: () => SUU.render(), negocios: () => NGU.render(), banco: () => renderBanco(), livro: () => renderLivro(), contador: () => CTU.render(), haras: () => { SUI.render(); LEU.render(); }, futebol: () => FUI.render(), inventario: () => renderInv(), ranking: () => RKUI.render(), laranja: () => renderPomar(), cana: () => renderCana(), cartas: () => renderCartas(), granja: () => renderGranja(), loja: () => renderLoja(), mesa: () => C.renderLobby() };
+  carros: () => renderLoja('carros'), suinos: () => SUU.render(), negocios: () => NGU.render(), banco: () => renderBanco(), livro: () => renderLivro(), equipe: () => SFU.render(), haras: () => { SUI.render(); LEU.render(); }, futebol: () => FUI.render(), inventario: () => renderInv(), ranking: () => RKUI.render(), laranja: () => renderPomar(), cana: () => renderCana(), cartas: () => renderCartas(), granja: () => renderGranja(), loja: () => renderLoja(), mesa: () => C.renderLobby() };
 let currentTab = 'mesa';
 // cada parte da tela desenha separada: se uma der erro, as outras continuam (a tela nunca fica travada)
 let uiErrAt = 0;
@@ -739,6 +741,7 @@ function uiError(e, where) {
   if (Date.now() - uiErrAt > 20000) { uiErrAt = Date.now(); say('Algo não carregou direito nesta tela. Seu progresso está salvo; se continuar, troque de aba ou recarregue.', true); }
 }
 function render() {
+  { const n = SF.active(S()).length, b = document.getElementById('team-badge'); if (b) { b.hidden = !n; b.textContent = n; } }
   for (const [f, w] of [[renderHud, 'hud'], [renderMissions, 'missões'], [PANELS[currentTab], currentTab], [() => CTU.inject(currentTab), 'contador']]) { try { f?.(); } catch (e) { uiError(e, w); } }
   try { C.announce(); } catch (e) { console.error(e); }
 }
@@ -1322,7 +1325,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 53;
+const APP_VERSION = 54;
 let updateShown = false, updateMsg = '';
 let checking = false;
 async function checkUpdate() {

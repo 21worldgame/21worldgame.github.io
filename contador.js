@@ -28,7 +28,11 @@ export function hire(s, plan, worth) {
   s.money -= price; s.acct = { plan, since: s.month || 1, until: (s.month || 1) + P.months, paid: price };
   return { price };
 }
-export function cancel(s) { if (!s.acct) return 'você não tem contador.'; if (s.acct.plan !== 'mensal') return 'contrato pago: vale até o fim do período.'; delete s.acct; return null; }
+// demitir: mensal sai sem custo; contrato pago devolve 70% dos meses que não usou (30% de multa)
+export const FIRE_KEEP = 0.7;
+export const refundOf = s => (!s.acct || s.acct.plan === 'mensal' ? 0 : Math.round((s.acct.paid || 0) * Math.min(1, monthsLeft(s) / PLANS[s.acct.plan].months) * FIRE_KEEP));
+export function fire(s) { if (!s.acct) return { err: 'você não tem contador.' }; const v = refundOf(s); s.money = (s.money || 0) + v; delete s.acct; return { refund: v }; }
+export const cancel = s => fire(s).err || null;
 // no fechamento do mês: cobra o mensal; avisa quando o contrato pago acaba
 export function monthly(s, worth) {
   const a = s.acct; if (!a) return [];

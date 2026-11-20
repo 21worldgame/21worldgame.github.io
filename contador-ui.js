@@ -18,7 +18,7 @@ export function render() {
   const el = $('#ct-body'); if (!el) return;
   const s = G.S, worth = L.netWorth(s), on = CT.active(s);
   if (!on) {
-    el.innerHTML = `<div class="ct-hero glass"><div><h3>contrate um contador</h3>
+    el.innerHTML = `<div class="ct-hero glass"><div><h3>contador: planos</h3>
       <p>Ele mostra, mês a mês, exatamente quanto você gasta e com o quê: impostos, luz, água, funcionários, ração, insumos, manutenção, seguro, frete, parcelas do banco, separado por gado, granja, suínos, cana, laranja, empresas, mina e terras.</p>
       <p class="small muted">Cada fechamento do mês aparece uma única vez, com a hora em que foi cobrado e cada lançamento somado. O honorário é proporcional ao patrimônio: ${(CT.FEE.rate * 100).toFixed(2).replace('.', ',')}% ao mês (mínimo ${brl(CT.FEE.min)}). Quem é mais rico paga mais.</p></div></div>
       <div class="ct-plans">${Object.entries(CT.PLANS).map(([k, P]) => `<article class="ct-plan glass${k === 'm12' ? ' is-best' : ''}"><h4>${P.label}</h4><p class="ct-price">${brl(CT.quote(worth, k))}${P.months ? '' : '<small>/mês</small>'}</p>
@@ -26,8 +26,8 @@ export function render() {
     return;
   }
   const a = s.acct, fc = CT.summarize(G.ctForecast?.() || []), closes = s.closes || [];
-  const head = `<div class="ct-head glass"><div><h3>seu contador</h3><p class="small">${a.plan === 'mensal' ? `plano mensal · próximo honorário ${brl(CT.nextMensal(s, worth))} (sobe ${Math.round(CT.FEE.rise * 100)}% a cada mês)` : `plano ${CT.PLANS[a.plan].label} pago (${brl(a.paid)}) · ${CT.monthsLeft(s)} ${CT.monthsLeft(s) === 1 ? 'mês restante' : 'meses restantes'}`}</p></div>
-    ${a.plan === 'mensal' ? '<button class="btn btn--glass btn--sm" data-ct="cancel">dispensar contador</button>' : ''}</div>`;
+  const head = `<div class="ct-head glass"><div><h3>relatório do contador</h3><p class="small">${a.plan === 'mensal' ? `plano mensal · próximo honorário ${brl(CT.nextMensal(s, worth))} (sobe ${Math.round(CT.FEE.rise * 100)}% a cada mês)` : `plano ${CT.PLANS[a.plan].label} pago (${brl(a.paid)}) · ${CT.monthsLeft(s)} ${CT.monthsLeft(s) === 1 ? 'mês restante' : 'meses restantes'}`}</p></div>
+    <button class="btn btn--glass btn--sm" data-eq="fire" data-id="contador">demitir</button></div>`;
   const last = closes[0], ls = last && CT.summarize(last.lines);
   el.innerHTML = head + `<section class="ct-sec"><div class="ct-sec__h"><h3>previsão do próximo fechamento <small class="muted">em ${when(s)}</small></h3><span class="ct-total bad">${brl(fc.total)}</span></div>
       <p class="small muted">Contas fixas (funcionários, luz, água, aluguel, seguro, impostos, parcelas) são exatas; ração, frete e o que depende de preço do mercado podem variar um pouco.</p>
@@ -46,12 +46,12 @@ export function inject(tab) {
   const groups = TAB_GROUP[tab], page = document.getElementById(`p-${tab}`); if (!groups || !page) return;
   let box = page.querySelector(':scope > .ct-box');
   if (!box) { box = document.createElement('div'); box.className = 'ct-box glass'; const h = page.querySelector(':scope > h2, :scope > .howto'); h ? h.after(box) : page.prepend(box); }
-  if (!CT.active(G.S)) { box.innerHTML = `<span class="ct-box__t">contador</span><span class="small muted">Quer ver exatamente quanto esta produção gasta por mês (impostos, luz, água, funcionários...)?</span><button class="btn btn--glass btn--sm" data-tab-go="contador">contratar contador</button>`; return; }
+  if (!CT.active(G.S)) { box.innerHTML = `<span class="ct-box__t">contador</span><span class="small muted">Quer ver exatamente quanto esta produção gasta por mês (impostos, luz, água, funcionários...)?</span><button class="btn btn--glass btn--sm" data-tab-go="equipe">contratar contador</button>`; return; }
   const fc = CT.summarize(G.ctForecast?.() || []), gs = fc.groups.filter(g => groups.includes(g.key)), total = gs.reduce((t, g) => t + g.total, 0), types = {};
   for (const g of gs) for (const [k, v] of Object.entries(g.types)) types[k] = (types[k] || 0) + v;
   box.innerHTML = `<span class="ct-box__t">contador</span><span>próximo fechamento aqui: <b class="bad">${brl(total)}</b></span>
     <span class="ct-chips">${Object.entries(types).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="ct-chip">${esc(CT.TYPES[k] || k)} <b>${brl(v)}</b></span>`).join('') || '<span class="small muted">sem gastos previstos</span>'}</span>
-    <button class="btn btn--glass btn--sm" data-tab-go="contador">ver tudo</button>`;
+    <button class="btn btn--glass btn--sm" data-tab-go="equipe">ver tudo</button>`;
 }
 
 document.addEventListener('click', e => {

@@ -1116,3 +1116,12 @@ console.log('mina ok');
   const s2 = {}; CT.record(s2, 5, lines); CT.record(s2, 5, lines); assert.equal(s2.closes.length, 1, 'um fechamento por mês');
   console.log('contador ok');
 }
+
+{
+  const SF = await import('./staff.js'), CT = await import('./contador.js');
+  const s = { money: 1e7, month: 10 };
+  assert.equal(SF.active(s).length, 0); CT.hire(s, 'm12', 5e6); assert.deepEqual(SF.active(s).map(x => x.id), ['contador']);
+  s.month = 13; const back = CT.refundOf(s), m0 = s.money; assert.equal(back, Math.round(s.acct.paid * 9 / 12 * 0.7), 'devolve 70% dos meses não usados');
+  CT.fire(s); assert.equal(s.money, m0 + back); assert.equal(SF.active(s).length, 0, 'demitido sai da equipe');
+  console.log('equipe ok');
+}
