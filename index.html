@@ -854,10 +854,12 @@
         <div class="row"><label class="visually-hidden" for="tr-pick">item</label><select class="input" id="tr-pick"></select><button class="btn btn--glass btn--sm" data-act="trade-add">pôr na troca</button></div>
         <div class="row"><label class="field"><span>fichas</span><input class="input input--s" id="tr-chips" type="number" min="1" step="10"></label><button class="btn btn--glass btn--sm" data-act="trade-chips">pôr fichas</button>
           <label class="field"><span>dinheiro</span><input class="input input--s" id="tr-money" type="number" min="1" step="1000"></label><button class="btn btn--glass btn--sm" data-act="trade-money">pôr dinheiro</button></div></div>
-      <div class="glass tr-col tr-col--them"><h3>você recebe</h3><ul class="tr-list" id="tr-theirs"></ul></div>
+      <div class="glass tr-col tr-col--them"><h3>você recebe</h3><ul class="tr-list" id="tr-theirs"></ul>
+        <div class="row" id="tr-bot" hidden><label class="visually-hidden" for="tr-botpick">o que comprar</label><select class="input" id="tr-botpick"></select><button class="btn btn--glass btn--sm" data-act="trade-botadd">pedir</button></div>
+        <p class="muted small" id="tr-bal" hidden></p></div>
     </div>
     <p class="tr-state" id="tr-state"></p>
-    <div class="tr-chatbox"><ul class="tr-chat" id="tr-chat" aria-live="polite"></ul>
+    <div class="tr-chatbox" id="tr-chatbox"><ul class="tr-chat" id="tr-chat" aria-live="polite"></ul>
       <form class="row" id="tr-chat-form"><label class="visually-hidden" for="tr-msg">mensagem</label><input class="input" id="tr-msg" maxlength="140" placeholder="negocie aqui" autocomplete="off"><button class="btn btn--glass btn--sm" type="submit">enviar</button></form></div>
     <div class="row tr-acts"><button class="btn btn--glass" data-act="trade-lock">estou pronto</button><button class="btn btn--gold" data-act="trade-confirm" disabled>confirmar troca</button><button class="btn btn--danger" data-act="trade-cancel">cancelar</button></div>
   </dialog>
@@ -899,7 +901,7 @@
     </ul>
   </dialog>
 
-  <dialog class="dlg dlg--elite" id="dlg-elite" aria-labelledby="el-title"><div class="elite-crown" aria-hidden="true">👑</div><h2 id="el-title"></h2><div id="el-body"></div><form method="dialog"><button class="btn btn--gold btn--lg">entendi, vamos crescer</button></form></dialog>
+  <dialog class="dlg dlg--elite" id="dlg-elite" aria-labelledby="el-title"><div class="elite-crown" aria-hidden="true">👑</div><h2 id="el-title"></h2><div id="el-body"></div><form method="dialog"><button class="btn btn--gold btn--lg">vamos crescer!</button></form></dialog>
 
   <!-- missões -->
   <dialog class="dlg" id="dlg-missions" aria-labelledby="ms-title">

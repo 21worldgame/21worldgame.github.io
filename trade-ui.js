@@ -1,11 +1,14 @@
 // Trocas em tempo real entre jogadores online (pela sala do salão): convite, ofertas, chat, "pronto" e confirmação dupla.
 import * as TD from './trade.js';
+import * as SH from './shop.js';
+import * as NPC from './npcs.js';
+import { CHIP } from './logic.js';
 import { G, $, esc, brl, int, say, save, note, award, confetti, profileOf } from './store.js';
 import * as sfx from './sfx.js';
 
 let lobby = null, ss = null;           // ss = sessão de troca aberta
 const myName = () => profileOf().name;
-const send = msg => lobby?.sendTrade({ ...msg, id: ss?.id }, ss?.peer);
+const send = msg => { if (!ss?.bot) lobby?.sendTrade({ ...msg, id: ss?.id }, ss?.peer); };   // com jogador do mundo não há rede
 
 export function attach(l) {
   lobby = l;
@@ -22,6 +25,36 @@ export function invite(pid) {
   lobby.sendTrade({ t: 'invite', id: ss.id, name: myName() }, pid);
   say(`Convite de troca enviado para ${ss.name}. Aguardando...`);
   ss.timer = setTimeout(() => { if (ss && !ss.open) { say(`${ss.name} não respondeu.`, true); ss = null; } }, 30000);
+}
+
+// negociar com um jogador do mundo: ele vende pelo preço do mercado (anúncios da janela) e compra seus itens pelo preço da casa
+export function inviteBot(id) {
+  const n = NPC.byId(id);
+  if (!n) return say('Esse jogador saiu do mundo.', true);
+  if (ss) return say('Termine a troca aberta antes de começar outra.', true);
+  ss = { bot: true, peer: null, name: n.nick, id: Math.random().toString(36).slice(2, 10), mine: [], theirs: [], picks: [], lock: { me: false, them: true }, ok: { me: false, them: true }, chat: [], open: true };
+  openWindow();
+}
+const botListings = () => SH.npcListings(G.S, Date.now());
+const botValue = it => it.kind === 'money' ? it.amount : it.kind === 'chips' ? Math.floor(it.amount * CHIP * 0.95) : SH.housePrice(G.S, it);
+function botTotals() {
+  const ls = botListings(), picked = ss.picks.map(id => ls.find(l => l.id === id)).filter(Boolean);
+  return { ls, picked, asked: picked.reduce((t, l) => t + l.price, 0), offered: ss.mine.reduce((t, i) => t + botValue(i), 0) };
+}
+const botOk = () => { const t = botTotals(); return t.picked.length > 0 && t.picked.length === ss.picks.length && t.offered >= t.asked; };
+export function botAdd() { const id = $('#tr-botpick').value; if (!ss?.bot || !id || ss.picks.includes(id)) return; ss.picks.push(id); changed(); }
+export function botDrop(id) { if (!ss?.bot) return; ss.picks = ss.picks.filter(x => x !== id); changed(); }
+function botApply() {
+  const { picked, asked, offered } = botTotals();
+  if (!picked.length || picked.length !== ss.picks.length) return 'um dos itens já saiu do mercado.';
+  if (offered < asked) return 'a sua oferta não cobre o preço de mercado.';
+  const e = TD.apply(G.S, ss.mine, picked.flatMap(l => l.items)); if (e) return e;
+  for (const l of picked) if (l.heads) G.S.herd.push({ id: G.S.nextId++, heads: l.heads, kg: 190 });
+  if (offered > asked) G.S.money += offered - asked;                    // troco em dinheiro
+  const win = Math.floor(Date.now() / SH.NPC_WIN); if (G.S.npcSold?.win !== win) G.S.npcSold = { win, ids: [] };
+  G.S.npcSold.ids.push(...picked.map(l => l.id));
+  ss.got = picked.map(l => l.label); ss.change = offered - asked;
+  return null;
 }
 
 function onMsg(d, peerId) {
@@ -56,15 +89,22 @@ function openWindow() { ss.open = true; render(); const d = $('#dlg-trade'); if 
 
 function render() {
   if (!ss) return;
-  $('#tr-who').textContent = `negociando com ${ss.name}`;
+  $('#tr-who').textContent = ss.bot ? `negociando com ${ss.name} (preço de mercado)` : `negociando com ${ss.name}`;
   const list = (items, mine) => items.length ? items.map((it, k) => `<li><span>${esc(TD.describe(it))}</span>${mine ? `<button class="btn btn--glass btn--sm" data-act="trade-remove" data-id="${k}">tirar</button>` : ''}</li>`).join('') : '<li class="muted small">nada ainda</li>';
   $('#tr-mine').innerHTML = list(ss.mine, true);
-  $('#tr-theirs').innerHTML = list(ss.theirs, false);
-  $('#tr-pick').innerHTML = TD.inventory(G.S).filter(i => !ss.mine.some(m => m.kind === i.kind && (m.data?.id ?? m.good) === (i.data?.id ?? i.good)))
-    .map(i => `<option value="${i.kind}:${i.kind === 'good' ? i.good : i.id}">${esc(i.label)}</option>`).join('') || '<option value="">seu inventário está vazio</option>';
+  $('#tr-bot').hidden = $('#tr-bal').hidden = !ss.bot; $('#tr-chatbox').hidden = !!ss.bot;
+  if (ss.bot) {
+    const t = botTotals(); ss.picks = ss.picks.filter(id => t.ls.some(l => l.id === id)); ss.theirs = t.picked.flatMap(l => l.items);
+    $('#tr-theirs').innerHTML = t.picked.length ? t.picked.map(l => `<li><span>${esc(l.label)}: <b>${brl(l.price)}</b></span><button class="btn btn--glass btn--sm" data-act="trade-botdrop" data-id="${esc(l.id)}">tirar</button></li>`).join('') : '<li class="muted small">escolha abaixo o que quer comprar</li>';
+    $('#tr-botpick').innerHTML = t.ls.filter(l => !ss.picks.includes(l.id)).map(l => `<option value="${esc(l.id)}">${esc(l.label)}, ${brl(l.price)}</option>`).join('') || '<option value="">sem anúncios agora</option>';
+    const falta = t.asked - t.offered;
+    $('#tr-bal').innerHTML = `${esc(ss.name)} vende pelo <b>preço de mercado</b> e paga pelos seus itens o valor da casa. Pede <b>${brl(t.asked)}</b>; a sua oferta vale <b>${brl(t.offered)}</b>. ${!t.picked.length ? '' : falta > 0 ? `Falta <b>${brl(falta)}</b>: ponha mais itens ou dinheiro.` : falta < 0 ? `Sobra ${brl(-falta)}, que volta para você em dinheiro.` : ''}`;
+  } else $('#tr-theirs').innerHTML = list(ss.theirs, false);
+  const taken = new Set(ss.mine.map(offerKey));
+  $('#tr-pick').innerHTML = SH.items(G.S).filter(i => !taken.has(i.key)).map(i => `<option value="${esc(i.key)}">${esc(i.label)}</option>`).join('') || '<option value="">seu inventário está vazio</option>';
   $('#tr-state').innerHTML = `você: <b class="${ss.lock.me ? 'good' : ''}">${ss.ok.me ? 'confirmou' : ss.lock.me ? 'pronto' : 'montando'}</b>, ${esc(ss.name)}: <b class="${ss.lock.them ? 'good' : ''}">${ss.ok.them ? 'confirmou' : ss.lock.them ? 'pronto' : 'montando'}</b>`;
   $('[data-act="trade-lock"]').textContent = ss.lock.me ? 'mexer de novo' : 'estou pronto';
-  $('[data-act="trade-confirm"]').disabled = !(ss.lock.me && ss.lock.them) || ss.ok.me;
+  $('[data-act="trade-confirm"]').disabled = !(ss.lock.me && ss.lock.them) || ss.ok.me || (ss.bot && !botOk());
   $('#tr-chat').innerHTML = ss.chat.slice(-30).map(c => `<li class="${c.me ? 'is-me' : ''}">${esc(c.text)}</li>`).join('');
   $('#tr-chat').scrollTop = 1e6;
 }
@@ -73,17 +113,22 @@ function render() {
 function changed() {
   const err = TD.canGive(G.S, ss.mine);
   if (err) { ss.mine.pop(); return say(err[0].toUpperCase() + err.slice(1), true); }
-  ss.lock = { me: false, them: false }; ss.ok = { me: false, them: false };
+  ss.lock = { me: false, them: !!ss.bot }; ss.ok = { me: false, them: !!ss.bot };
   send({ t: 'offer', items: ss.mine });
   render();
 }
+// chave do item oferecido = chave do inventário (SH.items)
+const offerKey = o => o.kind === 'good' ? `good:${o.good}` : o.kind === 'acc' ? `acc:${o.acc}` : o.kind === 'club' ? 'club:club' : `${o.kind}:${o.data?.id}`;
 export function addPicked() {
   const v = $('#tr-pick').value; if (!v || !ss) return;
-  const [kind, key] = v.split(':');
-  const it = TD.inventory(G.S).find(i => i.kind === kind && String(i.kind === 'good' ? i.good : i.id) === key);
+  const it = SH.find(G.S, v);
   if (!it) return;
-  if (kind === 'good') { const q = Math.floor(Number(prompt(`Quantas sacas de ${TD.GOODS[key]}? (você tem ${it.qty})`, it.qty)) || 0); if (q <= 0) return; ss.mine.push({ kind: 'good', good: key, qty: Math.min(q, it.qty) }); }
-  else ss.mine.push({ kind, data: it.data });
+  const b = SH.blocked(G.S, it); if (b) return say(b[0].toUpperCase() + b.slice(1), true);
+  if (it.kind === 'good') { const q = Math.floor(Number(prompt(`Quantas sacas de ${TD.GOODS[it.good] || it.good}? (você tem ${it.qty})`, it.qty)) || 0); if (q <= 0) return; ss.mine.push({ kind: 'good', good: it.good, qty: Math.min(q, it.qty) }); }
+  else if (it.kind === 'acc') ss.mine.push({ kind: 'acc', acc: it.acc });
+  else if (it.kind === 'empresa') ss.mine.push({ kind: 'empresa', cat: it.cat, data: it.data });
+  else if (it.kind === 'club') ss.mine.push({ kind: 'club', data: JSON.parse(JSON.stringify(G.S.fut)) });
+  else ss.mine.push({ kind: it.kind, data: it.data });
   changed();
 }
 export function addAmount(kind) {
@@ -105,9 +150,9 @@ export function confirmTrade() {
 function maybeApply() {
   if (!ss || !ss.ok.me || !ss.ok.them || ss.done) return;
   ss.done = true;
-  const err = TD.apply(G.S, ss.mine, ss.theirs);
+  const err = ss.bot ? botApply() : TD.apply(G.S, ss.mine, ss.theirs);
   if (err) { send({ t: 'cancel', reason: err }); say(`A troca não pôde ser concluída: ${err}`, true); return close(); }
-  note(`troca com ${ss.name}: deu ${ss.mine.map(TD.describe).join(', ') || 'nada'}; recebeu ${ss.theirs.map(TD.describe).join(', ') || 'nada'}`);
+  note(`troca com ${ss.name}: deu ${ss.mine.map(TD.describe).join(', ') || 'nada'}; recebeu ${(ss.bot ? ss.got : ss.theirs.map(TD.describe)).join(', ') || 'nada'}${ss.change > 0 ? `; troco de R$ ${Math.round(ss.change).toLocaleString('pt-BR')}` : ''}`);
   award('trade'); confetti(60); sfx.play('stack', 0.7);
   say(`Troca com ${ss.name} concluída.`);
   save(); G.render();

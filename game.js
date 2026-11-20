@@ -628,6 +628,7 @@ function openProfile(pid, fetched) {
     <h3>conquistas ${p.ach?.length || 0} de ${P.ACHIEVEMENTS.length}</h3>
     <ul class="achs">${P.ACHIEVEMENTS.map(a => `<li class="${p.ach?.includes(a.id) ? 'is-got' : ''}"><span class="badge__medal" aria-hidden="true"></span>${esc(a.txt)}</li>`).join('')}</ul>
     ${!me && TUI.online().some(x => x.pid === pid) ? `<div class="pf__acts"><button class="btn btn--gold" data-act="trade-invite" data-id="${esc(pid)}">propor troca</button></div>` : ''}
+    ${!me && String(pid).startsWith('npc:') ? `<div class="pf__acts"><button class="btn btn--gold" data-act="trade-bot" data-id="${esc(String(pid).slice(4))}">negociar (preço de mercado)</button></div>` : ''}
     ${me ? `<div class="pf__acts"><button class="btn btn--glass" data-act="edit-char">editar personagem</button>${Auth.account() ? '<button class="btn btn--glass" data-act="logout">sair da conta</button><button class="btn btn--danger btn--sm" data-act="wipe">apagar meus dados</button>' : ''}</div>${Auth.account() ? `<p class="muted small">Conta: ${esc(Auth.account().email)}</p>` : ''}` : ''}`;
   const dlg = $('#dlg-profile');
   if (!dlg.open) dlg.showModal();
@@ -654,7 +655,7 @@ export function itemMedia(i) {
 let invCat = 'all';
 document.addEventListener('click', e => { const b = e.target.closest('[data-invcat]'); if (b) { invCat = b.dataset.invcat; renderInv(); } });
 function renderInv() {
-  const items = TD.inventory(S());
+  const items = SH.items(S());
   const total = items.reduce((t, i) => t + (i.value || 0), 0);
   $('#inv-sum').textContent = `${items.length} itens trocáveis, ${int(S().chips)} fichas e ${brl(S().money)} em dinheiro`;
   const players = items.filter(i => i.kind === 'player'), shown = items.filter(i => i.kind !== 'player');
@@ -668,7 +669,7 @@ function renderInv() {
     <button class="btn btn--gold btn--sm" data-act="trade-invite" data-id="${esc(p.pid)}">propor troca</button></li>`).join('') : '<li class="muted small">Nenhuma pessoa online agora. Chame os amigos pelo link do jogo.</li>';
   const npcOn = NPC.onlineNow(Live.now(), 10);
   $('#inv-peers').insertAdjacentHTML('beforeend', npcOn.map(n => `<li><span class="who__av">${avatarSVG(n.look, { label: n.nick })}</span><span>${esc(n.nick)}<small class="muted"> nível ${NPC.levelFor(NPC.worthAt(n, S().month))}</small></span>
-    <button class="btn btn--glass btn--sm" data-profile="npc:${n.id}">ver perfil</button></li>`).join(''));
+    <button class="btn btn--gold btn--sm" data-act="trade-bot" data-id="${n.id}">negociar</button> <button class="btn btn--glass btn--sm" data-profile="npc:${n.id}">ver perfil</button></li>`).join(''));
 }
 // visual estável por nome de bot
 const NPC_LOOK = n => NPC.byNick(n)?.look || NPC_LOOK_HASH(n);
@@ -839,6 +840,9 @@ const ACTS = {
   'trade-chips'() { TUI.addAmount('chips'); },
   'trade-money'() { TUI.addAmount('money'); },
   'trade-remove'(id) { TUI.remove(id); },
+  'trade-bot'(id) { const d = $('#dlg-profile'); if (d.open) d.close(); TUI.inviteBot(id); },
+  'trade-botadd'() { TUI.botAdd(); },
+  'trade-botdrop'(id) { TUI.botDrop(id); },
   'trade-lock'() { TUI.lock(); },
   'trade-confirm'() { TUI.confirmTrade(); },
   'trade-cancel'() { TUI.cancel(); },
@@ -1008,7 +1012,7 @@ document.addEventListener('click', e => {
   if (!b || b.disabled) return;
   const act = b.dataset.act;
   try { const r = ACTS[act]?.(b.dataset.id, b); if (r?.catch) r.catch(e => { uiError(e, act); save(); render(); }); } catch (e) { uiError(e, act); save(); render(); return; }
-  if (['rl-double', 'pass-claim', 'st-train', 'trade-invite', 'trade-yes', 'trade-no', 'trade-add', 'trade-chips', 'trade-money', 'trade-remove', 'trade-lock', 'trade-confirm', 'trade-cancel', 'ft-play', 'ft-close', 'ft-quick', 'rk-cat', 'rk-page', 'rk-online', 'shop-cat', 'shop-sell', 'shop-list', 'shop-unlist', 'shop-buy', 'ft-slot', 'ft-pick', 'ft-auto', 'fe-buy', 'fe-sell', 'fe-goto', 'card-close', 'ft-haggle', 'job-start', 'job-accept', 'job-confirm', 'job-repair', 'double', 'split', 'logout', 'wipe', 'st-enter', 'stable-close', 'sit', 'leave-table', 'invite', 'bet', 'hit', 'stand', 'bet-clear', 'race-go', 'race-pick', 'race-next', 'mute', 'rl-spin', 'rl-clear', 'av-press', 'tr-buy', 'tr-sell', 'tr-dur', 'tr-tf', 'tr-asset', 'spin-daily', 'map-lot', 'show-card'].includes(act)) return;
+  if (['rl-double', 'pass-claim', 'st-train', 'trade-invite', 'trade-yes', 'trade-no', 'trade-add', 'trade-chips', 'trade-money', 'trade-remove', 'trade-bot', 'trade-botadd', 'trade-botdrop', 'trade-lock', 'trade-confirm', 'trade-cancel', 'ft-play', 'ft-close', 'ft-quick', 'rk-cat', 'rk-page', 'rk-online', 'shop-cat', 'shop-sell', 'shop-list', 'shop-unlist', 'shop-buy', 'ft-slot', 'ft-pick', 'ft-auto', 'fe-buy', 'fe-sell', 'fe-goto', 'card-close', 'ft-haggle', 'job-start', 'job-accept', 'job-confirm', 'job-repair', 'double', 'split', 'logout', 'wipe', 'st-enter', 'stable-close', 'sit', 'leave-table', 'invite', 'bet', 'hit', 'stand', 'bet-clear', 'race-go', 'race-pick', 'race-next', 'mute', 'rl-spin', 'rl-clear', 'av-press', 'tr-buy', 'tr-sell', 'tr-dur', 'tr-tf', 'tr-asset', 'spin-daily', 'map-lot', 'show-card'].includes(act)) return;
   checkAch(); save(); render();
 });
 $('#map-back').addEventListener('click', () => { lmap?.flyTo([-14, -51], 4, { duration: 1.4 }); $('#map-title').textContent = 'satélite'; });
@@ -1216,12 +1220,12 @@ function eliteCheck() {
   if (i > was && i >= 0) {
     const e = L.ELITE[i];
     const d = $('#dlg-elite'); if (!d) return;
-    $('#el-title').textContent = i === 0 ? 'Agora você começa sua jornada de mais ricos do mundo!' : `Nova faixa: ${e.name}`;
-    $('#el-body').innerHTML = `<p>Seu patrimônio passou de <b>${brl(e.min)}</b>. Você está entre os mais ricos do 21 World, e o mundo cobra por isso:</p>
-      <ul><li>tudo o que você compra custa <b>${Math.round(e.price * 100)}% a mais</b>;</li><li>as contas do mês ficam <b>${Math.round((e.bills - 1) * 100)}% mais caras</b>;</li><li>o mundo fica com <b>${Math.round(e.gain * 100)}% de tudo o que você ganha</b> no mês;</li><li>imposto sobre grandes fortunas de <b>${(e.tax * 100).toFixed(2).replace('.', ',')}% ao mês</b> sobre tudo o que passar de ${brl(L.ELITE[0].min)}.</li></ul>
-      <p class="muted small">Quanto mais alto, mais pesado. É assim que o jogo segura a distância entre os jogadores.</p>`;
+    $('#el-title').textContent = i === 0 ? 'Parabéns! Você entrou para a elite do 21 World! 🎉' : `Parabéns! Você chegou a ${e.name}! 🎉`;
+    $('#el-body').innerHTML = `<p>Seu patrimônio passou de <b>${brl(e.min)}</b>. Isso é fruto das suas boas decisões: poucos jogadores chegam até aqui.</p>
+      <p>${i < L.ELITE.length - 1 ? `O próximo degrau está em <b>${brl(L.ELITE[i + 1].min)}</b>, e você já mostrou que sabe chegar lá.` : 'Você está no topo do 21 World. Que fortuna!'} Continue investindo: terras, gado, empresas e negócios fazem a fortuna crescer ainda mais.</p>
+      <p class="muted small">No topo do mundo as contas são outras. Toque no relógio do mundo para ver a tabela da sua faixa.</p>`;
     d.showModal(); confetti(120);
-  } else say(i < 0 ? 'Você saiu da faixa dos mais ricos: taxas e preços voltaram ao normal.' : `Você voltou para a faixa ${L.ELITE[i].name}.`);
+  } else say(i < 0 ? 'Você saiu da faixa dos mais ricos por enquanto: taxas e preços voltaram ao normal. Bora voltar ao topo!' : `Você está na faixa ${L.ELITE[i].name}. Siga firme!`);
 }
 setTimeout(() => eliteCheck(), 4000);
 // reembolso único do imposto alto de v46–v51 (ver L.taxRefund)
@@ -1344,7 +1348,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 70;
+const APP_VERSION = 71;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;
