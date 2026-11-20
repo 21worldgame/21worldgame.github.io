@@ -1,5 +1,5 @@
 -- 21 World: Pix e pagamentos entre jogadores (pelo inventário).
--- Quem envia tira o dinheiro do próprio save e registra aqui; quem recebe pega quando abrir o jogo (uma vez só).
+-- Quem envia tira o dinheiro do próprio save e registra aqui; quem recebe pega quando abrir o jogo e confirma (ack_pix) depois de salvar.
 -- Rode no Supabase: SQL Editor > New query > cole tudo > Run. Pode rodar de novo sem problema.
 
 create table if not exists public.pix (
@@ -26,7 +26,7 @@ revoke insert, update, delete on public.pix from anon, authenticated;
 -- enviar: confere o destinatário, o valor e o limite de envios
 create or replace function public.send_pix(p_to uuid, p_amount bigint, p_name text, p_memo text, p_kind text default 'pix')
 returns text language plpgsql security definer set search_path = public as $$
-declare dest text; w numeric;
+declare dest text; w numeric; nid bigint;
 begin
   if auth.uid() is null then return 'login'; end if;
   if p_to is null or p_to = auth.uid() then return 'self'; end if;
@@ -37,20 +37,24 @@ begin
   if w is null or p_amount > greatest(w, 0) then return 'worth'; end if;                     -- não manda mais do que o próprio patrimônio
   if (select count(*) from public.pix where from_id = auth.uid() and at > now() - interval '1 hour') >= 30 then return 'limit'; end if;
   insert into public.pix (from_id, from_name, to_id, to_name, amount, memo, kind)
-    values (auth.uid(), left(coalesce(p_name, 'jogador'), 24), p_to, dest, p_amount, nullif(left(trim(coalesce(p_memo, '')), 80), ''), case when p_kind = 'pagamento' then 'pagamento' else 'pix' end);
-  return 'ok';
+    values (auth.uid(), left(coalesce(p_name, 'jogador'), 24), p_to, dest, p_amount, nullif(left(trim(coalesce(p_memo, '')), 80), ''), case when p_kind = 'pagamento' then 'pagamento' else 'pix' end)
+    returning id into nid;
+  return 'ok:' || nid;   -- o jogo guarda o id no save de quem enviou
 end $$;
 
--- receber: pega tudo o que chegou e ainda não foi creditado (uma vez só)
-create or replace function public.claim_pix()
-returns table (id bigint, from_name text, amount bigint, memo text, kind text) language plpgsql security definer set search_path = public as $$
+-- receber em 2 passos: o jogo lê os Pix pendentes (select, pela política acima), credita, sobe o save e só então confirma aqui.
+-- Assim, se o crédito se perder na sincronização entre aparelhos, o Pix continua pendente e é creditado de novo.
+drop function if exists public.claim_pix();
+create or replace function public.ack_pix(p_ids bigint[])
+returns int language plpgsql security definer set search_path = public as $$
+declare n int;
 begin
-  if auth.uid() is null then return; end if;
-  return query update public.pix p set claimed = true where p.to_id = auth.uid() and not p.claimed
-    returning p.id, p.from_name, p.amount, p.memo, p.kind;
+  if auth.uid() is null or p_ids is null then return 0; end if;
+  update public.pix set claimed = true where to_id = auth.uid() and not claimed and id = any(p_ids[1:200]);
+  get diagnostics n = row_count; return n;
 end $$;
 
 revoke all on function public.send_pix(uuid, bigint, text, text, text) from public, anon;
-revoke all on function public.claim_pix() from public, anon;
+revoke all on function public.ack_pix(bigint[]) from public, anon;
 grant execute on function public.send_pix(uuid, bigint, text, text, text) to authenticated;
-grant execute on function public.claim_pix() to authenticated;
+grant execute on function public.ack_pix(bigint[]) to authenticated;
