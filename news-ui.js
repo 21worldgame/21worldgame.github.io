@@ -1,4 +1,4 @@
-// TV 21 na tela: plantão no canto (troca de manchete sozinho) + aba "TV 21" dentro da Resenha (lista das últimas notícias).
+// TV 21 dentro da Resenha (chat): faixa de plantão no topo (troca de manchete sozinha) + aba "TV 21" com a lista das últimas notícias.
 // Notícia sua sai pelo salão para todos que estão online; as dos jogadores do mundo vêm do relógio (iguais para todo mundo).
 import * as N from './news.js';
 import * as NPC from './npcs.js';
@@ -8,8 +8,6 @@ import { G, $, esc, profileOf } from './store.js';
 const items = [], seen = new Set();
 let send = null, cur = 0, slot = 0;
 export const setSender = fn => { send = fn; };
-const TV_KEY = '21world.tvMin';
-const minimized = () => { try { return localStorage.getItem(TV_KEY) === '1'; } catch { return false; } };
 
 function add(n, fresh = true) {
   if (!n || (n.id && seen.has(n.id))) return;
@@ -45,7 +43,6 @@ const card = (n, big) => `<span class="tv__kick tv__kick--${n.kind}">${N.KINDS[n
   <p class="tv__line">${esc(N.headline(n))}</p><small class="tv__by">${esc(N.anchorOf(n))}${big ? ` · ${new Date(n.at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}</small>`;
 function draw() {
   const tv = $('#tv'); if (!tv) return;
-  const min = minimized(); tv.classList.toggle('is-min', min);
   const n = items[cur] || items[items.length - 1];
   $('#tv-screen').innerHTML = n ? card(n) : '<p class="tv__line">Boa noite! Já já tem notícia do mundo.</p>';
   const list = $('#tv-list');
@@ -63,8 +60,8 @@ export function tab(which) {
   $('#chat-box').classList.toggle('on-tv', tv);
   draw();
 }
+document.addEventListener('keydown', e => { if (e.target.id === 'tv' && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); tab('tv'); } });
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-chat-tab]'); if (t) return tab(t.dataset.chatTab);
-  if (e.target.closest('#tv-min')) { e.stopPropagation(); try { localStorage.setItem(TV_KEY, minimized() ? '0' : '1'); } catch {} return draw(); }
-  if (e.target.closest('#tv')) { if (minimized()) { try { localStorage.setItem(TV_KEY, '0'); } catch {} return draw(); } if ($('#chat-box').hidden) $('#chat-fab').click(); tab('tv'); }
+  if (e.target.closest('#tv')) tab('tv');
 });

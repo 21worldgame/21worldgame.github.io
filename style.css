@@ -1223,7 +1223,7 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 /* ===== chat global ===== */
 .chat-fab { position: fixed; right: 16px; bottom: 16px; z-index: 50; border-radius: 99px; box-shadow: 0 8px 26px rgba(0,0,0,.45); }
 .chat-fab__n { margin-left: 6px; padding: 0 7px; border-radius: 9px; background: #e5484d; color: #fff; font-size: .75rem; }
-.chat-box { position: fixed; right: 16px; bottom: 70px; z-index: 50; width: min(380px, calc(100vw - 32px)); height: min(520px, calc(100dvh - 110px)); display: grid; grid-template-rows: auto auto 1fr auto auto; padding: 12px; gap: 8px; background: rgba(10,12,22,.96); backdrop-filter: blur(10px); }
+.chat-box { position: fixed; right: 16px; bottom: 70px; z-index: 50; width: min(380px, calc(100vw - 32px)); height: min(560px, calc(100dvh - 110px)); display: grid; grid-template-rows: auto auto auto 1fr auto auto; padding: 12px; gap: 8px; background: rgba(10,12,22,.96); backdrop-filter: blur(10px); }
 .chat-box[hidden] { display: none; }
 .chat-box__head { display: flex; align-items: center; gap: 8px; }
 .chat-box__head h3 { margin: 0; flex: 1; }
@@ -2463,23 +2463,22 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .pw__eye:hover, .pw__eye[aria-pressed="true"] { color: #fde047; } .pw__eye:focus-visible { outline: 2px solid #fde047; outline-offset: 1px; }
 .pw__eye svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-/* ---------- TV 21 (plantão no canto) e abas da Resenha ---------- */
-.tv { position: fixed; left: 16px; bottom: 16px; z-index: 49; width: 270px; padding: 8px 10px 10px; border-radius: 14px; background: rgba(10,12,22,.94); backdrop-filter: blur(10px); border: 1px solid rgba(229,72,77,.35); box-shadow: 0 10px 28px rgba(0,0,0,.45); cursor: pointer; }
-.tv__head { display: flex; align-items: center; gap: 6px; font: 800 .72rem/1 var(--font-display); letter-spacing: .06em; text-transform: uppercase; }
-.tv__head span { opacity: .6; font-weight: 600; flex: 1; }
+/* ---------- TV 21 (faixa de plantão dentro da Resenha) e abas ---------- */
+.tv { padding: 8px 10px; border-radius: 10px; background: rgba(229,72,77,.08); border: 1px solid rgba(229,72,77,.35); cursor: pointer; }
+.tv:hover, .tv:focus-visible { border-color: rgba(229,72,77,.7); outline: 0; }
+.tv__head { display: flex; align-items: center; gap: 6px; font: 800 .7rem/1 var(--font-display); letter-spacing: .06em; text-transform: uppercase; }
+.tv__head span { opacity: .6; font-weight: 600; }
 .tv__dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #e5484d; box-shadow: 0 0 0 0 rgba(229,72,77,.6); animation: tvPulse 1.6s infinite; }
 @keyframes tvPulse { 70% { box-shadow: 0 0 0 7px rgba(229,72,77,0); } 100% { box-shadow: 0 0 0 0 rgba(229,72,77,0); } }
-.tv__min { margin-left: auto; border: 0; background: rgba(255,255,255,.08); color: inherit; width: 26px; height: 22px; border-radius: 6px; cursor: pointer; font-weight: 800; }
-.tv__screen { margin-top: 6px; min-height: 58px; }
+.tv__screen { margin-top: 5px; }
 .tv__kick { display: inline-block; padding: 2px 6px; border-radius: 4px; font: 800 .62rem/1.2 var(--font-display); letter-spacing: .05em; background: #e5484d; color: #fff; }
 .tv__kick--venda { background: #2f9e6e; } .tv__kick--troca { background: #3b82f6; } .tv__kick--premio { background: #d49a1c; color: #1a1200; } .tv__kick--negocio { background: #7c5cff; }
 .tv__real { margin-left: 6px; font: 700 .62rem/1 var(--font-display); color: #ffd76a; text-transform: uppercase; }
-.tv__line { margin: 5px 0 3px; font-size: .84rem; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; animation: tvIn .4s ease-out; }
+.tv__line { margin: 4px 0 2px; font-size: .82rem; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; animation: tvIn .4s ease-out; }
 @keyframes tvIn { from { opacity: 0; transform: translateY(4px); } }
 .tv__by { opacity: .6; font-size: .7rem; }
-.tv.is-min { width: auto; padding: 8px 10px; }
-.tv.is-min .tv__screen, .tv.is-min .tv__head span { display: none; }
-.has-fs .tv { display: none; }
+.tv .tv__by { display: none; }
+.chat-box.on-tv .tv { display: none; }
 .chat-tabs { display: flex; gap: 6px; }
 .chat-tabs button { flex: 1; padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04); color: inherit; font: 700 .8rem/1 var(--font-display); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .chat-tabs button.is-on { border-color: rgba(245,184,51,.7); background: rgba(245,184,51,.12); color: #ffd76a; }
@@ -2487,5 +2486,3 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .chat-box.on-tv .chat-form, .chat-box.on-tv .chat-lock { display: none; }
 .tv-list li { cursor: default; }
 .tv-list .tv__line { -webkit-line-clamp: unset; animation: none; }
-@media (max-width: 40rem) { .tv { left: 8px; width: min(230px, calc(100vw - 90px)); padding: 6px 8px; } .tv__screen { min-height: 0; margin-top: 4px; } .tv__line { font-size: .74rem; -webkit-line-clamp: 2; margin: 3px 0 0; } .tv__screen .tv__by, .tv__head span { display: none; } body:has(#chat-box:not([hidden])) .tv { display: none; } }
-@media (max-width: 40rem) { .tv { bottom: calc(76px + env(safe-area-inset-bottom)); } }
