@@ -64,15 +64,15 @@ export const byNick = nick => NPCS.find(n => n.nick === nick);
 export const nicks = (from, n) => Array.from({ length: n }, (_, k) => NPCS[(from + k * 7) % NPCS.length].nick);
 
 export const NPC_BOOST = 3, NPC_LATE = 1.004, NPC_LATE_CAP = 6;
-// o reforço não entra de uma vez: começa no mês 440 do mundo (19/11/2026) e chega ao total em ~1 semana real (1008 meses de 10 min)
-export const NPC_RAMP_START = 440, NPC_RAMP = 1008;
+// o reforço não entra de uma vez: começa no mês 440 do mundo (19/11/2026) e chega ao total em ~1 mês real (4320 meses de 10 min)
+export const NPC_RAMP_START = 440, NPC_RAMP = 4320;
 // fortuna no mês do mundo (pode ser fracionário: anda devagar entre um mês e outro)
 export function worthAt(n, month) {
   const m = Math.min(48, Math.max(0, month - 1));   // arrancada nos primeiros 48 meses (~8 h de jogo)
   const late = Math.min(NPC_LATE_CAP, NPC_LATE ** Math.max(0, month - 49));   // depois seguem crescendo devagar, até 6x
   const wave = 1 + 0.07 * Math.sin(month * 0.7 + n.i * 2.1) + 0.03 * Math.sin(month * 2.3 + n.i);
   const boost = 1 + (NPC_BOOST - 1) * Math.min(1, m / 48);   // mundo novo continua alcançável
-  const r = Math.min(1, Math.max(0, (month - NPC_RAMP_START) / NPC_RAMP));   // 0 hoje, 1 daqui a uma semana
+  const r = Math.min(1, Math.max(0, (month - NPC_RAMP_START) / NPC_RAMP));   // 0 em 19/11/2026, 1 daqui a um mês
   return Math.round(n.base * (1 + n.g * 0.55) ** m * (1 + (boost * late - 1) * r) * wave);
 }
 export const levelFor = worth => Math.max(1, Math.min(60, Math.round(Math.log10(Math.max(10, worth)) * 7 - 28)));
