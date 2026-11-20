@@ -16,13 +16,14 @@ export const HOUSE_RATE = { car: CAR_BUYBACK, land: 0.95, card: CD.SELL, player:
 export const NPC_MAX = 1.05;            // comprador da casa paga até 5% acima do preço de venda na hora
 export const MAX_LISTINGS = 8;
 
-// valor do clube inteiro: elenco + a vaga na divisão + o estádio
+// valor do clube inteiro: a vaga + parte do elenco + o estádio. Nunca passa de 90% do que custou menos o patrocínio da 1ª temporada,
+// então comprar e revender na hora sempre dá prejuízo (o elenco inicial já vem incluso no preço da compra).
 export function clubValue(f) {
   if (!f?.club) return 0;
-  const squad = (f.squad || []).reduce((t, p) => t + FT.value(p), 0) * 0.8;
-  const spot = FT.clubPrice(f.club) * 0.6;
+  const price = FT.clubPrice(f.club), squad = (f.squad || []).reduce((t, p) => t + FT.value(p), 0) * 0.3;
   let stadium = 0; for (let l = 1; l < (f.stadium || 1); l++) stadium += FT.TICKET[f.div] * 8 * l * 0.5;
-  return Math.round(squad + spot + stadium);
+  const base = Math.min(price * 0.5 + squad, price - (FT.SPONSOR[FT.divOf(f.club)] || 0)) * 0.9;
+  return Math.round(Math.max(0, base) + stadium);
 }
 // tudo que dá para vender: o inventário de trocas + o clube inteiro
 export function items(s) {
@@ -86,7 +87,6 @@ export function sellToHouse(s, key) {
 export function list(s, key, price, now = Date.now()) {
   const it = find(s, key);
   if (!it) return 'esse item não é mais seu.';
-  if (it.kind === 'acc') return 'acessório só dá para vender direto para a loja.';
   const b = blocked(s, it); if (b) return b;
   price = Math.round(Number(price) || 0);
   if (price < 100) return 'preço mínimo R$ 100.';
@@ -110,7 +110,7 @@ export function npcTick(s, rng = Math.random) {
   return sold;
 }
 // vitrine pública (vai para os outros jogadores pelo salão): só o que eles precisam ver
-export const publicListings = s => (s.shop || []).filter(l => !['club', 'aviario', 'fera', 'galpao', 'empresa'].includes(l.kind)).slice(0, MAX_LISTINGS).map(l => ({ id: l.id, kind: l.kind, label: String(l.label).slice(0, 60), price: l.price }));
+export const publicListings = s => (s.shop || []).filter(l => l.kind !== 'fera').slice(0, MAX_LISTINGS).map(l => ({ id: l.id, kind: l.kind, label: String(l.label).slice(0, 60), price: l.price }));
 
 // ---------- anúncios dos jogadores do mundo (todas as categorias) ----------
 // trocam a cada 10 min, iguais para todo mundo; a compra entrega o item de verdade.

@@ -1063,3 +1063,24 @@ console.log('mina ok');
 { const SHq = await import('./shop.js'), Lq = await import('./logic.js'); const s = Lq.newState(() => 0.5); (s.owned ??= []).push('acc:corrente de ouro'); (s.avatar ??= {}).acc = 'corrente de ouro';
   assert.ok(SHq.items(s).some(i => i.kind === 'acc' && i.label === 'corrente de ouro')); const m = s.money; const r = SHq.sellToHouse(s, 'acc:corrente de ouro');
   assert.equal(r.amount, 12500); assert.equal(s.money, m + 12500); assert.equal(s.avatar.acc, 'nenhum'); assert.ok(!s.owned.includes('acc:corrente de ouro')); console.log('acessório no inventário ok'); }
+
+{
+  const TD = await import('./trade.js'), SH = await import('./shop.js'), NG = await import('./negocios.js');
+  const a = { money: 1e9, owned: ['acc:oculos'], avatar: { acc: 'oculos' }, nextId: 5, biz: null, stock: {}, cars: [], stable: { animals: [] }, lands: [], cards: [] };
+  NG.ensure(a); NG.buy(a, 'food', 'bobao'); NG.buyWh(a, 'g500');
+  const b = { money: 1e9, owned: [], nextId: 50, stock: {}, cars: [], stable: { animals: [] }, lands: [], cards: [] };
+  const accOk = (await import('./avatar.js')).CATALOG.acc.opts.find(o => o.price);
+  a.owned.push(`acc:${accOk.id}`);
+  for (const give of [[{ kind: 'acc', acc: accOk.id }], [{ kind: 'empresa', cat: 'food', data: a.biz.food[0] }], [{ kind: 'galpao', data: a.biz.wh[0] }]]) {
+    const clean = TD.sanitize(give); assert.equal(clean.length, 1, 'item ' + give[0].kind + ' passa na validação');
+    assert.equal(TD.apply(a, give, [{ kind: 'money', amount: 1000 }]), null); assert.equal(TD.apply(b, [{ kind: 'money', amount: 1000 }], clean), null);
+  }
+  assert.ok(b.owned.includes(`acc:${accOk.id}`) && !a.owned.includes(`acc:${accOk.id}`), 'acessório mudou de dono');
+  assert.equal(b.biz.food[0].brand, 'bobao'); assert.equal(a.biz.food.length, 0); assert.equal(b.biz.wh.length, 1);
+  assert.equal(TD.sanitize([{ kind: 'empresa', cat: 'food', data: { brand: 'inexistente' } }]).length, 0, 'marca inventada é recusada');
+  assert.equal(SH.list(a, 'x', 500), 'esse item não é mais seu.');
+  console.log('Feirão: acessórios, empresas e galpões entre jogadores ok');
+}
+{ const FTq = await import('./futebol.js'), SHq = await import('./shop.js'), Lq = await import('./logic.js');
+  for (const c of FTq.CLUBS.flat()) { const s = Lq.newState(() => 0.5), m = s.money = 1e10; FTq.takeClub(s, c.n); const net = s.money - m + SHq.clubValue(s.fut); assert.ok(net < 0, `${c.n}: comprar e revender não pode dar lucro (${net})`); }
+  console.log('clube: comprar e revender dá prejuízo ok'); }
