@@ -150,7 +150,7 @@
             <form id="create-form" class="row">
               <label class="field"><span>nome da mesa</span><input class="input" name="tname" maxlength="24" placeholder="mesa dos amigos"></label>
               <label class="field"><span>aposta mínima</span><select class="input" name="tmin"><option>50</option><option selected>100</option><option>500</option><option>1000</option></select></label>
-              <label class="field"><span>quem vê</span><select class="input" name="tvis"><option value="pub">todos no salão</option><option value="priv">só com o link</option></select></label>
+              <label class="field"><span>senha (opcional)</span><input class="input" name="tpass" maxlength="20" autocomplete="off" placeholder="deixe vazio = sem senha"></label>
               <button class="btn btn--gold" type="submit">criar mesa online</button>
             </form>
             <form id="code-form" class="row">
@@ -168,7 +168,7 @@
 
       <div id="room" class="room" hidden>
         <div class="roombar">
-          <button class="btn btn--glass" data-act="leave-table">salão</button>
+          <button class="btn btn--glass" data-act="leave-table">sair da mesa</button>
           <h2 id="room-name">mesa</h2>
           <span class="tag tag--dark" id="room-tag"></span>
           <button class="btn btn--glass" data-act="invite" id="invite-btn" hidden>convidar amigos</button>
@@ -297,7 +297,7 @@
             <div class="glass lobby__bar">
               <form id="tr-create" class="row" onsubmit="return false"><label class="field"><span>nome da mesa</span><input class="input" name="tname" maxlength="24" placeholder="truco dos amigos"></label>
                 <label class="field"><span>entrada (fichas)</span><select class="input" name="tstake"><option>50</option><option selected>200</option><option>1000</option><option>5000</option></select></label>
-                <label class="field"><span>quem vê</span><select class="input" name="tvis"><option value="pub">todos no salão</option><option value="priv">só com o link</option></select></label>
+                <label class="field"><span>senha (opcional)</span><input class="input" name="tpass" maxlength="20" autocomplete="off" placeholder="deixe vazio = sem senha"></label>
                 <button class="btn btn--gold" type="button" data-tr="create">criar mesa de truco</button></form>
               <div class="row"><label class="field"><span>código de convite</span><input class="input" id="tr-code" maxlength="12" autocomplete="off" placeholder="ex.: k3f9q2"></label><button class="btn btn--glass" type="button" data-tr="code">entrar</button></div>
             </div></details>
@@ -321,7 +321,7 @@
             <div class="glass lobby__bar">
               <form id="sn-create" class="row" onsubmit="return false"><label class="field"><span>nome da mesa</span><input class="input" name="sname" maxlength="24" placeholder="sinuca dos amigos"></label>
                 <label class="field"><span>entrada (fichas)</span><select class="input" name="sstake"><option>50</option><option selected>300</option><option>1500</option><option>6000</option></select></label>
-                <label class="field"><span>quem vê</span><select class="input" name="svis"><option value="pub">todos no salão</option><option value="priv">só com o link</option></select></label>
+                <label class="field"><span>senha (opcional)</span><input class="input" name="spass" maxlength="20" autocomplete="off" placeholder="deixe vazio = sem senha"></label>
                 <button class="btn btn--gold" type="button" data-sn="create">criar mesa de sinuca</button></form>
               <div class="row"><label class="field"><span>código de convite</span><input class="input" id="sn-code" maxlength="12" autocomplete="off" placeholder="ex.: k3f9q2"></label><button class="btn btn--glass" type="button" data-sn="code">entrar</button></div>
             </div></details>
@@ -347,7 +347,7 @@
             <div class="glass lobby__bar">
               <form id="pk-create" class="row" onsubmit="return false"><label class="field"><span>nome da mesa</span><input class="input" name="pname" maxlength="24" placeholder="pôquer dos amigos"></label>
                 <label class="field"><span>big blind (compra = 100x)</span><select class="input" name="pbb"><option>10</option><option selected>50</option><option>200</option><option>1000</option></select></label>
-                <label class="field"><span>quem vê</span><select class="input" name="pvis"><option value="pub">todos no salão</option><option value="priv">só com o link</option></select></label>
+                <label class="field"><span>senha (opcional)</span><input class="input" name="ppass" maxlength="20" autocomplete="off" placeholder="deixe vazio = sem senha"></label>
                 <button class="btn btn--gold" type="button" data-pk="create">criar mesa de pôquer</button></form>
               <div class="row"><label class="field"><span>código de convite</span><input class="input" id="pk-code" maxlength="12" autocomplete="off" placeholder="ex.: k3f9q2"></label><button class="btn btn--glass" type="button" data-pk="code">entrar</button></div>
             </div></details>

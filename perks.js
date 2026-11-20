@@ -2,7 +2,7 @@
 // Cada efeito é um multiplicador somado: dois itens de +10% dão +20%.
 export const EFFECTS = {
   xp: 'XP ganho', daily: 'roleta do dia',
-  loan: 'juros do banco', race: 'prêmios das provas', ticket: 'bilheteria do clube', cattle: 'preço de venda do gado', plant: 'custo do plantio',
+  loan: 'juros do banco', race: 'prêmios das provas', ticket: 'bilheteria do clube', cattle: 'preço de venda do gado', frango: 'preço de venda do frango', plant: 'custo do plantio',
 };
 // carros (chave = modelo em logic.CARS); trator e caminhão já têm vantagem própria em logic.js
 export const CAR_PERKS = {
@@ -21,6 +21,7 @@ export const ACC_PERKS = {
   'fone gamer': { xp: 0.05 },
   'boné de marca': { xp: 0.04 },
   'chapéu de peão': { cattle: 0.04 },
+  'chapéu de granjeiro': { frango: 0.08 },
   'pulseira de prata': { race: 0.05 },
   'relógio de luxo': { loan: -0.2 },
   'corrente de ouro': { daily: 0.15, ticket: 0.05 },

@@ -5,8 +5,12 @@ import * as L from './logic.js';
 import * as W from './world.js';
 import * as Live from './live.js';
 import { G, $, esc, brl, say, save, note } from './store.js';
+import { PRICES as GR_P } from './granja.js';
+import { PRICES as SU_P } from './suinos.js';
 
-const TAB_GROUP = { gado: ['gado'], granja: ['granja'], suinos: ['suinos'], cana: ['cana'], laranja: ['laranja'], negocios: ['negocios'], haras: ['haras'], terras: ['terras'], banco: ['banco'] };
+// contador registra TUDO que entra e sai (para o lucro real), contratado ou não; na 1ª vez aproveita o livro-caixa
+G.track = (s, txt, val) => { CT.backfill(s); CT.track(s, txt, val); };
+const TAB_GROUP = { gado: ['gado', 'frigorifico'], granja: ['granja'], suinos: ['suinos'], cana: ['cana'], laranja: ['laranja'], negocios: ['negocios'], haras: ['haras'], terras: ['terras'], banco: ['banco'] };
 const pct = (x, t) => (t ? Math.round(x / t * 100) : 0);
 const typeRows = (types, total) => Object.entries(types).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<li><span>${esc(CT.TYPES[k] || k)}</span><b>${brl(v)}</b><i style="--w:${pct(v, total)}%"></i></li>`).join('');
 const groupCard = G2 => `<article class="ct-g glass"><header><h4>${esc(G2.label)}</h4><b class="bad">${brl(G2.total)}</b></header>
@@ -28,6 +32,7 @@ function kpis(hist, fc) {
   return `<div class="ct-kpis">${k('próximo fechamento', brl(fc.total), 'previsão', 'bad')}${k('último mês', last ? brl(last.total) : '—', last ? W.dateLabel(last.month) : 'ainda sem fechamento', 'bad')}
     ${k('média por mês', h.length ? brl(avg(t)) : '—', h.length ? `últimos ${h.length} ${h.length === 1 ? 'mês' : 'meses'}` : '')}
     ${k('vs mês anterior', d == null ? '—' : `${d > 0 ? '▲' : d < 0 ? '▼' : '='} ${Math.abs(Math.round(d * 100))}%`, d == null ? 'precisa de 2 fechamentos' : d > 0 ? 'gastou mais' : 'gastou menos', d == null ? '' : d > 0 ? 'bad' : 'good')}
+    ${(() => { const s = G.S, m = s.month || 0, r = CT.results(s, m, m), r12 = CT.results(s, m - 11, m); return k('lucro real do mês', `${r.lucro >= 0 ? '' : '−'}${brl(Math.abs(r.lucro))}`, `12 meses: ${r12.lucro >= 0 ? '' : '−'}${brl(Math.abs(r12.lucro))}`, r.lucro >= 0 ? 'good' : 'bad'); })()}
     ${k('maior gasto', big ? esc(CT.TYPES[big[0]] || big[0]) : '—', big ? `${brl(big[1])} · ${pct(big[1], last.total)}% do mês` : '')}</div>`;
 }
 // tabela mês a mês (linhas por tipo de gasto ou por produção, uma coluna por mês)
@@ -55,14 +60,43 @@ function archive(s, hist) {
       ${ms.map(a => `<details class="ct-old glass"><summary><b>${W.dateLabel(a.month)}</b><span class="small muted">cobrado em ${stamp(a.at)}</span><span class="good">+${brl(a.income)}</span><span class="bad">−${brl(a.total)}</span><b class="${a.income - a.total >= 0 ? 'good' : 'bad'}">${brl(a.income - a.total)}</b></summary>${full[a.month] ? closeBody(CT.summarize(full[a.month].lines)) : arcBody(a)}</details>`).join('')}</div>`).join('')}
     <p class="small muted">Os últimos ${CT.KEEP} meses guardam cada lançamento; os mais antigos ficam com os totais por tipo e por produção.</p></section>`;
 }
+// lucro real: por produção, este mês / mês passado / 12 meses (entrou − saiu; compra e venda de bens à parte)
+const money = v => `<b class="${v >= 0 ? 'good' : 'bad'}">${v >= 0 ? '' : '−'}${brl(Math.abs(v))}</b>`;
+function profit(s) {
+  const m = s.month || 0, a = CT.results(s, m, m), b = CT.results(s, m - 1, m - 1), c = CT.results(s, m - 11, m);
+  const keys = c.rows.filter(r => r.in || r.out).map(r => r.key);
+  if (!keys.length) return `<section class="ct-sec"><h3>lucro real</h3><p class="muted">Ainda não tem lançamentos. A partir de agora o contador soma tudo que entra e sai.</p></section>`;
+  const cell = (R, k) => { const x = R.rows.find(r => r.key === k); return x && (x.in || x.out) ? `<td class="num" title="entrou ${brl(x.in)} · saiu ${brl(x.out)}">${money(x.lucro)}</td>` : '<td class="num muted">—</td>'; };
+  const det = k => { const x = c.rows.find(r => r.key === k); return `<small class="muted">entrou ${brl(x.in)} · saiu ${brl(x.out)}</small>`; };
+  return `<section class="ct-sec"><div class="ct-sec__h"><h3>lucro real <small class="muted">tudo que entrou menos tudo que saiu, por produção</small></h3></div>
+    <div class="ct-mt glass"><table class="ct-hist"><thead><tr><th>produção</th><th class="num">este mês</th><th class="num">mês passado</th><th class="num">12 meses</th></tr></thead>
+    <tbody>${keys.map(k => `<tr><td>${esc(CT.GROUP_LABEL[k] || k)}<br>${det(k)}</td>${cell(a, k)}${cell(b, k)}${cell(c, k)}</tr>`).join('')}</tbody>
+    <tfoot><tr class="ct-mt__tot"><td>total</td><td class="num">${money(a.lucro)}</td><td class="num">${money(b.lucro)}</td><td class="num">${money(c.lucro)}</td></tr></tfoot></table></div>
+    ${c.bem ? `<p class="small muted">Bens nos 12 meses (galpões, terras, carros, empresas): ${c.bem < 0 ? `investiu ${brl(-c.bem)}` : `vendeu ${brl(c.bem)}`}. Não entra no lucro porque virou patrimônio (ou saiu dele).</p>` : ''}</section>`;
+}
+let chat = [];
+const ctx = () => ({ brl, forecast: CT.summarize(G.ctForecast?.() || []), prices: G.S.prices || {}, base: { ...GR_P, ...SU_P } });
+function assistant() {
+  return `<section class="ct-sec ct-ai glass"><div class="ct-sec__h"><h3>pergunte ao contador</h3><span class="small muted">responde com os seus números</span></div>
+    <div class="ct-ai__log" id="ct-log" aria-live="polite">${chat.map(c => `<p class="ct-ai__q">${esc(c.q)}</p><div class="ct-ai__a">${c.a.map(l => `<p>${esc(l)}</p>`).join('')}</div>`).join('') || '<p class="muted small">Ex.: "qual meu lucro real?", "com a granja vazia eu pago alguma coisa?", "o que o frigorífico gasta?"</p>'}</div>
+    <div class="ct-ai__chips">${CT.QUICK.map(q => `<button type="button" class="ct-chip" data-ct="ask" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>
+    <form class="row ct-ai__form" data-ct-form><input class="input" name="q" maxlength="160" autocomplete="off" placeholder="digite sua pergunta" aria-label="pergunta ao contador"><button class="btn btn--gold">perguntar</button></form></section>`;
+}
+function ask(q) {
+  q = String(q || '').trim(); if (!q) return;
+  chat = [...chat, { q, a: CT.answer(G.S, q, ctx()) }].slice(-6);
+  render(); const log = $('#ct-log'); if (log) log.scrollTop = log.scrollHeight;
+}
+document.addEventListener('submit', e => { const f = e.target.closest('[data-ct-form]'); if (!f) return; e.preventDefault(); ask(f.q.value); });
 const when = s => { try { const w = Live.world(), t = Live.now(); return W.fmt(W.msLeft(w, t)); } catch { return '…'; } };
 
 export function render() {
   const el = $('#ct-body'); if (!el) return;
   const s = G.S, worth = L.netWorth(s), on = CT.active(s);
+  CT.backfill(s);
   if (!on) {
     el.innerHTML = `<div class="ct-hero glass"><div><h3>contador: planos</h3>
-      <p>Ele mostra, mês a mês, exatamente quanto você gasta e com o quê: impostos, luz, água, funcionários, ração, insumos, manutenção, seguro, frete, parcelas do banco, separado por gado, granja, suínos, cana, laranja, empresas, mina e terras.</p>
+      <p>Ele mostra o seu <b>lucro real</b> (tudo que entra menos tudo que sai) por produção, responde suas perguntas com os seus números e mostra, mês a mês, exatamente quanto você gasta e com o quê: impostos, luz, água, funcionários, ração, insumos, manutenção, seguro, frete, parcelas do banco, separado por gado, granja, suínos, cana, laranja, empresas, mina e terras.</p>
       <p class="small muted">Cada fechamento do mês aparece uma única vez, com a hora em que foi cobrado e cada lançamento somado. O honorário é proporcional ao patrimônio: ${(CT.FEE.rate * 100).toFixed(2).replace('.', ',')}% ao mês (mínimo ${brl(CT.FEE.min)}). Quem é mais rico paga mais.</p></div></div>
       <div class="ct-plans">${Object.entries(CT.PLANS).map(([k, P]) => `<article class="ct-plan glass${k === 'm12' ? ' is-best' : ''}"><h4>${P.label}</h4><p class="ct-price">${brl(CT.quote(worth, k))}${P.months ? '' : '<small>/mês</small>'}</p>
         <p class="small muted">${esc(P.note)}${P.months > 1 ? ` · ${brl(Math.round(CT.quote(worth, k) / P.months))} por mês` : ''}</p><button class="btn ${k === 'm12' ? 'btn--gold' : 'btn--glass'}" data-ct="hire" data-id="${k}">contratar</button></article>`).join('')}</div>`;
@@ -73,7 +107,7 @@ export function render() {
     <button class="btn btn--glass btn--sm" data-eq="fire" data-id="contador">demitir</button></div>`;
   const last = closes[0], ls = last && CT.summarize(last.lines);
   const hist = CT.history(s);
-  el.innerHTML = head + kpis(hist, fc) + `<section class="ct-sec"><div class="ct-sec__h"><h3>previsão do próximo fechamento <small class="muted">em ${when(s)}</small></h3><span class="ct-total bad">${brl(fc.total)}</span></div>
+  el.innerHTML = head + kpis(hist, fc) + assistant() + profit(s) + `<section class="ct-sec"><div class="ct-sec__h"><h3>previsão do próximo fechamento <small class="muted">em ${when(s)}</small></h3><span class="ct-total bad">${brl(fc.total)}</span></div>
       <p class="small muted">Contas fixas (funcionários, luz, água, aluguel, seguro, impostos, parcelas) são exatas; ração, frete e o que depende de preço do mercado podem variar um pouco.</p>
       <div class="ct-sum glass"><h4>por tipo de gasto</h4><ul class="ct-types">${typeRows(fc.types, fc.total)}</ul></div>
       <div class="ct-grid">${fc.groups.map(groupCard).join('') || '<p class="muted">Nenhum gasto previsto.</p>'}</div></section>
@@ -92,7 +126,8 @@ export function inject(tab) {
   if (!CT.active(G.S)) { box.innerHTML = `<span class="ct-box__t">contador</span><span class="small muted">Quer ver exatamente quanto esta produção gasta por mês (impostos, luz, água, funcionários...)?</span><button class="btn btn--glass btn--sm" data-tab-go="equipe">contratar contador</button>`; return; }
   const fc = CT.summarize(G.ctForecast?.() || []), gs = fc.groups.filter(g => groups.includes(g.key)), total = gs.reduce((t, g) => t + g.total, 0), types = {};
   for (const g of gs) for (const [k, v] of Object.entries(g.types)) types[k] = (types[k] || 0) + v;
-  box.innerHTML = `<span class="ct-box__t">contador</span><span>próximo fechamento aqui: <b class="bad">${brl(total)}</b></span>
+  const m = G.S.month || 0, R = CT.results(G.S, m - 11, m).rows.filter(r => groups.includes(r.key)), luc = R.reduce((t, r) => t + r.lucro, 0);
+  box.innerHTML = `<span class="ct-box__t">contador</span><span>próximo fechamento aqui: <b class="bad">${brl(total)}</b>${R.length ? ` · lucro real 12 meses: ${money(luc)}` : ''}</span>
     <span class="ct-chips">${Object.entries(types).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="ct-chip">${esc(CT.TYPES[k] || k)} <b>${brl(v)}</b></span>`).join('') || '<span class="small muted">sem gastos previstos</span>'}</span>
     <button class="btn btn--glass btn--sm" data-tab-go="equipe">ver tudo</button>`;
 }
@@ -100,6 +135,7 @@ export function inject(tab) {
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-ct]'); if (!b) return;
   if (b.dataset.ct === 'by') { by = b.dataset.id; return render(); }
+  if (b.dataset.ct === 'ask') return ask(b.dataset.q);
   const s = G.S;
   if (b.dataset.ct === 'hire') {
     const k = b.dataset.id, P = CT.PLANS[k], price = CT.quote(L.netWorth(s), k);

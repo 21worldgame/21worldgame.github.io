@@ -447,7 +447,7 @@ function renderGranja() {
     const [stage, img] = grStage(l.age), kg = GR.kgAt(l.age), k = Math.min(1, l.age / 2);
     return `<article class="glass grcard${l.age >= 3 ? ' is-late' : l.age === 2 ? ' is-ready' : ''}"><img class="grcard__img" src="assets/${img}.webp" alt="" loading="lazy">
       <div class="grcard__body"><div class="hcard__top"><h4>${H.label}</h4><span class="tag ${l.age === 2 ? 'tag--green' : l.age >= 3 ? 'tag--red' : 'tag--dark'}">${stage}</span></div>
-      <p class="price">${brl(GR.lotValue(s, l))}</p>
+      <p class="price">${brl(GR.lotValue(s, l))}</p>${l.cost != null ? `<p class="small">gasto no lote até agora: <b>${brl(l.cost)}</b> · se vender hoje: <b class="${GR.lotValue(s, l) - l.cost >= 0 ? 'good' : 'bad'}">${brl(GR.lotValue(s, l) - l.cost)}</b></p>` : ''}
       <p class="small muted">${int(l.birds)} aves de ${int(l.start)} alojadas · ${kg.toString().replace('.', ',')} kg cada · ${l.age} ${l.age === 1 ? 'mês' : 'meses'}${l.vac ? ' · vacinado' : ' · sem vacina'}${l.events.length ? ` · ${l.events.join(', ')}` : ''}</p>
       <div class="bar" role="img" aria-label="${Math.round(k * 100)}% do peso de abate"><i style="transform:scaleX(${k})"></i></div>
       <p class="small">${l.age < 1 ? 'Pintinhos recém-chegados: ainda sem peso de venda.' : l.age === 1 ? 'Ainda dá para engordar mais um mês: o melhor preço por ave é no 2º mês.' : l.age === 2 ? 'Ponto certo de venda!' : 'Passou do ponto: come muito ração e quase não ganha peso. Venda logo.'}</p>
@@ -797,7 +797,7 @@ const ACTS = {
   'fe-goto'() { $('.feira').scrollIntoView({ behavior: 'smooth', block: 'start' }); },
   'gr-buy'(id) { const H = GR.HOUSES[id]; if (!confirm(`Construir ${H.label} por ${brl(H.price)}?`)) return; const err = GR.buyHouse(S(), id); if (err) return say(err[0].toUpperCase() + err.slice(1), true); note(`granja: ${H.label}`, -H.price); award('land'); confetti(40); say(`${H.label} pronto para receber pintinhos.`); },
   'gr-house'(id) { const q = Number($(`#gr-q-${id}`)?.value), v = !!$(`#gr-v-${id}`)?.checked, r = GR.house(S(), id, q, v); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true); note(`granja: compra de ${int(r.birds)} pintinhos (pago 1 vez)`, -r.cost); say(`${int(r.birds)} pintinhos alojados por ${brl(r.cost)}. A ração é cobrada em cada fechamento do mês. Venda no 2º mês, com ~2,8 kg.`); },
-  'gr-sell'(id) { const l = GR.ensure(S()).lots.find(x => x.id === id); if (l && l.age < 2 && !confirm('Ainda não chegou no ponto (2º mês). Vender mesmo assim?')) return; const r = GR.sellLot(S(), id); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true); note(`granja: venda de ${int(r.lot.birds)} frangos`, r.amount); confetti(50); sfx.play('stack', 0.6); say(`Lote vendido ao frigorífico por ${brl(r.amount)}.`); },
+  'gr-sell'(id) { const l = GR.ensure(S()).lots.find(x => x.id === id); if (l && l.age < 2 && !confirm('Ainda não chegou no ponto (2º mês). Vender mesmo assim?')) return; const r = GR.sellLot(S(), id); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true); note(`granja: venda de ${int(r.lot.birds)} frangos${r.profit != null ? ` (${r.profit >= 0 ? 'lucro' : 'prejuízo'} do lote ${brl(Math.abs(r.profit))})` : ''}`, r.amount); confetti(50); sfx.play('stack', 0.6); say(`Lote vendido ao frigorífico por ${brl(r.amount)}.${r.profit != null ? ` Gasto total do lote ${brl(r.cost)}: ${r.profit >= 0 ? 'lucro' : 'prejuízo'} de ${brl(Math.abs(r.profit))}.` : ''}`); },
   'gr-sellhouse'(id) { if (!confirm('Vender este galpão?')) return; const r = GR.sellHouse(S(), id); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true); note('granja: venda de galpão', r.amount); say(`Galpão vendido por ${brl(r.amount)}.`); },
   'pm-plant'(id) { const l = find(S().lands, id); if (!confirm(`Plantar pomar de laranja em ${l.ha} ha por ${brl(l.ha * PM.ORANGE.plant)}? A primeira colheita vem em ${PM.ORANGE.grow} meses e depois a cada ${PM.ORANGE.cycle}.`)) return; const err = PM.plant(S(), l); if (err) return say(err[0].toUpperCase() + err.slice(1), true); note(`pomar de laranja, ${l.ha} ha`, -l.ha * PM.ORANGE.plant); award('plant'); say('Mudas plantadas. Mantenha o defensivo ligado para segurar a praga.'); },
   'cn-plant'(id) { const l = find(S().lands, id), lg = CN.logistics(S(), l); if (!confirm(`Plantar cana em ${l.ha} ha por ${brl(l.ha * CN.CANE.plant)}? Primeiro corte em ${CN.CANE.first} meses, depois a cada ${CN.CANE.cycle}. Usina a ${lg.km} km.`)) return; const err = CN.plant(S(), l); if (err) return say(err[0].toUpperCase() + err.slice(1), true); note(`plantio de cana, ${l.ha} ha`, -l.ha * CN.CANE.plant); award('plant'); say('Cana plantada. Deixe os tratos culturais ligados para segurar a broca.'); },
@@ -1076,7 +1076,7 @@ document.addEventListener('change', e => { if (e.target.name === 'rtype') RC.sli
 $('#create-form').addEventListener('submit', e => {
   e.preventDefault();
   const f = new FormData(e.target);
-  C.hostOnline({ name: String(f.get('tname') || '').trim() || `mesa de ${S().avatar.name || 'um amigo'}`, minBet: Number(f.get('tmin')), pub: f.get('tvis') === 'pub' });
+  C.hostOnline({ name: String(f.get('tname') || '').trim() || `mesa de ${S().avatar.name || 'um amigo'}`, minBet: Number(f.get('tmin')), pub: true, pass: String(f.get('tpass') || '') });
 });
 $('#code-form').addEventListener('submit', e => { e.preventDefault(); C.joinOnline(new FormData(e.target).get('code')); });
 
@@ -1349,7 +1349,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 73;
+const APP_VERSION = 74;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;

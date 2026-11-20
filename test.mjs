@@ -1172,3 +1172,17 @@ console.log('mina ok');
 // preços da granja/suínos voltam ao base: frango derrubado se recupera, ração disparada cai
 { const s = L.newState(() => 0.5); s.prices.frango = 3.9; s.prices.racao = 2.6; for (let i = 0; i < 40; i++) L.tick(s, () => 0.5);
   assert.ok(Math.abs(s.prices.frango - 6.2) < 0.2 && Math.abs(s.prices.racao - 1.9) < 0.1, 'preço ancorado ' + s.prices.frango + ' ' + s.prices.racao); console.log('preço ancorado ok'); }
+// granja: o lote guarda o gasto total (lucro real na venda); chapéu de granjeiro paga 8% a mais no frango
+{ const s = { money: 1e6, prices: {}, nextId: 1 }; GR.ensure(s); GR.buyHouse(s, 'pequeno'); const hid = s.granja.houses[0].id;
+  const r0 = GR.house(s, hid, 5000, true); const l = s.granja.lots[0]; assert.equal(l.cost, r0.cost);
+  GR.monthly(s, () => 0.5); GR.monthly(s, () => 0.5); assert.ok(l.cost > r0.cost * 2, 'ração entra no gasto do lote');
+  const plain = GR.lotValue(s, l); s.owned = ['acc:chapéu de granjeiro']; assert.ok(Math.abs(GR.lotValue(s, l) - plain * 1.08) <= 1, 'chapéu +8%');
+  const r = GR.sellLot(s, l.id); assert.equal(r.profit, r.amount - r.cost); console.log('granja lucro do lote ok'); }
+// contador: separa entrada, saída e bens; não diz o que compensa
+import * as CT from './contador.js';
+{ const s = { month: 10 }; CT.track(s, 'granja: compra de 5.000 pintinhos (pago 1 vez)', -25550); CT.track(s, 'granja: venda de 4.700 frangos', 50734); CT.track(s, 'granja: galpão pequeno', -150000);
+  const r = CT.results(s, 0); assert.equal(r.lucro, 50734 - 25550); assert.equal(r.bem, -150000);
+  assert.equal(CT.groupOf('frigorífico: funcionários, energia e manutenção'), 'frigorifico'); assert.equal(CT.groupOf('venda de 30 cabeças'), 'gado');
+  const ctx = { brl: v => String(Math.round(v)), forecast: CT.summarize([]), prices: {}, base: {} };
+  assert.ok(CT.answer(s, 'o que compensa mais?', ctx)[0].includes('não posso')); assert.ok(CT.answer(s, 'granja vazia paga algo?', ctx)[0].includes('não tem nenhuma cobrança'));
+  console.log('contador lucro real ok'); }

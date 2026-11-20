@@ -61,7 +61,7 @@ export function renderLobby() {
     const seats = t.seats || t.bots.map(name => ({ kind: 'bot', name }));
     return `<article class="tcard3 tcard3--${kind === 'online' ? 'online' : TIER[HOUSE.indexOf(t)]}">
       <div class="tcard3__top"><span class="tcard3__live"><i></i>${kind === 'online' ? `online · ${esc(t.host || '')}` : 'texas hold\'em'}</span><span class="tcard3__stake">blinds ${int(t.bb / 2)}/${int(t.bb)}</span></div>
-      <div class="tcard3__table"><div class="tcard3__felt pk-felt-mini"><b>${esc(t.name)}</b><small>compra ${int(t.bb * 100)} fichas</small></div>
+      <div class="tcard3__table"><div class="tcard3__felt pk-felt-mini"><b>${C.lockTag(t)}${esc(t.name)}</b><small>compra ${int(t.bb * 100)} fichas</small></div>
         ${seats.slice(0, 5).map((s, i) => `<span class="tcard3__seat tcard3__seat--b${i}${s.kind === 'human' ? ' is-human' : ''}" title="${esc(s.name || 'livre')}"><span class="tcard3__av${s.kind === 'empty' ? ' tcard3__av--free' : ''}">${s.kind === 'empty' ? '+' : avatarSVG(lookOf(s), { label: s.name })}</span><em>${esc(s.kind === 'empty' ? 'livre' : s.name)}</em></span>`).join('')}
         ${kind === 'online' && seats[5] ? `<span class="tcard3__seat tcard3__seat--you${seats[5].kind === 'human' ? ' is-human' : ''}"><span class="tcard3__av">${avatarSVG(lookOf(seats[5]), { label: seats[5].name })}</span><em>${esc(seats[5].name)}</em></span>` : '<span class="tcard3__seat tcard3__seat--you"><span class="tcard3__av tcard3__av--free">+</span><em>seu lugar</em></span>'}</div>
       <div class="tcard3__foot"><span class="muted small">${kind === 'online' ? `${t.humans} ${t.humans === 1 ? 'jogador' : 'jogadores'} de verdade${t.watchers ? ` · ${t.watchers} assistindo` : ''}` : `adversários ${t.skill < 0.6 ? 'iniciantes' : t.skill < 0.72 ? 'bons' : t.skill < 0.82 ? 'profissionais' : 'tubarões'}`}</span>
@@ -70,7 +70,7 @@ export function renderLobby() {
   el.innerHTML = online.map(t => tcard(t, 'online')).join('') + HOUSE.map(t => tcard(t, 'house')).join('');
 }
 G.gameHosts ??= {};
-G.gameHosts.poker = () => (cur?.host && cur.pub && cur.engine ? { kind: 'poker', id: cur.id, house: cur.house || null, name: cur.engine.name, bb: cur.engine.bb, humans: cur.engine.seats.filter(s => s.kind === 'human').length, watchers: cur.watchers?.size || 0,
+G.gameHosts.poker = () => (cur?.host && cur.pub && cur.engine ? { kind: 'poker', id: cur.id, lock: !!cur.pass, house: cur.house || null, name: cur.engine.name, bb: cur.engine.bb, humans: cur.engine.seats.filter(s => s.kind === 'human').length, watchers: cur.watchers?.size || 0,
   full: cur.engine.seats.every(s => s.kind === 'human'), seats: cur.engine.seats.map(s => ({ kind: s.kind, name: s.name, look: s.look })) } : null);
 
 // ---------- abrir mesa ----------
@@ -84,7 +84,7 @@ export async function sitHouse(id) {
   cur = { id: def.id, local: true, engine: e }; show(true);
   e.join('me', me(), 0); e.fillBots(5);
 }
-export async function host({ name, bb, pub, house }) {
+export async function host({ name, bb, pub, house, pass = '' }) {
   if (!enough(bb)) return;
   const id = rid(), conn = await openTableRoom(`poker-${id}`);
   if (!conn) { if (!house) say('Sem conexão com a internet agora. Jogue numa mesa da casa.', true); return false; }
@@ -96,8 +96,10 @@ export async function host({ name, bb, pub, house }) {
     if (watchers.size) { const v = x.view(-1); for (const w of watchers) if (x.seatOf(w) < 0) conn.state.send(v, { target: w }); }
     draw(x.view(x.seatOf(self))); C.announce();
   } });
-  cur = { id, host: true, pub, engine: e, conn, watchers, house: house?.id };
+  const pw = String(pass || '').trim();
+  cur = { id, host: true, pub, pass: pw, engine: e, conn, watchers, house: house?.id };
   conn.act.onMessage = (m, { peerId }) => {
+    if ((m.t === 'join' || m.t === 'watch') && !C.passOk(pw, m)) return conn.state.send({ badpass: true }, { target: peerId });
     if (m.t === 'watch') { watchers.add(peerId); conn.state.send(e.view(-1), { target: peerId }); C.announce(); return; }
     if (m.t === 'join') { if (e.join(peerId, m.info, m.to ?? -1) == null) conn.state.send({ full: true }, { target: peerId }); else watchers.delete(peerId); return; }
     if (m.t === 'move') { const err = e.move(peerId, m.to); if (err) conn.state.send({ ...e.view(e.seatOf(peerId)), err }, { target: peerId }); return; }
@@ -116,10 +118,12 @@ export async function join(id, watch = false) {
   leave(true);
   cur = { id, remote: true, conn, hostId: null, watch }; show(true);
   $('#pk-msg').textContent = 'Procurando a mesa…';
-  conn.room.onPeerJoin = target => { conn.act.send(watch ? { t: 'watch' } : { t: 'join', info: me() }, { target }); };
+  const ask = target => conn.act.send(cur?.watch ? { t: 'watch', pass: cur.pw } : { t: 'join', info: me(), pass: cur?.pw }, { target });
+  conn.room.onPeerJoin = ask;
   conn.room.onPeerLeave = pid => { if (pid === cur?.hostId) { say('O anfitrião fechou a mesa de pôquer.', true); leave(); } };
   conn.state.onMessage = (v, { peerId }) => {
     if (cur?.conn !== conn) return;
+    if (v.badpass) { const p = C.askPass(cur.pw != null); if (p == null) return leave(); cur.pw = p; return ask(peerId); }
     if (v.full) { say('Essa mesa está cheia.', true); return leave(); }
     if (v.closed) { say('O anfitrião fechou a mesa de pôquer.', true); return leave(); }
     if (v.err) say(v.err[0].toUpperCase() + v.err.slice(1), true);
@@ -145,7 +149,7 @@ function seatAt(to) {
   if (!cur || !view) return;
   if (view.seat < 0) {   // assistindo: senta nesse lugar
     if (!enough(view.bb)) return;
-    if (cur.hostId) { cur.watch = false; cur.conn.act.send({ t: 'join', info: me(), to }, { target: cur.hostId }); }
+    if (cur.hostId) { cur.watch = false; cur.conn.act.send({ t: 'join', info: me(), to, pass: cur.pw }, { target: cur.hostId }); }
     return;
   }
   if (cur.engine) { const err = cur.engine.move(cur.local ? 'me' : cur.conn.selfId, to); if (err) say(err[0].toUpperCase() + err.slice(1), true); }
@@ -215,7 +219,7 @@ document.addEventListener('click', e => {
   if (a === 'move') return seatAt(Number(b.dataset.to));
   if (a === 'leave') return leave();
   if (a === 'invite') return invite();
-  if (a === 'create') { const f = $('#pk-create'); return host({ name: f.pname.value.trim(), bb: Number(f.pbb.value), pub: f.pvis.value === 'pub' }); }
+  if (a === 'create') { const f = $('#pk-create'); return host({ name: f.pname.value.trim(), bb: Number(f.pbb.value), pub: true, pass: f.ppass.value }); }
   if (a === 'code') return join($('#pk-code').value);
   if (a === 'rebuy') { if (!enough(view?.bb || 0)) return; return send({ t: 'rebuy' }); }
   if (a === 'preset') { raiseTo = Number(b.dataset.v); return draw(view); }

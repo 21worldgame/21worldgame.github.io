@@ -28,7 +28,7 @@ export function renderLobby() {
   const online = C.peerList().flatMap(([, p]) => (p.games || []).filter(g => g.kind === 'sinuca').map(g => ({ ...g, host: p.profile?.name })));
   const card = (t, kind) => `<article class="tcard3 tcard3--${kind === 'online' ? 'online' : ['bronze', 'esmeralda', 'diamante', 'magnata'][HOUSE.indexOf(t)]}">
     <div class="tcard3__top"><span class="tcard3__live"><i></i>${kind === 'online' ? `online · ${esc(t.host || '')}` : 'bola 8'}</span><span class="tcard3__stake">entrada ${int(t.stake)}</span></div>
-    <div class="tcard3__table"><div class="tcard3__felt sn-felt-mini"><b>${esc(t.name)}</b><small>prêmio ${int(t.stake * PAY)}</small></div>
+    <div class="tcard3__table"><div class="tcard3__felt sn-felt-mini"><b>${C.lockTag(t)}${esc(t.name)}</b><small>prêmio ${int(t.stake * PAY)}</small></div>
       ${kind === 'online' ? `<span class="tcard3__seat tcard3__seat--0 is-human"><span class="tcard3__av">${avatarSVG(lookOf({ kind: 'bot', name: t.host }), { label: '' })}</span><em>${esc(t.host || 'anfitrião')}</em></span>` : '<span class="tcard3__seat tcard3__seat--0"><span class="tcard3__av tcard3__av--free">+</span><em>seu lugar</em></span>'}
       ${kind === 'house' && !t.bot ? '<span class="tcard3__seat tcard3__seat--3"><span class="tcard3__av tcard3__av--free">+</span><em>livre</em></span>' : `<span class="tcard3__seat tcard3__seat--3"><span class="tcard3__av">${avatarSVG(lookOf({ kind: 'bot', name: kind === 'online' ? t.opp : t.bot }), { label: '' })}</span><em>${esc(kind === 'online' ? t.opp || 'casa (livre)' : t.bot)}</em></span>`}</div>
     <div class="tcard3__foot"><span class="muted small">${kind === 'online' ? (t.full ? `jogando agora${t.watchers ? ` · ${t.watchers} assistindo` : ''}` : 'contra a casa: sente no lugar dela') : t.bot ? `adversário ${['iniciante', 'bom', 'muito bom', 'profissional'][HOUSE.indexOf(t)]}` : 'mesa vazia: espera um jogador de verdade'}</span>
@@ -36,7 +36,7 @@ export function renderLobby() {
   el.innerHTML = online.map(t => card(t, 'online')).join('') + HOUSE.map(t => card(t, 'house')).join('');
 }
 G.gameHosts ??= {};
-G.gameHosts.sinuca = () => (cur?.host && cur.pub && cur.game ? { kind: 'sinuca', id: cur.id, house: cur.house, watchers: cur.watchers?.size || 0, name: cur.game.name, stake: cur.game.stake, full: cur.game.seats[1].kind === 'human', opp: cur.game.seats[1].kind === 'human' ? cur.game.seats[1].name : '' } : null);
+G.gameHosts.sinuca = () => (cur?.host && cur.pub && cur.game ? { kind: 'sinuca', id: cur.id, lock: !!cur.pass, house: cur.house, watchers: cur.watchers?.size || 0, name: cur.game.name, stake: cur.game.stake, full: cur.game.seats[1].kind === 'human', opp: cur.game.seats[1].kind === 'human' ? cur.game.seats[1].name : '' } : null);
 
 // ---------- motor do anfitrião (local ou online) ----------
 function makeHost(game, broadcast, selfPid) {
@@ -72,7 +72,7 @@ export async function sitHouse(id) {
   cur = { id: def.id, local: true, game: g, h, seat: 0 };
   g.start(); show(true); receive({ view: g.view(0) }); tick(h);
 }
-export async function host({ name, stake, pub, house }) {
+export async function host({ name, stake, pub, house, pass = '' }) {
   if ((G.S.chips || 0) < stake) return say(`Você precisa de ${int(stake)} fichas para a entrada.`, true);
   const id = rid(), conn = await openTableRoom(`sinuca-${id}`);
   if (!conn) { if (!house) say('Sem conexão com a internet agora.', true); return false; }
@@ -82,8 +82,10 @@ export async function host({ name, stake, pub, house }) {
   const h = makeHost(g, m => { for (const [i, s] of g.seats.entries()) if (s.kind === 'human' && s.pid !== conn.selfId) conn.state.send({ ...m, view: g.view(i) }, { target: s.pid });
     for (const w of watchers) if (!g.seats.some(s => s.pid === w)) conn.state.send({ ...m, view: g.view(-1) }, { target: w }); receive({ ...m, view: g.view(0) }); C.announce(); }, conn.selfId);
   if (house) h.skill = house.skill;
-  cur = { id, host: true, pub, game: g, h, conn, seat: 0, watchers, house: house?.id || null };
+  const pw = String(pass || '').trim();
+  cur = { id, host: true, pub, pass: pw, game: g, h, conn, seat: 0, watchers, house: house?.id || null };
   conn.act.onMessage = (m, { peerId }) => {
+    if ((m.t === 'join' || m.t === 'watch') && !C.passOk(pw, m)) return conn.state.send({ badpass: true }, { target: peerId });
     if (m.t === 'watch') { watchers.add(peerId); conn.state.send({ view: g.view(-1) }, { target: peerId }); C.announce(); return; }
     if (m.t === 'join') {
       if (g.seats[1].kind === 'human' && g.seats[1].pid !== peerId) return conn.state.send({ full: true }, { target: peerId });
@@ -110,10 +112,12 @@ export async function join(id, watch = false) {
   leave(true);
   cur = { id, remote: true, conn, hostId: null, seat: watch ? -1 : 1, watch }; show(true);
   $('#sn-msg').textContent = 'Procurando a mesa…';
-  conn.room.onPeerJoin = pid => conn.act.send(watch ? { t: 'watch' } : { t: 'join', info: me() }, { target: pid });
+  const ask = pid => conn.act.send(cur?.watch ? { t: 'watch', pass: cur.pw } : { t: 'join', info: me(), pass: cur?.pw }, { target: pid });
+  conn.room.onPeerJoin = ask;
   conn.room.onPeerLeave = pid => { if (pid === cur?.hostId) { say('O anfitrião fechou a mesa de sinuca.', true); leave(); } };
   conn.state.onMessage = (m, { peerId }) => {
     if (cur?.conn !== conn) return;
+    if (m.badpass) { const p = C.askPass(cur.pw != null); if (p == null) return leave(); cur.pw = p; return ask(peerId); }
     if (m.full) { say('Essa mesa de sinuca já tem dois jogadores.', true); return leave(); }
     if (m.closed) { say('O anfitrião fechou a mesa de sinuca.', true); return leave(); }
     if (m.err) say(m.err[0].toUpperCase() + m.err.slice(1), true);
@@ -283,11 +287,11 @@ document.addEventListener('click', e => {
   if (a === 'join') return join(b.dataset.id);
   if (a === 'leave') return leave();
   if (a === 'invite') return invite();
-  if (a === 'create') { const f = $('#sn-create'); return host({ name: f.sname.value.trim(), stake: Number(f.sstake.value), pub: f.svis.value === 'pub' }); }
+  if (a === 'create') { const f = $('#sn-create'); return host({ name: f.sname.value.trim(), stake: Number(f.sstake.value), pub: true, pass: f.spass.value }); }
   if (a === 'code') return join($('#sn-code').value);
   if (a === 'shoot') { act({ t: 'shot', angle: aim, power }); return; }
   if (a === 'watch') return join(b.dataset.id, true);
-  if (a === 'again' && cur?.watch) { if ((G.S.chips || 0) < (view?.stake || 0)) return say(`Você precisa de ${int(view.stake)} fichas.`, true); cur.watch = false; cur.seat = 1; return cur.conn.act.send({ t: 'join', info: me() }, { target: cur.hostId }); }
+  if (a === 'again' && cur?.watch) { if ((G.S.chips || 0) < (view?.stake || 0)) return say(`Você precisa de ${int(view.stake)} fichas.`, true); cur.watch = false; cur.seat = 1; return cur.conn.act.send({ t: 'join', info: me(), pass: cur.pw }, { target: cur.hostId }); }
   if (a === 'again') { if ((G.S.chips || 0) < (view?.stake || 0)) return say(`Você precisa de ${int(view.stake)} fichas.`, true); return act({ t: 'again' }); }
 });
 setInterval(renderLobby, 5000);

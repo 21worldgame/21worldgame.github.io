@@ -85,6 +85,10 @@ let annTimer;
 // outros jogos (truco, sinuca) leem quem está no salão por aqui
 export const peerList = () => (lobby ? [...lobby.peers.entries()] : []);
 export const selfPid = () => selfId;
+// senha das mesas criadas por jogadores: o anfitrião confere; quem erra recebe { badpass } e pode tentar de novo
+export const passOk = (pw, m) => !pw || String(m?.pass ?? '') === pw;
+export function askPass(again) { const p = prompt(again ? 'Senha errada. Digite de novo a senha da mesa:' : 'Esta mesa tem senha. Digite a senha:'); return p == null ? null : p.trim(); }
+export const lockTag = t => (t?.lock ? '<span class="tlock" title="mesa com senha">🔒</span> ' : '');
 let play = { game: null };
 // cada jogo avisa aqui onde você está e a aposta da vez; vai junto no anúncio do salão para os outros verem
 export function setPlay(patch) { const n = { ...play, ...patch }; if (JSON.stringify(n) !== JSON.stringify(play)) { play = n; announce(); } }
@@ -98,7 +102,7 @@ export function announce() {
     lobby.announce({ profile: profileOf(), tables, games, shop: SH.publicListings(G.S), play });
   }, 400);
 }
-const summary = v => ({ id: v.id, name: v.name, minBet: v.minBet, phase: v.phase, house: cur?.house || null,
+const summary = v => ({ id: v.id, lock: !!cur?.pass, name: v.name, minBet: v.minBet, phase: v.phase, house: cur?.house || null,
   seats: v.seats.map(s => ({ kind: s.kind, name: s.name, look: s.look })) });
 
 const TIERS = ['bronze', 'prata', 'ouro', 'esmeralda', 'vip', 'diamante', 'high', 'magnata'];
@@ -109,7 +113,7 @@ function tableCard(t, kind, host) {
   const pot = Math.round(t.minBet * (6 + ((Live.now() / 60000 + t.minBet) % 9)));   // fichas em jogo agora, mexe com o tempo
   return `<article class="tcard3 tcard3--${tier}">
     <div class="tcard3__top"><span class="tcard3__live"><i></i>${kind === 'online' ? `online · ${humans} ${humans === 1 ? 'jogador' : 'jogadores'}` : 'ao vivo'}</span><span class="tcard3__stake">${int(t.minBet)} / ${int(t.minBet * 20)}</span></div>
-    <div class="tcard3__table"><div class="tcard3__felt"><b>${esc(t.name)}</b><small>${int(pot)} fichas na mesa</small></div>
+    <div class="tcard3__table"><div class="tcard3__felt"><b>${lockTag(t)}${esc(t.name)}</b><small>${int(pot)} fichas na mesa</small></div>
       ${seats.slice(0, 5).map((s, i) => `<span class="tcard3__seat tcard3__seat--b${i}${s.kind === 'human' ? ' is-human' : ''}" title="${esc(s.name)}"><span class="tcard3__av">${avatarSVG(lookOf(s) || {}, { label: s.name })}</span><em>${esc(s.name)}</em></span>`).join('')}
       <span class="tcard3__seat tcard3__seat--you"><span class="tcard3__av tcard3__av--free">+</span><em>seu lugar</em></span></div>
     <div class="tcard3__foot"><span class="muted small">${host ? `anfitrião: ${esc(host)}` : `${seats.length} lugares · 1 livre para você`}</span>
@@ -196,16 +200,17 @@ export async function sitSolo(id) {
   cur.table.join('me', seatInfo());
 }
 
-export async function hostOnline({ name, minBet, pub, house }) {
+export async function hostOnline({ name, minBet, pub, house, pass = '' }) {
   const tid = rid();
   const conn = await openTableRoom(tid);
   if (!conn) { if (!house) say('Sem conexão com a internet. Jogue numa mesa da casa.', true); return false; }
   leaveTable(true);
-  cur = { id: tid, host: true, pub, name, conn, house: house?.id || null };
+  const pw = String(pass || '').trim();
+  cur = { id: tid, host: true, pub, pass: pw, name, conn, house: house?.id || null };
   const { state, act, room } = conn;
   cur.table = new Table({ id: tid, name, minBet, bots: house?.bots || null, onChange: v => { state.send(v); applyView(v); announce(); } });
   act.onMessage = (m, { peerId }) => {
-    if (m.t === 'join') cur.table.join(peerId, m.info);
+    if (m.t === 'join') { if (!passOk(pw, m)) return state.send({ badpass: true }, { target: peerId }); cur.table.join(peerId, m.info); }
     if (m.t === 'bet') cur.table.bet(peerId, m.amount);
     if (m.t === 'hit' || m.t === 'stand') cur.table.act(peerId, m.t);
     if (m.t === 'leave') cur.table.leave(peerId);
@@ -229,12 +234,13 @@ export async function joinOnline(id, watch = false) {
   cur = { id, remote: true, conn, name: 'mesa online', hostId: null, watch };
   openRoom('conectando à mesa…', `código ${id}`, true);
   $('#tstatus').textContent = 'Procurando o anfitrião da mesa…';
-  const join = target => conn.act.send({ t: 'join', info: seatInfo() }, { target });
+  const join = target => conn.act.send({ t: 'join', info: seatInfo(), pass: cur?.pw }, { target });
   conn.room.onPeerJoin = pid => { if (!cur?.watch) join(pid); };
   conn.room.onPeerLeave = pid => { if (pid === cur?.hostId) { say('O anfitrião fechou a mesa.', true); leaveTable(); } };
   conn.state.onMessage = (v, { peerId }) => {
     if (cur?.conn !== conn) return;
     if (v.closed) { say('O anfitrião fechou a mesa.', true); return leaveTable(); }
+    if (v.badpass) { const p = askPass(cur.pw != null); if (p == null) return leaveTable(); cur.pw = p; return join(peerId); }
     cur.hostId = peerId;
     $('#room-name').textContent = v.name;
     if (!cur.watch && !v.seats.some(s => s.pid === selfId) && !cur.asked) { cur.asked = true; join(peerId); }
@@ -278,7 +284,7 @@ function send(t, extra = {}) {
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-c21]'); if (!b) return;
   if (b.dataset.c21 === 'watch') return joinOnline(b.dataset.id, true);
-  if (b.dataset.c21 === 'sit' && cur?.remote && cur.hostId) { cur.watch = false; cur.asked = true; cur.conn.act.send({ t: 'join', info: seatInfo() }, { target: cur.hostId }); $('#tstatus').textContent = 'Você senta na próxima rodada.'; }
+  if (b.dataset.c21 === 'sit' && cur?.remote && cur.hostId) { cur.watch = false; cur.asked = true; cur.conn.act.send({ t: 'join', info: seatInfo(), pass: cur.pw }, { target: cur.hostId }); $('#tstatus').textContent = 'Você senta na próxima rodada.'; }
 });
 
 // ---------- apostas ----------

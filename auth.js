@@ -9,6 +9,7 @@ export const configured = () => !!(SUPABASE.url && SUPABASE.anonKey);
 let recovering = false, sb = null, user = null, mode = 'in', busy = false, lastPush = 0, timer = 0, rankCache = null;
 
 export const sbClient = () => sb;
+export const sbReady = () => client().catch(() => null);   // rede das mesas (net.js) usa o mesmo cliente
 export const account = () => (user ? { id: user.id, email: user.email } : null);
 
 async function client() {

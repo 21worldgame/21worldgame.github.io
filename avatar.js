@@ -13,7 +13,7 @@ export const CATALOG = {
   cloth: { label: 'cor da roupa', opts: [1, 2, 3, 4, 5, 6].map(n => ({ id: n, swatch: `var(--cloth-${n})` })) },
   acc: {
     label: 'acessório',
-    opts: [{ id: 'nenhum' }, { id: 'brinco', price: 1200 }, { id: 'óculos escuros', price: 2500 }, { id: 'fone gamer', price: 4000 }, { id: 'boné de marca', price: 6000 }, { id: 'chapéu de peão', price: 9000 }, { id: 'pulseira de prata', price: 15000 }, { id: 'corrente de ouro', price: 25000 }, { id: 'relógio de luxo', price: 60000 }, { id: 'grillz de ouro', price: 90000 }, { id: 'anel de diamante', price: 150000 }],
+    opts: [{ id: 'nenhum' }, { id: 'brinco', price: 1200 }, { id: 'óculos escuros', price: 2500 }, { id: 'fone gamer', price: 4000 }, { id: 'boné de marca', price: 6000 }, { id: 'chapéu de peão', price: 9000 }, { id: 'chapéu de granjeiro', price: 35000 }, { id: 'pulseira de prata', price: 15000 }, { id: 'corrente de ouro', price: 25000 }, { id: 'relógio de luxo', price: 60000 }, { id: 'grillz de ouro', price: 90000 }, { id: 'anel de diamante', price: 150000 }],
   },
 };
 
@@ -131,6 +131,9 @@ export function avatarSVG(raw, { label = '' } = {}) {
     'chapéu de peão': `<ellipse cx="100" cy="50" rx="62" ry="12" fill="var(--hair-3)"/>${shade('M40 50 Q100 70 160 50 Q100 62 40 50 Z', 0.35)}
       <path d="M70 50 C68 24 80 10 100 14 C120 10 132 24 130 50 Q100 58 70 50 Z" fill="var(--hair-3)"/><path d="M70 44 Q100 52 130 44 L130 50 Q100 58 70 50 Z" fill="var(--ink-line)"/>
       ${glow('M78 24 C86 16 94 14 100 16 C92 22 86 30 82 42 Z', 0.2)}${line('M40 50 Q100 66 160 50 M70 50 C68 24 80 10 100 14 C120 10 132 24 130 50', 1.8)}`,
+    'chapéu de granjeiro': `<ellipse cx="100" cy="50" rx="58" ry="11" fill="#d9b25f"/>${shade('M42 50 Q100 68 158 50 Q100 61 42 50 Z', 0.3)}
+      <path d="M72 50 C70 26 82 14 100 16 C118 14 130 26 128 50 Q100 57 72 50 Z" fill="#e8c878"/><path d="M72 44 Q100 51 128 44 L128 50 Q100 57 72 50 Z" fill="#b5462f"/>
+      ${glow('M80 26 C88 18 94 17 100 18 C92 24 86 31 83 42 Z', 0.22)}${line('M42 50 Q100 65 158 50 M72 50 C70 26 82 14 100 16 C118 14 130 26 128 50', 1.6)}`,
     'grillz de ouro': `<path d="M91 105.4 Q100 109.5 109 105.4 L108 108 Q100 111 92 108 Z" fill="url(#${id}-gold)" stroke="var(--gold-lo)" stroke-width=".6"/>`,
     'pulseira de prata': '', 'relógio de luxo': '', 'anel de diamante': '',
   }[a.acc] || '';

@@ -63,15 +63,20 @@ export const GROUPS = [
   ['impostos', 'impostos do topo', /imposto de renda|pedágio dos mais ricos|grandes fortunas|contas mais caras|reembolso: imposto/],
   ['contador', 'contador', /^contador/],
   ['negocios', 'empresas e galpões', null],
-  ['gado', 'gado e frigorífico', /boitel|confinamento|frigorífico|gado|bezerr|\bbois\b|abate/],
+  ['frigorifico', 'frigorífico (só a indústria)', /^frigorífico|construção do frigorífico|venda do frigorífico/],
+  ['gado', 'gado', /boitel|confinamento|frigorífico|gado|bezerr|\bbois\b|\babate\b|cabeças/],
   ['granja', 'granja', /^granja/],
+  ['lavoura', 'lavouras (soja, milho, café)', /^plantio de|^colheita de|sacas de/],
   ['suinos', 'suínos', /^suinocultura/],
   ['cana', 'cana', /canavial|corte de cana|colhedora/],
   ['laranja', 'laranja', /^pomar|colheita de laranja/],
-  ['mina', 'mina de ouro', /mina de ouro|garimpo|ouro/i],
+  ['mina', 'mina de ouro', /mina de ouro|mineradora|garimpo|ouro/i],
+  ['jogos', 'cassino e apostas', /^(truco|sinuca|pôquer|roleta|aviator|trader|aposta|corrida|resgate de|fichas)/],
+  ['futebol', 'futebol', /futebol|temporada|estádio|patrocínio|contratação de|^assumiu o|venda de .* ao /],
+  ['compras', 'compras, vendas e Pix', /^(loja|feira|Feirão|compra:|venda:|troca com|Pix|pagamento|leilão)/],
   ['haras', 'canil e haras', /ração e cuidados|haras|canil|veterin/],
   ['veiculos', 'veículos e máquinas', /IPVA e seguro/],
-  ['terras', 'terras', /arrendamento|ITR|banco tomou/],
+  ['terras', 'terras', /arrendamento|ITR|banco tomou|^(compra|venda) de \d+ ha/],
   ['banco', 'banco e empréstimos', /parcela|calote/],
   ['outros', 'outros', /./],
 ];
@@ -139,3 +144,88 @@ export function monthTable(hist, by = 'types', max = 12) {
 }
 // bots também pagam contador: o mesmo honorário pelo patrimônio deles
 export const npcFee = worth => feeFor(worth);
+
+// ---------- resultado (lucro real): tudo que entra e sai do dinheiro, por produção e por mês ----------
+// Cada lançamento do livro-caixa passa por track(): entra (venda, receita), sai (custo do dia a dia) ou bem (comprar/vender
+// galpão, terra, carro, empresa: é troca de dinheiro por patrimônio, não é lucro nem prejuízo da produção).
+export const INV = /galpão|barracão|construção|colhedora|compra da marca|venda de negócio|^assumiu|^(compra|venda) de \d+ ha|^empréstimo do banco|^compra da |^venda da |^venda do (?!lote)|^compra: |^venda: |^compra de [^:]+: |^leilão: arrematou|^contratação de|^venda de (?!\d)/;
+export const kindOf = (txt, val) => (INV.test(txt) ? 'bem' : val > 0 ? 'in' : 'out');
+export function track(s, txt, val) {
+  val = Math.round(Number(val) || 0); if (!val) return;
+  const k = kindOf(txt, val), M = ((s.pl ??= {})[s.month || 0] ??= {}), R = (M[groupOf(txt)] ??= { in: 0, out: 0, bem: 0 });
+  if (k === 'bem') R.bem += val; else R[k] += Math.abs(val);
+  const ms = Object.keys(s.pl).map(Number).sort((a, b) => a - b);
+  for (const m of ms.slice(0, Math.max(0, ms.length - ARCHIVE))) delete s.pl[m];
+}
+// primeira vez: monta o histórico com o que ainda está no livro-caixa
+export function backfill(s) {
+  if (s.pl) return;
+  s.pl = {};
+  for (const e of [...(s.log || [])].reverse()) { const m = s.month; s.month = e.m; track(s, e.txt, e.val); s.month = m; }
+}
+const zero = () => ({ in: 0, out: 0, bem: 0 });
+// soma dos meses [de, até] por produção; lucro = entrou − saiu (os bens ficam à parte)
+export function results(s, from, to = s.month || 0) {
+  const by = {}, tot = zero();
+  for (const [m, M] of Object.entries(s.pl || {})) {
+    if (Number(m) < from || Number(m) > to) continue;
+    for (const [g, R] of Object.entries(M)) { const B = (by[g] ??= zero()); for (const k of ['in', 'out', 'bem']) { B[k] += R[k]; tot[k] += R[k]; } }
+  }
+  const rows = Object.entries(by).map(([key, R]) => ({ key, label: GROUP_LABEL[key] || key, ...R, lucro: R.in - R.out })).sort((a, b) => a.label.localeCompare(b.label));
+  return { rows, ...tot, lucro: tot.in - tot.out };
+}
+
+// ---------- assistente do contador: responde com os números do próprio jogador ----------
+// Regra do jogo: ele mostra quanto cada coisa deu de lucro/prejuízo e o que está caro, mas NÃO diz o que compensa mais.
+const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const WORDS = [
+  ['granja', /granja|frango|pintinho|galinha|ave|galpao/], ['frigorifico', /frigorifico|industria|abatedouro/], ['gado', /gado|boi|bezerr|vaca|arroba|boitel|confinamento|pasto/],
+  ['suinos', /suin|porco|leitao|barracao/], ['cana', /cana|usina|canavial/], ['laranja', /laranja|pomar/], ['mina', /mina|ouro|minerad/],
+  ['negocios', /empresa|negocio|banco proprio|provedor|supermercado|marca/], ['haras', /haras|cavalo|canil|galgo|veterin/], ['veiculos', /carro|veiculo|ipva|caminhao|trator|maquina/],
+  ['lavoura', /soja|milho|cafe|lavoura|plantio|colheita|saca/], ['terras', /terra|arrendamento|itr|fazenda|hectare/], ['banco', /emprestimo|parcela|divida|banco/], ['impostos', /imposto|pedagio|fortuna/], ['contador', /contador|honorario/],
+  ['jogos', /cassino|truco|sinuca|poquer|roleta|aviator|trader|aposta|ficha/], ['futebol', /futebol|clube|estadio|time/],
+];
+const PNAME = { frango: 'frango (kg vivo)', pintinho: 'pintinho', racao: 'ração da granja (kg)', suino: 'suíno (kg vivo)', leitao: 'leitão', racaoSuino: 'ração dos suínos (kg)' };
+const groupIn = q => WORDS.find(([, re]) => re.test(q))?.[0] || null;
+export const QUICK = ['qual meu lucro real?', 'o que está vindo caro?', 'quanto a granja deu de lucro?', 'com a granja vazia eu pago alguma coisa?', 'o que o frigorífico gasta?', 'quanto vou pagar no próximo fechamento?'];
+// ctx: { brl, forecast: summarize(previsão), prices, base, monthLabel }
+export function answer(s, q0, ctx) {
+  const q = norm(q0), brl = ctx.brl, g = groupIn(q), L = g ? GROUP_LABEL[g] : null, m = s.month || 0, fc = ctx.forecast;
+  const res = (from, to) => results(s, from, to), line = R => `entrou ${brl(R.in)}, saiu ${brl(R.out)}: ${R.lucro >= 0 ? 'lucro' : 'prejuízo'} de ${brl(Math.abs(R.lucro))}`;
+  const pick = (r, k) => r.rows.find(x => x.key === k) || { in: 0, out: 0, bem: 0, lucro: 0 };
+  if (/compensa|vale (mais )?a pena|melhor (investimento|negocio|opcao)|devo (investir|comprar|vender)|onde investir|qual (da|rende) mais|o que (e )?mais lucrativo|recomenda/.test(q))
+    return ['Isso eu não posso dizer: a escolha de onde investir é sua, faz parte do jogo.', 'O que eu posso fazer é mostrar quanto cada produção deu de lucro ou prejuízo. Pergunte, por exemplo, "quanto a granja deu de lucro?" ou "qual meu lucro real?".'];
+  if (/vazi|sem (pintinho|lote|animal|boi|porco|leitao|ninguem|nada)|parad|desocupad/.test(q) && g) {
+    const G2 = fc.groups.find(x => x.key === g);
+    const extra = g === 'granja' ? ' Galpão vazio não paga ração, energia nem mão de obra: isso só começa quando você aloja pintinhos. O galpão perde 0,5% do valor por mês (desvalorização), mas isso não sai do seu dinheiro.' : g === 'suinos' ? ' Barracão vazio paga 40% da energia, água e mão de obra.' : '';
+    return G2 ? [`Do jeito que está agora, ${L} vai cobrar ${brl(G2.total)} no próximo fechamento:`, ...G2.lines.map(l => `• ${l.txt}: ${brl(l.val)}`), extra.trim()].filter(Boolean)
+      : [`Do jeito que está agora, ${L} não tem nenhuma cobrança no próximo fechamento.${extra}`];
+  }
+  if (/preco|cotacao|valor do (frango|pintinho|racao|boi|suino)/.test(q)) {
+    const ks = Object.keys(ctx.base).filter(k => g ? (g === 'granja' ? ['frango', 'pintinho', 'racao'] : g === 'suinos' ? ['suino', 'leitao', 'racaoSuino'] : []).includes(k) : true);
+    if (ks.length) return ['Preços de agora (e o normal):', ...ks.map(k => { const v = ctx.prices[k], b = ctx.base[k], d = Math.round((v / b - 1) * 100); return `• ${PNAME[k] || k}: R$ ${v.toFixed(2).replace('.', ',')} (normal R$ ${b.toFixed(2).replace('.', ',')}, ${d > 0 ? `${d}% acima` : d < 0 ? `${-d}% abaixo` : 'igual'})`; }), 'Os preços variam todo mês, mas sempre voltam para perto do normal.'];
+  }
+  if (/proximo|previs|vou pagar|vai cobrar|fechamento/.test(q)) {
+    if (g) { const G2 = fc.groups.find(x => x.key === g); return G2 ? [`${L}: ${brl(G2.total)} no próximo fechamento.`, ...G2.lines.map(l => `• ${l.txt}: ${brl(l.val)}`)] : [`${L} não tem cobrança prevista no próximo fechamento.`]; }
+    return [`No próximo fechamento saem ${brl(fc.total)}${fc.income ? ` e entram ${brl(fc.income)}` : ''}.`, ...fc.groups.slice(0, 6).map(x => `• ${x.label}: ${brl(x.total)}`)];
+  }
+  if (/caro|gasto|gastando|custo|despesa|manutencao|paga|sai(ndo)? (dinheiro|muito)/.test(q)) {
+    const hist = history(s), last = hist[0], prev = hist[1];
+    if (g) {
+      const G2 = fc.groups.find(x => x.key === g), r = pick(res(m - 11, m), g);
+      return [`${L}: nos últimos 12 meses saíram ${brl(r.out)} (custos do dia a dia).`, G2 ? `No próximo fechamento: ${brl(G2.total)}, assim:` : 'Não tem cobrança prevista no próximo fechamento.', ...(G2 ? Object.entries(G2.types).sort((a, b) => b[1] - a[1]).map(([k, v]) => `• ${TYPES[k] || k}: ${brl(v)}`) : [])];
+    }
+    const out = [`Os maiores gastos do próximo fechamento (${brl(fc.total)} no total):`, ...Object.entries(fc.types).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, v]) => `• ${TYPES[k] || k}: ${brl(v)} (${Math.round(v / (fc.total || 1) * 100)}%)`)];
+    if (last && prev) { const up = Object.entries(last.types).map(([k, v]) => [k, v - (prev.types[k] || 0)]).filter(([, d]) => d > 0).sort((a, b) => b[1] - a[1]).slice(0, 3); if (up.length) out.push('O que mais subiu do mês passado para cá:', ...up.map(([k, d]) => `• ${TYPES[k] || k}: +${brl(d)}`)); }
+    return out;
+  }
+  if (/lucro|prejuizo|resultado|ganhei|perdi|deu|rend|saldo|ganho|real/.test(q) || g) {
+    const r12 = res(m - 11, m), r1 = res(m, m), r0 = res(m - 1, m - 1);
+    if (g) {
+      const a = pick(r1, g), b = pick(r0, g), c = pick(r12, g);
+      return [`${L}:`, `• este mês: ${line(a)}`, `• mês passado: ${line(b)}`, `• últimos 12 meses: ${line(c)}`, c.bem ? `• bens (compra/venda de ${g === 'granja' ? 'galpões' : 'patrimônio'}): ${c.bem < 0 ? `investiu ${brl(-c.bem)}` : `recebeu ${brl(c.bem)}`}. Isso não entra no lucro: virou patrimônio.` : ''].filter(Boolean);
+    }
+    return ['Seu lucro real (só o que entrou e saiu da operação; compra e venda de bens fica à parte):', `• este mês: ${line(r1)}`, `• mês passado: ${line(r0)}`, `• últimos 12 meses: ${line(r12)}`, ...r12.rows.filter(x => x.in || x.out).map(x => `  – ${x.label}: ${x.lucro >= 0 ? '+' : '−'}${brl(Math.abs(x.lucro))}`), r12.bem ? `• bens nos 12 meses: ${r12.bem < 0 ? `investiu ${brl(-r12.bem)}` : `vendeu ${brl(r12.bem)}`} (virou patrimônio, não é prejuízo).` : ''].filter(Boolean);
+  }
+  return ['Eu sou o seu contador. Posso responder com os seus números, por exemplo:', ...QUICK.map(x => `• ${x}`), 'Só não digo o que compensa mais: essa escolha é sua.'];
+}

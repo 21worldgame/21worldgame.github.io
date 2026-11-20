@@ -2555,3 +2555,33 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .inv-peers__a .btn { white-space: nowrap; }
 .inv-peers__n { display: grid; line-height: 1.15; } .inv-peers__n small { font-size: .74rem; overflow: hidden; text-overflow: ellipsis; }
 .inv-peers__n > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* barra das mesas (21, truco, sinuca, pôquer): mesmo padrão em todas. ✕ sair | nome | convidar; placar/blinds na 2ª linha */
+.room .roombar, .tr-room .roombar, .sn-room .roombar, .pk-room .roombar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px 10px; }
+.roombar > :first-child { grid-area: 1 / 1; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border-color: rgba(248, 113, 113, .45); }
+.roombar > :first-child::before { content: "✕"; font-weight: 900; color: #f87171; }
+.roombar h2 { grid-area: 1 / 2; margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#invite-btn, #tr-invite, #sn-invite, #pk-invite { grid-area: 1 / 3; white-space: nowrap; }
+.roombar > .tag, .roombar .tr-score, .roombar .pk-blinds { grid-area: 2 / 1 / 3 / -1; justify-self: center; margin: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* dentro de uma mesa: a TV 21 flutuante sai da frente e sobra espaço embaixo para o chat não cobrir os botões */
+body:has(:is(#room, #tr-room, #sn-room, #pk-room):not([hidden])) .tvx { display: none; }
+@media (max-width: 40rem) {
+  .room, .tr-room, .sn-room, .pk-room { padding-bottom: 72px; }
+  #invite-btn { font-size: 0; padding-inline: 12px; } #invite-btn::after { content: "convidar"; font-size: .85rem; }
+}
+/* contador: assistente e lucro real */
+.ct-ai { padding: 14px; display: grid; gap: 10px; }
+.ct-ai__log { max-height: 340px; overflow: auto; display: grid; gap: 8px; }
+.ct-ai__log p { margin: 0; }
+.ct-ai__q { justify-self: end; max-width: 85%; padding: 6px 12px; border-radius: 14px 14px 4px 14px; background: rgba(250, 204, 21, .16); font-weight: 700; }
+.ct-ai__a { max-width: 95%; padding: 8px 12px; border-radius: 14px 14px 14px 4px; background: rgba(255, 255, 255, .06); display: grid; gap: 3px; font-size: .92rem; }
+.ct-ai__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ct-ai__chips .ct-chip { cursor: pointer; border: 1px solid var(--glass-edge); color: inherit; font: inherit; font-size: .8rem; }
+.ct-ai__form { flex-wrap: nowrap; } .ct-ai__form .input { flex: 1; min-width: 0; }
+.ct-hist td small { font-size: .72rem; }
+.tlock { font-size: .85em; }
+.tr-room .roombar, .pk-room .roombar { margin-bottom: 26px; }
+@media (max-width: 40rem) {
+  .roombar > :first-child { font-size: 0; padding-inline: 12px; }
+  .roombar > :first-child::before { content: "✕ sair"; font-size: .9rem; }
+}

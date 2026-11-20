@@ -1,6 +1,7 @@
 // Granja de frangos de corte (regras puras): compra o galpão, aloja os pintinhos, eles engordam mês a mês e você vende o lote.
 // Lógica de verdade da avicultura: lote único por galpão ("todos dentro, todos fora"), ração é o maior custo, conversão alimentar
 // (kg de ração por kg de frango) depende do galpão, mortalidade, vacina e o ponto certo de abate (~2,8 kg no 2º mês).
+import { mult } from './perks.js';
 export const HOUSES = {
   pequeno: { label: 'galpão pequeno', cap: 5000, price: 150000, mort: 0.03, conv: 1.85, heat: true, energy: 0.35, img: 'granja-galpao' },
   convencional: { label: 'galpão convencional', cap: 15000, price: 420000, mort: 0.025, conv: 1.75, heat: true, energy: 0.4, img: 'granja-aviario' },
@@ -22,7 +23,7 @@ export function ensure(s) {
 }
 export const kgAt = age => WEIGHT[Math.min(age, WEIGHT.length - 1)];
 export const lotOf = (s, hid) => ensure(s).lots.find(l => l.house === hid);
-export const lotValue = (s, l) => Math.round(l.birds * kgAt(l.age) * (s.prices.frango || PRICES.frango) * (1 - FEE));
+export const lotValue = (s, l) => Math.round(l.birds * kgAt(l.age) * (s.prices.frango || PRICES.frango) * (1 - FEE) * mult(s, 'frango'));   // chapéu de granjeiro: +8%
 export const granjaValue = s => (s.granja?.houses || []).reduce((t, h) => t + h.value, 0) + (s.granja?.lots || []).reduce((t, l) => t + lotValue(s, l), 0);
 
 export function buyHouse(s, type) {
@@ -53,7 +54,7 @@ export function house(s, hid, birds, vac = true) {
   const cost = housingCost(s, birds, vac);
   if (cost > s.money) return { err: 'dinheiro insuficiente para os pintinhos.' };
   s.money -= cost;
-  g.lots.push({ id: `l${(s.nextId = (s.nextId || 1) + 1)}`, house: hid, birds, start: birds, age: 0, vac: !!vac, events: [] });
+  g.lots.push({ id: `l${(s.nextId = (s.nextId || 1) + 1)}`, house: hid, birds, start: birds, age: 0, vac: !!vac, events: [], cost });
   return { cost, birds };
 }
 export function sellLot(s, lid) {
@@ -62,7 +63,7 @@ export function sellLot(s, lid) {
   if (l.age < 1) return { err: 'os pintinhos ainda não têm peso de venda: espere pelo menos 1 mês.' };
   const v = lotValue(s, l);
   g.lots = g.lots.filter(x => x !== l); s.money += v;
-  return { amount: v, lot: l };
+  return { amount: v, lot: l, cost: l.cost || 0, profit: l.cost ? v - l.cost : null };
 }
 
 // um mês do mundo: crescem, comem, alguns morrem; eventos de doença e calor
@@ -75,6 +76,7 @@ export function monthly(s, rng = Math.random) {
     const feed = Math.round(l.birds * gain * conv * (s.prices.racao || PRICES.racao));
     add(`granja: ração do ${l.age + 1}º mês do lote (${l.birds.toLocaleString('pt-BR')} aves)`, -feed);
     add('granja: energia, cama e mão de obra', -Math.round(l.birds * H.energy));
+    if (l.cost != null) l.cost += feed + Math.round(l.birds * H.energy);
     let dead = l.birds * H.mort;
     if (rng() < (l.vac ? 0.01 : 0.05)) { const d = l.birds * (l.vac ? 0.05 : 0.2); dead += d; l.events.push('doença'); add(`granja: surto de doença no lote${l.vac ? ' (a vacina segurou boa parte)' : ' sem vacina'}: ${Math.round(d)} aves perdidas`); }
     if (H.heat && rng() < 0.06) { const d = l.birds * 0.06; dead += d; l.events.push('calor'); add(`granja: onda de calor no galpão: ${Math.round(d)} aves perdidas`); }
