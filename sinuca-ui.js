@@ -11,9 +11,9 @@ import { botFor } from './botpool.js';
 
 export const HOUSE = [
   { id: 'sn-bar', name: 'Bilhar do Bar', stake: 50, bot: botFor('sn-bar'), skill: 0.55 },
-  { id: 'sn-clube', name: 'Sinuca Clube', stake: 300, bot: botFor('sn-clube'), skill: 0.7 },
+  { id: 'sn-clube', name: 'Sinuca Clube', stake: 300, bot: null, skill: 0.7 },
   { id: 'sn-pro', name: 'Mesa Profissional', stake: 1500, bot: botFor('sn-pro'), skill: 0.82 },
-  { id: 'sn-magnata', name: 'Mesa do Magnata', stake: 6000, bot: botFor('sn-magnata'), skill: 0.9 },
+  { id: 'sn-magnata', name: 'Mesa do Magnata', stake: 6000, bot: null, skill: 0.9 },
 ];
 export const PAY = 1.9;
 const COLORS = ['#f8fafc', '#facc15', '#2563eb', '#dc2626', '#7c3aed', '#f97316', '#16a34a', '#7f1d1d', '#0a0a0a'];
@@ -29,14 +29,14 @@ export function renderLobby() {
   const card = (t, kind) => `<article class="tcard3 tcard3--${kind === 'online' ? 'online' : ['bronze', 'esmeralda', 'diamante', 'magnata'][HOUSE.indexOf(t)]}">
     <div class="tcard3__top"><span class="tcard3__live"><i></i>${kind === 'online' ? `online · ${esc(t.host || '')}` : 'bola 8'}</span><span class="tcard3__stake">entrada ${int(t.stake)}</span></div>
     <div class="tcard3__table"><div class="tcard3__felt sn-felt-mini"><b>${esc(t.name)}</b><small>prêmio ${int(t.stake * PAY)}</small></div>
-      <span class="tcard3__seat tcard3__seat--0"><span class="tcard3__av tcard3__av--free">+</span><em>seu lugar</em></span>
-      <span class="tcard3__seat tcard3__seat--3"><span class="tcard3__av">${avatarSVG(lookOf({ kind: 'bot', name: kind === 'online' ? t.host : t.bot }), { label: '' })}</span><em>${esc(kind === 'online' ? t.host || 'anfitrião' : t.bot)}</em></span></div>
-    <div class="tcard3__foot"><span class="muted small">${kind === 'online' ? (t.full ? 'mesa cheia' : 'esperando adversário') : `adversário ${['iniciante', 'bom', 'muito bom', 'profissional'][HOUSE.indexOf(t)]}`}</span>
-      <button class="btn btn--gold" data-sn="${kind === 'online' ? 'join' : 'house'}" data-id="${esc(t.id)}" ${t.full ? 'disabled' : ''}>jogar</button></div></article>`;
+      ${kind === 'online' ? `<span class="tcard3__seat tcard3__seat--0 is-human"><span class="tcard3__av">${avatarSVG(lookOf({ kind: 'bot', name: t.host }), { label: '' })}</span><em>${esc(t.host || 'anfitrião')}</em></span>` : '<span class="tcard3__seat tcard3__seat--0"><span class="tcard3__av tcard3__av--free">+</span><em>seu lugar</em></span>'}
+      ${kind === 'house' && !t.bot ? '<span class="tcard3__seat tcard3__seat--3"><span class="tcard3__av tcard3__av--free">+</span><em>livre</em></span>' : `<span class="tcard3__seat tcard3__seat--3"><span class="tcard3__av">${avatarSVG(lookOf({ kind: 'bot', name: kind === 'online' ? t.opp : t.bot }), { label: '' })}</span><em>${esc(kind === 'online' ? t.opp || 'casa (livre)' : t.bot)}</em></span>`}</div>
+    <div class="tcard3__foot"><span class="muted small">${kind === 'online' ? (t.full ? `jogando agora${t.watchers ? ` · ${t.watchers} assistindo` : ''}` : 'contra a casa: sente no lugar dela') : t.bot ? `adversário ${['iniciante', 'bom', 'muito bom', 'profissional'][HOUSE.indexOf(t)]}` : 'mesa vazia: espera um jogador de verdade'}</span>
+      <span class="row">${kind === 'online' ? `<button class="btn btn--glass btn--sm" data-sn="watch" data-id="${esc(t.id)}">assistir</button>` : ''}<button class="btn btn--gold" data-sn="${kind === 'online' ? 'join' : 'house'}" data-id="${esc(t.id)}" ${t.full ? 'disabled' : ''}>${t.full ? 'cheia' : 'jogar'}</button></span></div></article>`;
   el.innerHTML = online.map(t => card(t, 'online')).join('') + HOUSE.map(t => card(t, 'house')).join('');
 }
 G.gameHosts ??= {};
-G.gameHosts.sinuca = () => (cur?.host && cur.pub && cur.game ? { kind: 'sinuca', id: cur.id, name: cur.game.name, stake: cur.game.stake, full: cur.game.seats[1].kind === 'human' } : null);
+G.gameHosts.sinuca = () => (cur?.host && cur.pub && cur.game ? { kind: 'sinuca', id: cur.id, house: cur.house, watchers: cur.watchers?.size || 0, name: cur.game.name, stake: cur.game.stake, full: cur.game.seats[1].kind === 'human', opp: cur.game.seats[1].kind === 'human' ? cur.game.seats[1].name : '' } : null);
 
 // ---------- motor do anfitrião (local ou online) ----------
 function makeHost(game, broadcast, selfPid) {
@@ -60,9 +60,11 @@ function placeCue(h, seat, x, y) { const err = h.game.place(seat, x, y); if (!er
 
 // ---------- abrir mesa ----------
 function show(on) { $('#sn-lobby').hidden = on; $('#sn-room').hidden = !on; if (on) requestAnimationFrame(loop); }
-export function sitHouse(id) {
+export async function sitHouse(id) {
   const def = HOUSE.find(t => t.id === id); if (!def) return;
   if ((G.S.chips || 0) < def.stake) return say(`Essa mesa pede ${int(def.stake)} fichas de entrada. Compre no caixa (aba vinte e um).`, true);
+  if (!def.bot) { await host({ name: def.name, stake: def.stake, pub: true }); return; }   // mesa vazia: você espera um adversário de verdade
+  if (await host({ name: def.name, stake: def.stake, pub: true, house: def })) return;
   leave(true);
   const g = new SN.Sinuca({ id: def.id, name: def.name, stake: def.stake });
   g.seats = [{ kind: 'human', pid: 'me', ...me() }, { kind: 'bot', name: def.bot }];
@@ -70,18 +72,22 @@ export function sitHouse(id) {
   cur = { id: def.id, local: true, game: g, h, seat: 0 };
   g.start(); show(true); receive({ view: g.view(0) }); tick(h);
 }
-export async function host({ name, stake, pub }) {
+export async function host({ name, stake, pub, house }) {
   if ((G.S.chips || 0) < stake) return say(`Você precisa de ${int(stake)} fichas para a entrada.`, true);
   const id = rid(), conn = await openTableRoom(`sinuca-${id}`);
-  if (!conn) return say('Sem conexão com a internet agora.', true);
+  if (!conn) { if (!house) say('Sem conexão com a internet agora.', true); return false; }
   leave(true);
-  const g = new SN.Sinuca({ id, name: name || 'sinuca dos amigos', stake });
-  g.seats = [{ kind: 'human', pid: conn.selfId, ...me() }, { kind: 'empty', name: 'esperando…' }];
-  const h = makeHost(g, m => { for (const [i, s] of g.seats.entries()) if (s.kind === 'human' && s.pid !== conn.selfId) conn.state.send({ ...m, view: g.view(i) }, { target: s.pid }); receive({ ...m, view: g.view(0) }); C.announce(); }, conn.selfId);
-  cur = { id, host: true, pub, game: g, h, conn, seat: 0 };
+  const g = new SN.Sinuca({ id, name: name || 'sinuca dos amigos', stake }), botName = house?.bot || 'Bola8BR', watchers = new Set();
+  g.seats = [{ kind: 'human', pid: conn.selfId, ...me() }, house ? { kind: 'bot', name: botName } : { kind: 'empty', name: 'esperando…' }];
+  const h = makeHost(g, m => { for (const [i, s] of g.seats.entries()) if (s.kind === 'human' && s.pid !== conn.selfId) conn.state.send({ ...m, view: g.view(i) }, { target: s.pid });
+    for (const w of watchers) if (!g.seats.some(s => s.pid === w)) conn.state.send({ ...m, view: g.view(-1) }, { target: w }); receive({ ...m, view: g.view(0) }); C.announce(); }, conn.selfId);
+  if (house) h.skill = house.skill;
+  cur = { id, host: true, pub, game: g, h, conn, seat: 0, watchers, house: house?.id || null };
   conn.act.onMessage = (m, { peerId }) => {
+    if (m.t === 'watch') { watchers.add(peerId); conn.state.send({ view: g.view(-1) }, { target: peerId }); C.announce(); return; }
     if (m.t === 'join') {
       if (g.seats[1].kind === 'human' && g.seats[1].pid !== peerId) return conn.state.send({ full: true }, { target: peerId });
+      watchers.delete(peerId);
       g.seats[1] = { kind: 'human', pid: peerId, name: m.info?.name || 'jogador', look: m.info?.look };
       if (g.phase === 'wait' || g.phase === 'end') g.start();
       return h.push({});
@@ -89,20 +95,22 @@ export async function host({ name, stake, pub }) {
     const s = g.seats.findIndex(x => x.pid === peerId); if (s < 0) return;
     if (m.t === 'shot') doShot(h, s, Number(m.angle), Number(m.power));
     if (m.t === 'place') { const err = placeCue(h, s, Number(m.x), Number(m.y)); if (err) conn.state.send({ err, view: g.view(s) }, { target: peerId }); }
-    if (m.t === 'leave') { g.seats[1] = { kind: 'bot', name: 'Bola8BR' }; h.push({}); }
+    if (m.t === 'leave') { watchers.delete(peerId); if (g.seats[1].pid === peerId) { g.seats[1] = { kind: 'bot', name: botName }; h.push({}); } }
     if (m.t === 'again' && g.phase === 'end') { g.start(); h.push({}); }
   };
-  conn.room.onPeerLeave = pid => { if (g.seats[1].pid === pid) { g.seats[1] = { kind: 'bot', name: 'Bola8BR' }; say('O adversário saiu: a casa assumiu o lugar.'); h.push({}); } };
-  show(true); receive({ view: g.view(0) }); C.announce(); invite();
+  conn.room.onPeerLeave = pid => { watchers.delete(pid); if (g.seats[1].pid === pid) { g.seats[1] = { kind: 'bot', name: botName }; say('O adversário saiu: a casa assumiu o lugar.'); h.push({}); } };
+  if (house) g.start();
+  show(true); receive({ view: g.view(0) }); C.announce(); if (house) tick(h); else invite();
+  return true;
 }
-export async function join(id) {
+export async function join(id, watch = false) {
   id = String(id || '').trim().toLowerCase(); if (!id) return;
   const conn = await openTableRoom(`sinuca-${id}`);
   if (!conn) return say('Sem conexão com a internet agora.', true);
   leave(true);
-  cur = { id, remote: true, conn, hostId: null, seat: 1 }; show(true);
+  cur = { id, remote: true, conn, hostId: null, seat: watch ? -1 : 1, watch }; show(true);
   $('#sn-msg').textContent = 'Procurando a mesa…';
-  conn.room.onPeerJoin = pid => conn.act.send({ t: 'join', info: me() }, { target: pid });
+  conn.room.onPeerJoin = pid => conn.act.send(watch ? { t: 'watch' } : { t: 'join', info: me() }, { target: pid });
   conn.room.onPeerLeave = pid => { if (pid === cur?.hostId) { say('O anfitrião fechou a mesa de sinuca.', true); leave(); } };
   conn.state.onMessage = (m, { peerId }) => {
     if (cur?.conn !== conn) return;
@@ -165,6 +173,8 @@ function hud() {
   $('#sn-shoot').disabled = !myTurn || placing;
   $('#sn-again').hidden = !(v.phase === 'end' && (cur?.h || false));
   $('#sn-invite').hidden = !!cur?.local;
+  if (cur?.watch) { $('#sn-msg').textContent = `Assistindo. ${v.msg}`; $('#sn-again').hidden = false; $('#sn-again').textContent = v.seats[1]?.kind === 'human' ? 'mesa cheia' : 'jogar no lugar da casa'; $('#sn-again').disabled = v.seats[1]?.kind === 'human'; }
+  else $('#sn-again').textContent = 'jogar de novo';
 }
 
 // ---------- desenho ----------
@@ -263,6 +273,8 @@ document.addEventListener('click', e => {
   if (a === 'create') { const f = $('#sn-create'); return host({ name: f.sname.value.trim(), stake: Number(f.sstake.value), pub: f.svis.value === 'pub' }); }
   if (a === 'code') return join($('#sn-code').value);
   if (a === 'shoot') { act({ t: 'shot', angle: aim, power }); return; }
+  if (a === 'watch') return join(b.dataset.id, true);
+  if (a === 'again' && cur?.watch) { if ((G.S.chips || 0) < (view?.stake || 0)) return say(`Você precisa de ${int(view.stake)} fichas.`, true); cur.watch = false; cur.seat = 1; return cur.conn.act.send({ t: 'join', info: me() }, { target: cur.hostId }); }
   if (a === 'again') { if ((G.S.chips || 0) < (view?.stake || 0)) return say(`Você precisa de ${int(view.stake)} fichas.`, true); return act({ t: 'again' }); }
 });
 setInterval(renderLobby, 5000);
