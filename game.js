@@ -1190,6 +1190,7 @@ function worldClock() {
   $('#wc-m').textContent = `${W.monthName(m)}, ano ${W.yearOf(m)}`;
   $('#wc-bar').style.transform = `scaleX(${W.progress(w, t).toFixed(3)})`;
   $('#wc-left').textContent = `${W.monthName(m + 1)} em ${W.fmt(W.msLeft(w, t))}`;
+  for (const el of document.querySelectorAll('.biz-pay')) { el.querySelector('.biz-pay__t').textContent = W.fmt(W.msLeft(w, t)); el.querySelector('i').style.transform = `scaleX(${W.progress(w, t).toFixed(3)})`; }
 }
 setInterval(() => { if (!Live.worldReady) return; worldClock(); worldMonths(); }, 1000);
 
@@ -1218,7 +1219,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 22;
+const APP_VERSION = 23;
 let updateShown = false, updateMsg = '';
 async function checkUpdate() {
   if (updateShown) return;

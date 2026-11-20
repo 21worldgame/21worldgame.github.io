@@ -33,6 +33,7 @@ export function monthly(s, rng = Math.random) {
     else out.push({ txt: `${MINE.name}: veio parado (sem equipes)`, val: 0 });
     if (m.vein <= 0) { m.phase = 'prospeccao'; m.vein = 0; out.push({ txt: `${MINE.name}: o veio acabou, voltando a procurar ouro`, val: 0 }); }
   }
+  m.last = out.reduce((t, l) => t + l.val, 0);   // resultado do mês (para a barra de fechamento)
   return out;
 }
 export const value = s => (s.mina ? saleValue(s) + Math.round((s.mina.vein || 0) * (s.prices?.ouro || GOLD) * 0.3) : 0);

@@ -2119,3 +2119,9 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 @media (max-width: 40rem) { .biz-own__ph { width: 100%; height: 140px; } }
 
 .neg-shop-h { margin-top: 28px; }
+
+/* carregamento até o fechamento do mês nas empresas */
+.biz-pay { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: rgba(250, 204, 21, .06); border: 1px solid rgba(250, 204, 21, .25); }
+.biz-pay__top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: .85rem; }
+.biz-pay__bar { display: block; height: 8px; border-radius: 99px; background: rgba(255, 255, 255, .08); overflow: hidden; }
+.biz-pay__bar i { display: block; height: 100%; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, #f59e0b, #facc15, #fde68a); box-shadow: 0 0 12px rgba(250, 204, 21, .6); transition: transform 1s linear; }

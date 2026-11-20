@@ -116,6 +116,7 @@ export function monthly(s, rng = Math.random) {
     for (let k = 0; k < want; k++) { const amt = Math.round(avg * (0.4 + rng() * 1.2)); if (amt > b.capital) break; b.capital -= amt; lent += amt; n++; }
     if (lent) b.loans.push({ bal: lent, rate: P.rate, left: TERM, bad: P.bad, n });
     if (b.loans.length > 14) { const [a, c] = b.loans.splice(0, 2); b.loans.unshift({ bal: a.bal + c.bal, rate: a.rate, left: Math.max(a.left, c.left), bad: Math.max(a.bad, c.bad), n: a.n + c.n }); }
+    b.last = Math.round(interest - lost - (C.staff * SALARY + C.price * BANK_FIXED));
     out.push({ txt: `${C.name}: ${n} empréstimos novos (${Math.round(lent).toLocaleString('pt-BR')}), juros recebidos ${Math.round(interest).toLocaleString('pt-BR')}${lost ? `, calote de ${Math.round(lost).toLocaleString('pt-BR')}` : ''}${want > n ? ` · faltou caixa para ${want - n} pedidos` : ''}`, val: 0 });
   }
   // provedores
@@ -127,6 +128,7 @@ export function monthly(s, rng = Math.random) {
     const rev = b.subs * b.plan * (1 - TAX_ISP), cost = b.subs * (LINK + SUPPORT) + Math.ceil(b.subs / TECH_PER) * TECH + ISP_FIXED * TECH + b.net * MAINT;
     add(`${C.name}: ${b.subs} assinantes (+${join} / −${quit}), mensalidades menos impostos`, rev);
     add(`${C.name}: link de internet, suporte, técnicos e manutenção da rede`, -cost);
+    b.last = Math.round(rev - cost);
   }
   // supermercados
   for (const b of s.biz.markets) {
@@ -136,6 +138,7 @@ export function monthly(s, rng = Math.random) {
     const cogs = rev / (1 + b.markup / 100), lossv = rev * LOSSES, staff = C.staff * MKT_SALARY, fixed = C.price * MKT_FIXED, tax = rev * TAX_MKT;
     add(`${C.name}: vendas do mês (${clients.toLocaleString('pt-BR')} clientes)`, rev);
     add(`${C.name}: mercadoria, perdas, ${C.staff} funcionários, aluguel, energia e impostos`, -(cogs + lossv + staff + fixed + tax));
+    b.last = Math.round(rev - (cogs + lossv + staff + fixed + tax));
   }
   // galpões: manutenção
   for (const w of s.biz.wh) add(`${WAREHOUSES[w.type].label}: manutenção e seguro`, -w.value * WH_UPKEEP);

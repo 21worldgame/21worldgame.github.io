@@ -1,6 +1,7 @@
 // Mina de ouro: vitrine na loja (empresas) e administração na aba negócios. Dono único guardado no servidor.
 import * as MI from './mina.js';
 import * as Auth from './auth.js';
+import { payBar } from './negocios-ui.js';
 import { G, $, esc, brl, int, say, save, note, confetti, profileOf } from './store.js';
 
 let owner = { loaded: false, ok: false, id: null, name: null, since: null };
@@ -32,6 +33,7 @@ export function ownCard() {
   if (!mine()) return '';
   const m = G.S.mina, gp = G.S.prices.ouro || MI.GOLD, cost = MI.MINE.upkeep + m.crews * MI.MINE.crew;
   return `<article class="glass biz-own mina-own"><div class="mina-art mina-art--sm" aria-hidden="true">⛏️<span>Au</span></div><div class="biz-own__b"><h4>${MI.MINE.name} <small class="muted">mina de ouro · única no jogo</small></h4>
+    ${payBar(m.last)}
     <div class="biz-kpis"><span><small>situação</small><b>${m.phase === 'extracao' ? `<span class="good">extraindo ouro</span>` : m.crews ? 'procurando veio…' : '<span class="bad">parada</span>'}</b></span>
       <span><small>veio atual</small><b>${m.phase === 'extracao' ? `${int(m.vein)} de ${int(m.total)} kg` : '—'}</b></span><span><small>ouro já extraído</small><b>${int(m.mined)} kg</b></span>
       <span><small>preço do ouro</small><b>${brl(gp)}/kg</b></span><span><small>custo do mês</small><b class="bad">${brl(cost)}</b></span><span><small>veios achados</small><b>${m.found}</b></span></div>

@@ -29,6 +29,8 @@ export function whHTML() {
 }
 
 // ---------- aba negócios ----------
+// carregamento até o próximo fechamento do mês: quando enche, entra (ou sai) o resultado da empresa
+export const payBar = last => `<div class="biz-pay"><div class="biz-pay__top"><span>próximo fechamento em <b class="biz-pay__t">…</b></span>${last == null ? '<span class="muted">primeiro mês</span>' : `<span>último mês <b class="${last >= 0 ? 'good' : 'bad'}">${last >= 0 ? '+' : ''}${brl(last)}</b></span>`}</div><span class="biz-pay__bar"><i></i></span></div>`;
 export function render() {
   if ($('#neg-shop')) $('#neg-shop').innerHTML = (G.mineShopCard?.() || '') + shopHTML();   // bancos, provedores e mercados à venda também aqui, não só na loja
   const el = $('#neg-list'); if (!el) return;
@@ -40,6 +42,7 @@ export function render() {
   for (const b of s.biz.banks) {
     const C = NG.BANKS[b.brand], book = b.loans.reduce((t, l) => t + l.bal, 0), P = NG.POLICY[b.policy];
     cards.push(`<article class="glass biz-own"><span class="biz-own__ph" style="--img:url(assets/biz/${b.brand}.webp)">${logo(C, C.name)}</span><div class="biz-own__b"><h4>${esc(C.name)} <small class="muted">banco</small></h4>
+      ${payBar(b.last)}
       <div class="biz-kpis"><span><small>caixa para emprestar</small><b>${brl(b.capital)}</b></span><span><small>emprestado na rua</small><b>${brl(book)}</b></span><span><small>juros</small><b>${(P.rate * 100).toFixed(1)}% ao mês</b></span><span><small>despesa mensal</small><b class="bad">${brl(C.staff * NG.SALARY + C.price * NG.BANK_FIXED)}</b></span><span><small>valor de venda</small><b>${brl(NG.saleValue(s, 'banks', b))}</b></span></div>
       <div class="row"><label class="field"><span>política</span><select class="input" data-biz-policy="${b.id}">${Object.entries(NG.POLICY).map(([k, p]) => `<option value="${k}" ${b.policy === k ? 'selected' : ''}>${p.label}: ${(p.rate * 100).toFixed(1)}%/mês, calote ${(p.bad * 100).toFixed(1)}%</option>`).join('')}</select></label>
         <label class="field"><span>valor</span><input class="input input--s" id="bk-${b.id}" type="number" min="1000" step="10000" value="500000" inputmode="numeric"></label>
@@ -50,6 +53,7 @@ export function render() {
   for (const b of s.biz.isps) {
     const C = NG.ISPS[b.brand], fill = b.ports ? b.subs / b.ports : 0;
     cards.push(`<article class="glass biz-own"><span class="biz-own__ph" style="--img:url(assets/biz/${b.brand}.webp)">${logo(C, C.name)}</span><div class="biz-own__b"><h4>${esc(C.name)} <small class="muted">provedor</small></h4>
+      ${payBar(b.last)}
       <div class="biz-kpis"><span><small>assinantes</small><b>${int(b.subs)}</b></span><span><small>portas de fibra</small><b>${int(b.ports)} / ${int(C.homes)}</b></span><span><small>ocupação</small><b>${Math.round(fill * 100)}%</b></span><span><small>investido na rede</small><b>${brl(b.net)}</b></span><span><small>valor de venda</small><b>${brl(NG.saleValue(s, 'isps', b))}</b></span></div>
       <div class="row"><label class="field"><span>mensalidade</span><select class="input" data-biz-plan="${b.id}">${Object.keys(NG.PLANS).map(p => `<option value="${p}" ${b.plan === +p ? 'selected' : ''}>R$ ${p} ${p === '49' ? '(atrai mais, cancela menos)' : p === '89' ? '(atrai menos)' : ''}</option>`).join('')}</select></label>
         <button class="btn btn--gold btn--sm" data-biz="build" data-id="${b.id}" data-n="1">construir ${NG.PORT_PACK} portas (${brl(NG.PORT_PACK * NG.PORT_COST)})</button><button class="btn btn--glass btn--sm" data-biz="build" data-id="${b.id}" data-n="4">+${NG.PORT_PACK * 4} (${brl(NG.PORT_PACK * 4 * NG.PORT_COST)})</button>
@@ -59,6 +63,7 @@ export function render() {
   for (const b of s.biz.markets) {
     const C = NG.MARKETS[b.brand];
     cards.push(`<article class="glass biz-own"><span class="biz-own__ph" style="--img:url(assets/biz/${b.brand}.webp)">${logo(C, C.name)}</span><div class="biz-own__b"><h4>${esc(C.name)} <small class="muted">supermercado</small></h4>
+      ${payBar(b.last)}
       <div class="biz-kpis"><span><small>reputação</small><b>${Math.round(b.rep * 100)}%</b></span><span><small>clientes por mês</small><b>${int(C.clients * b.rep)}</b></span><span><small>funcionários</small><b>${C.staff}</b></span><span><small>valor de venda</small><b>${brl(NG.saleValue(s, 'markets', b))}</b></span></div>
       <div class="row"><label class="field"><span>preços</span><select class="input" data-biz-markup="${b.id}">${Object.entries(NG.MARKUP).map(([k, x]) => `<option value="${k}" ${b.markup === +k ? 'selected' : ''}>${x.label} (margem ${k}%)</option>`).join('')}</select></label>
         <button class="btn btn--glass btn--sm" data-biz="sell" data-cat="markets" data-id="${b.id}">vender mercado</button></div></div></article>`);
