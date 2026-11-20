@@ -24,11 +24,15 @@ export async function publish() {
 }
 export async function close() { const sb = Auth.sbClient(); if (sb && Auth.account()) await sb.rpc('close_abate'); }
 // dono: recebe o que os outros pagaram
+// Só no aparelho em uso e com o save já sincronizado: se outro aparelho gravasse logo depois do crédito, o dinheiro sumiria
+// (a nuvem vence e o servidor já marcou como recebido). Por isso sincroniza antes e manda para a nuvem logo depois.
 export async function claim() {
-  const sb = Auth.sbClient(); if (!sb || !Auth.account()) return;
+  const sb = Auth.sbClient(); if (!sb || !Auth.account() || document.visibilityState !== 'visible' || G.busy?.()) return;
+  await Auth.push?.().catch(() => {});
   const { data, error } = await sb.rpc('claim_abate'); if (error) return;
   const r = data?.[0], pay = Number(r?.pay) || 0; if (!pay) return;
   G.S.money += pay; note(`frigorífico: ${int(r.heads)} bois de outros jogadores abatidos (taxa + couro)`, pay); save();
+  await Auth.push?.().catch(() => {});
   say(`Seu frigorífico abateu ${int(r.heads)} bois de outros jogadores: ${brl(pay)} para você.`); G.render?.();
 }
 // abater um lote no frigorífico de outro jogador
