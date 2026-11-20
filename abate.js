@@ -3,8 +3,10 @@
 // (paga bem mais e ainda vende o couro), com limite de abates por mês. Com o frigorífico próprio dá para comprar boi gordo
 // pronto no leilão para abater; o limite mensal e o custo fixo seguram para não virar máquina de dinheiro.
 import { arrobas } from './logic.js';
-export const OWN = { price: 900000, cap: 300, premium: 0.1, hide: 60, cost: 25, fixed: 15000, deprec: 0.004 };
+export const OWN = { price: 5000000, cap: 300, premium: 0.1, hide: 60, cost: 25, fixed: 15000, deprec: 0.004 };
 export const THIRD = { premium: 0.04, cost: 45 };
+// frigorífico de outro jogador: paga melhor que o terceiro comum; o dono escolhe a taxa (FEES) e recebe taxa + couro
+export const PLAYER = { premium: 0.08, fee: 50 }, FEES = [20, 35, 50, 80, 120];
 export const FAT_KG = 480, FAT_MARKUP = 1.05;          // boi gordo do leilão: 480 kg, 5% acima da arroba
 
 export function ensure(s) {
@@ -18,6 +20,7 @@ export function perHead(s, kg, how, fee = 0) {
   const base = arrobas(kg) * s.prices.arroba;
   if (how === 'vivo') return base * (1 - fee);
   if (how === 'terceiros') return base * (1 + THIRD.premium) - THIRD.cost;
+  if (how === 'jogador') return base * (1 + PLAYER.premium) - fee;   // aqui fee = taxa do dono por cabeça
   return base * (1 + OWN.premium) + OWN.hide - OWN.cost;
 }
 export function build(s) {
@@ -43,6 +46,13 @@ export function slaughter(s, lotId) {
   s.abate.used += own;
   s.herd = s.herd.filter(x => x !== h); s.money += v;
   return { amount: v, own, third, heads: h.heads };
+}
+// abate no frigorífico de outro jogador (o servidor já reservou a vaga e registrou o pagamento do dono)
+export function slaughterAt(s, lotId, fee) {
+  const h = s.herd.find(x => x.id === lotId); if (!h) return { err: 'lote não encontrado.' };
+  const v = Math.round(h.heads * perHead(s, h.kg, 'jogador', fee));
+  s.herd = s.herd.filter(x => x !== h); s.money += v;
+  return { amount: v, heads: h.heads };
 }
 // comprar boi gordo pronto e abater na hora (só com frigorífico próprio, dentro do limite do mês)
 export const fatPrice = s => Math.round(arrobas(FAT_KG) * s.prices.arroba * FAT_MARKUP);

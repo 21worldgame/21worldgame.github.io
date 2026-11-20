@@ -617,7 +617,7 @@ import * as AB from './abate.js';
   for (let i = 0; i < 24; i++) PM.monthly(s3, () => 0.5);
   assert.ok(s3.money + s3.stock.laranja * PM.ORANGE.price > m0, 'pomar deveria se pagar em 2 anos');
   // abate
-  const a = L.newState(() => 0.5); a.money = 5e6; a.herd.push({ id: 1, heads: 10, kg: 450 });
+  const a = L.newState(() => 0.5); a.money = 5e7; a.herd.push({ id: 1, heads: 10, kg: 450 });
   const vivo = AB.perHead(a, 450, 'vivo', L.cattleFee(a)), terc = AB.perHead(a, 450, 'terceiros'), prop = AB.perHead(a, 450, 'proprio');
   assert.ok(prop > terc && terc > vivo);
   assert.ok(AB.perHead(a, 180, 'proprio') < a.prices.bezerro, 'bezerro abatido não pode dar lucro');
@@ -1039,4 +1039,14 @@ console.log('mina ok');
   for (const id of ids) for (const n of BP.botsFor(id)) { assert.ok(NP.byNick(n), `${n} não é um NPC`); assert.ok(!seen.has(n), `${n} em duas mesas`); seen.add(n); }
   for (const f of ['poker-ui.js', 'casino.js', 'truco-ui.js', 'sinuca-ui.js', 'aviator.js']) assert.ok(/botsFor|botFor/.test(fs.readFileSync(`./${f}`, 'utf8')), `${f} não usa botpool`);
   console.log(`bots: ${seen.size} únicos em ${ids.length} mesas, sem repetição ok`);
+}
+
+{
+  const AB = await import('./abate.js');
+  assert.equal(AB.OWN.price, 5000000);
+  const s = { prices: { arroba: 300 }, herd: [{ id: 'h1', heads: 10, kg: 480 }], money: 0, month: 1 };
+  const third = AB.perHead(s, 480, 'terceiros'), player = AB.perHead(s, 480, 'jogador', 50);
+  assert.ok(player > third, 'frigorífico de jogador (taxa 50) paga mais que o terceiro comum');
+  const r = AB.slaughterAt(s, 'h1', 50); assert.equal(r.heads, 10); assert.equal(s.herd.length, 0); assert.equal(s.money, Math.round(10 * player));
+  console.log('frigorífico de jogador ok');
 }
