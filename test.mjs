@@ -1087,3 +1087,9 @@ console.log('mina ok');
 { const FTq = await import('./futebol.js'); let r = 1; const rng = () => (r = (r * 16807) % 2147483647) / 2147483647;
   for (let i = 0; i < 300; i++) { const f = { market: [{ id: 'x', price: 100000 }] }, d = FTq.dealFor(f, 'x', rng); assert.ok(d.limit >= 95000, 'piso de compra'); }
   assert.ok(FTq.OFFER_MAX < FTq.BUY_FLOOR); console.log('jogadores: sem arbitragem compra/venda ok'); }
+{ const MKq = await import('./market.js'), LEq = await import('./leilao.js');
+  for (const a of Object.keys(MKq.ASSETS)) for (const lb of [60, 300, 600]) for (const dir of [1, -1]) { let w = 0; const N = 3000;
+    for (let k = 0; k < N; k++) { const now = 1.79e12 + k * 1300000, side = dir * (Math.sign(MKq.price(a, now) - MKq.price(a, now - lb * 1000)) || 1); if (side * (MKq.price(a, now + 300000) - MKq.price(a, now)) > 0) w++; }
+    assert.ok(w / N < 1 / MKq.PAYOUT, `mercado ${a}: seguir/ir contra o gráfico não pode dar lucro (${(w / N * 100).toFixed(1)}%)`); }
+  for (let sl = 1000; sl < 2500; sl++) { const l = LEq.lot(sl), st = LEq.state(l, LEq.endsAt(sl) - 1500); assert.ok(st.next >= l.value * 0.97, `leilão ${sl} saiu barato`); }
+  console.log('mercado imprevisível e leilão sem cavalo barato ok'); }

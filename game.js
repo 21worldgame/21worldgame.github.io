@@ -647,7 +647,7 @@ function renderInv() {
   const total = items.reduce((t, i) => t + (i.value || 0), 0);
   $('#inv-sum').textContent = `${items.length} itens trocáveis, ${int(S().chips)} fichas e ${brl(S().money)} em dinheiro`;
   const players = items.filter(i => i.kind === 'player'), shown = items.filter(i => i.kind !== 'player');
-  if (players.length) shown.push({ kind: 'squad', label: `elenco do ${S().fut.club}: ${players.length} jogadores`, value: players.reduce((t, i) => t + i.value, 0) });
+  if (players.length) shown.push({ kind: 'squad', label: `elenco do ${S().fut?.club || 'clube'}: ${players.length} jogadores`, value: players.reduce((t, i) => t + i.value, 0) });
   const n = SHUI.invCats();
   $('#inv-cats').innerHTML = [['all', 'tudo'], ...Object.entries(SH.CATS)].filter(([k]) => k === 'all' || n[k]).map(([k, v]) => `<button class="shop-cat${invCat === k ? ' is-on' : ''}" data-invcat="${k}">${v}${k !== 'all' ? ` <small>${n[k]}</small>` : ''}</button>`).join('');
   $('#inv-items').innerHTML = SHUI.mineHTML(invCat);
@@ -730,10 +730,15 @@ document.addEventListener('submit', e => { if (e.target.id === 'tr-chat-form') {
 const PANELS = { personagem: () => renderChar(), terras: () => renderTerras(), gado: () => renderGado(), mercado: () => renderMercado(),
   carros: () => renderLoja('carros'), suinos: () => SUU.render(), negocios: () => NGU.render(), banco: () => renderBanco(), livro: () => renderLivro(), haras: () => { SUI.render(); LEU.render(); }, futebol: () => FUI.render(), inventario: () => renderInv(), ranking: () => RKUI.render(), laranja: () => renderPomar(), cana: () => renderCana(), cartas: () => renderCartas(), granja: () => renderGranja(), loja: () => renderLoja(), mesa: () => C.renderLobby() };
 let currentTab = 'mesa';
+// cada parte da tela desenha separada: se uma der erro, as outras continuam (a tela nunca fica travada)
+let uiErrAt = 0;
+function uiError(e, where) {
+  console.error(where, e);
+  if (Date.now() - uiErrAt > 20000) { uiErrAt = Date.now(); say('Algo não carregou direito nesta tela. Seu progresso está salvo; se continuar, troque de aba ou recarregue.', true); }
+}
 function render() {
-  renderHud(); renderMissions();
-  PANELS[currentTab]?.();
-  C.announce();
+  for (const [f, w] of [[renderHud, 'hud'], [renderMissions, 'missões'], [PANELS[currentTab], currentTab]]) { try { f?.(); } catch (e) { uiError(e, w); } }
+  try { C.announce(); } catch (e) { console.error(e); }
 }
 G.render = () => { render(); G.onRender?.(); };
 G.callout = t => { const el = $('#race-call'); el.textContent = t; el.classList.remove('is-on'); void el.offsetWidth; el.classList.add('is-on'); };
@@ -957,10 +962,10 @@ const ACTS = {
     S().loans.push({ id: S().nextId++, bal: v, rate: +(L.BANK_RATE * PK.mult(S(), 'loan')).toFixed(4), left: 12, missed: 0 });
     S().money += v; note('empréstimo do banco, 12 parcelas', v); say(`${brl(v)} na conta. A parcela sai todo mês.`);
   },
-  payoff(idv) { const l = find(S().loans, idv); if (pay(l.bal, 'quitação de empréstimo')) { S().loans.splice(S().loans.indexOf(l), 1); say('Dívida quitada.'); } },
+  payoff(idv) { const l = find(S().loans, idv); if (pay(l.bal, 'quitação de empréstimo', false)) { S().loans.splice(S().loans.indexOf(l), 1); say('Dívida quitada.'); } },
   lend(idv) {
     const b = find(S().borrowers, idv);
-    if (b && pay(b.amount, `empréstimo para ${b.name}`)) {
+    if (b && pay(b.amount, `empréstimo para ${b.name}`, false)) {
       S().borrowers.splice(S().borrowers.indexOf(b), 1);
       S().lent.push({ id: b.id, name: b.name, bal: b.amount, rate: b.rate, left: b.months, risk: b.risk });
       say(`${b.name} assinou a promissória.`); award('lend');
@@ -990,7 +995,7 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]');
   if (!b || b.disabled) return;
   const act = b.dataset.act;
-  ACTS[act]?.(b.dataset.id, b);
+  try { const r = ACTS[act]?.(b.dataset.id, b); if (r?.catch) r.catch(e => { uiError(e, act); save(); render(); }); } catch (e) { uiError(e, act); save(); render(); return; }
   if (['rl-double', 'pass-claim', 'st-train', 'trade-invite', 'trade-yes', 'trade-no', 'trade-add', 'trade-chips', 'trade-money', 'trade-remove', 'trade-lock', 'trade-confirm', 'trade-cancel', 'ft-play', 'ft-close', 'ft-quick', 'rk-cat', 'rk-page', 'rk-online', 'shop-cat', 'shop-sell', 'shop-list', 'shop-unlist', 'shop-buy', 'ft-slot', 'ft-pick', 'ft-auto', 'fe-buy', 'fe-sell', 'fe-goto', 'card-close', 'ft-haggle', 'job-start', 'job-accept', 'job-confirm', 'job-repair', 'double', 'split', 'logout', 'wipe', 'st-enter', 'stable-close', 'sit', 'leave-table', 'invite', 'bet', 'hit', 'stand', 'bet-clear', 'race-go', 'race-pick', 'race-next', 'mute', 'rl-spin', 'rl-clear', 'av-press', 'tr-buy', 'tr-sell', 'tr-dur', 'tr-tf', 'tr-asset', 'spin-daily', 'map-lot', 'show-card'].includes(act)) return;
   checkAch(); save(); render();
 });
@@ -1287,7 +1292,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 49;
+const APP_VERSION = 50;
 let updateShown = false, updateMsg = '';
 let checking = false;
 async function checkUpdate() {

@@ -305,9 +305,10 @@ export const ELITE = [
   { min: 3e6, name: 'jornada dos mais ricos', price: 0.12, bills: 1.4, tax: 0.0006, gain: 0.08 },
   { min: 5e6, name: 'milionário do topo', price: 0.16, bills: 1.6, tax: 0.03, gain: 0.11 },
   { min: 1e7, name: 'magnata do mundo', price: 0.2, bills: 1.8, tax: 0.04, gain: 0.14 },
-  { min: 5e7, name: 'bilionário em formação', price: 0.3, bills: 2.3, tax: 0.05, gain: 0.2 },
-  { min: 2e8, name: 'dono do mundo', price: 0.42, bills: 3, tax: 0.06, gain: 0.27 },
-  { min: 1e9, name: 'imperador do 21 World', price: 0.6, bills: 4, tax: 0.07, gain: 0.35 },
+  { min: 1.5e7, name: 'tubarão do mundo', price: 0.25, bills: 2.1, tax: 0.045, gain: 0.45 },
+  { min: 5e7, name: 'bilionário em formação', price: 0.3, bills: 2.4, tax: 0.05, gain: 0.5 },
+  { min: 2e8, name: 'dono do mundo', price: 0.42, bills: 3, tax: 0.06, gain: 0.55 },
+  { min: 1e9, name: 'imperador do 21 World', price: 0.6, bills: 4, tax: 0.07, gain: 0.6 },
 ];
 export const eliteIdx = s => { const w = netWorth(s); let i = -1; ELITE.forEach((e, k) => { if (w >= e.min) i = k; }); return i; };
 // o 1º do ranking paga ainda mais (s.top1 vem do ranking do servidor): a coroa pesa

@@ -11,18 +11,22 @@ export const TIMEFRAMES = [1, 5, 10];         // minutos por vela
 export const PAYOUT = 1.85;                   // acertou: recebe 1,85x o valor (lucro de 85%); errou ou empatou: perde
 export const MIN_STAKE = 100;
 
-// ruído suave e determinístico (mesmo valor para o mesmo instante em qualquer aparelho)
-const hash = n => { let x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return (x - Math.floor(x)) * 2 - 1; };
-const smooth = t => { const i = Math.floor(t), f = t - i, u = f * f * (3 - 2 * f); return hash(i) * (1 - u) + hash(i + 1) * u; };
+// Passeio aleatório determinístico (mesmo valor para o mesmo instante em qualquer aparelho), montado como ponte browniana:
+// o futuro não dá para prever pelo gráfico (antes era uma curva suave e dava para lucrar apostando contra o movimento).
 const SEED = { boi: 11, soja: 23, dol: 37, btc: 53 };
-// camadas: segundos (tremida), minutos (velas), horas e dias (tendência)
-const LAYERS = [[8, 0.06], [45, 0.14], [240, 0.32], [1500, 0.55], [7200, 0.8], [43200, 1.1], [172800, 1.4]];
-
+const ih = (a, b, c) => { let h = Math.imul(a ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(b + 0x632be5ab, 0xc2b2ae35) ^ Math.imul(c + 0x27d4eb2f, 0x165667b1); h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d); h = Math.imul(h ^ (h >>> 12), 0x297a2d39); return ((h ^ (h >>> 15)) >>> 0) / 4294967296; };
+const gauss = (a, b, c) => (ih(a, b, c) + ih(a, b, c + 1e6) + ih(a, b, c + 2e6) + ih(a, b, c + 3e6) - 2) * 1.732;
+const P = 2 ** 19, DAY = 4 * 3600, RHO = 0.85, END = 1.6;   // bloco de ~6 dias; ponta de cada bloco puxa devagar de volta para o preço base
+const endAt = (s, k) => { let e = 0; for (let j = 0; j < 30; j++) e += RHO ** j * gauss(s, k - j, 7); return e * END; };
+function walk(s, t) {
+  const k = Math.floor(t / P), u = t - k * P;
+  let a = 0, b = P, wa = endAt(s, k), wb = endAt(s, k + 1), lvl = 0;
+  while (b - a > 1) { const m = (a + b) / 2, wm = (wa + wb) / 2 + gauss(s, k * 64 + lvl, m) * Math.sqrt((b - a) / 4 / DAY); if (u < m) { b = m; wb = wm; } else { a = m; wa = wm; } lvl++; }
+  return wa + (wb - wa) * (u - a);
+}
 export function price(asset, ms) {
-  const A = ASSETS[asset], t = ms / 1000, s = SEED[asset];
-  let lp = 0;
-  for (const [period, amp] of LAYERS) lp += smooth(t / period + s * 7.3 + period) * amp;
-  return A.price * Math.exp(lp * A.vol * 2.2);
+  const A = ASSETS[asset];
+  return A.price * Math.exp(walk(SEED[asset], ms / 1000) * A.vol * 2.2);
 }
 // velas de `tf` minutos terminando em `now` (a última está em formação)
 export function candles(asset, now, tf = 1, count = 60) {
