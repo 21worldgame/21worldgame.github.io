@@ -157,45 +157,65 @@ export async function profileCard(id) {
 }
 // cada aparelho tem um id: o save marca de onde veio, para o outro aparelho saber que precisa se atualizar
 const DEV = (() => { try { let d = localStorage.getItem('21world.dev'); if (!d) { d = Math.random().toString(36).slice(2, 10); localStorage.setItem('21world.dev', d); } return d; } catch { return Math.random().toString(36).slice(2, 10); } })();
-let lastRemote = '', seen = 0;   // seen = savedAt do save da nuvem mais novo que este aparelho já conhece
-export async function push() {
-  if (!sb || !user) return false;
-  const head = await sb.from('saves').select('updated_at, sa:data->savedAt, dev:data->>dev').eq('user_id', user.id).maybeSingle();
-  if (head.error) return false;
-  const hd = head.data;
-  if (hd && hd.dev && hd.dev !== DEV && Number(hd.sa || 0) > seen) {      // o outro aparelho mexeu e este ainda não viu
-    if (G.busy?.()) return false;                                     // no meio de uma mão: tenta de novo no próximo save
-    const full = await pull(); if (!full?.data) return false;
-    adopt(full.data); seen = Number(full.data.savedAt || 0); lastPush = seen; lastRemote = full.updated_at; G.render();
-    say('Atualizado com o que você fez no outro aparelho.'); return false;
-  }
-  const stamp = G.S.savedAt || Date.now(), at = new Date().toISOString();
-  const { error } = await sb.from('saves').upsert({ user_id: user.id, data: { ...G.S, dev: DEV }, updated_at: at });
-  if (error) return false;
-  lastRemote = at; seen = Math.max(seen, stamp);
-  let row = profileRow(), r = await sb.from('public_profiles').upsert(row);
-  if (r.error && /card/i.test(r.error.message || '')) { noCardUntil = Date.now() + 300000; row = profileRow(); r = await sb.from('public_profiles').upsert(row); }   // coluna card ainda não criada no servidor
-  if (r.error && isNameTaken(r.error)) {                      // outro jogador já usa esse nome: troca por um com número
-    G.S.avatar.name = withSuffix(row.name, Math.floor(10 + Math.random() * 90));
-    save(); row = profileRow(); r = await sb.from('public_profiles').upsert(row);
-    if (!r.error) { G.render(); say(`Esse nome já estava em uso. Você agora é "${G.S.avatar.name}".`); }
-  }
-  lastPush = stamp;
-  return true;
+// Sincronização entre aparelhos com versão do servidor (não depende do relógio do aparelho, que pode estar adiantado ou atrasado).
+// base = updated_at da linha da nuvem de onde o save deste aparelho veio. Gravar só funciona se a nuvem ainda estiver nessa versão;
+// se outro aparelho gravou antes, este baixa a versão nova em vez de apagar o que foi feito lá (era assim que sumiam galpões).
+let base = '', pushed = 0, pushing = false, outdated = false;   // outdated: a nuvem foi gravada por uma versão mais nova do jogo
+const metaKey = () => `21world.sync.${user?.id}`;
+function loadMeta() { try { const m = JSON.parse(localStorage.getItem(metaKey()) || 'null'); base = m?.base || ''; pushed = Number(m?.pushed) || 0; } catch { base = ''; pushed = 0; } }
+function saveMeta() { try { localStorage.setItem(metaKey(), JSON.stringify({ base, pushed })); } catch {} }
+const sameAt = (a, b) => !!a && !!b && Date.parse(a) === Date.parse(b);
+const dirty = () => (G.S.savedAt || 0) !== pushed;
+const serverIso = () => new Date(G.now?.() ?? Date.now()).toISOString();   // hora do servidor (Live.now)
+// versão antiga do jogo (app aberto há tempo no celular) não pode gravar um save da versão nova: ela descartaria o que não conhece
+function newerThanMe(d) { if ((Number(d?.appV) || 0) > (G.appV || 0)) { outdated = true; G.checkUpdate?.(); say('Saiu uma versão nova do jogo: atualizando para não perder nada do seu progresso.', true); return true; } return false; }
+function takeRemote(row, msg = true) {
+  if (newerThanMe(row.data)) return;                              // não aplica com código velho: espera a atualização
+  adopt(row.data); base = row.updated_at; pushed = G.S.savedAt || 0; lastPush = pushed; saveMeta(); G.render();
+  if (msg) say('Atualizado com o que você fez no outro aparelho.');
 }
-// celular e computador abertos ao mesmo tempo: confere a nuvem a cada 8 s (e ao voltar para a aba);
-// se o outro aparelho salvou algo mais novo, aplica na hora (nunca no meio de uma mão, corrida ou partida)
+export async function push() {
+  if (!sb || !user || pushing || outdated) return false;
+  pushing = true;
+  try {
+    const stamp = G.S.savedAt || 0, at = serverIso(), data = { ...G.S, dev: DEV, appV: G.appV || 0 };
+    let res;
+    if (base) res = await sb.from('saves').update({ data, updated_at: at }).eq('user_id', user.id).eq('updated_at', base).select('updated_at');
+    else res = await sb.from('saves').insert({ user_id: user.id, data, updated_at: at }).select('updated_at');
+    if (res.error || !res.data?.length) {
+      // outro aparelho gravou antes (ou a linha já existia): a nuvem vale; este aparelho se atualiza
+      if (res.error && (base || !/duplicate|conflict|23505/i.test(`${res.error.code} ${res.error.message}`))) return false;   // erro de rede: tenta no próximo save
+      if (G.busy?.()) return false;                                   // no meio de uma mão: tenta de novo no próximo save
+      const row = await pull();
+      if (!row) { base = ''; saveMeta(); return false; }              // a linha sumiu (conta zerada pelo admin): grava de novo no próximo save
+      takeRemote(row); return false;
+    }
+    base = res.data[0].updated_at; pushed = stamp; lastPush = stamp; saveMeta();
+    let row = profileRow(), r = await sb.from('public_profiles').upsert(row);
+    if (r.error && /card/i.test(r.error.message || '')) { noCardUntil = Date.now() + 300000; row = profileRow(); r = await sb.from('public_profiles').upsert(row); }   // coluna card ainda não criada no servidor
+    if (r.error && isNameTaken(r.error)) {                      // outro jogador já usa esse nome: troca por um com número
+      G.S.avatar.name = withSuffix(row.name, Math.floor(10 + Math.random() * 90));
+      save(); row = profileRow(); r = await sb.from('public_profiles').upsert(row);
+      if (!r.error) { G.render(); say(`Esse nome já estava em uso. Você agora é "${G.S.avatar.name}".`); }
+    }
+    return true;
+  } finally {
+    pushing = false;
+    if (user && dirty()) scheduleSync();                          // salvou de novo enquanto gravava: manda o resto
+  }
+}
+// celular e computador abertos ao mesmo tempo: confere a versão da nuvem a cada 5 s (e ao voltar para a aba);
+// se outro aparelho gravou, aplica na hora (nunca no meio de uma mão, corrida ou partida)
 async function checkRemote() {
-  if (!sb || !user || document.visibilityState === 'hidden' || G.busy?.()) return;
+  if (!sb || !user || pushing || document.visibilityState === 'hidden' || G.busy?.()) return;
   try {
     const { data } = await sb.from('saves').select('updated_at').eq('user_id', user.id).maybeSingle();
-    if (!data || data.updated_at === lastRemote || Date.parse(data.updated_at) === Date.parse(lastRemote)) return;
-    const full = await pull(), d = full?.data; lastRemote = full?.updated_at || data.updated_at;
-    if (!d || d.dev === DEV || (d.savedAt || 0) <= seen) return;
-    adopt(d); seen = lastPush = d.savedAt || 0; G.render(); say('Atualizado com o que você fez no outro aparelho.');
+    if (!data || sameAt(data.updated_at, base)) return;
+    const row = await pull();
+    if (row && !sameAt(row.updated_at, base) && !pushing) takeRemote(row);
   } catch {}
 }
-setInterval(checkRemote, 8000);
+setInterval(checkRemote, 5000);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkRemote(); });
 function scheduleSync() {
   if (!user) return;
@@ -227,20 +247,25 @@ async function afterLogin() {
   const previous = currentUid();
   let cloud = null;
   try { cloud = await pull(); } catch { say('Não foi possível ler seu save na nuvem. Jogando com o save deste aparelho.', true); }
+  loadMeta();
+  const useCloud = () => { writeSave(user.id, cloud.data); base = cloud.updated_at; pushed = cloud.data?.savedAt || 0; saveMeta(); location.reload(); return new Promise(() => {}); };
   if (previous !== user.id) {
-    if (cloud) writeSave(user.id, cloud.data);
-    else {
-      const fresh = blankState(cleanName(user.user_metadata?.name || user.user_metadata?.full_name));   // conta nova começa do zero
-      fresh.chips = (fresh.chips || 0) + 500;                                                               // bônus de boas-vindas da tela de entrada
-      writeSave(user.id, fresh);
-    }
+    if (cloud) return useCloud();
+    const fresh = blankState(cleanName(user.user_metadata?.name || user.user_metadata?.full_name));   // conta nova começa do zero
+    fresh.chips = (fresh.chips || 0) + 500;                                                               // bônus de boas-vindas da tela de entrada
+    writeSave(user.id, fresh); base = ''; pushed = 0; saveMeta();
     location.reload();
     return new Promise(() => {});
   }
-  if (cloud && (cloud.data?.savedAt || 0) > (G.S.savedAt || 0) + 1000) { writeSave(user.id, cloud.data); location.reload(); return new Promise(() => {}); }
+  if (cloud) {
+    if (newerThanMe(cloud.data)) { if (!base) { base = 'velho'; saveMeta(); } }   // não grava nem aplica: a versão nova, ao abrir, vê que a nuvem mudou e usa a nuvem
+    else if (!base) {   // primeira vez com a sincronização nova neste aparelho: vale o mais novo (regra antiga, uma vez só)
+      if ((cloud.data?.savedAt || 0) > (G.S.savedAt || 0) + 1000) return useCloud();
+      base = cloud.updated_at; pushed = 0; saveMeta();            // o local é o mais novo: grava por cima desta versão
+    } else if (!sameAt(cloud.updated_at, base)) return useCloud(); // outro aparelho gravou depois que este sincronizou: a nuvem vale
+  } else if (base) { base = ''; saveMeta(); }                       // não há save na nuvem: este aparelho cria
   if (dlg().open) dlg().close();
   try { localStorage.setItem('21world.hadAccount', '1'); } catch {}
-  seen = Number(cloud?.data?.savedAt || 0);   // o que está na nuvem agora já foi visto (o local é igual ou mais novo)
   G.afterSave = scheduleSync;
   watchRanking();
   await push().catch(() => {});
@@ -307,7 +332,7 @@ export async function boot() {
   user = data.session.user;
   if (recovering) { showRecovery(); return 'recovery'; }       // a conta só segue depois de definir a senha nova
   await afterLogin();
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && user && (G.S.savedAt || 0) > lastPush) push().catch(() => {}); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && user && dirty()) push().catch(() => {}); });
   return 'ok';
 }
 export const MINPW = MIN_PASSWORD;

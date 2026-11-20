@@ -45,6 +45,7 @@ import * as SHUI from './shop-ui.js';
 import * as RKUI from './ranking-ui.js';
 import { openDeal } from './deal-ui.js';
 import * as Live from './live.js';
+G.now = Live.now;   // hora do servidor para a sincronização (auth.js)
 import * as ST from './stable.js';
 import * as SUI from './stable-ui.js';
 import * as FUI from './futebol-ui.js';
@@ -1343,7 +1344,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 61;
+const APP_VERSION = 62;
+G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;
 async function checkUpdate() {
@@ -1369,6 +1371,7 @@ async function checkUpdateNow() {
 }
 // a página recarrega sozinha em 15 s, a não ser que a pessoa esteja no meio de uma mão, corrida, turno ou troca
 G.busy = () => busyNow();
+G.checkUpdate = () => checkUpdate();
 const busyNow = () => C.busyRound() || SUI.isRunning() || !!document.querySelector('#dlg-race[open], #dlg-match[open], #dlg-trade[open], #dlg-deal[open], #dlg-card[open]');
 async function doReload() {
   const b = $('#upd-go'); if (b) { b.disabled = true; b.textContent = 'salvando...'; }
