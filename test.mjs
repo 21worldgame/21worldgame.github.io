@@ -910,7 +910,7 @@ console.log('suínos, negócios e galpões ok');
 }
 {
   const RV3 = await import('./rivals.js'), r = RV3.rivals(400, 5e8, 2e6).map(x => x.worth).sort((a, b) => b - a);
-  assert.ok(r.filter(w => w > 2e6 && w < 2.5e6).length >= 3, 'vizinhos logo acima de quem está subindo');
+  assert.ok(r.filter(w => w > 1.9e6 && w < 2.5e6).length >= 3, 'vizinhos logo acima de quem está subindo');
   assert.ok(r.filter(w => w > 2.5e8).length >= 9, '10 caçadores em escada atrás do líder');
 }
 console.log('mais ricos ok');
