@@ -2450,3 +2450,10 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .ct-old summary { cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; padding: 12px 0; font-variant-numeric: tabular-nums; } .ct-old summary > b:last-child { margin-left: auto; }
 .ct-arc { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; } .ct-arc h4 { margin: 0 0 6px; font-size: .85rem; }
 @media (max-width: 40rem) { .ct-kpis { grid-template-columns: 1fr 1fr; gap: 8px; } .ct-kpi:first-child { grid-column: 1 / -1; } .ct-kpi { padding: 10px 12px; } .ct-kpi b { font-size: 1rem; } }
+
+#worldclock { cursor: pointer; }
+#worldclock:hover, #worldclock:focus-visible { outline: 1px solid #ffd76a; }
+#dlg-taxes tr.is-me td { background: color-mix(in oklab, #ffd76a 14%, transparent); }
+#dlg-taxes h2 { margin-top: 2.4rem; }
+#dlg-taxes th, #dlg-taxes td { padding-inline: 8px; white-space: nowrap; }
+#dlg-taxes td small { white-space: normal; }

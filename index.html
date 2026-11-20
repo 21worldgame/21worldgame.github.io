@@ -100,7 +100,7 @@
       <button class="btn btn--gold btn--sm" type="button" id="btn-install" hidden>instalar app</button>
       <button class="btn btn--glass btn--sm hdr-fs" type="button" data-fs="app" aria-pressed="false">tela cheia</button>
       <button class="btn btn--glass btn--sm hdr-side" type="button" id="btn-side" aria-pressed="false" title="Mostrar o menu na lateral ou no topo">menu na lateral</button>
-      <div class="worldclock glass" id="worldclock" title="Tempo de mundo: o mês passa sozinho, igual para todos os jogadores"><span class="worldclock__t">mundo</span><b id="wc-m">1</b><span class="worldclock__bar" aria-hidden="true"><i id="wc-bar"></i></span><small id="wc-left">--:--</small></div>
+      <div class="worldclock glass" id="worldclock" role="button" tabindex="0" title="Tempo de mundo: o mês passa sozinho, igual para todos. Clique para ver os impostos dos mais ricos"><span class="worldclock__t">mundo</span><b id="wc-m">1</b><span class="worldclock__bar" aria-hidden="true"><i id="wc-bar"></i></span><small id="wc-left">--:--</small></div>
     </div>
     <nav class="container" aria-label="áreas do jogo">
       <div class="tabs" role="tablist">
@@ -876,6 +876,11 @@
   </dialog>
 
   <!-- regras do 21 -->
+  <dialog class="dlg" id="dlg-taxes" aria-labelledby="tx-title">
+    <button class="dlg__x btn btn--glass btn--sm" data-close>fechar</button>
+    <h2 id="tx-title">impostos dos mais ricos</h2>
+    <div id="tx-body"></div>
+  </dialog>
   <dialog class="dlg" id="dlg-rules" aria-labelledby="rl-title">
     <button class="dlg__x btn btn--glass btn--sm" data-close>fechar</button>
     <h2 id="rl-title">regras da mesa</h2>

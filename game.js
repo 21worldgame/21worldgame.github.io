@@ -1299,6 +1299,17 @@ function worldClock() {
   for (const el of document.querySelectorAll('.biz-pay')) { el.querySelector('.biz-pay__t').textContent = W.fmt(W.msLeft(w, t)); el.querySelector('i').style.transform = `scaleX(${W.progress(w, t).toFixed(3)})`; }
 }
 setInterval(() => { if (!Live.worldReady) return; worldClock(); worldMonths(); }, 1000);
+// clique no relógio do mundo: tabela do que cada faixa de fortuna paga por mês
+function openTaxes() {
+  const me = L.eliteIdx(S()), pct = v => `${(v * 100).toFixed(v < 0.01 ? 2 : 1).replace('.', ',').replace(/,0$/, '')}%`;
+  const rows = L.ELITE.map((e0, i) => { const e = L.eliteOf({ money: e0.min, lands: [], herd: [], loans: [], lent: [], cars: [], stock: {}, prices: {} });
+    return `<tr${i === me ? ' class="is-me"' : ''}><td><b>${e0.min >= 1e9 ? `R$ ${e0.min / 1e9} bi` : `R$ ${String(e0.min / 1e6).replace('.', ',')} mi`}</b>+<small class="muted"><br>${esc(e0.name)}${i === me ? ' · <b>você</b>' : ''}</small></td><td class="num">${pct(e.gain)}</td><td class="num">${pct(e.tax)}</td><td class="num">+${pct(e.price)}</td><td class="num">+${pct(e.bills - 1)}</td></tr>`; }).join('');
+  $('#tx-body').innerHTML = `<div class="scroll"><table><thead><tr><th>patrimônio</th><th class="num" title="parte de tudo o que você ganha no mês que fica com o mundo">dos ganhos</th><th class="num" title="sobre o patrimônio acima de R$ 3 mi">imposto/mês</th><th class="num">compras</th><th class="num">contas</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="small muted"><b>dos ganhos</b>: parte de tudo o que você ganha no mês que fica com o mundo. O imposto ao mês é sobre o que passar de ${brl(L.ELITE[0].min)}. O 1º do ranking paga ainda mais: +${Math.round(L.TOP1.gain * 100)} pontos nos ganhos, imposto em dobro e compras +${Math.round(L.TOP1.price * 100)}%. Abaixo de ${brl(L.ELITE[0].min)} só há o imposto de renda simples sobre os ganhos do mês.</p>`;
+  $('#dlg-taxes').showModal();
+}
+$('#worldclock').addEventListener('click', openTaxes);
+$('#worldclock').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTaxes(); } });
 
 // ---------- tela cheia: o jogo inteiro (botão do topo) ou só a área de cada jogo ----------
 // Celular sem suporte (iPhone) usa uma "tela cheia" própria: a área ocupa a tela toda por cima do resto.
@@ -1325,7 +1336,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 56;
+const APP_VERSION = 57;
 let updateShown = false, updateMsg = '';
 let checking = false;
 async function checkUpdate() {
