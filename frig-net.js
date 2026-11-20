@@ -14,7 +14,8 @@ export async function refresh() {
   plants = data.filter(p => p.owner !== me).map(p => ({ ...p, left: p.cap - (Number(p.bucket) === b ? p.used : 0) }));
 }
 // o mais barato que ainda cabe o lote inteiro
-export const best = heads => plants.filter(p => p.left >= heads).sort((a, b) => a.fee - b.fee)[0] || null;
+export const options = heads => plants.filter(p => p.left >= heads).sort((a, b) => a.fee - b.fee || b.left - a.left);   // todos com vaga para o lote, mais barato primeiro
+export const best = heads => options(heads)[0] || null;
 
 // dono: publica taxa e se está aberto
 export async function publish() {
@@ -31,9 +32,9 @@ export async function claim() {
   say(`Seu frigorífico abateu ${int(r.heads)} bois de outros jogadores: ${brl(pay)} para você.`); G.render?.();
 }
 // abater um lote no frigorífico de outro jogador
-export async function killAt(lotId) {
-  const s = G.S, h = s.herd.find(x => x.id === lotId); if (!h) return;
-  const p = best(h.heads); if (!p) return say('Nenhum frigorífico de jogador com vaga para esse lote agora.', true);
+export async function killAt(lotId, owner) {
+  const s = G.S, h = s.herd.find(x => String(x.id) === String(lotId)); if (!h) return;   // o id chega da tela como texto
+  const p = owner ? options(h.heads).find(x => x.owner === owner) : best(h.heads); if (!p) return say(owner ? 'Esse frigorífico não tem mais vaga para esse lote. Escolha outro.' : 'Nenhum frigorífico de jogador com vaga para esse lote agora.', true);
   const { data, error } = await Auth.sbClient().rpc('use_abate', { p_owner: p.owner, p_heads: h.heads, p_fee: p.fee, p_name: profileOf().name });
   if (error || data !== 'ok') { await refresh(); G.render?.(); return say(data === 'full' ? 'Esse frigorífico lotou este mês. Tente outro.' : data === 'fee' ? 'O dono mudou a taxa: confira o valor novo.' : 'Não deu para abater lá agora. Tente de novo.', true); }
   const r = AB.slaughterAt(s, h.id, p.fee);

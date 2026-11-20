@@ -2486,3 +2486,5 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .chat-box.on-tv .chat-form, .chat-box.on-tv .chat-lock { display: none; }
 .tv-list li { cursor: default; }
 .tv-list .tv__line { -webkit-line-clamp: unset; animation: none; }
+.abp { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; max-width: 100%; }
+.abp__sel { min-height: 32px; padding: 4px 8px; font-size: .8rem; max-width: 100%; }

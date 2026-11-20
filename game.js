@@ -340,6 +340,9 @@ function flyToLot(id) {
 }
 
 // ---------- gado ----------
+// frigorífico de jogador escolhido em cada lote (a tela redesenha sem perder a escolha)
+const abpPick = {};
+document.addEventListener('change', e => { const t = e.target.closest?.('.abp__sel'); if (t) abpPick[t.id.slice(4)] = t.value; });
 function renderGado() {
   const s = S(), n = L.heads(s), cap = L.capacity(s), ab = AB.ensure(s);
   $('#abate-box').innerHTML = ab.owned
@@ -375,7 +378,9 @@ function renderGado() {
       <div class="bar" role="img" aria-label="${Math.round(k * 100)}% do peso de abate"><i style="transform:scaleX(${k})"></i></div>
       <div class="herd-acts"><button class="btn btn--glass btn--sm" data-act="sell-herd" data-id="${h.id}">revender vivo ${brl(h.heads * AB.perHead(s, h.kg, 'vivo', L.cattleFee(s)) * PK.mult(s, 'cattle'))}</button>
         <button class="btn btn--gold btn--sm" data-act="ab-kill" data-id="${h.id}">abater ${brl(h.heads * (AB.capLeft(s) >= h.heads ? AB.perHead(s, h.kg, 'proprio') : AB.perHead(s, h.kg, 'terceiros')))}</button>
-        ${(() => { const p = AB.capLeft(s) >= h.heads ? null : FN.best(h.heads); return p ? `<button class="btn btn--gold btn--sm" data-act="ab-killp" data-id="${h.id}">abater no frigorífico de ${esc(p.owner_name)} ${brl(h.heads * AB.perHead(s, h.kg, 'jogador', p.fee))}</button>` : ''; })()}</div>
+        ${(() => { const ps = FN.options(h.heads); if (!ps.length) return ''; const pay = p => brl(h.heads * AB.perHead(s, h.kg, 'jogador', p.fee));
+          return ps.length === 1 ? `<button class="btn btn--gold btn--sm" data-act="ab-killp" data-id="${h.id}" data-owner="${esc(ps[0].owner)}">abater no frigorífico de ${esc(ps[0].owner_name)} ${pay(ps[0])}</button>`
+            : `<span class="abp"><label class="visually-hidden" for="abp-${h.id}">frigorífico de jogador</label><select class="input abp__sel" id="abp-${h.id}">${ps.map(p => `<option value="${esc(p.owner)}"${abpPick[h.id] === p.owner ? ' selected' : ''}>${esc(p.owner_name)} · taxa ${brl(p.fee)}/cab. · você recebe ${pay(p)} · ${int(p.left)} vagas</option>`).join('')}</select><button class="btn btn--gold btn--sm" data-act="ab-killp" data-id="${h.id}">abater no frigorífico escolhido</button></span>`; })()}</div>
       <p class="small muted">${AB.capLeft(s) >= h.heads ? 'abate no seu frigorífico (com couro)' : s.abate?.owned ? 'seu frigorífico lotou este mês: abate em terceiros' : 'abate em frigorífico de terceiros'}</p></article>`;
   }).join('') : '<p class="empty glass">Você ainda não tem bois. Compre bezerros no leilão acima: se tiver pasto, eles vão para lá sozinhos.</p>';
 }
@@ -802,7 +807,7 @@ const ACTS = {
   'pm-uproot'(id) { if (!confirm('Arrancar o pomar? Você perde as árvores.')) return; PM.uproot(find(S().lands, id)); say('Pomar arrancado. A terra está livre.'); },
   'ab-kill'(id) { const h = find(S().herd, id); if (!h) return; const r = AB.slaughter(S(), h.id); if (r.err) return say(r.err, true); note(`abate de ${r.heads} bois${r.own ? ` (${r.own} no seu frigorífico)` : ' (frigorífico de terceiros)'}`, r.amount); confetti(30); say(`Lote abatido: ${brl(r.amount)}.`); },
   'ab-build'() { if (!confirm(`Construir seu frigorífico por ${brl(AB.OWN.price)}? Abate até ${AB.OWN.cap} bois por mês, paga mais pela arroba e vende o couro. Custo fixo de ${brl(AB.OWN.fixed)} por mês.`)) return; const err = AB.build(S()); if (err) return say(err[0].toUpperCase() + err.slice(1), true); note('construção do frigorífico', -AB.OWN.price); confetti(60); say('Frigorífico pronto! Ele já está aberto para outros jogadores abaterem aqui pagando a sua taxa.'); setTimeout(FN.publish, 300); },
-  'ab-killp'(id) { FN.killAt(id); },
+  'ab-killp'(id, b) { FN.killAt(id, b?.dataset.owner || document.getElementById(`abp-${id}`)?.value); },
   'ab-sellplant'() { if (!confirm('Vender o frigorífico?')) return; FN.close(); const v = AB.sellPlant(S()); note('venda do frigorífico', v); say(`Frigorífico vendido por ${brl(v)}.`); },
   'ab-buyfat'() { const n = qty('fat'); const r = AB.buyAndSlaughter(S(), n); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true); note(`compra de ${n} bois gordos para abate`, -r.cost); note(`abate de ${n} bois no seu frigorífico`, r.amount); say(`${n} bois abatidos: lucro de ${brl(r.profit)}.`, r.profit < 0); },
   'rk-cat'(id) { RKUI.setCat(id); },
@@ -1338,7 +1343,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 60;
+const APP_VERSION = 61;
 let updateShown = false, updateMsg = '';
 let checking = false;
 async function checkUpdate() {
