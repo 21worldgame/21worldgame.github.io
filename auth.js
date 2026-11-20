@@ -151,7 +151,7 @@ export async function profileCard(id) {
   if (r.error) r = await sb.from('public_profiles').select('user_id, name, level, worth, rank, look').eq('user_id', id).maybeSingle();
   if (r.error || !r.data) return null;
   const { card, ...base } = r.data;
-  return { ...(card || {}), ...base, worth: Number(base.worth) };
+  return { ...(card || {}), ...base, worth: Number(base.worth), noCard: !card };
 }
 export async function push() {
   if (!sb || !user) return false;

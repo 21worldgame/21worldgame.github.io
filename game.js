@@ -566,6 +566,7 @@ function profileExtra(p, me) {
   const trophies = `<h3>troféus de patrimônio <small class="muted">${tr.length} de ${L.TROPHIES.length}</small></h3><div class="pf__troph">${L.TROPHIES.map((t, i) => `<span class="troph${tr.includes(t) ? ' is-got' : ''}${i === 0 ? ' troph--selo' : ''}" title="${i === 0 ? 'selo' : 'troféu'} de ${mi(t)}"><b>${i === 0 ? '🎖️' : '🏆'}</b><small>${mi(t)}</small></span>`).join('')}</div>`;
   const priv = me && tr.includes(L.PRIVATE_MIN) ? `<div class="pf__acts"><button class="btn btn--glass btn--sm" data-act="toggle-private">${S().privateProfile ? '🔒 perfil privado (tornar público)' : '🔓 perfil público (tornar privado)'}</button></div>` : me ? '<p class="muted small">Ao chegar a R$ 10 milhões você ganha o selo e pode deixar o perfil privado.</p>' : '';
   if (p.private && !me) return trophies + '<p class="pf__private glass">🔒 Este jogador deixou o perfil privado. Só os troféus aparecem.</p>';
+  if (p.noCard) return trophies + '<p class="pf__private glass">Este jogador ainda não atualizou o perfil. Os detalhes aparecem assim que ele abrir o jogo de novo.</p>';
   const biz = (p.biz || []).map(b => { const c = BIZ_LISTS[b.cat]?.[b.brand]; return c ? `<span class="pf__biz" style="--img:url(assets/biz/${b.brand}.webp)"><small>${esc(c.name)}</small></span>` : ''; }).join('');
   const tiles = [['empresas', (p.biz || []).length], ['mina de ouro', p.mina ? 'sim' : 'não'], ['galpões', p.wh || 0], ['granja', `${p.granja || 0} galpões`], ['suínos', `${p.suinos || 0} barracões`], ['cartas raras', p.cardsN || 0], ['clube', p.club || 'nenhum']]
     .map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${esc(String(v))}</strong></div>`).join('');
@@ -591,7 +592,7 @@ function openProfile(pid, fetched) {
     </div>
     <div class="pf__stats">
       ${[['mãos de 21', int(st.hands || 0)], ['vitórias', `${int(st.wins || 0)} (${rate}%)`], ['maior prêmio', `${int(st.best || 0)} fichas`], ['corridas', `${int(st.races || 0)}, ${int(st.raceWins || 0)} acertos`],
-        ['terras', `${p.lands} (${int(p.ha)} ha)`], ['gado', `${int(p.heads)} cabeças`], ['canil e haras', `${(p.animals || []).length} animais`]].map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${v}</strong></div>`).join('')}
+        ['terras', p.lands == null ? '—' : `${p.lands} (${int(p.ha || 0)} ha)`], ['gado', p.heads == null ? '—' : `${int(p.heads)} cabeças`], ['canil e haras', p.animals ? `${p.animals.length} animais` : '—']].map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${v}</strong></div>`).join('')}
     </div>
     ${profileExtra(p, me)}
     <h3>garagem</h3>
@@ -1246,7 +1247,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 30;
+const APP_VERSION = 31;
 let updateShown = false, updateMsg = '';
 async function checkUpdate() {
   if (updateShown) return;
