@@ -1084,3 +1084,6 @@ console.log('mina ok');
 { const FTq = await import('./futebol.js'), SHq = await import('./shop.js'), Lq = await import('./logic.js');
   for (const c of FTq.CLUBS.flat()) { const s = Lq.newState(() => 0.5), m = s.money = 1e10; FTq.takeClub(s, c.n); const net = s.money - m + SHq.clubValue(s.fut); assert.ok(net < 0, `${c.n}: comprar e revender não pode dar lucro (${net})`); }
   console.log('clube: comprar e revender dá prejuízo ok'); }
+{ const FTq = await import('./futebol.js'); let r = 1; const rng = () => (r = (r * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 300; i++) { const f = { market: [{ id: 'x', price: 100000 }] }, d = FTq.dealFor(f, 'x', rng); assert.ok(d.limit >= 95000, 'piso de compra'); }
+  assert.ok(FTq.OFFER_MAX < FTq.BUY_FLOOR); console.log('jogadores: sem arbitragem compra/venda ok'); }
