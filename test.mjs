@@ -889,7 +889,7 @@ console.log('suínos, negócios e galpões ok');
   assert.equal(L3.eliteOf(rich).name, 'magnata do mundo');
   const m0 = rich.money, lines = L3.eliteBills(rich, 100000, 200000);
   assert.equal(lines.length, 3); assert.ok(rich.money < m0);
-  assert.equal(lines[0].val, -28000, 'magnata perde 14% dos ganhos');
+  assert.equal(lines[0].val, -26000, 'magnata perde 13% dos ganhos');
   assert.equal(lines[2].val, -80000, 'contas +80% para magnata');
   const top = L3.newState(() => 0.5); top.money = 3e8; assert.ok(L3.eliteOf(top).price > L3.eliteOf(rich).price, 'quanto mais rico, mais caro');
 }
@@ -1093,3 +1093,8 @@ console.log('mina ok');
     assert.ok(w / N < 1 / MKq.PAYOUT, `mercado ${a}: seguir/ir contra o gráfico não pode dar lucro (${(w / N * 100).toFixed(1)}%)`); }
   for (let sl = 1000; sl < 2500; sl++) { const l = LEq.lot(sl), st = LEq.state(l, LEq.endsAt(sl) - 1500); assert.ok(st.next >= l.value * 0.97, `leilão ${sl} saiu barato`); }
   console.log('mercado imprevisível e leilão sem cavalo barato ok'); }
+{ const Lr = await import('./logic.js');
+  const log = [{ m: 9, txt: 'imposto sobre grandes fortunas (magnata do mundo)', val: -40000 }, { m: 9, txt: 'pedágio dos mais ricos: 50% dos ganhos do mês', val: -100000 },
+    { m: 9, txt: 'imposto sobre grandes fortunas (1º do mundo (tubarão do mundo))', val: -90000 }, { m: 3, txt: 'imposto sobre grandes fortunas (magnata do mundo)', val: -1000 }, { m: 9, txt: 'pedágio dos mais ricos: 14% dos ganhos do mês', val: -14000 }];
+  assert.equal(Lr.taxRefund(log, 5), 40000 * (1 - 0.006 / 0.04) + 100000 * (1 - 0.22 / 0.5) + 90000 * (1 - 0.008 / 0.045));
+  console.log('reembolso do imposto alto ok'); }

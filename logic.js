@@ -302,18 +302,32 @@ export function tick(s, rng = Math.random) {
 // price: acréscimo em toda compra · bills: multiplica as contas do mês · tax: imposto mensal sobre tudo o que passa de R$ 3 mi
 // gain: parte dos ganhos do mês que fica com o mundo (pedágio dos mais ricos)
 export const ELITE = [
-  { min: 3e6, name: 'jornada dos mais ricos', price: 0.12, bills: 1.4, tax: 0.0006, gain: 0.08 },
-  { min: 5e6, name: 'milionário do topo', price: 0.16, bills: 1.6, tax: 0.03, gain: 0.11 },
-  { min: 1e7, name: 'magnata do mundo', price: 0.2, bills: 1.8, tax: 0.04, gain: 0.14 },
-  { min: 1.5e7, name: 'tubarão do mundo', price: 0.25, bills: 2.1, tax: 0.045, gain: 0.45 },
-  { min: 5e7, name: 'bilionário em formação', price: 0.3, bills: 2.4, tax: 0.05, gain: 0.5 },
-  { min: 2e8, name: 'dono do mundo', price: 0.42, bills: 3, tax: 0.06, gain: 0.55 },
-  { min: 1e9, name: 'imperador do 21 World', price: 0.6, bills: 4, tax: 0.07, gain: 0.6 },
+  { min: 3e6, name: 'jornada dos mais ricos', price: 0.12, bills: 1.4, tax: 0.002, gain: 0.08 },
+  { min: 5e6, name: 'milionário do topo', price: 0.16, bills: 1.6, tax: 0.004, gain: 0.1 },
+  { min: 1e7, name: 'magnata do mundo', price: 0.2, bills: 1.8, tax: 0.006, gain: 0.13 },
+  { min: 1.5e7, name: 'tubarão do mundo', price: 0.24, bills: 2, tax: 0.008, gain: 0.18 },
+  { min: 5e7, name: 'bilionário em formação', price: 0.3, bills: 2.3, tax: 0.01, gain: 0.22 },
+  { min: 2e8, name: 'dono do mundo', price: 0.42, bills: 3, tax: 0.012, gain: 0.26 },
+  { min: 1e9, name: 'imperador do 21 World', price: 0.6, bills: 4, tax: 0.015, gain: 0.3 },
 ];
 export const eliteIdx = s => { const w = netWorth(s); let i = -1; ELITE.forEach((e, k) => { if (w >= e.min) i = k; }); return i; };
 // o 1º do ranking paga ainda mais (s.top1 vem do ranking do servidor): a coroa pesa
 export const TOP1 = { price: 0.25, bills: 1, tax: 2, gain: 0.15 };
 export const eliteOf = s => { const e0 = ELITE[eliteIdx(s)]; if (!e0) return null; const k = T.eliteMult, e = { ...e0, price: e0.price * k, bills: 1 + (e0.bills - 1) * k, tax: e0.tax * k, gain: e0.gain * k }; return s.top1 && T.top1 ? { ...e, name: `1º do mundo (${e.name})`, price: e.price + TOP1.price, bills: e.bills + TOP1.bills, tax: e.tax * TOP1.tax, gain: e.gain + TOP1.gain } : e; };
+// reembolso (v52): de v46 a v51 o imposto sobre fortunas foi de 3% a 7% ao mês e o pedágio chegou a 60% dos ganhos.
+// Devolve a diferença para as taxas atuais, lendo o livro-caixa a partir do mês `from` (mês do mundo quando a v46 entrou).
+const OLD_TAX = { 'milionário do topo': 0.03, 'magnata do mundo': 0.04, 'tubarão do mundo': 0.045, 'bilionário em formação': 0.05, 'dono do mundo': 0.06, 'imperador do 21 World': 0.07 };
+const OLD_GAIN = { 45: 0.18, 50: 0.22, 55: 0.26, 60: 0.3, 65: 0.37, 70: 0.41, 75: 0.45 };   // % cobrado → % de hoje (65 a 75 = 1º do ranking)
+export function taxRefund(log, from) {
+  let total = 0;
+  for (const l of log || []) {
+    if (!(l.m >= from) || !(l.val < 0)) continue;
+    const t = /^imposto sobre grandes fortunas \((?:1º do mundo \()?(.+?)\)?\)$/.exec(l.txt || ''), g = /^pedágio dos mais ricos: (\d+)% dos ganhos/.exec(l.txt || '');
+    if (t && OLD_TAX[t[1]]) total += -l.val * (1 - ELITE.find(e => e.name === t[1]).tax / OLD_TAX[t[1]]);
+    else if (g && OLD_GAIN[g[1]]) total += -l.val * (1 - OLD_GAIN[g[1]] / (g[1] / 100));
+  }
+  return Math.round(total);
+}
 // contas extras do mês: imposto sobre a fortuna + o quanto as contas normais encarecem
 export function eliteBills(s, spent, earned = 0) {
   const e = eliteOf(s);

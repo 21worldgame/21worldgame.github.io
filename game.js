@@ -1211,6 +1211,15 @@ function eliteCheck() {
   } else say(i < 0 ? 'Você saiu da faixa dos mais ricos: taxas e preços voltaram ao normal.' : `Você voltou para a faixa ${L.ELITE[i].name}.`);
 }
 setTimeout(() => eliteCheck(), 4000);
+// reembolso único do imposto alto de v46–v51 (ver L.taxRefund)
+function refund52() {
+  const s = S(); if (s.refund52) return;
+  if (!Live.worldReady || !Live.world() || !s.worldSync) return setTimeout(refund52, 5000);   // espera o relógio do mundo
+  const v = L.taxRefund(s.log, W.current(Live.world(), 1795154969000)); s.refund52 = true;
+  if (v > 0) { s.money += v; note('reembolso: imposto dos mais ricos cobrado a mais (versões 46 a 51)', v); say(`Reembolso de ${brl(v)}: o imposto dos mais ricos tinha ficado alto demais e foi corrigido.`); }
+  save(); render();
+}
+setTimeout(refund52, 6000);
 // coroa do 1º lugar: quem lidera o ranking paga mais caro em tudo
 function topCheck() {
   const me = Auth.account()?.id; if (!me) return;
@@ -1292,7 +1301,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 51;
+const APP_VERSION = 52;
 let updateShown = false, updateMsg = '';
 let checking = false;
 async function checkUpdate() {
