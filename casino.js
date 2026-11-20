@@ -156,8 +156,8 @@ export function renderRanking() {
   const now = new Map(list.map((x, i) => [x.name, i]));
   el.innerHTML = list.map((x, i) => {
     const was = lastRank.get(x.name), mv = was === undefined ? '' : was > i ? '<i class="rk__mv is-up" title="subiu">▲</i>' : was < i ? '<i class="rk__mv is-down" title="caiu">▼</i>' : '';
-    return `<li><button class="rk${x.pid === 'me' ? ' is-me' : ''}" ${x.pid ? `data-profile="${x.pid}"` : 'disabled'}>
-    <span class="rk__pos">${i + 1}</span><span class="rk__av">${avatarSVG(x.look || {}, { label: x.name })}</span>
+    return `<li><button class="rk${x.pid === 'me' ? ' is-me' : ''}${i < 3 ? ` rkrow is-top${i + 1}` : ''}" ${x.pid ? `data-profile="${x.pid}"` : 'disabled'}>
+    <span class="rk__pos">${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span><span class="rk__av">${avatarSVG(x.look || {}, { label: x.name })}</span>
     <span class="rk__name">${esc(x.name)}${x.pid === 'me' ? ' <small>você</small>' : ''}${mv}<small>nível ${x.level}, ${esc(x.rank || '')}</small></span>
     <span class="rk__worth">${new Intl.NumberFormat('pt-BR', { notation: 'compact', style: 'currency', currency: 'BRL' }).format(x.worth)}</span></button></li>`;
   }).join('');

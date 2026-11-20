@@ -2142,3 +2142,44 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .pf__lands, .pf__ads { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; }
 .pf__lands li, .pf__ads li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: 10px; background: rgba(255, 255, 255, .04); }
 .pf__ads b { color: #facc15; white-space: nowrap; }
+
+/* ===== top 3 do ranking: molduras animadas ===== */
+@property --rk-ang { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+.podium__p--1 { --m1: #fff3b0; --m2: #ffd24a; --m3: #b8860b; --mg: rgba(255, 210, 74, .75); }
+.podium__p--2 { --m1: #ffffff; --m2: #cbd5e1; --m3: #64748b; --mg: rgba(203, 213, 225, .6); }
+.podium__p--3 { --m1: #ffd9b3; --m2: #e0915a; --m3: #8a4b20; --mg: rgba(224, 145, 90, .6); }
+.podium__frame { position: relative; display: grid; place-items: center; padding: 5px; border-radius: 50%;
+  background: conic-gradient(from var(--rk-ang), var(--m1), var(--m2), var(--m3), var(--m2), var(--m1), var(--m3), var(--m1));
+  box-shadow: 0 0 26px -2px var(--mg), 0 0 60px -14px var(--mg); animation: rk-spin 4s linear infinite; }
+.podium__p--1 .podium__frame { padding: 6px; animation-duration: 2.6s; box-shadow: 0 0 34px 0 var(--mg), 0 0 90px -10px var(--mg); }
+.podium__frame .podium__av { box-shadow: 0 0 0 3px #0b1020; }
+@keyframes rk-spin { to { --rk-ang: 360deg; } }
+.podium__crown { position: absolute; top: -26px; left: 50%; transform: translateX(-50%) rotate(-8deg); font-size: 1.9rem; font-style: normal; filter: drop-shadow(0 0 10px rgba(255, 210, 74, .9)); animation: rk-crown 2.4s ease-in-out infinite; z-index: 2; }
+.podium__medal { position: absolute; right: -6px; bottom: -4px; font-size: 1.5rem; font-style: normal; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .6)); z-index: 2; }
+@keyframes rk-crown { 50% { transform: translateX(-50%) translateY(-5px) rotate(8deg); } }
+.podium__spark { position: absolute; inset: -14px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 18% 22%, #fff 0 1.5px, transparent 2.5px), radial-gradient(circle at 84% 30%, var(--m1) 0 2px, transparent 3px),
+    radial-gradient(circle at 70% 88%, #fff 0 1.5px, transparent 2.5px), radial-gradient(circle at 12% 76%, var(--m2) 0 2px, transparent 3px), radial-gradient(circle at 50% 2%, #fff 0 1.5px, transparent 2.5px);
+  animation: rk-twinkle 1.8s ease-in-out infinite alternate; }
+@keyframes rk-twinkle { from { opacity: .25; transform: rotate(0) scale(.96); } to { opacity: 1; transform: rotate(25deg) scale(1.04); } }
+.podium__p--1 .podium__base { background: linear-gradient(180deg, #fff3b0, #ffd24a 40%, #b8860b); box-shadow: 0 -6px 30px -6px rgba(255, 210, 74, .8), inset 0 2px 0 rgba(255, 255, 255, .6); }
+.podium__p--2 .podium__base { background: linear-gradient(180deg, #ffffff, #cbd5e1 45%, #64748b); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .6); }
+.podium__p--3 .podium__base { background: linear-gradient(180deg, #ffd9b3, #e0915a 45%, #8a4b20); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .5); }
+.podium__p:hover .podium__frame { transform: scale(1.06); transition: transform .25s; }
+
+/* linhas do top 3: borda metálica girando + reflexo passando */
+.rkrow.is-top1, .rkrow.is-top2, .rkrow.is-top3 { position: relative; isolation: isolate; overflow: hidden; border: 2px solid transparent !important;
+  background: linear-gradient(#0d1324, #0d1324) padding-box, conic-gradient(from var(--rk-ang), var(--m1), var(--m2), var(--m3), var(--m2), var(--m1)) border-box !important;
+  animation: rk-spin 3.5s linear infinite; box-shadow: 0 0 22px -6px var(--mg); }
+.rkrow.is-top1 { --m1: #fff3b0; --m2: #ffd24a; --m3: #b8860b; --mg: rgba(255, 210, 74, .8); }
+.rkrow.is-top2 { --m1: #ffffff; --m2: #cbd5e1; --m3: #64748b; --mg: rgba(203, 213, 225, .55); }
+.rkrow.is-top3 { --m1: #ffd9b3; --m2: #e0915a; --m3: #8a4b20; --mg: rgba(224, 145, 90, .55); }
+.rkrow.is-top1::after, .rkrow.is-top2::after, .rkrow.is-top3::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .16) 48%, transparent 60%); transform: translateX(-100%); animation: rk-shine 3.2s ease-in-out infinite; }
+.rkrow.is-top2::after { animation-delay: .6s; } .rkrow.is-top3::after { animation-delay: 1.2s; }
+@keyframes rk-shine { 60%, 100% { transform: translateX(100%); } }
+.rkrow.is-top1 .rkrow__pos, .rkrow.is-top2 .rkrow__pos, .rkrow.is-top3 .rkrow__pos { font-size: 1.7rem; opacity: 1; filter: drop-shadow(0 0 8px var(--mg)); }
+.rkrow.is-top1 .rkrow__val, .rkrow.is-top1 .rk__worth { color: #ffd24a; text-shadow: 0 0 14px rgba(255, 210, 74, .55); }
+@media (prefers-reduced-motion: reduce) {
+  .podium__frame, .podium__crown, .podium__spark, .rkrow.is-top1, .rkrow.is-top2, .rkrow.is-top3, .rkrow.is-top1::after, .rkrow.is-top2::after, .rkrow.is-top3::after { animation: none; }
+}
