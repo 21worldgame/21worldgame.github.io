@@ -143,6 +143,12 @@ export function profileOf(s = G.S) {
     name: s.avatar.name || 'jogador', look: s.avatar, level: s.level, rank: L.rank(L.netWorth(s)), worth: L.netWorth(s),
     stats: s.stats, ach: s.ach, lands: own.length, ha: own.reduce((a, l) => a + l.ha, 0), heads: L.heads(s),
     cars: s.cars.map(c => c.model),
-    animals: (s.stable?.animals || []).map(a => ({ kind: a.kind, name: a.name, rating: ST.rating(a), wins: a.wins })),
+    animals: (s.stable?.animals || []).map(a => ({ kind: a.kind, name: a.name, rating: ST.rating(a), wins: a.wins, ph: a.ph })),
+    trophies: s.trophies || [], private: !!s.privateProfile && (s.trophies || []).includes(L.PRIVATE_MIN),
+    landList: own.slice(0, 10).map(l => ({ region: l.region, ha: l.ha, orchard: !!l.orchard, cane: !!l.cane })),
+    biz: ['usinas', 'banks', 'isps', 'markets'].flatMap(c => (s.biz?.[c] || []).map(b => ({ cat: c, brand: b.brand }))),
+    mina: !!s.mina, wh: (s.biz?.wh || []).length, granja: (s.granja?.houses || []).length, suinos: (s.suinos?.barns || []).length,
+    cardsN: (s.cards || []).length, club: s.fut?.club || null,
+    listings: (s.shop || []).slice(0, 12).map(l => ({ label: String(l.label || '').slice(0, 60), price: l.price, kind: l.kind })),
   };
 }

@@ -2128,3 +2128,17 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 
 .shopcard.is-sold { opacity: .72; } .shopcard.is-sold:hover { transform: none; border-color: var(--glass-edge); box-shadow: none; }
 .shopcard__badge--sold { background: #dc2626; color: #fff; }
+
+/* perfil: troféus, patrimônio e anúncios */
+.pf__troph { display: flex; flex-wrap: wrap; gap: 8px; }
+.troph { display: grid; place-items: center; width: 58px; padding: 8px 0 6px; border-radius: 14px; background: rgba(255, 255, 255, .04); border: 1px solid var(--glass-edge); filter: grayscale(1); opacity: .35; }
+.troph b { font-size: 1.5rem; line-height: 1; } .troph small { font: 800 .72rem/1.4 var(--font-body); color: #fde68a; }
+.troph.is-got { filter: none; opacity: 1; border-color: #facc15; background: radial-gradient(circle at 50% 30%, rgba(250, 204, 21, .25), rgba(250, 204, 21, .04)); box-shadow: 0 0 18px -6px rgba(250, 204, 21, .8); }
+.troph--selo.is-got { border-color: #22d3ee; box-shadow: 0 0 18px -6px rgba(34, 211, 238, .9); }
+.pf__private { padding: 14px 16px; }
+.pf__bizs { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
+.pf__biz { position: relative; height: 82px; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, transparent 35%, rgba(7, 11, 20, .9)), var(--img) center / cover; }
+.pf__biz small { position: absolute; left: 8px; right: 8px; bottom: 6px; font-weight: 800; }
+.pf__lands, .pf__ads { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; }
+.pf__lands li, .pf__ads li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: 10px; background: rgba(255, 255, 255, .04); }
+.pf__ads b { color: #facc15; white-space: nowrap; }

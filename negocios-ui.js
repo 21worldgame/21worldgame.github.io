@@ -3,7 +3,7 @@ import * as NG from './negocios.js';
 import * as Auth from './auth.js';
 import { G, $, esc, brl, int, say, save, note, confetti, profileOf } from './store.js';
 
-const CATS = { banks: { label: 'bancos', list: NG.BANKS, icon: '🏦' }, isps: { label: 'provedores de internet', list: NG.ISPS, icon: '📡' }, markets: { label: 'supermercados', list: NG.MARKETS, icon: '🛒' } };
+const CATS = { banks: { label: 'bancos', list: NG.BANKS, icon: '🏦' }, isps: { label: 'provedores de internet', list: NG.ISPS, icon: '📡' }, markets: { label: 'supermercados', list: NG.MARKETS, icon: '🛒' }, usinas: { label: 'usinas', list: NG.USINAS, icon: '🏭' } };
 const logo = (c, txt) => `<span class="biz-logo" style="--c:${c.color}">${esc(txt.split(' ').map(w => w[0]).join('').slice(0, 3))}</span>`;
 
 // ---------- dono único de cada marca no jogo inteiro (tabela company_owner, supabase/empresas.sql) ----------
@@ -42,10 +42,11 @@ export function shopHTML() {
   const s = G.S; NG.ensure(s);
   const block = (cat, desc) => `<h3>${CATS[cat].icon} ${CATS[cat].label}</h3><p class="muted small">${desc}</p><div class="biz-grid">${Object.entries(CATS[cat].list).map(([id, c]) => {
     const own = s.biz[cat].some(b => b.brand === id), dono = !own && takenBy(id);
-    const extra = cat === 'banks' ? `${c.staff} funcionários · ${int(c.req)} pedidos de empréstimo por mês` : cat === 'isps' ? `cidade com ${int(c.homes)} casas` : `~${int(c.clients)} clientes por mês · ${c.staff} funcionários`;
+    const extra = cat === 'usinas' ? (c.kind === 'cana' ? `mói ${int(c.cap)} t de cana por mês · açúcar e etanol · safra abril a novembro` : `processa ${int(c.cap)} caixas de laranja por mês · suco · safra junho a janeiro`) : cat === 'banks' ? `${c.staff} funcionários · ${int(c.req)} pedidos de empréstimo por mês` : cat === 'isps' ? `cidade com ${int(c.homes)} casas` : `~${int(c.clients)} clientes por mês · ${c.staff} funcionários`;
     return `<article class="shopcard${own ? ' is-own' : dono ? ' is-sold' : ''}"><div class="shopcard__photo" style="--img:url(assets/biz/${id}.webp);--c:${c.color}">${logo(c, c.name)}${own ? '<span class="shopcard__badge shopcard__badge--gold">é sua</span>' : dono ? '<span class="shopcard__badge shopcard__badge--sold">vendida</span>' : ''}</div>
       <div class="shopcard__body"><h4>${esc(c.name)}</h4><p class="small muted">${extra}</p><div class="shopcard__buy"><span class="shopcard__price">${brl(c.price)}</span>${own ? '' : dono ? `<span class="small">dona: <b>${esc(dono)}</b></span>` : `<button class="btn btn--gold" data-biz="buy" data-cat="${cat}" data-id="${id}">comprar a marca</button>`}</div></div></article>`; }).join('')}</div>`;
-  return block('banks', 'Você compra só a marca: o caixa para emprestar sai do seu bolso, e a folha e as despesas também. Os clientes pedem empréstimos pequenos, que crescem devagar com o tempo.')
+  return block('usinas', 'As maiores do jogo: faturam milhões por mês na safra, mas a folha, a indústria e a matéria-prima custam muito, e na entressafra só tem despesa. Cada uma tem um dono só. Usina de cana sua compra a sua cana pagando 12% a mais com frete pela metade; fábrica de suco sua usa primeiro a laranja do seu armazém, sem frete.')
+    + block('banks', 'Você compra só a marca: o caixa para emprestar sai do seu bolso, e a folha e as despesas também. Os clientes pedem empréstimos pequenos, que crescem devagar com o tempo.')
     + block('isps', 'Construa a rede de fibra (caro), escolha a mensalidade (barata) e veja os assinantes entrando. Lucro mensal pequeno, valorização no longo prazo.')
     + block('markets', 'Clientes, ticket médio, mercadoria, perdas, funcionários e aluguel: preço baixo atrai gente, preço alto espanta.');
 }
@@ -67,7 +68,7 @@ export function render() {
   if ($('#neg-shop')) $('#neg-shop').innerHTML = (G.mineShopCard?.() || '') + shopHTML();   // bancos, provedores e mercados à venda também aqui, não só na loja
   const el = $('#neg-list'); if (!el) return;
   const s = G.S; NG.ensure(s); const m = s.month || 1;
-  const own = ['banks', 'isps', 'markets'].reduce((t, c) => t + s.biz[c].length, 0);
+  const own = ['banks', 'isps', 'markets', 'usinas'].reduce((t, c) => t + s.biz[c].length, 0);
   $('#neg-stats').innerHTML = [['negócios', own], ['valem hoje', brl(NG.value(s))], ['armazém', `${int(NG.tons(s))} / ${int(NG.capacity(s))} t`], ['galpões', s.biz.wh.length]]
     .map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${v}</strong></div>`).join('');
   const cards = [];
@@ -100,6 +101,20 @@ export function render() {
       <div class="row"><label class="field"><span>preços</span><select class="input" data-biz-markup="${b.id}">${Object.entries(NG.MARKUP).map(([k, x]) => `<option value="${k}" ${b.markup === +k ? 'selected' : ''}>${x.label} (margem ${k}%)</option>`).join('')}</select></label>
         <button class="btn btn--glass btn--sm" data-biz="sell" data-cat="markets" data-id="${b.id}">vender mercado</button></div></div></article>`);
   }
+  for (const b of s.biz.usinas || []) {
+    const C = NG.USINAS[b.brand], m = s.month || 1, safra = NG.inSafra(C.kind, m), U = C.kind === 'cana' ? NG.CANA_U : NG.LARANJA_U;
+    b.rate ??= 100; b.mix ??= 50;
+    const prices = C.kind === 'cana' ? `<span><small>açúcar</small><b>R$ ${NG.sugarPrice(m).toFixed(2).replace('.', ',')}/kg</b></span><span><small>etanol</small><b>R$ ${NG.ethanolPrice(m).toFixed(2).replace('.', ',')}/L</b></span><span><small>cana (fornecedor)</small><b>R$ ${int(s.prices?.cana || 150)}/t</b></span>`
+      : `<span><small>suco (por caixa)</small><b>R$ ${NG.juicePrice(m).toFixed(2).replace('.', ',')}</b></span><span><small>laranja (fornecedor)</small><b>R$ ${(s.prices?.laranja || 38).toFixed(2).replace('.', ',')}/cx</b></span><span><small>laranja no seu armazém</small><b>${int(s.stock?.laranja || 0)} cx</b></span>`;
+    cards.push(`<article class="glass biz-own"><span class="biz-own__ph" style="--img:url(assets/biz/${b.brand}.webp)">${logo(C, C.name)}</span><div class="biz-own__b"><h4>${esc(C.name)} <small class="muted">${C.kind === 'cana' ? 'usina de açúcar e etanol' : 'fábrica de suco de laranja'}</small></h4>
+      ${payBar(b.last)}
+      <div class="biz-kpis"><span><small>situação</small><b>${safra ? (b.rate ? `<span class="good">safra: moendo ${b.rate}%</span>` : '<span class="bad">parada</span>') : '<span class="bad">entressafra</span>'}</b></span>
+        <span><small>capacidade</small><b>${int(C.cap)} ${C.kind === 'cana' ? 't' : 'cx'}/mês</b></span>${prices}<span><small>custo fixo do mês</small><b class="bad">${brl(C.cap * U.fixed * (b.rate === 0 ? 0.7 : 1))}</b></span><span><small>valor de venda</small><b>${brl(NG.saleValue(s, 'usinas', b))}</b></span></div>
+      <div class="row"><label class="field"><span>moagem</span><select class="input" data-biz-rate="${b.id}">${NG.RATES.map(r => `<option value="${r}" ${b.rate === r ? 'selected' : ''}>${r ? `${r}% da capacidade` : 'parada (fixo cai 30%)'}</option>`).join('')}</select></label>
+        ${C.kind === 'cana' ? `<label class="field"><span>mix</span><select class="input" data-biz-mix="${b.id}">${NG.MIXES.map(x => `<option value="${x}" ${b.mix === x ? 'selected' : ''}>${x}% açúcar · ${100 - x}% etanol</option>`).join('')}</select></label>` : ''}
+        <button class="btn btn--glass btn--sm" data-biz="sell" data-cat="usinas" data-id="${b.id}">vender usina</button></div>
+      <p class="small muted">Safra ${C.kind === 'cana' ? 'de abril a novembro' : 'de junho a janeiro'}; fora dela só tem despesa. ${C.kind === 'cana' ? 'Açúcar caro? Puxe o mix para o açúcar. Etanol caro? Para o etanol.' : 'Se a laranja do fornecedor ficar cara demais, o suco pode dar prejuízo: reduza a moagem.'}</p></div></article>`);
+  }
   el.innerHTML = (G.mineOwnCard?.() || '') + cards.join('') || '<p class="empty glass">Você ainda não tem negócios. Compre a marca de um banco, provedor ou supermercado na loja (categoria empresas). <button class="btn btn--gold btn--sm" data-loja-go="empresas">ir para a loja</button></p>';
   $('#neg-wh').innerHTML = whHTML();
 }
@@ -130,6 +145,8 @@ document.addEventListener('change', e => {
   if (t.dataset.bizPolicy) { const b = NG.find(s, 'banks', t.dataset.bizPolicy); if (b) b.policy = t.value; }
   else if (t.dataset.bizPlan) { const b = NG.find(s, 'isps', t.dataset.bizPlan); if (b) b.plan = Number(t.value); }
   else if (t.dataset.bizMarkup) { const b = NG.find(s, 'markets', t.dataset.bizMarkup); if (b) b.markup = Number(t.value); }
+  else if (t.dataset.bizRate) { const b = NG.find(s, 'usinas', t.dataset.bizRate); if (b) b.rate = Number(t.value); }
+  else if (t.dataset.bizMix) { const b = NG.find(s, 'usinas', t.dataset.bizMix); if (b) b.mix = Number(t.value); }
   else return;
   save(); say('Ajuste salvo: vale a partir do próximo mês.');
 });

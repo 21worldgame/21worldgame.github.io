@@ -24,7 +24,7 @@ function rows() {
   const w = Live.world(), t = Live.now(), month = W.current(w, t) + W.progress(w, t), me = profileOf();
   const on = NPC.onlineSet(t);
   return C.rankingRows(500).map(r => {
-    r = { ...r, online: r.pid === 'me' ? true : String(r.pid || '').startsWith('npc:') ? on.has(r.pid.slice(4)) : !!r.pid };   // da nuvem sem estar no salão = fora agora
+    r = { ...r, online: r.pid === 'me' ? true : String(r.pid || '').startsWith('npc:') ? on.has(r.pid.slice(4)) : String(r.pid || '').startsWith('u:') ? false : !!r.pid };   // da nuvem sem estar no salão = fora agora
     if (String(r.pid).startsWith('npc:')) { const p = NPC.profile(NPC.byId(r.pid.slice(4)), month); return { ...r, ha: p.ha, best: p.stats.best, wins: p.stats.wins }; }
     if (r.pid === 'me') return { ...r, ha: me.ha, best: me.stats?.best || 0, wins: me.stats?.wins || 0 };
     return r;

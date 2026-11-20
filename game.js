@@ -559,10 +559,26 @@ function renderLivro() {
 }
 
 // ---------- perfil ----------
-function openProfile(pid) {
+const mi = v => `${Math.round(v / 1e6)}M`;
+const BIZ_LISTS = { banks: NG.BANKS, isps: NG.ISPS, markets: NG.MARKETS, usinas: NG.USINAS };
+function profileExtra(p, me) {
+  const tr = p.trophies || [];
+  const trophies = `<h3>troféus de patrimônio <small class="muted">${tr.length} de ${L.TROPHIES.length}</small></h3><div class="pf__troph">${L.TROPHIES.map((t, i) => `<span class="troph${tr.includes(t) ? ' is-got' : ''}${i === 0 ? ' troph--selo' : ''}" title="${i === 0 ? 'selo' : 'troféu'} de ${mi(t)}"><b>${i === 0 ? '🎖️' : '🏆'}</b><small>${mi(t)}</small></span>`).join('')}</div>`;
+  const priv = me && tr.includes(L.PRIVATE_MIN) ? `<div class="pf__acts"><button class="btn btn--glass btn--sm" data-act="toggle-private">${S().privateProfile ? '🔒 perfil privado (tornar público)' : '🔓 perfil público (tornar privado)'}</button></div>` : me ? '<p class="muted small">Ao chegar a R$ 10 milhões você ganha o selo e pode deixar o perfil privado.</p>' : '';
+  if (p.private && !me) return trophies + '<p class="pf__private glass">🔒 Este jogador deixou o perfil privado. Só os troféus aparecem.</p>';
+  const biz = (p.biz || []).map(b => { const c = BIZ_LISTS[b.cat]?.[b.brand]; return c ? `<span class="pf__biz" style="--img:url(assets/biz/${b.brand}.webp)"><small>${esc(c.name)}</small></span>` : ''; }).join('');
+  const tiles = [['empresas', (p.biz || []).length], ['mina de ouro', p.mina ? 'sim' : 'não'], ['galpões', p.wh || 0], ['granja', `${p.granja || 0} galpões`], ['suínos', `${p.suinos || 0} barracões`], ['cartas raras', p.cardsN || 0], ['clube', p.club || 'nenhum']]
+    .map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${esc(String(v))}</strong></div>`).join('');
+  const lands = (p.landList || []).length ? `<ul class="pf__lands">${p.landList.map(l => `<li>${int(l.ha)} ha · ${esc(l.region)}${l.orchard ? ' · pomar' : ''}${l.cane ? ' · canavial' : ''}</li>`).join('')}</ul>` : '';
+  const ads = (p.listings || []).length ? `<h3>à venda agora <small class="muted">no Feirão 21</small></h3><ul class="pf__ads">${p.listings.map(l => `<li><span>${esc(l.label)}</span><b>${brl(l.price)}</b></li>`).join('')}</ul><div class="pf__acts"><button class="btn btn--gold btn--sm" data-loja-go="feirao" data-act="close-profile">ver no Feirão</button></div>` : '';
+  return trophies + priv + (p.biz || p.landList ? `<h3>tudo o que tem</h3><div class="pf__stats">${tiles}</div>${biz ? `<div class="pf__bizs">${biz}</div>` : ''}${lands}` : '') + ads;
+}
+function openProfile(pid, fetched) {
   if (!pid) return;
-  const p = C.findProfile(pid);
+  let p = fetched || C.findProfile(pid);
+  if (!p && String(pid).startsWith('u:')) { Auth.profileCard(pid.slice(2)).then(r => r ? openProfile(pid, r) : say('Perfil indisponível agora.', true)); return; }
   if (!p) return say('Perfil indisponível: o jogador saiu.', true);
+  if (p.npc && !p.trophies) p = { ...p, trophies: L.TROPHIES.filter(t => p.worth >= t) };
   const me = pid === 'me', st = p.stats || {};
   if (p.npc && !p.ach) p.ach = P.ACHIEVEMENTS.slice(0, p.achCount).map(a => a.id);
   const rate = st.hands ? Math.round((st.wins / st.hands) * 100) : 0;
@@ -577,6 +593,7 @@ function openProfile(pid) {
       ${[['mãos de 21', int(st.hands || 0)], ['vitórias', `${int(st.wins || 0)} (${rate}%)`], ['maior prêmio', `${int(st.best || 0)} fichas`], ['corridas', `${int(st.races || 0)}, ${int(st.raceWins || 0)} acertos`],
         ['terras', `${p.lands} (${int(p.ha)} ha)`], ['gado', `${int(p.heads)} cabeças`], ['canil e haras', `${(p.animals || []).length} animais`]].map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${v}</strong></div>`).join('')}
     </div>
+    ${profileExtra(p, me)}
     <h3>garagem</h3>
         <div class="pf__cars">${(p.cars || []).length ? p.cars.map(m => L.CARS[m] ? `<span class="pf__car"><img src="assets/${L.CARS[m].img}.webp" alt=""><small>${esc(L.CARS[m].name)}</small></span>` : '').join('') : '<p class="muted small">Sem carros ainda.</p>'}</div>
     <h3>conquistas ${p.ach?.length || 0} de ${P.ACHIEVEMENTS.length}</h3>
@@ -818,6 +835,8 @@ const ACTS = {
   'tr-tf'(id) { TR.pickTf(id); },
   'tr-asset'(id) { TR.pickAsset(id); },
   'edit-char'() { $('#dlg-profile').close(); G.goto('personagem'); },
+  'close-profile'() { const d = $('#dlg-profile'); if (d.open) d.close(); },
+  'toggle-private'() { const s = S(); if (!(s.trophies || []).includes(L.PRIVATE_MIN)) return say('O perfil privado libera aos R$ 10 milhões.', true); s.privateProfile = !s.privateProfile; save(); say(s.privateProfile ? 'Perfil privado: os outros só veem seus troféus.' : 'Perfil público de novo.'); openProfile('me'); },
   look(id, b) {
     const k = b.dataset.k, opt = CATALOG[k].opts.find(o => String(o.id) === id), tag = `${k}:${opt.id}`;
     if (opt.price && !S().owned.includes(tag)) {
@@ -1123,7 +1142,15 @@ for (const [id, [title, steps]] of Object.entries(HOWTO)) {
 }
 
 // ---------- faixas dos mais ricos: aviso ao entrar (e ao sair) ----------
+function trophyCheck() {
+  const s = S(), w = L.netWorth(s); s.trophies ??= [];
+  const nw = L.TROPHIES.filter(t => w >= t && !s.trophies.includes(t)); if (!nw.length) return;
+  s.trophies.push(...nw); save(); confetti(160);
+  const t = nw[nw.length - 1];
+  say(t === L.PRIVATE_MIN ? 'Selo de R$ 10 milhões conquistado! Agora você pode deixar o perfil privado (no seu perfil).' : `Troféu de R$ ${Math.round(t / 1e6)} milhões conquistado! Ele fica no seu perfil para sempre.`);
+}
 function eliteCheck() {
+  trophyCheck();
   const s = S(), i = L.eliteIdx(s), was = s.eliteSeen ?? -1;
   if (i === was) return;
   s.eliteSeen = i; save();
@@ -1219,7 +1246,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 28;
+const APP_VERSION = 29;
 let updateShown = false, updateMsg = '';
 async function checkUpdate() {
   if (updateShown) return;

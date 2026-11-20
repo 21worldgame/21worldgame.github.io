@@ -1,6 +1,6 @@
 // Login, cadastro e save na nuvem (Supabase). Sem url/anonKey em supabase-config.js, o jogo roda local, sem login.
 import { SUPABASE } from './supabase-config.js';
-import { G, $, save, say, writeSave, forgetUser, blankState, currentUid, keyFor } from './store.js';
+import { G, $, save, say, writeSave, forgetUser, blankState, currentUid, keyFor, profileOf } from './store.js';
 import * as L from './logic.js';
 import { cleanName, validateSignup, validateLogin, validatePassword, translateError, isNameTaken, withSuffix, MIN_PASSWORD } from './authrules.js';
 
@@ -137,9 +137,21 @@ async function pull() {
   if (error) throw error;
   return data;
 }
+// card = o perfil completo que os outros veem ao clicar (coluna nova: supabase/perfil.sql). Privado: só os troféus.
+let noCard = false;
 function profileRow() {
-  const s = G.S;
-  return { user_id: user.id, name: cleanName(s.avatar?.name) || 'jogador', level: s.level || 1, worth: Math.round(L.netWorth(s)), rank: L.rank(L.netWorth(s)), look: s.avatar || null, updated_at: new Date().toISOString() };
+  const s = G.S, row = { user_id: user.id, name: cleanName(s.avatar?.name) || 'jogador', level: s.level || 1, worth: Math.round(L.netWorth(s)), rank: L.rank(L.netWorth(s)), look: s.avatar || null, updated_at: new Date().toISOString() };
+  if (!noCard) { const { look, name, level, worth, rank, ...p } = profileOf(s); row.card = p.private ? { private: true, trophies: p.trophies } : p; }
+  return row;
+}
+// perfil de outro jogador da nuvem (ao clicar no ranking)
+export async function profileCard(id) {
+  if (!sb || !user) return null;
+  let r = await sb.from('public_profiles').select('user_id, name, level, worth, rank, look, card').eq('user_id', id).maybeSingle();
+  if (r.error) r = await sb.from('public_profiles').select('user_id, name, level, worth, rank, look').eq('user_id', id).maybeSingle();
+  if (r.error || !r.data) return null;
+  const { card, ...base } = r.data;
+  return { ...(card || {}), ...base, worth: Number(base.worth) };
 }
 export async function push() {
   if (!sb || !user) return false;
@@ -147,6 +159,7 @@ export async function push() {
   const { error } = await sb.from('saves').upsert({ user_id: user.id, data: G.S, updated_at: new Date().toISOString() });
   if (error) return false;
   let row = profileRow(), r = await sb.from('public_profiles').upsert(row);
+  if (r.error && /card/i.test(r.error.message || '')) { noCard = true; row = profileRow(); r = await sb.from('public_profiles').upsert(row); }   // coluna card ainda não criada no servidor
   if (r.error && isNameTaken(r.error)) {                      // outro jogador já usa esse nome: troca por um com número
     G.S.avatar.name = withSuffix(row.name, Math.floor(10 + Math.random() * 90));
     save(); row = profileRow(); r = await sb.from('public_profiles').upsert(row);

@@ -44,6 +44,29 @@ export const MARKETS = {
 };
 export const MARKUP = { 15: { pull: 1.25, label: 'preço baixo' }, 22: { pull: 1, label: 'preço normal' }, 30: { pull: 0.78, label: 'preço alto' } };
 export const TICKET = 78, LOSSES = 0.018, TAX_MKT = 0.03, MKT_SALARY = 2300, MKT_FIXED = 0.0065;
+// ---------- usinas: cana (açúcar e etanol) e laranja (suco) ----------
+// Caríssimas, faturam muito e gastam muito. Só processam na safra; na entressafra o custo fixo continua (manutenção).
+// cap = toneladas de cana ou caixas de laranja por mês moendo a 100%
+export const USINAS = {
+  canaa: { name: 'Usina Canaã', kind: 'cana', price: 180000000, cap: 120000, color: '#16a34a' },
+  bomjesus: { name: 'Usina Bom Jesus do Açúcar', kind: 'cana', price: 320000000, cap: 220000, color: '#f59e0b' },
+  dourado: { name: 'Citrus Dourado Sucos', kind: 'laranja', price: 140000000, cap: 900000, color: '#f97316' },
+  laranjal: { name: 'Laranjal Paulista Sucos', kind: 'laranja', price: 260000000, cap: 1700000, color: '#eab308' },
+};
+// safra (mês do ano 1-12): cana de abril a novembro; laranja de junho a janeiro
+export const SAFRA = { cana: [4, 5, 6, 7, 8, 9, 10, 11], laranja: [6, 7, 8, 9, 10, 11, 12, 1] };
+export const RATES = [0, 50, 75, 100], MIXES = [30, 50, 70];   // moagem (%) e mix de açúcar (%) na usina de cana
+// por tonelada de cana: açúcar 118 kg ou etanol 82 L; indústria e CCT (corte, carregamento e transporte da cana de fornecedores)
+export const CANA_U = { sugarKg: 118, ethanolL: 82, industry: 38, cct: 44, fixed: 18 };
+// por caixa de laranja (40,8 kg): suco vendido, indústria e frete; fixo por caixa de capacidade
+export const LARANJA_U = { industry: 4.5, freight: 3, fixed: 2.6 };
+export const monthOfYear = m => ((Math.max(1, m) - 1) % 12) + 1;
+export const inSafra = (kind, m) => SAFRA[kind].includes(monthOfYear(m));
+// preços do mercado internacional (iguais para todos, mudam todo mês)
+export const sugarPrice = m => +(2.6 * (1 + 0.14 * Math.sin(m * 0.31) + 0.05 * Math.sin(m * 1.7))).toFixed(2);   // R$/kg
+export const ethanolPrice = m => +(3.1 * (1 + 0.12 * Math.sin(m * 0.23 + 1) + 0.05 * Math.sin(m * 1.3))).toFixed(2);   // R$/L
+export const juicePrice = m => +(51 * (1 + 0.13 * Math.sin(m * 0.27 + 2) + 0.05 * Math.sin(m * 1.1))).toFixed(2);   // R$ por caixa processada
+export const ownsUsina = (s, kind) => (s.biz?.usinas || []).some(b => USINAS[b.brand]?.kind === kind);
 // ---------- galpões ----------
 export const WAREHOUSES = {
   g500: { label: 'galpão 500 t', cap: 500, price: 1800000 },
@@ -55,15 +78,15 @@ export const whPrice = (type, month) => Math.round(WAREHOUSES[type].price * grow
 
 export function ensure(s) {
   s.biz ??= { banks: [], isps: [], markets: [], wh: [] };
-  for (const k of ['banks', 'isps', 'markets', 'wh']) s.biz[k] = (s.biz[k] || []).filter(Boolean);
+  for (const k of ['banks', 'isps', 'markets', 'usinas', 'wh']) s.biz[k] = (s.biz[k] || []).filter(Boolean);
   if (s.biz.legacy == null) { const t = tons(s); s.biz.legacy = Math.max(0, Math.ceil(t - FREE_TONS)); }   // quem já tinha estoque grande não perde nada
   return s.biz;
 }
 const nid = s => `b${(s.nextId = (s.nextId || 1) + 1)}`;
-export const brandValue = (b, cat, month) => Math.round(({ banks: BANKS, isps: ISPS, markets: MARKETS })[cat][b.brand].price * grow(month - (b.at || month) + 1, 0.0004, 2) * 0.85);
+export const brandValue = (b, cat, month) => Math.round(({ banks: BANKS, isps: ISPS, markets: MARKETS, usinas: USINAS })[cat][b.brand].price * grow(month - (b.at || month) + 1, 0.0004, 2) * 0.85);
 export function buy(s, cat, brand) {
   ensure(s);
-  const C = ({ banks: BANKS, isps: ISPS, markets: MARKETS })[cat]?.[brand]; if (!C) return 'marca inválida.';
+  const C = ({ banks: BANKS, isps: ISPS, markets: MARKETS, usinas: USINAS })[cat]?.[brand]; if (!C) return 'marca inválida.';
   if (s.biz[cat].some(b => b.brand === brand)) return 'você já é dono dessa marca.';
   if (s.money < C.price) return 'dinheiro insuficiente para comprar a marca.';
   s.money -= C.price;
@@ -79,7 +102,7 @@ export function saleValue(s, cat, b) {
   const m = s.month || 1, brand = brandValue(b, cat, m);
   if (cat === 'banks') return brand + b.capital + Math.round(b.loans.reduce((t, l) => t + l.bal, 0) * 0.8);
   if (cat === 'isps') return brand + Math.round(b.net * 0.45 + b.subs * 300);
-  if (cat === 'markets') return brand;
+  if (cat === 'markets' || cat === 'usinas') return brand;
   return 0;
 }
 export function sell(s, cat, id) {
@@ -140,11 +163,37 @@ export function monthly(s, rng = Math.random) {
     add(`${C.name}: mercadoria, perdas, ${C.staff} funcionários, aluguel, energia e impostos`, -(cogs + lossv + staff + fixed + tax));
     b.last = Math.round(rev - (cogs + lossv + staff + fixed + tax));
   }
+  // usinas
+  for (const b of s.biz.usinas) {
+    const C = USINAS[b.brand]; if (!C) continue;
+    b.rate ??= 100; b.mix ??= 50;
+    const safra = inSafra(C.kind, m), on = safra && b.rate > 0, U = C.kind === 'cana' ? CANA_U : LARANJA_U;
+    const fixed = C.cap * U.fixed * (b.rate === 0 ? 0.7 : 1);
+    let net = -fixed;
+    add(`${C.name}: folha, manutenção${safra ? '' : ' da entressafra'} e energia`, -fixed);
+    if (on) {
+      const q = Math.round(C.cap * b.rate / 100 * (0.9 + rng() * 0.2));
+      if (C.kind === 'cana') {
+        const mix = b.mix / 100, rev = q * (mix * U.sugarKg * sugarPrice(m) + (1 - mix) * U.ethanolL * ethanolPrice(m));
+        const cost = q * ((s.prices?.cana || 150) + U.industry + U.cct);
+        add(`${C.name}: ${q.toLocaleString('pt-BR')} t de cana moídas, ${b.mix}% açúcar e ${100 - b.mix}% etanol vendidos`, rev);
+        add(`${C.name}: cana dos fornecedores, indústria e logística (corte, carregamento e transporte)`, -cost);
+        net += rev - cost;
+      } else {
+        const own = Math.min(q, Math.floor(s.stock?.laranja || 0)); if (own) s.stock.laranja -= own;   // a laranja do seu armazém entra primeiro (sem compra e sem frete)
+        const rev = q * juicePrice(m), cost = (q - own) * ((s.prices?.laranja || 38) + U.freight) + q * U.industry;
+        add(`${C.name}: ${q.toLocaleString('pt-BR')} caixas processadas${own ? ` (${own.toLocaleString('pt-BR')} do seu armazém)` : ''}, suco vendido`, rev);
+        add(`${C.name}: laranja comprada, indústria e frete`, -cost);
+        net += rev - cost;
+      }
+    } else out.push({ txt: `${C.name}: ${safra ? 'moagem parada por você' : 'entressafra, sem moagem'}`, val: 0 });
+    b.last = Math.round(net); b.lastQ = on;
+  }
   // galpões: manutenção
   for (const w of s.biz.wh) add(`${WAREHOUSES[w.type].label}: manutenção e seguro`, -w.value * WH_UPKEEP);
   return out;
 }
-export const value = s => { const b = s.biz; if (!b) return 0; return ['banks', 'isps', 'markets'].reduce((t, c) => t + b[c].reduce((a, x) => a + saleValue(s, c, x), 0), 0) + b.wh.reduce((t, w) => t + w.value * 0.8, 0); };
+export const value = s => { const b = s.biz; if (!b) return 0; return ['banks', 'isps', 'markets', 'usinas'].reduce((t, c) => t + b[c].reduce((a, x) => a + saleValue(s, c, x), 0), 0) + b.wh.reduce((t, w) => t + w.value * 0.8, 0); };
 
 // ---------- armazenagem ----------
 export const tons = s => Object.entries(s.stock || {}).reduce((t, [k, q]) => t + (UNIT_KG[k] ? (q || 0) * UNIT_KG[k] / 1000 : 0), 0);

@@ -141,3 +141,9 @@ Os nomes de carros no jogo são paródias; marcas visíveis nas fotos pertencem 
 - assets/animals/h-mangalarga4.webp: "Mangalarga Paulista.jpg", de , Public domain (https://commons.wikimedia.org/wiki/File:Mangalarga_Paulista.jpg)
 - assets/animals/h-mangalarga5.webp: "Colorado rn Mangalarga Paulista.jpg", de Gilberto D Junqueira, CC BY 2.0 (https://commons.wikimedia.org/wiki/File:Colorado_rn_Mangalarga_Paulista.jpg)
 - assets/animals/h-mangalarga6.webp: "Olímpia de Clarion.jpg", de User:H.Stickel, Public domain (https://commons.wikimedia.org/wiki/File:Ol%C3%ADmpia_de_Clarion.jpg)
+
+## Fotos das usinas (Wikimedia Commons)
+- assets/biz/canaa.webp: "2011-sao-martinho-sugar-mill-brazil.JPG", de Elmschrat, CC BY-SA 3.0 (https://commons.wikimedia.org/wiki/File:2011-sao-martinho-sugar-mill-brazil.JPG)
+- assets/biz/bomjesus.webp: "Costa Pinto ethanol distillery plant Piracicaba 10 2008.jpg", de Mariordo Mario Roberto Duran Ortiz, CC BY-SA 3.0 (https://commons.wikimedia.org/wiki/File:Costa_Pinto_ethanol_distillery_plant_Piracicaba_10_2008.jpg)
+- assets/biz/dourado.webp: "PikiWiki Israel 10107 Gan-Shmuel - in the juice factory 1987.jpg", de autor não informado (PikiWiki Israel), CC BY 2.5 (https://commons.wikimedia.org/wiki/File:PikiWiki_Israel_10107_Gan-Shmuel_-_in_the_juice_factory_1987.jpg)
+- assets/biz/laranjal.webp: "Givat Haim the Prigat factory.jpg", de Shlomo Katzav, CC BY-SA 4.0 (https://commons.wikimedia.org/wiki/File:Givat_Haim_the_Prigat_factory.jpg)
