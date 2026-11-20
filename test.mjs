@@ -1098,3 +1098,21 @@ console.log('mina ok');
     { m: 9, txt: 'imposto sobre grandes fortunas (1º do mundo (tubarão do mundo))', val: -90000 }, { m: 3, txt: 'imposto sobre grandes fortunas (magnata do mundo)', val: -1000 }, { m: 9, txt: 'pedágio dos mais ricos: 14% dos ganhos do mês', val: -14000 }];
   assert.equal(Lr.taxRefund(log, 5), 40000 * (1 - 0.006 / 0.04) + 100000 * (1 - 0.22 / 0.5) + 90000 * (1 - 0.008 / 0.045));
   console.log('reembolso do imposto alto ok'); }
+
+{
+  const CT = await import('./contador.js');
+  assert.equal(CT.feeFor(0), CT.FEE.min); assert.ok(CT.feeFor(100e6) > CT.feeFor(1e6) * 10, 'rico paga mais');
+  const s = { money: 1e7, month: 10 };
+  assert.equal(CT.hire(s, 'm3', 5e6).price, CT.quote(5e6, 'm3')); assert.ok(CT.active(s)); assert.ok(CT.hire(s, 'm1', 5e6).err);
+  s.month = 13; assert.equal(CT.monthly(s, 5e6)[0].val, 0); assert.ok(!CT.active(s), 'contrato de 3 meses acaba no 3º fechamento');
+  CT.hire(s, 'mensal', 5e6); const a = -CT.monthly(s, 5e6)[0].val, b = -CT.monthly(s, 5e6)[0].val; assert.ok(b > a, 'mensal sobe');
+  // as partes de cada linha somam exatamente o valor cobrado
+  const lines = [{ txt: 'suinocultura: energia, água e mão de obra (barracão)', val: -12345 }, { txt: 'IPVA e seguro, Toyoda Hilox', val: -1321 }, { txt: "Bobão's Lanches: funcionários, aluguel, manutenção, seguro e sede da marca", val: -99999 },
+    { txt: 'Carrefur: mercadoria, perdas, 85 funcionários, aluguel, energia e impostos', val: -500000, parts: { mercadoria: 300000, funcionarios: 150000, imposto: 50000 } }, { txt: 'venda', val: 777 }];
+  const r = CT.summarize(lines);
+  assert.equal(Math.round(r.total), 12345 + 1321 + 99999 + 500000); assert.equal(r.income, 777);
+  assert.equal(Math.round(Object.values(r.types).reduce((x, y) => x + y, 0)), Math.round(r.total), 'tipos somam o total');
+  assert.ok(r.groups.find(g => g.key === 'suinos') && r.groups.find(g => g.key === 'negocios') && r.groups.find(g => g.key === 'veiculos'));
+  const s2 = {}; CT.record(s2, 5, lines); CT.record(s2, 5, lines); assert.equal(s2.closes.length, 1, 'um fechamento por mês');
+  console.log('contador ok');
+}

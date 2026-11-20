@@ -140,6 +140,7 @@ export function checkAch() { P.checkAch(G.S).forEach(a => badge('Conquista desbl
 export function profileOf(s = G.S) {
   const own = s.lands.filter(l => l.own);
   return {
+    acct: s.acct ? s.acct.plan : null,
     name: s.avatar.name || 'jogador', look: s.avatar, level: s.level, rank: L.rank(L.netWorth(s)), worth: L.netWorth(s),
     stats: s.stats, ach: s.ach, lands: own.length, ha: own.reduce((a, l) => a + l.ha, 0), heads: L.heads(s),
     cars: s.cars.map(c => c.model),

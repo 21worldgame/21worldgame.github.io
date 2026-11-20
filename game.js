@@ -11,6 +11,8 @@ import * as FB from './aposta-ui.js';
 import * as TRU from './truco-ui.js';
 import * as SNU from './sinuca-ui.js';
 import * as PKU from './poker-ui.js';
+import * as CT from './contador.js';
+import * as CTU from './contador-ui.js';
 import { botsFor as BOTS } from './botpool.js';
 import * as NG from './negocios.js';
 import * as SH from './shop.js';
@@ -585,7 +587,7 @@ function profileExtra(p, me) {
   if (p.private && !me) return trophies + '<p class="pf__private glass">🔒 Este jogador deixou o perfil privado. Só os troféus aparecem.</p>';
   if (p.noCard) return trophies + '<p class="pf__private glass">Este jogador ainda está numa versão antiga do jogo. Os detalhes aparecem assim que ele abrir ou recarregar o jogo.</p>';
   const biz = (p.biz || []).map(b => { const c = BIZ_LISTS[b.cat]?.[b.brand]; return c ? `<span class="pf__biz" style="--img:url(assets/biz/${b.brand}.webp)"><small>${esc(c.name)}</small></span>` : ''; }).join('');
-  const tiles = [['empresas', (p.biz || []).length], ['mina de ouro', p.mina ? 'sim' : 'não'], ['galpões', p.wh || 0], ['granja', `${p.granja || 0} galpões`], ['suínos', `${p.suinos || 0} barracões`], ['cartas raras', p.cardsN || 0], ['clube', p.club || 'nenhum']]
+  const tiles = [['empresas', (p.biz || []).length], ['contador', p.npc ? `${brl(CT.npcFee(p.worth))}/mês` : p.acct ? `contratado (${CT.PLANS[p.acct]?.label || p.acct})` : 'não tem'], ['mina de ouro', p.mina ? 'sim' : 'não'], ['galpões', p.wh || 0], ['granja', `${p.granja || 0} galpões`], ['suínos', `${p.suinos || 0} barracões`], ['cartas raras', p.cardsN || 0], ['clube', p.club || 'nenhum']]
     .map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${esc(String(v))}</strong></div>`).join('');
   const lands = (p.landList || []).length ? `<ul class="pf__lands">${p.landList.map(l => `<li>${int(l.ha)} ha · ${esc(l.region)}${l.orchard ? ' · pomar' : ''}${l.cane ? ' · canavial' : ''}</li>`).join('')}</ul>` : '';
   const ads = (p.listings || []).length ? `<h3>à venda agora <small class="muted">no Feirão 21</small></h3><ul class="pf__ads">${p.listings.map(l => `<li><span>${esc(l.label)}</span><b>${brl(l.price)}</b></li>`).join('')}</ul><div class="pf__acts"><button class="btn btn--gold btn--sm" data-loja-go="feirao" data-act="close-profile">ver no Feirão</button></div>` : '';
@@ -728,7 +730,7 @@ document.addEventListener('submit', e => { if (e.target.id === 'tr-chat-form') {
 
 // desempenho: cada aba só é desenhada quando está aberta (ou quando o usuário entra nela)
 const PANELS = { personagem: () => renderChar(), terras: () => renderTerras(), gado: () => renderGado(), mercado: () => renderMercado(),
-  carros: () => renderLoja('carros'), suinos: () => SUU.render(), negocios: () => NGU.render(), banco: () => renderBanco(), livro: () => renderLivro(), haras: () => { SUI.render(); LEU.render(); }, futebol: () => FUI.render(), inventario: () => renderInv(), ranking: () => RKUI.render(), laranja: () => renderPomar(), cana: () => renderCana(), cartas: () => renderCartas(), granja: () => renderGranja(), loja: () => renderLoja(), mesa: () => C.renderLobby() };
+  carros: () => renderLoja('carros'), suinos: () => SUU.render(), negocios: () => NGU.render(), banco: () => renderBanco(), livro: () => renderLivro(), contador: () => CTU.render(), haras: () => { SUI.render(); LEU.render(); }, futebol: () => FUI.render(), inventario: () => renderInv(), ranking: () => RKUI.render(), laranja: () => renderPomar(), cana: () => renderCana(), cartas: () => renderCartas(), granja: () => renderGranja(), loja: () => renderLoja(), mesa: () => C.renderLobby() };
 let currentTab = 'mesa';
 // cada parte da tela desenha separada: se uma der erro, as outras continuam (a tela nunca fica travada)
 let uiErrAt = 0;
@@ -737,7 +739,7 @@ function uiError(e, where) {
   if (Date.now() - uiErrAt > 20000) { uiErrAt = Date.now(); say('Algo não carregou direito nesta tela. Seu progresso está salvo; se continuar, troque de aba ou recarregue.', true); }
 }
 function render() {
-  for (const [f, w] of [[renderHud, 'hud'], [renderMissions, 'missões'], [PANELS[currentTab], currentTab]]) { try { f?.(); } catch (e) { uiError(e, w); } }
+  for (const [f, w] of [[renderHud, 'hud'], [renderMissions, 'missões'], [PANELS[currentTab], currentTab], [() => CTU.inject(currentTab), 'contador']]) { try { f?.(); } catch (e) { uiError(e, w); } }
   try { C.announce(); } catch (e) { console.error(e); }
 }
 G.render = () => { render(); G.onRender?.(); };
@@ -1097,6 +1099,7 @@ function show(name, focus = false) {
   }
   currentTab = name;
   PANELS[name]?.();
+  try { CTU.inject(name); } catch (e) { console.error(e); }
   if (name === 'terras') setTimeout(initMap, 50);
   if (name === 'trader') TR.tick();
   if (name === 'corridas') RC.relayout();
@@ -1244,21 +1247,25 @@ function worldMonths() {
   if (!p.ticks || C.busyRound() || SUI.isRunning()) return;
   if (p.skipped) { s.month += p.skipped; note(`o mundo avançou ${p.skipped} meses enquanto você esteve fora (sem cobranças)`); }
   const before = s.money, logBefore = s.log.length; let harvests = 0;
+  const closes = [];   // o que cada fechamento lançou (o contador mostra exatamente isso)
   for (let i = 0; i < p.ticks; i++) {
-    const lines = L.tick(s);
-    for (const l of ST.monthly(s)) note(l.txt, l.val);
-    for (const l of GR.monthly(s)) note(l.txt, l.val);
-    for (const l of PM.monthly(s)) note(l.txt, l.val);
-    for (const l of CN.monthly(s)) note(l.txt, l.val);
-    for (const l of SU.monthly(s)) note(l.txt, l.val);
-    for (const l of NG.monthly(s)) note(l.txt, l.val);
-    for (const l of MI.monthly(s)) { note(l.txt, l.val); if (l.big) { confetti(220); say(l.txt); } }
-    for (const l of NG.enforce(s)) { note(l.txt, l.val); say(l.txt[0].toUpperCase() + l.txt.slice(1) + '. Compre galpões na loja.', true); }
-    for (const l of AB.monthly(s)) note(l.txt, l.val);
+    const lines = L.tick(s), rec = [...lines], N = l => { note(l.txt, l.val); rec.push(l); };
+    for (const l of ST.monthly(s)) N(l);
+    for (const l of GR.monthly(s)) N(l);
+    for (const l of PM.monthly(s)) N(l);
+    for (const l of CN.monthly(s)) N(l);
+    for (const l of SU.monthly(s)) N(l);
+    for (const l of NG.monthly(s)) N(l);
+    for (const l of MI.monthly(s)) { N(l); if (l.big) { confetti(220); say(l.txt); } }
+    for (const l of NG.enforce(s)) { N(l); say(l.txt[0].toUpperCase() + l.txt.slice(1) + '. Compre galpões na loja.', true); }
+    for (const l of AB.monthly(s)) N(l);
+    for (const l of CT.monthly(s, L.netWorth(s))) N(l);
+    closes.push({ m: s.month, rec });
     harvests += lines.filter(l => l.txt.startsWith('colheita')).length;
     award('month');
   }
-  { const mo = s.log.slice(0, Math.max(0, s.log.length - logBefore)), spent = -mo.filter(l => l.val < 0).reduce((t, l) => t + l.val, 0), earned = mo.filter(l => l.val > 0).reduce((t, l) => t + l.val, 0); for (const l of L.eliteBills(s, spent, earned)) note(l.txt, l.val); }   // os mais ricos pagam mais
+  { const mo = s.log.slice(0, Math.max(0, s.log.length - logBefore)), spent = -mo.filter(l => l.val < 0).reduce((t, l) => t + l.val, 0), earned = mo.filter(l => l.val > 0).reduce((t, l) => t + l.val, 0); for (const l of L.eliteBills(s, spent, earned)) { note(l.txt, l.val); closes.at(-1)?.rec.push(l); } }   // os mais ricos pagam mais
+  for (const c of closes) CT.record(s, c.m, c.rec);
   eliteCheck();
   if (harvests) award('harvest', harvests);
   CD.setMonth(s.month);
@@ -1266,6 +1273,20 @@ function worldMonths() {
   say(p.ticks > 1 || p.skipped ? `O mundo avançou até ${W.dateLabel(s.month)}. Saldo: ${brl(s.money - before)}.` : `Chegou ${W.dateLabel(s.month)}. Saldo do mês: ${brl(s.money - before)}.${harvests ? ' Colheita no armazém.' : ''}`);
   checkAch(); save(); render();
 }
+let fcCache = { at: 0, month: -1, v: [] };
+G.ctForecast = () => {
+  const s0 = S(); if (fcCache.month === s0.month && Date.now() - fcCache.at < 15000) return fcCache.v;
+  const rec = [];
+  try {
+    const s = structuredClone(s0), rng = () => 0.5;
+    rec.push(...L.tick(s, rng));
+    for (const m of [ST, GR, PM, CN, SU, NG]) rec.push(...m.monthly(s, rng));
+    rec.push(...MI.monthly(s, rng), ...NG.enforce(s), ...AB.monthly(s), ...CT.monthly(s, L.netWorth(s)));
+    const spent = -rec.filter(l => l.val < 0).reduce((t, l) => t + l.val, 0), earned = rec.filter(l => l.val > 0).reduce((t, l) => t + l.val, 0);
+    rec.push(...L.eliteBills(s, spent, earned));
+  } catch (e) { console.error('previsão do contador', e); }
+  fcCache = { at: Date.now(), month: s0.month, v: rec }; return rec;
+};
 function worldClock() {
   const w = Live.world(), t = Live.now();
   const m = W.current(w, t);
@@ -1301,7 +1322,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 52;
+const APP_VERSION = 53;
 let updateShown = false, updateMsg = '';
 let checking = false;
 async function checkUpdate() {

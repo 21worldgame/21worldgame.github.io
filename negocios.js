@@ -201,7 +201,7 @@ export function build(s, id, packs = 1) {
 export const pmt = (bal, r, n) => (r ? bal * r / (1 - (1 + r) ** -n) : bal / n);
 
 export function monthly(s, rng = Math.random) {
-  ensure(s); const out = [], m = s.month || 1, add = (txt, val = 0) => { if (val > 0) val *= T.bizMult; s.money += val; out.push({ txt, val: Math.round(val) }); };   // bizMult: painel admin
+  ensure(s); const out = [], m = s.month || 1, add = (txt, val = 0, parts) => { if (val > 0) val *= T.bizMult; s.money += val; out.push({ txt, val: Math.round(val), ...(parts ? { parts } : {}) }); };   // bizMult: painel admin
   // bancos
   for (const b of s.biz.banks) {
     const C = BANKS[b.brand], P = POLICY[b.policy] || POLICY.moderado;
@@ -239,7 +239,7 @@ export function monthly(s, rng = Math.random) {
     const clients = Math.round(C.clients * b.rep * M.pull * (0.9 + rng() * 0.2)), ticket = TICKET * grow(m, 0.0004, 2), rev = clients * ticket;
     const cogs = rev / (1 + b.markup / 100), lossv = rev * LOSSES, staff = C.staff * MKT_SALARY, fixed = C.price * MKT_FIXED, tax = rev * TAX_MKT;
     add(`${C.name}: vendas do mês (${clients.toLocaleString('pt-BR')} clientes)`, rev);
-    add(`${C.name}: mercadoria, perdas, ${C.staff} funcionários, aluguel, energia e impostos`, -(cogs + lossv + staff + fixed + tax));
+    add(`${C.name}: mercadoria, perdas, ${C.staff} funcionários, aluguel, energia e impostos`, -(cogs + lossv + staff + fixed + tax), { mercadoria: cogs + lossv, funcionarios: staff, aluguel: fixed * 0.6, luz: fixed * 0.3, agua: fixed * 0.1, imposto: tax });
     b.last = Math.round(rev - (cogs + lossv + staff + fixed + tax));
   }
   // usinas
@@ -256,13 +256,13 @@ export function monthly(s, rng = Math.random) {
         const mix = b.mix / 100, rev = q * (mix * U.sugarKg * sugarPrice(m) + (1 - mix) * U.ethanolL * ethanolPrice(m));
         const cost = q * ((s.prices?.cana || 150) + U.industry + U.cct);
         add(`${C.name}: ${q.toLocaleString('pt-BR')} t de cana moídas, ${b.mix}% açúcar e ${100 - b.mix}% etanol vendidos`, rev);
-        add(`${C.name}: cana dos fornecedores, indústria e logística (corte, carregamento e transporte)`, -cost);
+        add(`${C.name}: cana dos fornecedores, indústria e logística (corte, carregamento e transporte)`, -cost, { materia: q * (s.prices?.cana || 150), industria: q * U.industry, frete: q * U.cct });
         net += rev - cost;
       } else {
         const own = Math.min(q, Math.floor(s.stock?.laranja || 0)); if (own) s.stock.laranja -= own;   // a laranja do seu armazém entra primeiro (sem compra e sem frete)
         const rev = q * juicePrice(m), cost = (q - own) * ((s.prices?.laranja || 38) + U.freight) + q * U.industry;
         add(`${C.name}: ${q.toLocaleString('pt-BR')} caixas processadas${own ? ` (${own.toLocaleString('pt-BR')} do seu armazém)` : ''}, suco vendido`, rev);
-        add(`${C.name}: laranja comprada, indústria e frete`, -cost);
+        add(`${C.name}: laranja comprada, indústria e frete`, -cost, { materia: (q - own) * (s.prices?.laranja || 38), frete: (q - own) * U.freight, industria: q * U.industry });
         net += rev - cost;
       }
     } else out.push({ txt: `${C.name}: ${safra ? 'moagem parada por você' : 'entressafra, sem moagem'}`, val: 0 });
