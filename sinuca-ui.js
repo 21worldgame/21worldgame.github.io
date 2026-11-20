@@ -17,7 +17,7 @@ export const HOUSE = [
 ];
 export const PAY = 1.9;
 const COLORS = ['#f8fafc', '#facc15', '#2563eb', '#dc2626', '#7c3aed', '#f97316', '#16a34a', '#7f1d1d', '#0a0a0a'];
-let cur = null, view = null, aim = 0, power = 0.55, anim = null, paid = new Set(), placing = false;
+let cur = null, view = null, aim = 0, power = 0.55, pull = null, anim = null, paid = new Set(), placing = false;
 const rid = () => Math.random().toString(36).slice(2, 8);
 const me = () => { const p = profileOf(); return { name: p.name, look: p.look }; };
 const lookOf = s => (s.kind === 'human' ? s.look : NPC.byNick(s.name)?.look || NPC_LOOKS.Tião) || {};
@@ -233,6 +233,9 @@ function draw(balls, aiming) {
     const sx = cue.x - dx * (SN.R + back), sy = cue.y - dy * (SN.R + back), ex = sx - dx * 95, ey = sy - dy * 95;
     const grad = g.createLinearGradient(X(sx), Y(sy), X(ex), Y(ey)); grad.addColorStop(0, '#f1f5f9'); grad.addColorStop(0.03, '#e2c290'); grad.addColorStop(0.7, '#b45309'); grad.addColorStop(1, '#1c1917');
     g.strokeStyle = grad; g.lineCap = 'round'; g.lineWidth = S * 1.5; g.beginPath(); g.moveTo(X(sx), Y(sy)); g.lineTo(X(ex), Y(ey)); g.stroke(); g.lineCap = 'butt';
+    const bx = X(SN.L / 2 - 20), by = Y(SN.WD + 3.2), bw = 40 * S, bh = 2.4 * S;   // medidor de força na tabela de baixo
+    g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(bx, by, bw, bh); g.fillStyle = `hsl(${120 - power * 120} 90% 50%)`; g.fillRect(bx, by, bw * power, bh);
+    g.fillStyle = '#fff'; g.font = `800 ${3 * S}px system-ui`; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(`força ${Math.round(power * 100)}%`, bx + bw + 2 * S, by + bh / 2);
   }
 }
 function ball(b) {
@@ -247,20 +250,30 @@ function ball(b) {
 function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 const tableXY = e => { const r = cv.getBoundingClientRect(), s = (SN.L + 2 * M) / r.width; return { x: (e.clientX - r.left) * s - M, y: (e.clientY - r.top) * s - M }; };
 
+// força: arrasta a partir da branca pra trás (contra a mira), solta = taca; voltar até a branca cancela
+const PULL_MAX = 40, setPower = v => { power = Math.max(0.05, Math.min(1, v)); const r = $('#sn-power'); if (r) r.value = Math.round(power * 100); const o = $('#sn-pw'); if (o) o.textContent = Math.round(power * 100) + '%'; };
 document.addEventListener('pointermove', e => {
   if (e.target.id !== 'sn-cv' || !view || anim || placing) return;
-  const p = tableXY(e), c = view.balls?.[0]; if (c) aim = Math.atan2(p.y - c.y, p.x - c.x);
+  const p = tableXY(e);
+  if (pull) { const d = -((p.x - pull.x) * Math.cos(aim) + (p.y - pull.y) * Math.sin(aim)); pull.d = d; setPower(d / PULL_MAX); return; }
+  const c = view.balls?.[0]; if (c) aim = Math.atan2(p.y - c.y, p.x - c.x);
 });
 document.addEventListener('pointerdown', e => {
   if (e.target.id !== 'sn-cv' || !view || anim) return;
   const p = tableXY(e);
   if (placing) { act({ t: 'place', x: p.x, y: p.y }); return; }
-  const c = view.balls?.[0]; if (c) aim = Math.atan2(p.y - c.y, p.x - c.x);
+  const c = view.balls?.[0]; if (!c) return;
+  if (!$('#sn-shoot').disabled && Math.hypot(p.x - c.x, p.y - c.y) < 12) { pull = { x: p.x, y: p.y, d: 0, was: power }; e.target.setPointerCapture?.(e.pointerId); return; }
+  aim = Math.atan2(p.y - c.y, p.x - c.x);
 });
-document.addEventListener('input', e => { if (e.target.id === 'sn-power') power = Number(e.target.value) / 100; });
+const endPull = shoot => { if (!pull) return; const pl = pull; pull = null; if (shoot && pl.d > 2 && !$('#sn-shoot').disabled) act({ t: 'shot', angle: aim, power }); else setPower(pl.was); };
+document.addEventListener('pointerup', () => endPull(true));
+document.addEventListener('pointercancel', () => endPull(false));
+document.addEventListener('input', e => { if (e.target.id === 'sn-power') setPower(Number(e.target.value) / 100); });
 document.addEventListener('keydown', e => {
   if (!cur || $('#sn-room')?.hidden || e.target.closest?.('input:not([type=range]), textarea')) return;
   if (e.key === 'ArrowLeft') { aim -= 0.006; e.preventDefault(); } if (e.key === 'ArrowRight') { aim += 0.006; e.preventDefault(); }
+  if (e.target.id !== 'sn-power' && e.key === 'ArrowUp') { setPower(power + 0.05); e.preventDefault(); } if (e.target.id !== 'sn-power' && e.key === 'ArrowDown') { setPower(power - 0.05); e.preventDefault(); }
   if (e.key === ' ' && !$('#sn-shoot').disabled) { e.preventDefault(); $('#sn-shoot').click(); }
 });
 document.addEventListener('click', e => {
