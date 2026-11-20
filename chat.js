@@ -46,36 +46,68 @@ export function mentions(text, name) {
 export const NPC_GAP = 90000;
 const pick = (r, a) => a[Math.floor(r() * a.length)];
 const LINES = [
-  r => `vendo ${pick(r, [20, 35, 50, 80])} cabeças de nelore gordo, chama no PV`,
-  r => `alguém vende bezerro? pago bem, preciso de ${pick(r, [10, 20, 30])} cabeças`,
-  r => `anunciei meu cavalo ${pick(r, ['quarto de milha', 'mangalarga', 'puro-sangue'])} na loja, campeão de 3 páreos`,
-  r => `vendo galgo de corrida treinado, olha na loja`,
-  r => `terra de ${pick(r, [40, 80, 120, 300])} ha ${pick(r, ['em Goiás', 'no Mato Grosso', 'em Minas', 'no Paraná'])} à venda, com água e tudo`,
-  r => `quem quer arrendar terra? tenho ${pick(r, [50, 100, 200])} ha parados`,
-  r => `vendo ${pick(r, ['Hilux', 'caminhonete', 'Scania', 'SUV blindado', 'esportivo'])} quase zero, aceito proposta`,
-  r => `troco carta ${pick(r, ['diamante', 'mestre', 'esmeralda', 'challenger'])} por fichas, só proposta séria`,
-  r => `abri pacote lendário e veio ${pick(r, ['uma mestre', 'uma diamante', 'duas esmeralda'])}!! 🔥`,
-  r => `vendo meu clube da ${pick(r, ['Série B', 'Série C'])}, elenco montado e estádio reformado`,
-  r => `procuro atacante bom pro meu time, quem tiver chama`,
-  r => `granja climatizada à venda, já vem pronta pros pintinhos`,
-  r => `vendo ${pick(r, [500, 1200, 3000])} caixas de laranja, preço de feira`,
-  r => `vendo ${pick(r, [800, 1500, 4000])} t de cana pra quem tem usina perto`,
-  r => `vendo colhedora de cana, pouco uso`,
-  r => `alguém tem pulverizador de pomar sobrando? meu greening tá subindo`,
-  r => `vendo trator ${pick(r, ['150 cv', '200 cv', 'com plantadeira'])}, revisado`,
-  r => `${pick(r, ['Mesa VIP', 'High Roller', 'Mesa Ouro', 'Sala Diamante'])} tá pegando fogo hoje, bora`,
-  r => `saquei ${pick(r, ['12,4x', '8,7x', '23,1x', '5,2x'])} no aviator kkkk`,
-  r => `quem apostou no futebol ao vivo? peguei o placar exato!`,
-  r => `${pick(r, ['Flamengo', 'Palmeiras', 'Corinthians', 'Grêmio', 'Cruzeiro'])} vai virar esse jogo, anota`,
-  r => `alguém joga 21 comigo? mesa online aberta`,
-  r => `bolsa do boi gordo subiu, hora de vender`,
-  r => `falta pouco pro top 10 do ranking 💪`,
-  r => `vendo corrente de ouro e relógio, olha na loja`,
+  r => `vendo ${pick(r, [20, 35, 50, 80])} nelore gordo, chama no pv`,
+  r => `alguem vende bezerro? to precisando de uns ${pick(r, [10, 20, 30])}`,
+  r => `anunciei meu ${pick(r, ['quarto de milha', 'mangalarga', 'puro-sangue'])} na loja, ganhou 3 pareos seguidos`,
+  r => `vendo galgo treinado, ta na loja`,
+  r => `terra de ${pick(r, [40, 80, 120, 300])} ha ${pick(r, ['em goias', 'no mato grosso', 'em minas', 'no parana'])} a venda, tem rio e tudo`,
+  r => `qm quer arrendar? tenho ${pick(r, [50, 100, 200])} ha parado aqui`,
+  r => `vendo ${pick(r, ['hilux', 'minha caminhonete', 'a scania', 'suv blindada', 'o esportivo'])} quase zero, aceito proposta`,
+  r => `troco carta ${pick(r, ['diamante', 'mestre', 'esmeralda'])} por ficha, so proposta seria`,
+  r => `abri o lendario e veio ${pick(r, ['uma mestre', 'uma diamante', 'duas esmeralda'])} 🔥🔥`,
+  r => `vendo meu time da ${pick(r, ['serie b', 'serie c'])}, elenco montado`,
+  r => `procuro atacante bom pro meu time, qm tiver chama`,
+  r => `granja climatizada a venda, ja ta pronta pros pintinho`,
+  r => `vendo ${pick(r, [500, 1200, 3000])} caixa de laranja, preco de feira`,
+  r => `alguem tem pulverizador sobrando? o greening ta comendo meu pomar`,
+  r => `${pick(r, ['mesa vip', 'high roller', 'mesa ouro', 'sala diamante'])} ta pegando fogo hoje`,
+  r => `saquei ${pick(r, ['12,4x', '8,7x', '23,1x', '5,2x'])} no aviator kkkkk`,
+  r => `perdi tudo no aviator de novo, porque eu nao saio no 2x 😭`,
+  r => `quem apostou no futebol? peguei o placar exato`,
+  r => `${pick(r, ['flamengo', 'palmeiras', 'corinthians', 'gremio', 'cruzeiro'])} vira esse jogo, anota ai`,
+  r => `alguem joga 21? to sozinho na mesa`,
+  r => `boi gordo subiu, hora de vender`,
+  r => `falta pouco pro top 10 💪`,
+  r => `vendo corrente de ouro e relogio, ta na loja`,
+  r => `bom dia povo`,
+  r => `boa noite galera`,
+  r => `alguem online?`,
+  r => `ae ${pick(r, ['geral', 'galera', 'povo', 'rapaziada'])}, qual a boa hoje?`,
+  r => `o imposto dos rico ta pesado hein`,
+  r => `mano o pasto lotou, vou ter q mandar pro boitel`,
+  r => `${pick(r, ['ganhei', 'perdi'])} ${pick(r, ['2k', '5k', '10k', '50k'])} na roleta agora kkk`,
+  r => `alguem sabe se compensa granja ou suino?`,
+  r => `comprei uma ${pick(r, ['hilux', 'scania', 'porshe'])} hoje, to feliz demais`,
+  r => `meu cavalo machucou bem antes do pareo, que raiva`,
+  r => `quem vai no leilao de cavalo?`,
+  r => `to quase comprando meu primeiro frigorifico`,
+  r => `soja ta barata, vou segurar no armazem`,
+  r => `ninguem joga truco comigo? 😅`,
+  r => `aff estourei com 20 na mao`,
+  r => `alguem me ensina a ganhar no poker kkkk`,
+  r => `ce loko, o dolar ta subindo direto`,
+  r => `saiu um 21 de primeira agora 🃏`,
+  r => `vendo ${pick(r, [800, 1500, 4000])} t de cana`,
 ];
+// respostas de um jogador do mundo para outro (parece conversa de verdade)
+const REPLIES = ['quanto?', 'chama no pv', 'kkkkkk', 'mentira 😂', 'tb quero', 'fechou, te chamo', 'q isso', 'boa!!', 'eu topo', 'ta caro isso ai', 'manda print',
+  'slk', 'bora', 'tmj', 'ja vendi o meu, foi mal', 'faz 10% a menos?', 'quero!', 'sério isso?', 'aí sim'];
+// cada um escreve de um jeito: abreviação, risada, emoji, letra esticada (sempre igual para todo mundo: vem da semente)
+const SWAP = [[/\bvoce\b/g, 'vc'], [/\bporque\b/g, 'pq'], [/\btambem\b/g, 'tb'], [/\bquem\b/g, 'qm'], [/\bhoje\b/g, 'hj'], [/\bninguem\b/g, 'ngm'], [/\bbeleza\b/g, 'blz']];
+function casual(t, r) {
+  if (r() < 0.6) for (const [a, b] of SWAP) t = t.replace(a, b);
+  if (r() < 0.12) t = t[0].toUpperCase() + t.slice(1);
+  const e = r();
+  if (e < 0.12) t += ` ${pick(r, ['kkkk', 'kkkkkk', 'rs', 'haha'])}`;
+  else if (e < 0.2) t += ` ${pick(r, ['😎', '🤑', '🙏', '👀', '😂', '🔥'])}`;
+  if (r() < 0.08) t = t.replace(/([aeiou])([^aeiou]*)$/, '$1$1$1$2');   // "bora" vira "boraaa"
+  return t;
+}
 export function npcLine(slot, nicks) {
   let a = (slot * 2654435761) >>> 0;
   const r = () => { a = (a + 0x6D2B79F5) >>> 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   if (!nicks.length || r() < 0.25) return null;
-  const name = nicks[Math.floor(r() * nicks.length)];
-  return { id: `npc${slot}`, name, text: pick(r, LINES)(r), at: slot * NPC_GAP + Math.floor(r() * 20000) };
+  const name = nicks[Math.floor(r() * nicks.length)], others = nicks.filter(n => n !== name);
+  const text = others.length && r() < 0.2 ? `@${pick(r, others)} ${pick(r, REPLIES)}` : casual(pick(r, LINES)(r), r);
+  return { id: `npc${slot}`, name, text, at: slot * NPC_GAP + Math.floor(r() * 20000) };
 }

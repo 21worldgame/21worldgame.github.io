@@ -5,38 +5,38 @@ import { rank, CARS } from './logic.js';
 
 // [nick, patrimônio inicial, crescimento por mês, pele, cabelo, cor do cabelo, barba, roupa, cor da roupa, acessório, frase]
 const RAW = [
-  ['ReiDoGado', 880000, 0.022, 2, 'degradê', 1, 'por fazer', 'terno', 6, 'relógio de luxo', 'Magnata da soja. Mesa VIP toda noite.'],
-  ['A Boiadeira', 720000, 0.026, 1, 'longo', 3, 'nenhuma', 'jaqueta', 2, 'brinco', 'Boiada no pasto, galgo na pista e carta rara na mão.'],
-  ['Blackjack21', 610000, 0.02, 3, 'curto', 1, 'cavanhaque', 'camisa', 1, 'óculos escuros', 'Blackjack é matemática.'],
-  ['RainhaDaSoja', 520000, 0.028, 2, 'coque', 4, 'nenhuma', 'camisa', 4, 'corrente de ouro', 'Presidente do Mirassol. Bora subir!'],
-  ['CriptoTrader', 430000, 0.024, 4, 'boné', 2, 'por fazer', 'moletom', 5, 'boné de marca', 'Trader de bitcoin, 5 min ou nada.'],
-  ['HarasEstrela', 360000, 0.03, 1, 'longo', 5, 'nenhuma', 'regata', 3, 'brinco', 'Haras Ferraz. Cavalos de corrida.'],
-  ['TratorBrabo', 300000, 0.02, 5, 'raspado', 1, 'cheia', 'jaqueta', 3, 'fone gamer', 'Entregador nível 9 que virou fazendeiro.'],
-  ['TerraFirme', 255000, 0.027, 3, 'coque', 2, 'nenhuma', 'camisa', 2, 'pulseira de prata', 'Compro terra arrendada e reformo.'],
-  ['RoletaVermelha', 215000, 0.024, 4, 'degradê', 1, 'bigode', 'moletom', 1, 'óculos escuros', 'Roleta só no vermelho.'],
-  ['FeiraMaster', 180000, 0.031, 2, 'curto', 3, 'nenhuma', 'regata', 6, 'brinco', 'Feira de negócios é meu cassino.'],
-  ['NeloreBR', 150000, 0.02, 3, 'boné', 4, 'por fazer', 'camiseta', 5, 'nenhum', 'Gado nelore no Tocantins.'],
-  ['CafeForte', 128000, 0.026, 1, 'longo', 2, 'nenhuma', 'camiseta', 4, 'nenhum', 'Café do sul de Minas.'],
-  ['Coringa021', 112000, 0.022, 5, 'raspado', 2, 'cavanhaque', 'jaqueta', 6, 'corrente de ouro', 'Aviator até 2x e saio.'],
-  ['Novato_BR', 98000, 0.025, 2, 'curto', 5, 'nenhuma', 'camisa', 3, 'nenhum', 'Começando agora, bora!'],
-  ['LoboNoturno', 91000, 0.03, 4, 'degradê', 1, 'por fazer', 'moletom', 2, 'fone gamer', 'Só jogo à noite.'],
-  ['DezVezes21', 84000, 0.028, 3, 'boné', 1, 'nenhuma', 'camiseta', 1, 'boné de marca', 'Bati 21 cinco vezes seguidas.'],
-  ['GalgoVeloz', 76000, 0.024, 2, 'curto', 2, 'nenhuma', 'regata', 5, 'nenhum', 'Meu galgo vai ganhar o grande prêmio.'],
-  ['CartaRara', 70000, 0.032, 1, 'coque', 3, 'nenhuma', 'camisa', 6, 'brinco', 'Cartas raras ou nada.'],
-  ['HighRollerX', 64000, 0.02, 5, 'raspado', 1, 'cheia', 'terno', 6, 'óculos escuros', 'High roller aposentado.'],
-  ['ContaCarta', 59000, 0.027, 5, 'degradê', 1, 'cavanhaque', 'jaqueta', 1, 'corrente de ouro', 'Conto carta de cabeça.'],
-  ['RelampagoBR', 55000, 0.029, 2, 'longo', 4, 'nenhuma', 'regata', 2, 'brinco', 'Treinando o Relâmpago todo mês.'],
-  ['LeaoDoSport', 52000, 0.023, 3, 'curto', 2, 'por fazer', 'camisa', 3, 'nenhum', 'Sou do Sport, me aceita.'],
-  ['Entregador99', 48000, 0.03, 1, 'coque', 1, 'nenhuma', 'moletom', 4, 'nenhum', 'Fazendo turno de entrega pra comprar a Hilox.'],
-  ['PrimeiroMes', 44000, 0.026, 4, 'boné', 2, 'nenhuma', 'camiseta', 5, 'nenhum', 'Primeiro mês no 21 World.'],
-  ['TrocaTroca', 41000, 0.028, 2, 'longo', 5, 'nenhuma', 'regata', 6, 'nenhum', 'Quem quer trocar carta?'],
-  ['RumoAoMilhao', 38000, 0.025, 3, 'degradê', 1, 'nenhuma', 'camiseta', 1, 'nenhum', 'Rumo ao primeiro milhão.'],
-  ['BTCnaVeia', 35000, 0.03, 1, 'curto', 3, 'nenhuma', 'camisa', 2, 'brinco', 'Apostando no Bitcoin.'],
-  ['MengaoBR', 32000, 0.027, 4, 'raspado', 2, 'por fazer', 'moletom', 3, 'nenhum', 'Flamengo na Série A, claro.'],
-  ['So21', 30000, 0.024, 3, 'curto', 1, 'nenhuma', 'camiseta', 4, 'nenhum', 'Só no 21.'],
-  ['MetaHaras', 28000, 0.031, 2, 'coque', 4, 'nenhuma', 'regata', 5, 'nenhum', 'Meta: um haras.'],
-  ['RecomecoBR', 26000, 0.026, 5, 'boné', 1, 'nenhuma', 'camiseta', 6, 'nenhum', 'Recomecei do zero.'],
-  ['SemanaUm', 24000, 0.029, 1, 'longo', 2, 'nenhuma', 'camisa', 1, 'nenhum', 'Primeira semana!'],
+  ['ReiDoGado', 880000, 0.022, 2, 'degradê', 1, 'por fazer', 'terno', 6, 'relógio de luxo', 'soja de dia, mesa vip de noite 😎'],
+  ['A Boiadeira', 720000, 0.026, 1, 'longo', 3, 'nenhuma', 'jaqueta', 2, 'brinco', 'boiada no pasto e galgo na pista'],
+  ['Blackjack21', 610000, 0.02, 3, 'curto', 1, 'cavanhaque', 'camisa', 1, 'óculos escuros', '21 é matematica, o resto é choro'],
+  ['RainhaDaSoja', 520000, 0.028, 2, 'coque', 4, 'nenhuma', 'camisa', 4, 'corrente de ouro', 'presidenta do mirassol, bora subirrr'],
+  ['CriptoTrader', 430000, 0.024, 4, 'boné', 2, 'por fazer', 'moletom', 5, 'boné de marca', 'btc de 5 min ou nada'],
+  ['HarasEstrela', 360000, 0.03, 1, 'longo', 5, 'nenhuma', 'regata', 3, 'brinco', 'haras ferraz 🐎'],
+  ['TratorBrabo', 300000, 0.02, 5, 'raspado', 1, 'cheia', 'jaqueta', 3, 'fone gamer', 'era entregador, hj sou fazendeiro kkk'],
+  ['TerraFirme', 255000, 0.027, 3, 'coque', 2, 'nenhuma', 'camisa', 2, 'pulseira de prata', 'compro terra arrendada, chama'],
+  ['RoletaVermelha', 215000, 0.024, 4, 'degradê', 1, 'bigode', 'moletom', 1, 'óculos escuros', 'so no vermelho, sempre'],
+  ['FeiraMaster', 180000, 0.031, 2, 'curto', 3, 'nenhuma', 'regata', 6, 'brinco', 'a feira é meu cassino'],
+  ['NeloreBR', 150000, 0.02, 3, 'boné', 4, 'por fazer', 'camiseta', 5, 'nenhum', 'nelore no tocantins'],
+  ['CafeForte', 128000, 0.026, 1, 'longo', 2, 'nenhuma', 'camiseta', 4, 'nenhum', 'cafe do sul de minas ☕'],
+  ['Coringa021', 112000, 0.022, 5, 'raspado', 2, 'cavanhaque', 'jaqueta', 6, 'corrente de ouro', 'aviator 2x e vazo'],
+  ['Novato_BR', 98000, 0.025, 2, 'curto', 5, 'nenhuma', 'camisa', 3, 'nenhum', 'comecei agr, bora'],
+  ['LoboNoturno', 91000, 0.03, 4, 'degradê', 1, 'por fazer', 'moletom', 2, 'fone gamer', 'so jogo de madrugada'],
+  ['DezVezes21', 84000, 0.028, 3, 'boné', 1, 'nenhuma', 'camiseta', 1, 'boné de marca', 'bati 21 cinco vezes seguidas, juro'],
+  ['GalgoVeloz', 76000, 0.024, 2, 'curto', 2, 'nenhuma', 'regata', 5, 'nenhum', 'meu galgo vai levar o grande premio, anota'],
+  ['CartaRara', 70000, 0.032, 1, 'coque', 3, 'nenhuma', 'camisa', 6, 'brinco', 'carta rara ou nada'],
+  ['HighRollerX', 64000, 0.02, 5, 'raspado', 1, 'cheia', 'terno', 6, 'óculos escuros', 'high roller aposentado (mentira)'],
+  ['ContaCarta', 59000, 0.027, 5, 'degradê', 1, 'cavanhaque', 'jaqueta', 1, 'corrente de ouro', 'conto carta de cabeça 🧠'],
+  ['RelampagoBR', 55000, 0.029, 2, 'longo', 4, 'nenhuma', 'regata', 2, 'brinco', 'treinando o relampago todo mes'],
+  ['LeaoDoSport', 52000, 0.023, 3, 'curto', 2, 'por fazer', 'camisa', 3, 'nenhum', 'sou do sport, me aceita'],
+  ['Entregador99', 48000, 0.03, 1, 'coque', 1, 'nenhuma', 'moletom', 4, 'nenhum', 'juntando grana pra hilux'],
+  ['PrimeiroMes', 44000, 0.026, 4, 'boné', 2, 'nenhuma', 'camiseta', 5, 'nenhum', 'primeiro mes aqui, pega leve'],
+  ['TrocaTroca', 41000, 0.028, 2, 'longo', 5, 'nenhuma', 'regata', 6, 'nenhum', 'qm quer trocar carta?'],
+  ['RumoAoMilhao', 38000, 0.025, 3, 'degradê', 1, 'nenhuma', 'camiseta', 1, 'nenhum', 'rumo ao primeiro milhao 🤑'],
+  ['BTCnaVeia', 35000, 0.03, 1, 'curto', 3, 'nenhuma', 'camisa', 2, 'brinco', 'all in no bitcoin'],
+  ['MengaoBR', 32000, 0.027, 4, 'raspado', 2, 'por fazer', 'moletom', 3, 'nenhum', 'mengao sempre'],
+  ['So21', 30000, 0.024, 3, 'curto', 1, 'nenhuma', 'camiseta', 4, 'nenhum', 'so 21 e nada mais'],
+  ['MetaHaras', 28000, 0.031, 2, 'coque', 4, 'nenhuma', 'regata', 5, 'nenhum', 'meta: ter um haras'],
+  ['RecomecoBR', 26000, 0.026, 5, 'boné', 1, 'nenhuma', 'camiseta', 6, 'nenhum', 'recomecei do zero, sem drama'],
+  ['SemanaUm', 24000, 0.029, 1, 'longo', 2, 'nenhuma', 'camisa', 1, 'nenhum', 'primeira semana!!'],
 ];
 const hash = n => { const x = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x); };
 const BASE = RAW.map(([nick, base, g, skin, hair, hairColor, beard, outfit, cloth, acc, bio], i) =>
@@ -44,7 +44,7 @@ const BASE = RAW.map(([nick, base, g, skin, hair, hairColor, beard, outfit, clot
 // mais 140 jogadores com nicks montados de palavras (nunca nome de pessoa)
 const PRE = ['Mestre', 'Lobo', 'Touro', 'Falcao', 'Barao', 'Trader', 'Safra', 'Galgo', 'Ficha', 'Roleta', 'Dama', 'Valete', 'Corvo', 'Tigre', 'Pantera', 'Dragao', 'Lenda', 'Ninja', 'Sniper', 'Capitao', 'Fazendeiro', 'Peao', 'Boiadeiro', 'Vaqueiro', 'Sorte', 'Trevo', 'Diamante', 'Esmeralda', 'Aguia', 'Raio', 'Furia', 'Brabo', 'Zica', 'Turbo', 'Nitro', 'Fenix', 'Cometa', 'Tropeiro', 'Cavaleiro', 'Magnata'];
 const SUF = ['21', 'BR', 'Gamer', 'Rico', 'Pro', 'X', '777', 'Ouro', 'Prime', 'MT', 'GO', 'SP', 'MG', 'PR', 'Top', 'Real', '99', 'Max', 'Neo', 'Zero'];
-const BIOS = ['Só jogo à noite.', 'Rumo ao top 10.', 'Gado, soja e 21.', 'Mesa VIP ou nada.', 'Colecionando cartas raras.', 'Treinando galgo todo mês.', 'Trader de 1 minuto.', 'Fazenda no Mato Grosso.', 'Granja e pomar, o resto é sorte.', 'Aviator até 2x.', 'Começando do zero.', 'Quem quer trocar?', 'Meta: primeiro milhão.', 'Time na Série B, subindo.', 'Roleta só no preto.'];
+const BIOS = ['so jogo de noite', 'rumo ao top 10', 'gado, soja e 21', 'mesa vip ou nada', 'colecionando carta rara', 'treinando galgo todo mes', 'trader de 1 min kkk', 'fazenda no mato grosso', 'granja e pomar, o resto é sorte', 'aviator até 2x e tchau', 'comecei do zero', 'qm quer trocar?', 'meta: primeiro milhao', 'meu time ta subindo', 'roleta so no preto', 'nao me chama no pv pra pedir dinheiro kkk', 'vivendo de safra', 'perdi tudo 2x e voltei', 'aqui é trabalho, nao sorte'];
 const HAIR = ['curto', 'degradê', 'longo', 'coque', 'raspado', 'boné'], OUT = ['camiseta', 'moletom', 'regata', 'camisa', 'jaqueta', 'terno'], ACC = ['nenhum', 'nenhum', 'brinco', 'óculos escuros', 'fone gamer', 'corrente de ouro', 'boné de marca'];
 const r0 = n => { const x = Math.sin(n * 91.3 + 7.1) * 43758.5453; return x - Math.floor(x); };
 const used = new Set(BASE.map(n => n.nick.toLowerCase()));

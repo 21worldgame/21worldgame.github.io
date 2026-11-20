@@ -2503,3 +2503,46 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .pix-hist ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; max-height: 260px; overflow: auto; }
 .pix-hist li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px dashed rgba(255, 255, 255, .08); font-size: .82rem; }
 .pix-hist li span { display: grid; min-width: 0; } .pix-hist li small { color: var(--color-muted); overflow-wrap: anywhere; } .pix-hist li > b { white-space: nowrap; }
+
+/* ---------- TV 21 na lateral: aparelho de TV com estúdio, apresentador, faixa e letreiro ---------- */
+.tvx { position: fixed; left: 16px; bottom: 16px; z-index: 49; }
+.tvx__set { width: 320px; padding: 10px 10px 8px; border-radius: 18px; background: linear-gradient(160deg, #2a2d38, #12141b 60%); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 18px 40px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.12); }
+.tvx__screen { position: relative; aspect-ratio: 16 / 10; border-radius: 10px; overflow: hidden; cursor: pointer; background: #061226; box-shadow: inset 0 0 0 2px #05070c, inset 0 0 30px rgba(0,0,0,.6); }
+.tvx__screen:focus-visible { outline: 2px solid #ffd76a; outline-offset: 2px; }
+.tvx__screen::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 3px), radial-gradient(120% 90% at 30% 10%, rgba(255,255,255,.12), transparent 55%); }
+.tvx__studio { position: absolute; inset: 0; background: radial-gradient(80% 70% at 70% 30%, #1d5fbf 0%, #0b2a5e 45%, #061226 100%); }
+.tvx__studio i { position: absolute; bottom: 34%; width: 12%; background: linear-gradient(#5aa0ff33, #5aa0ff0d); border-top: 2px solid #8cc0ff55; }
+.tvx__studio i:nth-child(1) { left: 52%; height: 30%; } .tvx__studio i:nth-child(2) { left: 64%; height: 46%; } .tvx__studio i:nth-child(3) { left: 76%; height: 36%; } .tvx__studio i:nth-child(4) { left: 87%; height: 52%; } .tvx__studio i:nth-child(5) { left: 5%; height: 22%; opacity: .5; }
+.tvx__logo { position: absolute; top: 7px; right: 8px; z-index: 3; font: 900 .78rem/1 var(--font-display); letter-spacing: .02em; color: #fff; background: rgba(0,0,0,.35); padding: 3px 6px; border-radius: 5px; }
+.tvx__logo b { color: #ffd76a; }
+.tvx__live { position: absolute; top: 7px; left: 8px; z-index: 3; display: inline-flex; align-items: center; gap: 5px; font: 800 .62rem/1 var(--font-display); letter-spacing: .08em; color: #fff; background: #c8102e; padding: 4px 7px; border-radius: 4px; }
+.tvx__live .tv__dot { width: 6px; height: 6px; background: #fff; }
+.tvx__anchor { position: absolute; left: 7%; bottom: 31%; width: 36%; z-index: 1; transform-origin: 50% 100%; }
+.tvx__anchor svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
+.tvx__anchor.is-talk { animation: tvxTalk 1.6s ease-in-out; }
+@keyframes tvxTalk { 0%, 100% { transform: translateY(0) rotate(0); } 20% { transform: translateY(-2px) rotate(-1.5deg); } 45% { transform: translateY(0) rotate(1deg); } 70% { transform: translateY(-1px) rotate(-.5deg); } }
+.tvx__desk { position: absolute; left: 0; width: 58%; bottom: 31%; height: 11%; z-index: 2; background: linear-gradient(#e9eef7, #aeb9cc); border-top: 2px solid #fff; border-radius: 0 6px 0 0; display: flex; align-items: center; padding-left: 7%; }
+.tvx__desk span { font: 900 .5rem/1 var(--font-display); letter-spacing: .14em; color: #0b2a5e; }
+.tvx__lower { position: absolute; left: 0; right: 0; bottom: 15%; height: 31%; z-index: 4; padding: 4px 8px; background: linear-gradient(90deg, rgba(5,12,30,.97), rgba(11,42,94,.94)); border-left: 4px solid #c8102e; }
+.tvx__who { position: absolute; right: 8px; top: -9px; font: 800 .58rem/1 var(--font-display); letter-spacing: .03em; color: #0b2a5e; background: #ffd76a; padding: 3px 6px; border-radius: 3px; }
+.tvx__lower .tv__line { margin: 3px 0 0; font-size: .72rem; line-height: 1.22; color: #fff; -webkit-line-clamp: 2; }
+.tvx__lower .tv__kick { font-size: .56rem; }
+.tvx__crawl { position: absolute; left: 0; right: 0; bottom: 0; height: 15%; z-index: 4; overflow: hidden; display: flex; align-items: center; background: #ffd76a; color: #111; font: 700 .66rem/1 var(--font-display); white-space: nowrap; }
+.tvx__crawlin { display: inline-block; padding-left: 100%; animation: tvxCrawl 40s linear infinite; }
+@keyframes tvxCrawl { to { transform: translateX(-100%); } }
+.tvx__bar { display: flex; align-items: center; gap: 6px; margin-top: 7px; font: 800 .7rem/1 var(--font-display); letter-spacing: .06em; text-transform: uppercase; color: #fff; }
+.tvx__bar span { opacity: .55; font-weight: 600; flex: 1; }
+.tvx__btn { border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06); color: #fff; border-radius: 7px; padding: 5px 8px; font: 700 .7rem/1 var(--font-display); text-transform: none; letter-spacing: 0; cursor: pointer; min-width: 28px; }
+.tvx__btn:hover { background: rgba(255,255,255,.14); }
+.tvx__mini { display: none; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 99px; border: 1px solid rgba(255,255,255,.14); background: linear-gradient(160deg, #2a2d38, #12141b); color: #fff; font: 800 .75rem/1 var(--font-display); cursor: pointer; box-shadow: 0 10px 26px rgba(0,0,0,.5); }
+.tvx__miniscreen { width: 34px; height: 24px; border-radius: 5px; background: radial-gradient(#1d5fbf, #061226); display: grid; place-items: center; box-shadow: inset 0 0 0 2px #05070c; }
+.tvx[data-mode="min"] .tvx__set { display: none; }
+.tvx[data-mode="min"] .tvx__mini { display: inline-flex; }
+.has-fs .tvx { display: none; }
+@media (prefers-reduced-motion: reduce) { .tvx__crawlin { animation: none; padding-left: 8px; } .tvx__anchor.is-talk { animation: none; } }
+@media (max-width: 40rem) {
+  .tvx { left: 8px; bottom: calc(76px + env(safe-area-inset-bottom)); }
+  .tvx__set { width: min(250px, calc(100vw - 96px)); padding: 7px 7px 6px; }
+  .tvx__lower .tv__line { font-size: .64rem; }
+  body:has(#chat-box:not([hidden])) .tvx { display: none; }
+}
