@@ -884,6 +884,7 @@ console.log('suínos, negócios e galpões ok');
 {
   const L3 = await import('./logic.js');
   const poor = L3.newState(() => 0.5); assert.equal(L3.eliteOf(poor), null); assert.deepEqual(L3.eliteBills(poor, 1e5), []);
+  const mid = L3.newState(() => 0.5); mid.money = 5e5; assert.equal(L3.eliteBills(mid, 0, 100000)[0].val, -6000, 'imposto de renda 6%');
   const rich = L3.newState(() => 0.5); rich.money = 12e6;
   assert.equal(L3.eliteOf(rich).name, 'magnata do mundo');
   const m0 = rich.money, lines = L3.eliteBills(rich, 100000, 200000);
@@ -906,6 +907,11 @@ console.log('suínos, negócios e galpões ok');
   assert.ok(top > Math.max(...calm.map(r => r.worth)) && top > lead * 0.97 && top < lead * 1.11, 'caçador colado no líder');
   let ahead = 0; for (let m = 50; m < 250; m++) if (Math.max(...RV2.rivals(m, lead).map(r => r.worth)) > lead) ahead++;
   assert.ok(ahead > 100 && ahead < 200, 'o líder às vezes ainda consegue o 1º lugar: ' + ahead);
+}
+{
+  const RV3 = await import('./rivals.js'), r = RV3.rivals(400, 5e8, 2e6).map(x => x.worth).sort((a, b) => b - a);
+  assert.ok(r.filter(w => w > 2e6 && w < 2.5e6).length >= 3, 'vizinhos logo acima de quem está subindo');
+  assert.ok(r.filter(w => w > 2.5e8).length >= 9, '10 caçadores em escada atrás do líder');
 }
 console.log('mais ricos ok');
 

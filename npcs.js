@@ -5,7 +5,7 @@ import { rank, CARS } from './logic.js';
 // [nick, patrimônio inicial, crescimento por mês, pele, cabelo, cor do cabelo, barba, roupa, cor da roupa, acessório, frase]
 const RAW = [
   ['ReiDoGado', 880000, 0.022, 2, 'degradê', 1, 'por fazer', 'terno', 6, 'relógio de luxo', 'Magnata da soja. Mesa VIP toda noite.'],
-  ['AceDeOuro', 720000, 0.026, 1, 'longo', 3, 'nenhuma', 'jaqueta', 2, 'brinco', 'Galgos e cartas raras. Coleciono challenger.'],
+  ['A Boiadeira', 720000, 0.026, 1, 'longo', 3, 'nenhuma', 'jaqueta', 2, 'brinco', 'Boiada no pasto, galgo na pista e carta rara na mão.'],
   ['Blackjack21', 610000, 0.02, 3, 'curto', 1, 'cavanhaque', 'camisa', 1, 'óculos escuros', 'Blackjack é matemática.'],
   ['RainhaDaSoja', 520000, 0.028, 2, 'coque', 4, 'nenhuma', 'camisa', 4, 'corrente de ouro', 'Presidente do Mirassol. Bora subir!'],
   ['CriptoTrader', 430000, 0.024, 4, 'boné', 2, 'por fazer', 'moletom', 5, 'boné de marca', 'Trader de bitcoin, 5 min ou nada.'],
@@ -63,11 +63,14 @@ export const byId = id => NPCS.find(n => n.id === id);
 export const byNick = nick => NPCS.find(n => n.nick === nick);
 export const nicks = (from, n) => Array.from({ length: n }, (_, k) => NPCS[(from + k * 7) % NPCS.length].nick);
 
+export const NPC_BOOST = 3, NPC_LATE = 1.004, NPC_LATE_CAP = 6;
 // fortuna no mês do mundo (pode ser fracionário: anda devagar entre um mês e outro)
 export function worthAt(n, month) {
-  const m = Math.min(48, Math.max(0, month - 1));   // crescem por uns 8 h de jogo e depois só oscilam: o topo fica alcançável
+  const m = Math.min(48, Math.max(0, month - 1));   // arrancada nos primeiros 48 meses (~8 h de jogo)
+  const late = Math.min(NPC_LATE_CAP, NPC_LATE ** Math.max(0, month - 49));   // depois seguem crescendo devagar, até 6x
   const wave = 1 + 0.07 * Math.sin(month * 0.7 + n.i * 2.1) + 0.03 * Math.sin(month * 2.3 + n.i);
-  return Math.round(n.base * (1 + n.g * 0.55) ** m * wave);
+  const boost = 1 + (NPC_BOOST - 1) * Math.min(1, m / 48);   // o reforço entra aos poucos: mundo novo continua alcançável
+  return Math.round(n.base * boost * (1 + n.g * 0.55) ** m * late * wave);
 }
 export const levelFor = worth => Math.max(1, Math.min(60, Math.round(Math.log10(Math.max(10, worth)) * 7 - 28)));
 

@@ -19,9 +19,9 @@ const SOLO = [
   { id: 'bot-porto', name: 'Mesa Ouro', minBet: 250, bots: ['TratorBrabo', 'TerraFirme', 'LoboNoturno', 'DezVezes21'] },
   { id: 'bot-esm', name: 'Salão Esmeralda', minBet: 500, bots: ['HarasEstrela', 'CriptoTrader', 'CartaRara', 'GalgoVeloz'] },
   { id: 'bot-vip', name: 'Mesa VIP', minBet: 1000, bots: ['RainhaDaSoja', 'Blackjack21', 'ContaCarta', 'RelampagoBR'] },
-  { id: 'bot-dia', name: 'Sala Diamante', minBet: 2500, bots: ['AceDeOuro', 'ReiDoGado', 'RainhaDaSoja', 'HighRollerX'] },
-  { id: 'bot-high', name: 'High Roller', minBet: 5000, bots: ['ReiDoGado', 'AceDeOuro', 'CriptoTrader', 'HarasEstrela'] },
-  { id: 'bot-mag', name: 'Mesa do Magnata', minBet: 10000, bots: ['ReiDoGado', 'AceDeOuro', 'Blackjack21', 'RainhaDaSoja'] },
+  { id: 'bot-dia', name: 'Sala Diamante', minBet: 2500, bots: ['A Boiadeira', 'ReiDoGado', 'RainhaDaSoja', 'HighRollerX'] },
+  { id: 'bot-high', name: 'High Roller', minBet: 5000, bots: ['ReiDoGado', 'A Boiadeira', 'CriptoTrader', 'HarasEstrela'] },
+  { id: 'bot-mag', name: 'Mesa do Magnata', minBet: 10000, bots: ['ReiDoGado', 'A Boiadeira', 'Blackjack21', 'RainhaDaSoja'] },
 ];
 let lobby = null, selfId = null;
 let cur = null;          // mesa aberta
@@ -114,7 +114,7 @@ function tableCard(t, kind, host) {
 function lobbyHero(on) {
   const now = Live.now(), day = Math.floor((now - 3 * 3600e3) / 864e5), sinceDay = ((now - 3 * 3600e3) % 864e5) / 864e5;
   const jackpot = Math.round(250000 + sinceDay * 1900000 + (day % 7) * 40000);
-  const slot = Math.floor(now / 7000), ids = [...NPC.onlineSet(now)], pickN = k => NPC.byId(ids[(slot * 7 + k * 13) % ids.length])?.nick || 'AceDeOuro';
+  const slot = Math.floor(now / 7000), ids = [...NPC.onlineSet(now)], pickN = k => NPC.byId(ids[(slot * 7 + k * 13) % ids.length])?.nick || 'A Boiadeira';
   const wins = [0, 1, 2].map(k => { const tb = SOLO[(slot + k * 3) % SOLO.length]; return `<li><b>${esc(pickN(k))}</b> levou <strong>${int(tb.minBet * (3 + ((slot + k) % 5) * 2))}</strong> fichas na ${esc(tb.name)}</li>`; }).join('');
   return `<div class="lhero__txt"><span class="lhero__kicker"><i></i>${on} jogadores online agora</span><h2>salão de jogos</h2>
       <p>Sente numa mesa de 21, gire a roleta, voe no aviator ou aposte no futebol ao vivo.</p>
@@ -143,7 +143,7 @@ export function rankingRows(limit = 10) {
   const w = Live.world(), t = Live.now(), month = W.current(w, t) + W.progress(w, t);
   const meP = profileOf(), myId = Auth.account()?.id;
   const cloud = (Auth.account() ? globalRows || [] : []).filter(r => r.user_id !== myId).map(r => ({ name: r.name, level: r.level, rank: r.rank || '', worth: Number(r.worth), look: r.look || {} }));
-  return RV.merge({ cloud, me: { ...meP, pid: 'me' }, peers, rivalRows: RV.rivals(month, Math.max(Number(meP.worth) || 0, ...cloud.map(r => r.worth || 0), ...peers.map(p => p.worth || 0))), limit });
+  return RV.merge({ cloud, me: { ...meP, pid: 'me' }, peers, rivalRows: RV.rivals(month, Math.max(Number(meP.worth) || 0, ...cloud.map(r => r.worth || 0), ...peers.map(p => p.worth || 0)), Number(meP.worth) || 0), limit });
 }
 export function renderRanking() {
   const el = $('#ranking'); if (!el) return;
@@ -151,7 +151,7 @@ export function renderRanking() {
   const w = Live.world(), t = Live.now(), month = W.current(w, t) + W.progress(w, t);
   const meP = profileOf(), myId = Auth.account()?.id;
   const cloud = (Auth.account() ? globalRows || [] : []).filter(r => r.user_id !== myId).map(r => ({ name: r.name, level: r.level, rank: r.rank || '', worth: Number(r.worth), look: r.look || {} }));
-  const list = RV.merge({ cloud, me: { ...meP, pid: 'me' }, peers, rivalRows: RV.rivals(month, Math.max(Number(meP.worth) || 0, ...cloud.map(r => r.worth || 0), ...peers.map(p => p.worth || 0))), limit: 10 });
+  const list = RV.merge({ cloud, me: { ...meP, pid: 'me' }, peers, rivalRows: RV.rivals(month, Math.max(Number(meP.worth) || 0, ...cloud.map(r => r.worth || 0), ...peers.map(p => p.worth || 0)), Number(meP.worth) || 0), limit: 10 });
   $('#ranking-title').textContent = 'ranking global ao vivo';
   const now = new Map(list.map((x, i) => [x.name, i]));
   el.innerHTML = list.map((x, i) => {

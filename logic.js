@@ -310,8 +310,14 @@ export const eliteIdx = s => { const w = netWorth(s); let i = -1; ELITE.forEach(
 export const TOP1 = { price: 0.25, bills: 1, tax: 2, gain: 0.15 };
 export const eliteOf = s => { const e = ELITE[eliteIdx(s)]; if (!e) return null; return s.top1 ? { ...e, name: `1º do mundo (${e.name})`, price: e.price + TOP1.price, bills: e.bills + TOP1.bills, tax: e.tax * TOP1.tax, gain: e.gain + TOP1.gain } : e; };
 // contas extras do mês: imposto sobre a fortuna + o quanto as contas normais encarecem
+export const INCOME_TAX = { min: 300000, rate: 0.06 };
 export function eliteBills(s, spent, earned = 0) {
-  const e = eliteOf(s); if (!e) return [];
+  const e = eliteOf(s);
+  if (!e) {   // ainda não é elite: imposto de renda simples sobre o que ganhou no mês
+    const it = netWorth(s) >= INCOME_TAX.min ? Math.round(Math.max(0, earned) * INCOME_TAX.rate) : 0;
+    if (it > 0) { s.money -= it; return [{ txt: `imposto de renda (${Math.round(INCOME_TAX.rate * 100)}% dos ganhos do mês)`, val: -it }]; }
+    return [];
+  }
   const w = netWorth(s), tax = Math.round((w - ELITE[0].min) * e.tax), extra = Math.round(spent * (e.bills - 1)), cut = Math.round(Math.max(0, earned) * e.gain), out = [];
   if (cut > 0) { s.money -= cut; out.push({ txt: `pedágio dos mais ricos: ${Math.round(e.gain * 100)}% dos ganhos do mês`, val: -cut }); }
   if (tax > 0) { s.money -= tax; out.push({ txt: `imposto sobre grandes fortunas (${e.name})`, val: -tax }); }

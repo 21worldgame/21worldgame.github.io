@@ -119,7 +119,7 @@ function seeded(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) 
 const r100 = v => Math.round(v / 100) * 100;
 export function npcListings(s, now = Date.now()) {
   const win = Math.floor(now / NPC_WIN), r = seeded(win * 7717 + 3), out = [], month = s.month || 1;
-  const ids = [...NPCS.onlineSet(win * NPC_WIN)].sort(), seller = () => NPCS.byId(ids[Math.floor(r() * ids.length)])?.nick || 'AceDeOuro';
+  const ids = [...NPCS.onlineSet(win * NPC_WIN)].sort(), seller = () => NPCS.byId(ids[Math.floor(r() * ids.length)])?.nick || 'A Boiadeira';
   const cars = Object.entries(CARS).filter(([, c]) => c.type !== 'maquina' && c.price <= 4e6), maqs = Object.entries(CARS).filter(([, c]) => c.type === 'maquina');
   const add = (cat, label, price, items, extra = {}) => out.push({ id: `n${win}-${out.length}`, cat, label, price: r100(price), items, seller: seller(), ...extra });
   for (let k = 0; k < 2; k++) { const [m, c] = cars[Math.floor(r() * cars.length)], v = r100(c.price * (0.7 + r() * 0.2)); add('veiculo', `${c.name} seminovo`, v * 1.06, [{ kind: 'car', data: { model: m, value: v } }], { img: c.img }); }

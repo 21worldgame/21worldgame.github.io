@@ -30,7 +30,7 @@ export function lot(slot, nicks = []) {
   a.pot = Math.min(99, Math.max(a.pot, Math.max(a.spd, a.sta, a.acc) + 4));
   a.breed = breed; a.stars = stars; a.name = `${a.name} ${SUF[Math.floor(r() * SUF.length)]}`; a.age = 30 + Math.floor(r() * 18);
   const value = breedValue(a), inc = Math.max(1000, Math.round(value * 0.03 / 1000) * 1000), start = Math.max(inc, Math.round(value * 0.45 / 1000) * 1000);
-  const pool = nicks.length ? nicks : ['ReiDoGado', 'HarasEstrela', 'AceDeOuro', 'TerraFirme', 'Blackjack21', 'RainhaDaSoja'];
+  const pool = nicks.length ? nicks : ['ReiDoGado', 'HarasEstrela', 'A Boiadeira', 'TerraFirme', 'Blackjack21', 'RainhaDaSoja'];
   const bidders = Array.from({ length: 3 + Math.floor(r() * 4) }, () => ({ name: pool[Math.floor(r() * pool.length)], max: Math.round(value * (0.72 + r() * 0.55) / 1000) * 1000 }));
   const L = { slot, horse: a, value, inc, start, bidders, seed: slot * 977 + 3 };
   cache.set(slot, L); if (cache.size > 20) cache.delete(cache.keys().next().value);
