@@ -2285,3 +2285,27 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
   .pk-pos--1, .pk-pos--2 { left: 4%; } .pk-pos--4, .pk-pos--5 { left: 96%; }
   .pk-seat { width: 76px; } .pk-seat b { max-width: 76px; }
 }
+
+/* unidades das redes (lojas, aviões, lanchas, hotéis) */
+.biz-units { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin: 8px 0; }
+.biz-unit { display: grid; gap: 4px; padding: 10px; border-radius: 12px; background: rgba(2, 6, 23, .45); box-shadow: inset 0 0 0 1px var(--glass-edge); }
+.biz-unit b { font-size: .9rem; } .biz-unit small { color: var(--color-muted); font-size: .75rem; }
+.biz-unit .row { gap: 6px; flex-wrap: wrap; }
+
+/* menu na lateral (opcional, só em tela grande; no celular continua a barra de baixo) */
+.hdr-side { display: none; }
+@media (min-width: 48rem) {
+  .hdr-side { display: inline-flex; }
+  body.side-menu .hud > nav.container { position: absolute; left: 0; top: 100%; width: 12.5rem; max-width: none; margin: 0; padding: 8px; box-sizing: border-box; max-height: calc(100vh - var(--hud-h, 120px)); overflow-y: auto; scrollbar-width: thin; background: color-mix(in oklab, var(--color-paper) 88%, transparent); backdrop-filter: blur(16px); border-right: var(--rule-hair) solid var(--color-line, rgba(255,255,255,.1)); border-bottom-right-radius: 14px; }
+  body.side-menu .tabs { flex-direction: column; flex-wrap: nowrap; gap: 2px; }
+  body.side-menu .tabs button { width: 100%; justify-content: flex-start; min-height: 40px; border-bottom: 0; border-left: 3px solid transparent; border-radius: 8px; }
+  body.side-menu .tabs button[aria-selected="true"] { border-left-color: var(--hud-accent); background: rgba(245,184,51,.1); }
+  body.side-menu main.container { margin-left: 13.5rem; margin-right: 0; width: auto; max-width: none; }
+}
+
+.pk-take { margin-top: 2px; padding: 2px 8px; border: 0; border-radius: 99px; background: rgba(250, 204, 21, .9); color: #111; font: 800 .68rem/1.4 var(--font-body); cursor: pointer; white-space: nowrap; }
+.pk-take:hover { background: #fde047; } .pk-take:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.pk-real { position: absolute; top: 2px; left: 22px; font-style: normal; font-size: 12px; color: #a78bfa; text-shadow: 0 0 6px #a78bfa; }
+.pk-seat:has(.pk-real) .pk-av { box-shadow: 0 0 0 3px #0b1220, 0 0 0 5px #a78bfa; }
+.tcard3__seat.is-human .tcard3__av { box-shadow: 0 0 0 2px #a78bfa, 0 0 12px #a78bfa; }
+@media (max-width: 40rem) { .biz-own { grid-template-columns: minmax(0, 1fr); } }

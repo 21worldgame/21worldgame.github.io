@@ -565,7 +565,7 @@ function renderLivro() {
 
 // ---------- perfil ----------
 const mi = v => `${Math.round(v / 1e6)}M`;
-const BIZ_LISTS = { banks: NG.BANKS, isps: NG.ISPS, markets: NG.MARKETS, usinas: NG.USINAS };
+const BIZ_LISTS = NG.LISTS;
 function profileExtra(p, me) {
   const tr = p.trophies || [];
   const trophies = `<h3>troféus de patrimônio <small class="muted">${tr.length} de ${L.TROPHIES.length}</small></h3><div class="pf__troph">${L.TROPHIES.map((t, i) => `<span class="troph${tr.includes(t) ? ' is-got' : ''}${i === 0 ? ' troph--selo' : ''}" title="${i === 0 ? 'selo' : 'troféu'} de ${mi(t)}"><b>${i === 0 ? '🎖️' : '🏆'}</b><small>${mi(t)}</small></span>`).join('')}</div>`;
@@ -1252,7 +1252,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 36;
+const APP_VERSION = 37;
 let updateShown = false, updateMsg = '';
 async function checkUpdate() {
   if (updateShown) return;

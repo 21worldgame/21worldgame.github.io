@@ -61,7 +61,7 @@ export class Poker {
   fillBots(n) { for (let i = 0, k = 0; i < SEATS && k < n; i++) if (this.seats[i].kind === 'empty') { this.seats[i] = this.bot(k); k++; } this.maybeStart(); }
   join(pid, info, prefer = -1) {
     const had = this.seatOf(pid); if (had >= 0) return had;
-    const free = [prefer, ...this.seats.keys()].find(i => i >= 0 && this.seats[i]?.kind === 'empty') ?? [...this.seats.keys()].find(i => this.seats[i].kind === 'bot');
+    const free = prefer >= 0 && this.seats[prefer] && this.seats[prefer].kind !== 'human' ? prefer : [...this.seats.keys()].find(i => this.seats[i].kind === 'empty') ?? [...this.seats.keys()].find(i => this.seats[i].kind === 'bot');
     if (free == null) return null;
     if (this.phase === 'play' && this.seats[free].kind === 'bot' && this.seats[free].in && !this.seats[free].folded) this.foldOut(free);
     this.seats[free] = { kind: 'human', pid, name: String(info?.name || 'jogador').slice(0, 20), look: info?.look, stack: this.buyIn, buys: 1 };
@@ -73,6 +73,17 @@ export class Poker {
     if (this.phase === 'play' && this.seats[i].in && !this.seats[i].folded) this.foldOut(i);
     this.seats[i] = this.botNames.length ? this.bot(i) : { kind: 'empty' };
     this.emit(); this.schedule();
+  }
+  // trocar de lugar: para um lugar vazio ou de jogador da casa que não esteja jogando a mão agora
+  move(pid, to) {
+    const i = this.seatOf(pid), t = this.seats[to];
+    if (i < 0 || !t || i === to || t.kind === 'human') return 'esse lugar não está livre.';
+    const busy = s => this.phase === 'play' && s.in && !s.folded;
+    if (busy(this.seats[i]) || busy(t)) return 'espere a mão acabar para trocar de lugar.';
+    const me = this.seats[i];
+    this.seats[to] = { kind: 'human', pid, name: me.name, look: me.look, stack: me.stack, buys: me.buys };
+    this.seats[i] = this.botNames.length ? this.bot(i) : { kind: 'empty' };
+    this.msg = `${me.name} trocou de lugar.`; this.emit(); return null;
   }
   rebuy(pid) {   // só com a mão fora de jogo e sem fichas
     const i = this.seatOf(pid), s = this.seats[i]; if (!s) return 'lugar inválido.';

@@ -29,7 +29,7 @@ export function items(s) {
   for (const h of (s.granja?.houses || []).filter(h => h && GR.HOUSES[h.type])) out.push({ kind: 'aviario', id: h.id, key: `aviario:${h.id}`, label: `${GR.HOUSES[h.type].label} (granja)`, value: h.value, data: h });
   if (s.fut?.club) out.push({ kind: 'club', id: 'club', key: 'club:club', label: `clube ${s.fut.club} (${FT.DIVS[s.fut.div]})`, value: clubValue(s.fut) });
   for (const w of s.biz?.wh || []) out.push({ kind: 'galpao', id: w.id, key: `galpao:${w.id}`, label: NG.WAREHOUSES[w.type].label, value: w.value, data: w });
-  for (const c of ['banks', 'isps', 'markets', 'usinas']) for (const b of s.biz?.[c] || []) { const C = ({ banks: NG.BANKS, isps: NG.ISPS, markets: NG.MARKETS, usinas: NG.USINAS })[c][b.brand]; out.push({ kind: 'empresa', id: b.id, key: `empresa:${b.id}`, cat: c, label: `${C.name} (${({ banks: 'banco', isps: 'provedor', markets: 'supermercado' })[c]})`, value: NG.saleValue(s, c, b), data: b }); }
+  for (const c of NG.CAT_KEYS) for (const b of s.biz?.[c] || []) { const C = NG.LISTS[c][b.brand]; if (!C) continue; out.push({ kind: 'empresa', id: b.id, key: `empresa:${b.id}`, cat: c, label: `${C.name} (${({ banks: 'banco', isps: 'provedor', markets: 'supermercado', usinas: 'usina' })[c] || NG.SECTORS[c]?.one})`, value: NG.saleValue(s, c, b), data: b }); }
   return out;
 }
 export function housePrice(s, it) {

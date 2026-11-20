@@ -146,7 +146,7 @@ export function profileOf(s = G.S) {
     animals: (s.stable?.animals || []).map(a => ({ kind: a.kind, name: a.name, rating: ST.rating(a), wins: a.wins, ph: a.ph })),
     trophies: s.trophies || [], private: !!s.privateProfile && (s.trophies || []).includes(L.PRIVATE_MIN),
     landList: own.slice(0, 10).map(l => ({ region: l.region, ha: l.ha, orchard: !!l.orchard, cane: !!l.cane })),
-    biz: ['usinas', 'banks', 'isps', 'markets'].flatMap(c => (s.biz?.[c] || []).map(b => ({ cat: c, brand: b.brand }))),
+    biz: ['usinas', 'hotel', 'air', 'boat', 'cars', 'jewel', 'food', 'realty', 'auction', 'banks', 'isps', 'markets'].flatMap(c => (s.biz?.[c] || []).map(b => ({ cat: c, brand: b.brand }))),
     mina: !!s.mina, wh: (s.biz?.wh || []).length, granja: (s.granja?.houses || []).length, suinos: (s.suinos?.barns || []).length,
     cardsN: (s.cards || []).length, club: s.fut?.club || null,
     listings: (s.shop || []).slice(0, 12).map(l => ({ label: String(l.label || '').slice(0, 60), price: l.price, kind: l.kind })),

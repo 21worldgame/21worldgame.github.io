@@ -7,12 +7,13 @@ import { openTableRoom } from './net.js';
 import { NPC_LOOKS, avatarSVG } from './avatar.js';
 import { G, $, esc, int, say, save, note, award, profileOf, confetti } from './store.js';
 import * as sfx from './sfx.js';
+import { botFor } from './botpool.js';
 
 export const HOUSE = [
-  { id: 'sn-bar', name: 'Bilhar do Bar', stake: 50, bot: 'TacoTorto', skill: 0.55 },
-  { id: 'sn-clube', name: 'Sinuca Clube', stake: 300, bot: 'Bola8BR', skill: 0.7 },
-  { id: 'sn-pro', name: 'Mesa Profissional', stake: 1500, bot: 'MestreDaTabela', skill: 0.82 },
-  { id: 'sn-magnata', name: 'Mesa do Magnata', stake: 6000, bot: 'ReiDoGado', skill: 0.9 },
+  { id: 'sn-bar', name: 'Bilhar do Bar', stake: 50, bot: botFor('sn-bar'), skill: 0.55 },
+  { id: 'sn-clube', name: 'Sinuca Clube', stake: 300, bot: botFor('sn-clube'), skill: 0.7 },
+  { id: 'sn-pro', name: 'Mesa Profissional', stake: 1500, bot: botFor('sn-pro'), skill: 0.82 },
+  { id: 'sn-magnata', name: 'Mesa do Magnata', stake: 6000, bot: botFor('sn-magnata'), skill: 0.9 },
 ];
 export const PAY = 1.9;
 const COLORS = ['#f8fafc', '#facc15', '#2563eb', '#dc2626', '#7c3aed', '#f97316', '#16a34a', '#7f1d1d', '#0a0a0a'];

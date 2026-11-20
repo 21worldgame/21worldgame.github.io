@@ -1,9 +1,10 @@
 // Aviator: o multiplicador sobe até o avião "voar". Saque antes disso.
+import { botsFor } from './botpool.js';
 import * as GM from './games.js';
 import { G, $, esc, int, say, save, award, note, confetti, RM } from './store.js';
 import * as sfx from './sfx.js';
 
-const BOT_NAMES = ['A Boiadeira', 'Coringa021', 'CriptoTrader', 'So21', 'LoboNoturno', 'HighRollerX', 'Novato_BR', 'BTCnaVeia', 'CartaRara', 'DezVezes21', 'RumoAoMilhao', 'GalgoVeloz', 'TrocaTroca', 'MengaoBR', 'SemanaUm'];
+const BOT_NAMES = botsFor('av');
 let st = { phase: 'wait', until: 0, crash: 1, t0: 0, mult: 1 }, mine = null, next = null, bots = [], hist = [], raf = 0, active = false;
 const PLANE = new Path2D('M2 12 L22 6 L30 0 L34 2 L28 10 L44 8 L48 4 L52 6 L48 14 L28 18 L22 26 L18 25 L20 17 L6 16 Z');
 

@@ -68,6 +68,80 @@ export const sugarPrice = m => +(2.6 * (1 + 0.14 * Math.sin(m * 0.31) + 0.05 * M
 export const ethanolPrice = m => +(3.1 * (1 + 0.12 * Math.sin(m * 0.23 + 1) + 0.05 * Math.sin(m * 1.3))).toFixed(2);   // R$/L
 export const juicePrice = m => +(51 * (1 + 0.13 * Math.sin(m * 0.27 + 2) + 0.05 * Math.sin(m * 1.1))).toFixed(2);   // R$ por caixa processada
 export const ownsUsina = (s, kind) => (s.biz?.usinas || []).some(b => USINAS[b.brand]?.kind === kind);
+// ---------- redes: lanchonetes, carros, joias, imóveis, leilões, aviação, marinas e hotéis ----------
+// Mesmo esquema para todos: compra a MARCA (única no jogo) e depois as unidades (lojas, aviões, lanchas, hotéis...).
+// Cada unidade fatura conforme a ocupação do mês (reputação, nível de preço, época do ano e sorte) e tem custo fixo alto:
+// ocupação boa dá lucro, ocupação fraca dá prejuízo. Aviões e lanchas precisam de vaga em hangar / galpão náutico.
+// rev = faturamento por mês com a unidade 100% ocupada; cost = custo fixo por mês; slots = vagas que a unidade dá; slot = vaga que ocupa
+const SUMMER = [12, 1, 2, 3], VAC = [12, 1, 7];
+export const SECTORS = {
+  food: { label: 'redes de lanchonete', one: 'lanchonete', icon: '🍔', base: 0.95, max: 40,
+    desc: 'Restaurantes de rua e drive-thru de rodovia: muito movimento, mas aluguel, funcionários e comida custam caro todo mês.',
+    brands: { mcboi: { name: 'McBoi Burguer', price: 26000000, color: '#facc15' }, reiburguer: { name: 'Burguer Rei', price: 21000000, color: '#ef4444' }, habibao: { name: 'Habibão Esfihas', price: 12000000, color: '#16a34a' }, bobao: { name: "Bobão's Lanches", price: 8000000, color: '#dc2626' } },
+    units: { loja: { label: 'restaurante', price: 2400000, rev: 150000, cost: 114000 }, drive: { label: 'drive-thru de rodovia', price: 4800000, rev: 300000, cost: 228000 } } },
+  cars: { label: 'lojas de carro e importados', one: 'loja de carro', icon: '🚘', base: 0.85, max: 25,
+    desc: 'Pátios de seminovos giram rápido; showrooms de importados vendem menos carros, mas cada venda dá muito mais margem.',
+    brands: { feirao21: { name: 'Feirão Seminovos 21', price: 6000000, color: '#22c55e', units: ['patio'] }, rodao: { name: 'Rodão Seminovos', price: 9500000, color: '#0ea5e9', units: ['patio'] },
+      importsp: { name: 'Paulista Import Motors', price: 38000000, color: '#a855f7', units: ['showroom'] }, italia: { name: 'Itália Motors Importados', price: 62000000, color: '#dc2626', units: ['showroom'] } },
+    units: { patio: { label: 'pátio de seminovos', price: 3200000, rev: 190000, cost: 124000 }, showroom: { label: 'showroom de importados', price: 14000000, rev: 860000, cost: 565000 } } },
+  jewel: { label: 'joalherias', one: 'joalheria', icon: '💍', base: 0.8, max: 30,
+    desc: 'Margem alta e estoque caro. Com a mina de ouro, o ouro sai do seu garimpo: custo 8% menor.',
+    brands: { vivarra: { name: 'Vivarra Joias', price: 22000000, color: '#be123c' }, hestrela: { name: 'H. Estrela Joalheiros', price: 45000000, color: '#0f172a' }, garimpo: { name: 'Ouro do Garimpo', price: 8000000, color: '#ca8a04' } },
+    units: { loja: { label: 'loja de shopping', price: 3600000, rev: 230000, cost: 142000 }, boutique: { label: 'boutique de luxo', price: 9500000, rev: 640000, cost: 402000 } } },
+  realty: { label: 'imobiliárias', one: 'imobiliária', icon: '🏠', base: 0.92, max: 60, appreciate: 0.003,
+    desc: 'Compre casas e alugue. O aluguel paga IPTU, manutenção e a administração; a casa valoriza com o tempo e vende pelo valor de mercado.',
+    brands: { lopex: { name: 'Lopex Imóveis', price: 9000000, color: '#2563eb' }, quintal: { name: 'Quinto Quintal Imóveis', price: 16000000, color: '#f97316' } },
+    units: { casa: { label: 'casa', price: 480000, rev: 3200, cost: 1100 }, sobrado: { label: 'sobrado', price: 1250000, rev: 8000, cost: 2900 }, mansao: { label: 'mansão', price: 6500000, rev: 38000, cost: 15000 } } },
+  auction: { label: 'casas de leilão', one: 'casa de leilão', icon: '🔨', base: 0.8, max: 15, season: [5, 6, 7, 8, 9], seasonPull: 1.25,
+    desc: 'Pavilhões alugados para leilões de gado e cavalos. A temporada forte é de maio a setembro.',
+    brands: { nelorepq: { name: 'Parque de Leilões Nelore', price: 7000000, color: '#a16207' }, leilaobr: { name: 'Leilão Rural Brasil', price: 14000000, color: '#15803d' } },
+    units: { pavilhao: { label: 'pavilhão de leilão', price: 2800000, rev: 175000, cost: 121000 } } },
+  air: { label: 'táxi aéreo e jatos', one: 'empresa de aviação', icon: '✈️', base: 0.78, max: 30,
+    desc: 'Compre o hangar e os aviões, e alugue para os clientes do mundo por hora de voo. Cada hangar guarda 4 aviões. Avião parado custa caro (tripulação, seguro e manutenção).',
+    brands: { azuu: { name: 'Azuu Táxi Aéreo', price: 15000000, color: '#2563eb' }, jatao: { name: 'Jatão Executive', price: 32000000, color: '#111827' }, brigadeiro: { name: 'Céu de Brigadeiro Aviação', price: 8000000, color: '#0284c7' } },
+    units: { hangar: { label: 'hangar (4 aviões)', price: 6500000, rev: 0, cost: 26000, slots: 4 }, mono: { label: 'monomotor', price: 2200000, rev: 140000, cost: 84000, slot: 1 },
+      turbo: { label: 'turboélice', price: 14000000, rev: 860000, cost: 520000, slot: 1 }, jato: { label: 'jato executivo', price: 46000000, rev: 2700000, cost: 1650000, slot: 1 } } },
+  boat: { label: 'marinas e lanchas', one: 'marina', icon: '🛥️', base: 0.75, max: 30, season: SUMMER, seasonPull: 1.35, offPull: 0.75,
+    desc: 'Galpão náutico (6 vagas) e lanchas para alugar. Verão (dezembro a março) lota; no inverno a procura cai.',
+    brands: { angra21: { name: 'Marina Angra 21', price: 9000000, color: '#0891b2' }, ilhabela: { name: 'Estaleiro Ilhabela', price: 16000000, color: '#1d4ed8' } },
+    units: { galpao: { label: 'galpão náutico (6 vagas)', price: 4000000, rev: 0, cost: 15000, slots: 6 }, lancha: { label: 'lancha 32 pés', price: 1100000, rev: 70000, cost: 38000, slot: 1 },
+      iate50: { label: 'iate 50 pés', price: 6000000, rev: 380000, cost: 205000, slot: 1 }, iate80: { label: 'iate 80 pés', price: 22000000, rev: 1380000, cost: 745000, slot: 1 } } },
+  hotel: { label: 'hotéis de luxo', one: 'rede de hotel', icon: '🏨', base: 0.82, max: 12, season: VAC, seasonPull: 1.25,
+    desc: 'Os mais caros do setor: diárias altas, mas a folha, a manutenção e a energia não param. Férias de verão e de julho enchem os quartos.',
+    brands: { copapalacio: { name: 'Copacabana Palácio', price: 85000000, color: '#f8fafc' }, fazzano: { name: 'Fazzano Hotéis', price: 60000000, color: '#78350f' }, tchai: { name: 'Tchai Resort', price: 34000000, color: '#065f46' } },
+    units: { boutique: { label: 'hotel boutique (40 quartos)', price: 26000000, rev: 1500000, cost: 1000000 }, resort: { label: 'resort (200 quartos)', price: 92000000, rev: 5200000, cost: 3450000 } } },
+};
+export const LEVELS = { popular: { label: 'preço popular', mult: 0.85, pull: 1.18 }, normal: { label: 'preço normal', mult: 1, pull: 1 }, premium: { label: 'preço premium', mult: 1.22, pull: 0.8 } };
+export const SECTOR_FIXED = 0.0012;   // sede, marketing e sistemas: % do preço da marca por mês
+export const unitTypes = (cat, brand) => { const S = SECTORS[cat]; return S.brands[brand]?.units || Object.keys(S.units); };
+export const unitCount = (b, t) => (b.units || []).filter(u => u.t === t).length;
+export const slotsOf = (cat, b) => { const U = SECTORS[cat].units; let free = 0, need = false; for (const u of b.units || []) { free += U[u.t].slots || 0; free -= U[u.t].slot || 0; if (U[u.t].slot) need = true; } return { free, need: need || Object.values(U).some(x => x.slots) }; };
+export const unitValue = (cat, u, month) => { const S = SECTORS[cat], p = S.units[u.t].price; return Math.round(S.appreciate ? p * grow(month - (u.at || month) + 1, S.appreciate, 2.2) * 0.95 : p * 0.6); };
+export function buyUnit(s, cat, id, t) {
+  const S = SECTORS[cat], b = find(s, cat, id), U = S?.units[t]; if (!b || !U || !unitTypes(cat, b.brand).includes(t)) return 'unidade inválida.';
+  if ((b.units || []).length >= S.max) return `limite de ${S.max} unidades por marca.`;
+  if (U.slot && slotsOf(cat, b).free < U.slot) return `sem vaga: compre antes um ${Object.values(S.units).find(x => x.slots).label.split(' (')[0]}.`;
+  if (s.money < U.price) return 'dinheiro insuficiente.';
+  s.money -= U.price; (b.units ??= []).push({ t, at: s.month || 1 }); return null;
+}
+export function sellUnit(s, cat, id, t) {
+  const S = SECTORS[cat], b = find(s, cat, id); if (!b) return { err: 'negócio não encontrado.' };
+  const k = (b.units || []).findLastIndex(u => u.t === t); if (k < 0) return { err: 'você não tem essa unidade.' };
+  if (S.units[t].slots && slotsOf(cat, b).free < S.units[t].slots) return { err: 'tire os aviões / lanchas antes: eles ficariam sem vaga.' };
+  const v = unitValue(cat, b.units[k], s.month || 1); b.units.splice(k, 1); s.money += v; return { value: v };
+}
+// mês da rede: ocupação × faturamento cheio − custo fixo
+export function sectorMonth(s, cat, b, m, rng) {
+  const S = SECTORS[cat], L = LEVELS[b.level] || LEVELS.normal, moy = monthOfYear(m);
+  b.rep = Math.max(0.35, Math.min(1, (b.rep ?? 0.75) + (L.pull - 1) * 0.04 + 0.007 + (rng() - 0.5) * 0.03));
+  const season = S.season ? (S.season.includes(moy) ? S.seasonPull : S.offPull || 1) : 1;
+  const occ = Math.max(0.12, Math.min(1, S.base * b.rep * L.pull * season * (0.82 + rng() * 0.3)));
+  let rev = 0, cost = (S.brands[b.brand]?.price || 0) * SECTOR_FIXED;
+  for (const u of b.units || []) { const U = S.units[u.t]; rev += U.rev * L.mult * occ * grow(m, 0.0004, 2); cost += U.cost * grow(m, 0.0004, 2); }
+  if (cat === 'jewel' && s.mina) cost *= 0.92;
+  b.occ = occ; return { rev, cost, occ };
+}
+
 // ---------- galpões ----------
 export const WAREHOUSES = {
   g500: { label: 'galpão 500 t', cap: 500, price: 1800000 },
@@ -77,17 +151,19 @@ export const WAREHOUSES = {
 export const FREE_TONS = 60, UNIT_KG = { soja: 60, milho: 60, cafe: 60, laranja: 40.8 }, WH_UPKEEP = 0.0025, WH_INFL = 0.0008;
 export const whPrice = (type, month) => Math.round(WAREHOUSES[type].price * grow(month, WH_INFL, 2.5) / 1000) * 1000;
 
+export const LISTS = { banks: BANKS, isps: ISPS, markets: MARKETS, usinas: USINAS, ...Object.fromEntries(Object.entries(SECTORS).map(([k, S]) => [k, S.brands])) };
+export const CAT_KEYS = Object.keys(LISTS);
 export function ensure(s) {
   s.biz ??= { banks: [], isps: [], markets: [], wh: [] };
-  for (const k of ['banks', 'isps', 'markets', 'usinas', 'wh']) s.biz[k] = (s.biz[k] || []).filter(Boolean);
+  for (const k of [...CAT_KEYS, 'wh']) s.biz[k] = (s.biz[k] || []).filter(Boolean);
   if (s.biz.legacy == null) { const t = tons(s); s.biz.legacy = Math.max(0, Math.ceil(t - FREE_TONS)); }   // quem já tinha estoque grande não perde nada
   return s.biz;
 }
 const nid = s => `b${(s.nextId = (s.nextId || 1) + 1)}`;
-export const brandValue = (b, cat, month) => Math.round(({ banks: BANKS, isps: ISPS, markets: MARKETS, usinas: USINAS })[cat][b.brand].price * grow(month - (b.at || month) + 1, 0.0004, 2) * 0.85);
+export const brandValue = (b, cat, month) => Math.round(LISTS[cat][b.brand].price * grow(month - (b.at || month) + 1, 0.0004, 2) * 0.85);
 export function buy(s, cat, brand) {
   ensure(s);
-  const C = ({ banks: BANKS, isps: ISPS, markets: MARKETS, usinas: USINAS })[cat]?.[brand]; if (!C) return 'marca inválida.';
+  const C = LISTS[cat]?.[brand]; if (!C) return 'marca inválida.';
   if (s.biz[cat].some(b => b.brand === brand)) return 'você já é dono dessa marca.';
   if (s.money < C.price) return 'dinheiro insuficiente para comprar a marca.';
   s.money -= C.price;
@@ -95,6 +171,7 @@ export function buy(s, cat, brand) {
   if (cat === 'banks') Object.assign(b, { capital: 0, loans: [], policy: 'moderado' });
   if (cat === 'isps') Object.assign(b, { ports: 0, subs: 0, plan: 69, net: 0 });
   if (cat === 'markets') Object.assign(b, { markup: 22, rep: 0.6 });
+  if (SECTORS[cat]) Object.assign(b, { units: [], level: 'normal', rep: 0.75 });
   s.biz[cat].push(b); return null;
 }
 export const find = (s, cat, id) => s.biz?.[cat]?.find(b => b.id === id);
@@ -104,6 +181,7 @@ export function saleValue(s, cat, b) {
   if (cat === 'banks') return brand + b.capital + Math.round(b.loans.reduce((t, l) => t + l.bal, 0) * 0.8);
   if (cat === 'isps') return brand + Math.round(b.net * 0.45 + b.subs * 300);
   if (cat === 'markets' || cat === 'usinas') return brand;
+  if (SECTORS[cat]) return brand + (b.units || []).reduce((t, u) => t + unitValue(cat, u, m), 0);
   return 0;
 }
 export function sell(s, cat, id) {
@@ -190,11 +268,19 @@ export function monthly(s, rng = Math.random) {
     } else out.push({ txt: `${C.name}: ${safra ? 'moagem parada por você' : 'entressafra, sem moagem'}`, val: 0 });
     b.last = Math.round(net); b.lastQ = on;
   }
+  // redes
+  for (const cat of Object.keys(SECTORS)) for (const b of s.biz[cat]) {
+    const S = SECTORS[cat], C = S.brands[b.brand]; if (!C) continue;
+    const r = sectorMonth(s, cat, b, m, rng), n = (b.units || []).length;
+    if (n) add(`${C.name}: faturamento de ${n} ${n === 1 ? 'unidade' : 'unidades'} (${Math.round(r.occ * 100)}% de ocupação)`, r.rev);
+    add(`${C.name}: ${n ? 'funcionários, aluguel, manutenção, seguro e ' : ''}sede da marca`, -r.cost);
+    b.last = Math.round(r.rev * (r.rev > 0 ? T.bizMult : 1) - r.cost);
+  }
   // galpões: manutenção
   for (const w of s.biz.wh) add(`${WAREHOUSES[w.type].label}: manutenção e seguro`, -w.value * WH_UPKEEP);
   return out;
 }
-export const value = s => { const b = s.biz; if (!b) return 0; return ['banks', 'isps', 'markets', 'usinas'].reduce((t, c) => t + b[c].reduce((a, x) => a + saleValue(s, c, x), 0), 0) + b.wh.reduce((t, w) => t + w.value * 0.8, 0); };
+export const value = s => { const b = s.biz; if (!b) return 0; return CAT_KEYS.reduce((t, c) => t + (b[c] || []).reduce((a, x) => a + saleValue(s, c, x), 0), 0) + b.wh.reduce((t, w) => t + w.value * 0.8, 0); };
 
 // ---------- armazenagem ----------
 export const tons = s => Object.entries(s.stock || {}).reduce((t, [k, q]) => t + (UNIT_KG[k] ? (q || 0) * UNIT_KG[k] / 1000 : 0), 0);

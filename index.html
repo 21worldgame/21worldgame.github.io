@@ -95,6 +95,7 @@
       <button class="btn btn--glass btn--missions" data-act="open-missions"><svg><use href="#i-target"/></svg>missões<span class="pill" id="missions-badge" hidden>0</span></button>
       <button class="btn btn--gold btn--sm" type="button" id="btn-install" hidden>instalar app</button>
       <button class="btn btn--glass btn--sm hdr-fs" type="button" data-fs="app" aria-pressed="false">tela cheia</button>
+      <button class="btn btn--glass btn--sm hdr-side" type="button" id="btn-side" aria-pressed="false" title="Mostrar o menu na lateral ou no topo">menu na lateral</button>
       <div class="worldclock glass" id="worldclock" title="Tempo de mundo: o mês passa sozinho, igual para todos os jogadores"><span class="worldclock__t">mundo</span><b id="wc-m">1</b><span class="worldclock__bar" aria-hidden="true"><i id="wc-bar"></i></span><small id="wc-left">--:--</small></div>
     </div>
     <nav class="container" aria-label="áreas do jogo">
@@ -900,5 +901,17 @@
   <div class="badges" id="badges" aria-live="polite"></div>
   <div class="confetti" id="confetti" aria-hidden="true"></div>
   <p id="status" class="toast" role="status" aria-live="polite"></p>
+<script>
+  // menu na lateral (só em tela grande): preferência fica neste aparelho
+  (() => {
+    const b = document.getElementById('btn-side'), hud = document.querySelector('.hud'); if (!b) return;
+    const set = on => { document.body.classList.toggle('side-menu', on); b.setAttribute('aria-pressed', on); b.textContent = on ? 'menu no topo' : 'menu na lateral'; };
+    let on = false; try { on = localStorage.getItem('21world.sidemenu') === '1'; } catch {}
+    set(on);
+    b.addEventListener('click', () => { on = !on; set(on); try { localStorage.setItem('21world.sidemenu', on ? '1' : '0'); } catch {} });
+    const hh = () => document.documentElement.style.setProperty('--hud-h', hud.offsetHeight + 'px');
+    hh(); if (window.ResizeObserver) new ResizeObserver(hh).observe(hud);
+  })();
+</script>
 </body>
 </html>

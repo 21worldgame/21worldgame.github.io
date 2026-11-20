@@ -4,6 +4,7 @@
 // Empate ("cangou"): empatou a 1ª, quem ganhar a 2ª leva; ganhou a 1ª e empatou depois, leva quem ganhou a 1ª.
 // Mão de onze: a dupla com 11 vê as cartas do parceiro e decide jogar (vale 3) ou correr (outra dupla +1); não tem truco.
 // Mão de ferro (11 a 11): vale 1, sem truco. Partida até 12 pontos.
+import { botsFor } from './botpool.js';
 export const RANKS = ['4', '5', '6', '7', 'Q', 'J', 'K', 'A', '2', '3'];
 export const SUITS = ['♦', '♠', '♥', '♣'];
 export const SUIT_NAME = { '♦': 'ouros', '♠': 'espadas', '♥': 'copas', '♣': 'paus' };
@@ -60,7 +61,7 @@ export class Truco {
     this.seats[i] = { kind: 'bot', name: this.botName(i) };     // a casa assume para a partida não parar
     this.emit(); this.schedule();
   }
-  botName(i) { return this.botNames?.[i] || ['Coringa021', 'SemanaUm', 'RecomecoBR', 'PrimeiroMes'][i]; }
+  botName(i) { return this.botNames?.[i] || botsFor('am-tr')[i]; }
   fill() { this.seats = this.seats.map((s, i) => (s.kind === 'human' ? s : { kind: 'bot', name: this.botName(i) })); }
   seatOf(pid) { return this.seats.findIndex(s => s.kind === 'human' && s.pid === pid); }
 

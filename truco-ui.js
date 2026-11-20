@@ -7,12 +7,13 @@ import { openTableRoom } from './net.js';
 import { NPC_LOOKS, avatarSVG } from './avatar.js';
 import { G, $, esc, int, say, save, note, award, profileOf, confetti } from './store.js';
 import * as sfx from './sfx.js';
+import { botsFor } from './botpool.js';
 
 export const HOUSE = [
-  { id: 'tr-boteco', name: 'Truco do Boteco', stake: 50, bots: ['Coringa021', 'SemanaUm', 'RecomecoBR'] },
-  { id: 'tr-praca', name: 'Truco da Praça', stake: 200, bots: ['FeiraMaster', 'NeloreBR', 'CafeForte'] },
-  { id: 'tr-ouro', name: 'Mesa de Ouro', stake: 1000, bots: ['TratorBrabo', 'TerraFirme', 'LoboNoturno'] },
-  { id: 'tr-magnata', name: 'Truco do Magnata', stake: 5000, bots: ['ReiDoGado', 'A Boiadeira', 'Blackjack21'] },
+  { id: 'tr-boteco', name: 'Truco do Boteco', stake: 50, bots: botsFor('tr-boteco') },
+  { id: 'tr-praca', name: 'Truco da Praça', stake: 200, bots: botsFor('tr-praca') },
+  { id: 'tr-ouro', name: 'Mesa de Ouro', stake: 1000, bots: botsFor('tr-ouro') },
+  { id: 'tr-magnata', name: 'Truco do Magnata', stake: 5000, bots: botsFor('tr-magnata') },
 ];
 export const PAY = 1.9;                // dupla vencedora: cada um leva 1,9x a entrada (5% fica com a casa)
 let cur = null, view = null, hidden = false, paid = new Set();

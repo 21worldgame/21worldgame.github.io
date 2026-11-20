@@ -7,6 +7,7 @@ import { G, $, esc, int, ms, sleep, say, save, award, profileOf, confetti } from
 import * as sfx from './sfx.js';
 import * as Auth from './auth.js';
 import * as Live from './live.js';
+import { botsFor } from './botpool.js';
 import * as W from './world.js';
 import * as RV from './rivals.js';
 import * as SH from './shop.js';
@@ -14,14 +15,14 @@ import * as NPC from './npcs.js';
 import * as BJ from './bj.js';
 
 const SOLO = [
-  { id: 'bot-dorival', name: 'Mesa Bronze', minBet: 50, bots: ['Coringa021', 'SemanaUm', 'RecomecoBR', 'PrimeiroMes', 'Novato_BR', 'TrocaTroca'] },
-  { id: 'bot-azul', name: 'Mesa Prata', minBet: 100, bots: ['FeiraMaster', 'NeloreBR', 'CafeForte', 'RoletaVermelha', 'MengaoBR', 'Entregador99'] },
-  { id: 'bot-porto', name: 'Mesa Ouro', minBet: 250, bots: ['TratorBrabo', 'TerraFirme', 'LoboNoturno', 'DezVezes21', 'So21', 'LeaoDoSport'] },
-  { id: 'bot-esm', name: 'Salão Esmeralda', minBet: 500, bots: ['HarasEstrela', 'CriptoTrader', 'CartaRara', 'GalgoVeloz', 'MetaHaras', 'BTCnaVeia'] },
-  { id: 'bot-vip', name: 'Mesa VIP', minBet: 1000, bots: ['RainhaDaSoja', 'Blackjack21', 'ContaCarta', 'RelampagoBR', 'RumoAoMilhao', 'HighRollerX'] },
-  { id: 'bot-dia', name: 'Sala Diamante', minBet: 2500, bots: ['A Boiadeira', 'ReiDoGado', 'RainhaDaSoja', 'HighRollerX', 'CriptoTrader', 'ContaCarta'] },
-  { id: 'bot-high', name: 'High Roller', minBet: 5000, bots: ['ReiDoGado', 'A Boiadeira', 'CriptoTrader', 'HarasEstrela', 'Blackjack21', 'RainhaDaSoja'] },
-  { id: 'bot-mag', name: 'Mesa do Magnata', minBet: 10000, bots: ['ReiDoGado', 'A Boiadeira', 'Blackjack21', 'RainhaDaSoja', 'HighRollerX', 'CriptoTrader'] },
+  { id: 'bot-dorival', name: 'Mesa Bronze', minBet: 50, bots: botsFor('bot-dorival') },
+  { id: 'bot-azul', name: 'Mesa Prata', minBet: 100, bots: botsFor('bot-azul') },
+  { id: 'bot-porto', name: 'Mesa Ouro', minBet: 250, bots: botsFor('bot-porto') },
+  { id: 'bot-esm', name: 'Salão Esmeralda', minBet: 500, bots: botsFor('bot-esm') },
+  { id: 'bot-vip', name: 'Mesa VIP', minBet: 1000, bots: botsFor('bot-vip') },
+  { id: 'bot-dia', name: 'Sala Diamante', minBet: 2500, bots: botsFor('bot-dia') },
+  { id: 'bot-high', name: 'High Roller', minBet: 5000, bots: botsFor('bot-high') },
+  { id: 'bot-mag', name: 'Mesa do Magnata', minBet: 10000, bots: botsFor('bot-mag') },
 ];
 let lobby = null, selfId = null;
 let cur = null;          // mesa aberta
@@ -99,7 +100,7 @@ const summary = v => ({ id: v.id, name: v.name, minBet: v.minBet, phase: v.phase
 const TIERS = ['bronze', 'prata', 'ouro', 'esmeralda', 'vip', 'diamante', 'high', 'magnata'];
 const lookOf = s => (s.kind === 'human' ? s.look : NPC.byNick(s.name)?.look || NPC_LOOKS.Dorival);
 function tableCard(t, kind, host) {
-  const seats = t.seats || (t.bots || ['Coringa021', 'SemanaUm', 'RecomecoBR', 'PrimeiroMes', 'Novato_BR', 'TrocaTroca']).map(name => ({ kind: 'bot', name }));
+  const seats = t.seats || (t.bots || botsFor('am-21')).map(name => ({ kind: 'bot', name }));
   const humans = seats.filter(s => s.kind === 'human').length, tier = kind === 'online' ? 'online' : TIERS[SOLO.indexOf(t)] || 'bronze';
   const pot = Math.round(t.minBet * (6 + ((Live.now() / 60000 + t.minBet) % 9)));   // fichas em jogo agora, mexe com o tempo
   return `<article class="tcard3 tcard3--${tier}">

@@ -1001,3 +1001,42 @@ console.log('mina ok');
   assert.equal(won[0], 300, 'all-in de 100 leva só 3x100'); assert.equal(won[2], a.contrib[1] * 2 - 200, 'o resto vai para a segunda melhor mão');
   console.log('pôquer ok', sideSeen ? '(potes paralelos vistos)' : '');
 }
+
+// ---------- redes (lanchonetes, aviação, imóveis...) ----------
+{
+  const N = await import('./negocios.js');
+  const s = { money: 5e8, month: 100, prices: {} }; N.ensure(s);
+  assert.equal(N.buy(s, 'air', 'azuu'), null); const b = s.biz.air[0];
+  assert.match(N.buyUnit(s, 'air', b.id, 'mono'), /sem vaga/, 'avião sem hangar não entra');
+  assert.equal(N.buyUnit(s, 'air', b.id, 'hangar'), null);
+  for (let k = 0; k < 4; k++) assert.equal(N.buyUnit(s, 'air', b.id, 'mono'), null);
+  assert.match(N.buyUnit(s, 'air', b.id, 'mono'), /sem vaga/, 'hangar guarda 4');
+  assert.ok(N.sellUnit(s, 'air', b.id, 'hangar').err, 'não vende hangar com avião dentro');
+  assert.equal(N.buyUnit(s, 'cars', 'x', 'patio'), 'unidade inválida.');
+  N.buy(s, 'cars', 'feirao21'); assert.equal(N.buyUnit(s, 'cars', s.biz.cars[0].id, 'showroom'), 'unidade inválida.', 'seminovos não abre showroom de importado');
+  N.buy(s, 'realty', 'lopex'); const r = s.biz.realty[0]; N.buyUnit(s, 'realty', r.id, 'casa');
+  s.month = 220; const v = N.sellUnit(s, 'realty', r.id, 'casa').value; assert.ok(v > 480000, `casa valoriza: ${v}`);
+  const before = s.money; for (let k = 0; k < 24; k++) { s.month++; N.monthly(s); }
+  assert.ok(Number.isFinite(s.money) && s.money !== before && Number.isFinite(N.value(s)), 'mês das redes sem NaN');
+  console.log('redes ok');
+}
+{
+  const PK = await import('./poker.js');
+  const t = new PK.Poker({ bb: 20, auto: false, botNames: ['A', 'B', 'C', 'D', 'E'] });
+  t.join('me', { name: 'eu' }, 0); t.fillBots(5);
+  assert.equal(t.join('amigo', { name: 'amigo' }, 3), 3, 'senta no lugar escolhido de um jogador da casa');
+  assert.equal(t.move('amigo', 0), 'esse lugar não está livre.');
+  assert.equal(t.move('amigo', 4), null); assert.equal(t.seatOf('amigo'), 4); assert.equal(t.seats[3].kind, 'bot');
+  assert.equal(t.view(-1).seats.every(s => s.cards.every(c => c === null)), true, 'quem assiste não vê cartas');
+  console.log('pôquer: assistir e trocar de lugar ok');
+}
+
+// nenhum jogador fictício senta em duas mesas/jogos ao mesmo tempo
+{
+  const BP = await import('./botpool.js'), NP = await import('./npcs.js'), fs = await import('node:fs');
+  const ids = [...fs.readFileSync('./botpool.js', 'utf8').matchAll(/\['([a-z0-9-]+)', \d+\]/g)].map(m => m[1]);
+  const seen = new Set();
+  for (const id of ids) for (const n of BP.botsFor(id)) { assert.ok(NP.byNick(n), `${n} não é um NPC`); assert.ok(!seen.has(n), `${n} em duas mesas`); seen.add(n); }
+  for (const f of ['poker-ui.js', 'casino.js', 'truco-ui.js', 'sinuca-ui.js', 'aviator.js']) assert.ok(/botsFor|botFor/.test(fs.readFileSync(`./${f}`, 'utf8')), `${f} não usa botpool`);
+  console.log(`bots: ${seen.size} únicos em ${ids.length} mesas, sem repetição ok`);
+}

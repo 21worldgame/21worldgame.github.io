@@ -2,9 +2,8 @@
 // Ele embaralha o sapato, dá as cartas, joga pelo dealer e acerta cada mão. Os outros recebem o estado (view) e mandam ações.
 import * as BJ from './bj.js';
 
-export const BOTS = [
-  { name: 'Coringa021' }, { name: 'SemanaUm' }, { name: 'RecomecoBR' }, { name: 'PrimeiroMes' }, { name: 'Novato_BR' }, { name: 'TrocaTroca' },
-];
+import { botsFor } from './botpool.js';
+export const BOTS = botsFor('am-21').map(name => ({ name }));
 export const SEATS = 6; const TURN_MS = 20000;
 
 export class Table {

@@ -8,14 +8,23 @@ import { openTableRoom } from './net.js';
 import { NPC_LOOKS, avatarSVG } from './avatar.js';
 import { G, $, esc, int, say, save, note, profileOf, confetti } from './store.js';
 import * as sfx from './sfx.js';
+import { botsFor } from './botpool.js';
 
 export const HOUSE = [
-  { id: 'pk-boteco', name: 'Pôquer do Boteco', bb: 10, skill: 0.55, bots: ['Coringa021', 'SemanaUm', 'Novato_BR', 'TrocaTroca', 'PrimeiroMes'] },
-  { id: 'pk-clube', name: 'Clube do Flop', bb: 50, skill: 0.66, bots: ['FeiraMaster', 'CafeForte', 'MengaoBR', 'LoboNoturno', 'DezVezes21'] },
-  { id: 'pk-pro', name: 'Mesa Profissional', bb: 200, skill: 0.78, bots: ['ContaCarta', 'CartaRara', 'CriptoTrader', 'HarasEstrela', 'Blackjack21'] },
-  { id: 'pk-magnata', name: 'Pôquer do Magnata', bb: 1000, skill: 0.88, bots: ['ReiDoGado', 'A Boiadeira', 'RainhaDaSoja', 'HighRollerX', 'BTCnaVeia'] },
+  { id: 'pk-calcada', name: 'Pôquer da Calçada', bb: 5, skill: 0.5, bots: botsFor('pk-calcada') },
+  { id: 'pk-boteco', name: 'Pôquer do Boteco', bb: 10, skill: 0.55, bots: botsFor('pk-boteco') },
+  { id: 'pk-praca', name: 'Pôquer da Praça', bb: 20, skill: 0.6, bots: botsFor('pk-praca') },
+  { id: 'pk-clube', name: 'Clube do Flop', bb: 50, skill: 0.66, bots: botsFor('pk-clube') },
+  { id: 'pk-fazenda', name: 'Mesa da Fazenda', bb: 100, skill: 0.7, bots: botsFor('pk-fazenda') },
+  { id: 'pk-pro', name: 'Mesa Profissional', bb: 200, skill: 0.78, bots: botsFor('pk-pro') },
+  { id: 'pk-leilao', name: 'Mesa do Leilão', bb: 400, skill: 0.8, bots: botsFor('pk-leilao') },
+  { id: 'pk-vip', name: 'Mesa VIP', bb: 700, skill: 0.84, bots: botsFor('pk-vip') },
+  { id: 'pk-magnata', name: 'Pôquer do Magnata', bb: 1000, skill: 0.88, bots: botsFor('pk-magnata') },
+  { id: 'pk-diamante', name: 'Sala Diamante', bb: 2000, skill: 0.9, bots: botsFor('pk-diamante') },
+  { id: 'pk-high', name: 'High Roller', bb: 5000, skill: 0.92, bots: botsFor('pk-high') },
+  { id: 'pk-dono', name: 'Mesa do Dono', bb: 10000, skill: 0.94, bots: botsFor('pk-dono') },
 ];
-const TIER = ['bronze', 'esmeralda', 'diamante', 'magnata'];
+const TIER = ['bronze', 'bronze', 'bronze', 'esmeralda', 'esmeralda', 'esmeralda', 'diamante', 'diamante', 'magnata', 'magnata', 'magnata', 'magnata'];
 let cur = null, view = null, raiseTo = 0, lastHands = -1;
 const rid = () => Math.random().toString(36).slice(2, 8);
 const me = () => { const p = profileOf(); return { name: p.name, look: p.look }; };
@@ -53,61 +62,68 @@ export function renderLobby() {
     return `<article class="tcard3 tcard3--${kind === 'online' ? 'online' : TIER[HOUSE.indexOf(t)]}">
       <div class="tcard3__top"><span class="tcard3__live"><i></i>${kind === 'online' ? `online · ${esc(t.host || '')}` : 'texas hold\'em'}</span><span class="tcard3__stake">blinds ${int(t.bb / 2)}/${int(t.bb)}</span></div>
       <div class="tcard3__table"><div class="tcard3__felt pk-felt-mini"><b>${esc(t.name)}</b><small>compra ${int(t.bb * 100)} fichas</small></div>
-        ${seats.slice(0, 5).map((s, i) => `<span class="tcard3__seat tcard3__seat--b${i}" title="${esc(s.name || 'livre')}"><span class="tcard3__av${s.kind === 'empty' ? ' tcard3__av--free' : ''}">${s.kind === 'empty' ? '+' : avatarSVG(lookOf(s), { label: s.name })}</span><em>${esc(s.kind === 'empty' ? 'livre' : s.name)}</em></span>`).join('')}
-        <span class="tcard3__seat tcard3__seat--you"><span class="tcard3__av tcard3__av--free">+</span><em>seu lugar</em></span></div>
-      <div class="tcard3__foot"><span class="muted small">${kind === 'online' ? `${t.humans} ${t.humans === 1 ? 'pessoa' : 'pessoas'} na mesa` : `adversários ${['iniciantes', 'bons', 'profissionais', 'tubarões'][HOUSE.indexOf(t)]}`}</span>
-        <button class="btn btn--gold" data-pk="${kind === 'online' ? 'join' : 'house'}" data-id="${esc(t.id)}" ${t.full ? 'disabled' : ''}>sentar</button></div></article>`;
+        ${seats.slice(0, 5).map((s, i) => `<span class="tcard3__seat tcard3__seat--b${i}${s.kind === 'human' ? ' is-human' : ''}" title="${esc(s.name || 'livre')}"><span class="tcard3__av${s.kind === 'empty' ? ' tcard3__av--free' : ''}">${s.kind === 'empty' ? '+' : avatarSVG(lookOf(s), { label: s.name })}</span><em>${esc(s.kind === 'empty' ? 'livre' : s.name)}</em></span>`).join('')}
+        ${kind === 'online' && seats[5] ? `<span class="tcard3__seat tcard3__seat--you${seats[5].kind === 'human' ? ' is-human' : ''}"><span class="tcard3__av">${avatarSVG(lookOf(seats[5]), { label: seats[5].name })}</span><em>${esc(seats[5].name)}</em></span>` : '<span class="tcard3__seat tcard3__seat--you"><span class="tcard3__av tcard3__av--free">+</span><em>seu lugar</em></span>'}</div>
+      <div class="tcard3__foot"><span class="muted small">${kind === 'online' ? `${t.humans} ${t.humans === 1 ? 'jogador' : 'jogadores'} de verdade${t.watchers ? ` · ${t.watchers} assistindo` : ''}` : `adversários ${['iniciantes', 'bons', 'profissionais', 'tubarões'][HOUSE.indexOf(t)]}`}</span>
+        <span class="row">${kind === 'online' ? `<button class="btn btn--glass btn--sm" data-pk="watch" data-id="${esc(t.id)}">assistir</button>` : ''}<button class="btn btn--gold" data-pk="${kind === 'online' ? 'join' : 'house'}" data-id="${esc(t.id)}" ${t.full ? 'disabled' : ''}>${t.full ? 'cheia' : 'sentar'}</button></span></div></article>`;
   };
   el.innerHTML = online.map(t => tcard(t, 'online')).join('') + HOUSE.map(t => tcard(t, 'house')).join('');
 }
 G.gameHosts ??= {};
-G.gameHosts.poker = () => (cur?.host && cur.pub && cur.engine ? { kind: 'poker', id: cur.id, name: cur.engine.name, bb: cur.engine.bb, humans: cur.engine.seats.filter(s => s.kind === 'human').length,
-  full: cur.engine.seats.every(s => s.kind === 'human'), seats: cur.engine.seats.filter((s, i) => i).map(s => ({ kind: s.kind, name: s.name, look: s.look })) } : null);
+G.gameHosts.poker = () => (cur?.host && cur.pub && cur.engine ? { kind: 'poker', id: cur.id, house: cur.house || null, name: cur.engine.name, bb: cur.engine.bb, humans: cur.engine.seats.filter(s => s.kind === 'human').length, watchers: cur.watchers?.size || 0,
+  full: cur.engine.seats.every(s => s.kind === 'human'), seats: cur.engine.seats.map(s => ({ kind: s.kind, name: s.name, look: s.look })) } : null);
 
 // ---------- abrir mesa ----------
 function show(on) { $('#pk-lobby').hidden = on; $('#pk-room').hidden = !on; }
 const enough = bb => { if ((G.S.chips || 0) >= bb * 100) return true; say(`Essa mesa pede ${int(bb * 100)} fichas para sentar. Compre no caixa do cassino (aba vinte e um).`, true); return false; };
-export function sitHouse(id) {
+export async function sitHouse(id) {
   const def = HOUSE.find(t => t.id === id); if (!def || !enough(def.bb)) return;
+  if (await host({ name: def.name, bb: def.bb, pub: true, house: def })) return;
   leave(true);
   const e = new PK.Poker({ id: def.id, name: def.name, bb: def.bb, skill: def.skill, botNames: def.bots, onChange: x => draw(x.view(x.seatOf('me'))) });
   cur = { id: def.id, local: true, engine: e }; show(true);
   e.join('me', me(), 0); e.fillBots(5);
 }
-export async function host({ name, bb, pub }) {
+export async function host({ name, bb, pub, house }) {
   if (!enough(bb)) return;
   const id = rid(), conn = await openTableRoom(`poker-${id}`);
-  if (!conn) return say('Sem conexão com a internet agora. Jogue numa mesa da casa.', true);
+  if (!conn) { if (!house) say('Sem conexão com a internet agora. Jogue numa mesa da casa.', true); return false; }
   leave(true);
   const self = conn.selfId;
-  const e = new PK.Poker({ id, name: name || 'pôquer dos amigos', bb, skill: 0.7, botNames: HOUSE[1].bots, onChange: x => {
+  const watchers = new Set();
+  const e = new PK.Poker({ id, name: name || 'pôquer dos amigos', bb, skill: house?.skill ?? 0.7, botNames: house?.bots || botsFor('am-pk'), onChange: x => {
     for (const [i, s] of x.seats.entries()) if (s.kind === 'human' && s.pid !== self) conn.state.send(x.view(i), { target: s.pid });
+    if (watchers.size) { const v = x.view(-1); for (const w of watchers) if (x.seatOf(w) < 0) conn.state.send(v, { target: w }); }
     draw(x.view(x.seatOf(self))); C.announce();
   } });
-  cur = { id, host: true, pub, engine: e, conn };
+  cur = { id, host: true, pub, engine: e, conn, watchers, house: house?.id };
   conn.act.onMessage = (m, { peerId }) => {
-    if (m.t === 'join') { if (e.join(peerId, m.info) == null) conn.state.send({ full: true }, { target: peerId }); return; }
+    if (m.t === 'watch') { watchers.add(peerId); conn.state.send(e.view(-1), { target: peerId }); C.announce(); return; }
+    if (m.t === 'join') { if (e.join(peerId, m.info, m.to ?? -1) == null) conn.state.send({ full: true }, { target: peerId }); else watchers.delete(peerId); return; }
+    if (m.t === 'move') { const err = e.move(peerId, m.to); if (err) conn.state.send({ ...e.view(e.seatOf(peerId)), err }, { target: peerId }); return; }
     if (m.t === 'leave') return e.leave(peerId);
     if (m.t === 'rebuy') return e.rebuy(peerId), e.emit();
     const s = e.seatOf(peerId); if (s >= 0) e.act(s, m);
   };
-  conn.room.onPeerLeave = pid => e.leave(pid);
-  show(true); e.join(self, me(), 0); e.fillBots(3); C.announce(); invite();
+  conn.room.onPeerLeave = pid => { watchers.delete(pid); e.leave(pid); C.announce(); };
+  show(true); e.join(self, me(), 0); e.fillBots(house ? 5 : 3); C.announce(); if (!house) invite();
+  return true;
 }
-export async function join(id) {
+export async function join(id, watch = false) {
   id = String(id || '').trim().toLowerCase(); if (!id) return;
   const conn = await openTableRoom(`poker-${id}`);
   if (!conn) return say('Sem conexão com a internet agora.', true);
   leave(true);
-  cur = { id, remote: true, conn, hostId: null }; show(true);
+  cur = { id, remote: true, conn, hostId: null, watch }; show(true);
   $('#pk-msg').textContent = 'Procurando a mesa…';
-  conn.room.onPeerJoin = target => { conn.act.send({ t: 'join', info: me() }, { target }); };
+  conn.room.onPeerJoin = target => { conn.act.send(watch ? { t: 'watch' } : { t: 'join', info: me() }, { target }); };
   conn.room.onPeerLeave = pid => { if (pid === cur?.hostId) { say('O anfitrião fechou a mesa de pôquer.', true); leave(); } };
   conn.state.onMessage = (v, { peerId }) => {
     if (cur?.conn !== conn) return;
     if (v.full) { say('Essa mesa está cheia.', true); return leave(); }
     if (v.closed) { say('O anfitrião fechou a mesa de pôquer.', true); return leave(); }
-    if (!cur.hostId && (G.S.chips || 0) < v.buyIn) { say(`Essa mesa pede ${int(v.buyIn)} fichas para sentar.`, true); conn.act.send({ t: 'leave' }, { target: peerId }); return leave(); }
+    if (v.err) say(v.err[0].toUpperCase() + v.err.slice(1), true);
+    if (!cur.hostId && !watch && (G.S.chips || 0) < v.buyIn) { say(`Essa mesa pede ${int(v.buyIn)} fichas para sentar.`, true); conn.act.send({ t: 'leave' }, { target: peerId }); return leave(); }
     cur.hostId = peerId; draw(v);
   };
   setTimeout(() => { if (cur?.conn === conn && !cur.hostId) { say('Mesa de pôquer não encontrada.', true); leave(); } }, 25000);
@@ -124,6 +140,16 @@ export function invite() {
   if (!cur || cur.local) return;
   const url = `${location.origin}${location.pathname}?poker=${cur.id}`;
   navigator.clipboard?.writeText(url).then(() => say(`Link da mesa de pôquer copiado. Código: ${cur.id}`), () => say(`Código da mesa de pôquer: ${cur.id}`));
+}
+function seatAt(to) {
+  if (!cur || !view) return;
+  if (view.seat < 0) {   // assistindo: senta nesse lugar
+    if (!enough(view.bb)) return;
+    if (cur.hostId) { cur.watch = false; cur.conn.act.send({ t: 'join', info: me(), to }, { target: cur.hostId }); }
+    return;
+  }
+  if (cur.engine) { const err = cur.engine.move(cur.local ? 'me' : cur.conn.selfId, to); if (err) say(err[0].toUpperCase() + err.slice(1), true); }
+  else if (cur.hostId) cur.conn.act.send({ t: 'move', to }, { target: cur.hostId });
 }
 function send(a) {
   if (!cur) return;
@@ -143,7 +169,9 @@ function draw(v) {
   $('#pk-name').textContent = v.name;
   $('#pk-blinds').textContent = `blinds ${int(v.sb)}/${int(v.bb)}`;
   $('#pk-seats').innerHTML = v.seats.map((s, i) => {
-    if (s.kind === 'empty') return `<div class="pk-seat pk-pos--${rel(i)} is-empty"><span class="pk-av">+</span><b>livre</b></div>`;
+    const canTake = s.kind !== 'human' && !(v.phase === 'play' && s.in && !s.folded) && !(v.seat >= 0 && v.phase === 'play' && mine?.in && !mine.folded);
+    const take = canTake ? `<button class="pk-take" data-pk="move" data-to="${i}">${v.seat < 0 ? 'sentar aqui' : 'trocar para cá'}</button>` : '';
+    if (s.kind === 'empty') return `<div class="pk-seat pk-pos--${rel(i)} is-empty"><span class="pk-av">+</span><b>livre</b>${take}</div>`;
     const w = won.get(i), turn = v.phase === 'play' && v.turn === i;
     return `<div class="pk-seat pk-pos--${rel(i)}${turn ? ' is-turn' : ''}${s.folded ? ' is-folded' : ''}${w ? ' is-winner' : ''}${i === v.seat ? ' is-me' : ''}">
       <span class="pk-av">${avatarSVG(lookOf(s), { label: s.name })}</span>
@@ -151,7 +179,7 @@ function draw(v) {
       ${s.said ? `<em class="pk-said">${esc(s.said)}</em>` : ''}${w ? `<em class="pk-won">+${int(w.amount)}${w.hand ? ` · ${esc(w.hand)}` : ''}</em>` : ''}
       ${i !== v.seat && s.cards.length ? `<span class="pk-hole">${s.cards.map(c => card(c, 'tr-card--sm')).join('')}</span>` : ''}
       ${v.button === i ? '<i class="tr-dealer pk-dealer" title="botão (quem dá as cartas)">D</i>' : ''}
-      ${s.bet ? `<span class="pk-bet">${int(s.bet)}</span>` : ''}</div>`;
+      ${s.bet ? `<span class="pk-bet">${int(s.bet)}</span>` : ''}${s.kind === 'human' && i !== v.seat ? '<i class="pk-real" title="jogador de verdade">●</i>' : ''}${take}</div>`;
   }).join('');
   $('#pk-center').innerHTML = `<div class="pk-board">${[0, 1, 2, 3, 4].map(k => v.board[k] ? card(v.board[k], 'pk-in') : '<span class="pk-slot"></span>').join('')}</div>
     <div class="pk-pot"><small>pote</small><b>${int(v.pot)}</b></div>`;
@@ -174,6 +202,7 @@ function draw(v) {
   const turnName = v.seats[v.turn]?.name;
   $('#pk-msg').textContent = myTurn ? `Sua vez${call ? `: ${int(call)} para pagar` : ''}. ${v.msg}` : v.phase === 'play' && turnName ? `Vez de ${turnName}. ${v.msg}` : v.msg;
   $('#pk-invite').hidden = !!cur?.local;
+  if (v.seat < 0) $('#pk-msg').textContent = `Assistindo. ${v.msg} Toque em "sentar aqui" num lugar livre ou de jogador da casa para entrar (compra ${int(v.buyIn)} fichas).`;
   $('#pk-room').classList.toggle('is-myturn', myTurn);
 }
 
@@ -182,6 +211,8 @@ document.addEventListener('click', e => {
   const a = b.dataset.pk;
   if (a === 'house') return sitHouse(b.dataset.id);
   if (a === 'join') return join(b.dataset.id);
+  if (a === 'watch') return join(b.dataset.id, true);
+  if (a === 'move') return seatAt(Number(b.dataset.to));
   if (a === 'leave') return leave();
   if (a === 'invite') return invite();
   if (a === 'create') { const f = $('#pk-create'); return host({ name: f.pname.value.trim(), bb: Number(f.pbb.value), pub: f.pvis.value === 'pub' }); }
