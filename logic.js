@@ -1,3 +1,4 @@
+import { T } from './tune.js';
 import { value as cardValue } from './cards.js';
 import { value as suinosValue } from './suinos.js';
 import { value as bizValue } from './negocios.js';
@@ -102,7 +103,6 @@ export const REGIONS = [
   { name: 'norte do tocantins', uf: 'to', perHa: 14000, use: 'pasto', lat: -7.19, lon: -48.2, city: 'Araguaína' },
   { name: 'nordeste paraense', uf: 'pa', perHa: 19000, use: 'lavoura', lat: -2.99, lon: -47.35, city: 'Paragominas' },
 ];
-export const LAND_PREMIUM = 1.35;   // terra no 21 World é disputada: sempre acima da tabela
 export const placeLot = (reg, rng) => ({ lat: +(reg.lat + (rng() - 0.5) * 0.45).toFixed(5), lon: +(reg.lon + (rng() - 0.5) * 0.45).toFixed(5) });
 export const region = name => REGIONS.find(r => r.name === name) || REGIONS[0];
 const CAP_BY_USE = { pasto: 1.2, lavoura: 0.9, 'café': 0.6 };           // cabeças por hectare
@@ -186,14 +186,14 @@ const id = s => s.nextId++;
 const walk = (v, rng, pct) => v * (1 + (rng() * 2 - 1) * pct);
 
 export function refreshOffers(s, rng = Math.random) {
-  s.offers = Array.from({ length: 24 }, () => {
+  s.offers = Array.from({ length: T.landOffers }, () => {
     const reg = REGIONS[Math.floor(rng() * REGIONS.length)];
     const ha = rng() < 0.2 ? 100 + Math.floor(rng() * 19) * 50 : 5 + Math.floor(rng() * 16) * 5;   // 1 em 5 é fazenda grande (100 a 1.000 ha)
     const [water, wf] = WATER[Math.floor(rng() * WATER.length)];
     const improv = IMPROV.filter(() => rng() < 0.35);
     const bonus = improv.reduce((a, [, b]) => a + b, 0) + (wf < 1 ? -0.12 : 0);
     return { id: id(s), region: reg.name, uf: reg.uf, use: reg.use, ha, water, improv: improv.map(([n]) => n), ...placeLot(reg, rng),
-      cap: +(CAP_BY_USE[reg.use] * wf).toFixed(2), value: Math.round(walk(reg.perHa, rng, 0.15) * LAND_PREMIUM * ha * (1 + bonus)) };
+      cap: +(CAP_BY_USE[reg.use] * wf).toFixed(2), value: Math.round(walk(reg.perHa, rng, 0.15) * T.landPremium * ha * (1 + bonus)) };
   });
   const names = ['seu Antônio', 'dona Lurdes', 'Jair do posto', 'Marta da feira', 'Zé Carreteiro', 'Cida Leiteira'];
   const start = Math.floor(rng() * names.length);
@@ -311,14 +311,13 @@ export const ELITE = [
 export const eliteIdx = s => { const w = netWorth(s); let i = -1; ELITE.forEach((e, k) => { if (w >= e.min) i = k; }); return i; };
 // o 1º do ranking paga ainda mais (s.top1 vem do ranking do servidor): a coroa pesa
 export const TOP1 = { price: 0.25, bills: 1, tax: 2, gain: 0.15 };
-export const eliteOf = s => { const e = ELITE[eliteIdx(s)]; if (!e) return null; return s.top1 ? { ...e, name: `1º do mundo (${e.name})`, price: e.price + TOP1.price, bills: e.bills + TOP1.bills, tax: e.tax * TOP1.tax, gain: e.gain + TOP1.gain } : e; };
+export const eliteOf = s => { const e0 = ELITE[eliteIdx(s)]; if (!e0) return null; const k = T.eliteMult, e = { ...e0, price: e0.price * k, bills: 1 + (e0.bills - 1) * k, tax: e0.tax * k, gain: e0.gain * k }; return s.top1 && T.top1 ? { ...e, name: `1º do mundo (${e.name})`, price: e.price + TOP1.price, bills: e.bills + TOP1.bills, tax: e.tax * TOP1.tax, gain: e.gain + TOP1.gain } : e; };
 // contas extras do mês: imposto sobre a fortuna + o quanto as contas normais encarecem
-export const INCOME_TAX = { min: 300000, rate: 0.06 };
 export function eliteBills(s, spent, earned = 0) {
   const e = eliteOf(s);
   if (!e) {   // ainda não é elite: imposto de renda simples sobre o que ganhou no mês
-    const it = netWorth(s) >= INCOME_TAX.min ? Math.round(Math.max(0, earned) * INCOME_TAX.rate) : 0;
-    if (it > 0) { s.money -= it; return [{ txt: `imposto de renda (${Math.round(INCOME_TAX.rate * 100)}% dos ganhos do mês)`, val: -it }]; }
+    const it = netWorth(s) >= T.incomeMin ? Math.round(Math.max(0, earned) * T.incomeTax) : 0;
+    if (it > 0) { s.money -= it; return [{ txt: `imposto de renda (${Math.round(T.incomeTax * 100)}% dos ganhos do mês)`, val: -it }]; }
     return [];
   }
   const w = netWorth(s), tax = Math.round((w - ELITE[0].min) * e.tax), extra = Math.round(spent * (e.bills - 1)), cut = Math.round(Math.max(0, earned) * e.gain), out = [];

@@ -13,7 +13,7 @@ export async function refresh() {
   } catch { owner = { loaded: true, ok: false }; }
   // a mina foi parar em outra mão (admin liberou, outro aparelho vendeu): o save local acompanha
   const me = Auth.account()?.id;
-  if (owner.ok && G.S.mina && owner.id !== me) { delete G.S.mina; save(); say('A mina de ouro não está mais no seu nome.', true); G.render(); }
+  if (owner.ok && G.S.mina && owner.id !== me) { const v = MI.saleValue(G.S); G.S.money += v; note('mina de ouro saiu do seu nome: valor devolvido', v); delete G.S.mina; save(); say(`A mina de ouro não está mais no seu nome. Você recebeu ${brl(v)}.`, true); G.render(); }
   return owner;
 }
 setInterval(refresh, 30000); setTimeout(refresh, 3000);

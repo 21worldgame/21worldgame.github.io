@@ -1,3 +1,4 @@
+import { T } from './tune.js';
 // Negócios (regras puras): bancos, provedores de internet, supermercados e galpões de armazenagem.
 // Você compra só a MARCA (sem caixa); todos os custos mensais saem do seu bolso. Lucro baixo de propósito,
 // mas a marca valoriza devagar com o tempo do mundo: é investimento de longo prazo.
@@ -122,7 +123,7 @@ export function build(s, id, packs = 1) {
 export const pmt = (bal, r, n) => (r ? bal * r / (1 - (1 + r) ** -n) : bal / n);
 
 export function monthly(s, rng = Math.random) {
-  ensure(s); const out = [], m = s.month || 1, add = (txt, val = 0) => { s.money += val; out.push({ txt, val: Math.round(val) }); };
+  ensure(s); const out = [], m = s.month || 1, add = (txt, val = 0) => { if (val > 0) val *= T.bizMult; s.money += val; out.push({ txt, val: Math.round(val) }); };   // bizMult: painel admin
   // bancos
   for (const b of s.biz.banks) {
     const C = BANKS[b.brand], P = POLICY[b.policy] || POLICY.moderado;

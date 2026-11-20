@@ -36,6 +36,8 @@
         <button class="is-on" data-tab="overview">visão geral</button>
         <button data-tab="players">jogadores</button>
         <button data-tab="economy">economia e eventos</button>
+        <button data-tab="rules">regras do jogo</button>
+        <button data-tab="owners">donos únicos</button>
         <button data-tab="news">avisos</button>
         <button data-tab="passwords">senhas <span class="ad-badge" id="ad-pw-badge" hidden></span></button>
         <button data-tab="log">registro</button>
@@ -77,7 +79,7 @@
         <form id="ad-config" class="ad-card ad-grid">
           <label class="field"><span>multiplicador de XP</span><select class="input" name="xp_mult"><option>1</option><option>1.5</option><option>2</option><option>3</option></select></label>
           <label class="field"><span>roleta de prêmios do dia</span><select class="input" name="daily_mult"><option>1</option><option>1.5</option><option>2</option><option>3</option></select></label>
-          <label class="field"><span>ganho dos trabalhos</span><select class="input" name="job_mult"><option>1</option><option>1.5</option><option>2</option><option>3</option></select></label>
+          <label class="field"><span>bônus extra (reservado)</span><select class="input" name="job_mult"><option>1</option><option>1.5</option><option>2</option><option>3</option></select></label>
           <label class="field"><span>prêmios das provas e do futebol</span><select class="input" name="prize_mult"><option>1</option><option>1.5</option><option>2</option><option>3</option></select></label>
           <label class="field ad-span"><span>nome do evento (aparece no topo do jogo)</span><input class="input" name="event" maxlength="120" placeholder="ex.: Fim de semana de XP em dobro"></label>
           <label class="check ad-span"><input type="checkbox" name="maintenance"><span>colocar o jogo em manutenção (jogadores veem um aviso e não conseguem jogar; você continua entrando)</span></label>
@@ -105,6 +107,38 @@
           <label class="field ad-grow"><span>mensagem</span><input class="input" name="note" maxlength="200" placeholder="ex.: presente de inauguração"></label>
           <button class="btn btn--gold" type="submit">enviar para todos</button>
         </form>
+      </section>
+
+      <section data-panel="rules" hidden>
+        <h2>regras do jogo</h2>
+        <p class="muted small">Mudou aqui, vale para todos os jogadores em até 1 minuto, sem precisar de versão nova. Cada campo tem limite de segurança.</p>
+        <form id="ad-tune" class="ad-card ad-grid">
+          <h3 class="ad-span">concorrentes do mundo (jogadores fictícios)</h3>
+          <label class="field"><span>força final (1 a 10x)</span><input class="input" name="npcBoost" type="number" step="0.1" min="1" max="10"></label>
+          <label class="field"><span>dias reais para chegar na força final</span><input class="input" name="npcRampDays" type="number" step="1" min="1" max="365"></label>
+          <label class="check"><input type="checkbox" name="hunt"><span>os maiores perseguem o 1º do ranking</span></label>
+          <label class="field"><span>vantagem do 1º perseguidor sobre o líder (%)</span><input class="input" name="huntLeadPct" type="number" step="1" min="-20" max="50"></label>
+          <label class="check ad-span"><input type="checkbox" name="near"><span>sempre 3 concorrentes logo acima de quem está subindo</span></label>
+          <h3 class="ad-span">mais ricos e impostos</h3>
+          <label class="field"><span>peso das taxas dos mais ricos (0 desliga, 1 normal, 2 dobro)</span><input class="input" name="eliteMult" type="number" step="0.1" min="0" max="3"></label>
+          <label class="check"><input type="checkbox" name="top1"><span>taxa extra para o 1º do ranking</span></label>
+          <label class="field"><span>imposto de renda (% dos ganhos do mês)</span><input class="input" name="incomeTaxPct" type="number" step="0.5" min="0" max="50"></label>
+          <label class="field"><span>paga imposto de renda a partir de (R$)</span><input class="input" name="incomeMin" type="number" step="10000" min="0"></label>
+          <h3 class="ad-span">terras e empresas</h3>
+          <label class="field"><span>ágio das terras à venda (% acima da tabela)</span><input class="input" name="landPremiumPct" type="number" step="5" min="-50" max="300"></label>
+          <label class="field"><span>lotes de terra à venda por mês</span><input class="input" name="landOffers" type="number" step="1" min="5" max="60"></label>
+          <label class="field"><span>receita das empresas e usinas (1 normal, 2 dobro)</span><input class="input" name="bizMult" type="number" step="0.1" min="0.2" max="3"></label>
+          <div class="row ad-span"><button class="btn btn--gold" type="submit">salvar regras</button>
+            <button class="btn btn--glass" type="button" id="ad-tune-reset">voltar ao padrão</button>
+            <button class="btn btn--glass" type="button" data-tune-preset="facil">jogo mais fácil</button>
+            <button class="btn btn--glass" type="button" data-tune-preset="dificil">jogo mais difícil</button></div>
+        </form>
+      </section>
+
+      <section data-panel="owners" hidden>
+        <div class="ad-head"><h2>donos únicos</h2><button class="btn btn--glass btn--sm" id="ad-own-reload" type="button">atualizar</button></div>
+        <p class="muted small">Mina de ouro, bancos, provedores, supermercados e usinas têm um dono só no jogo inteiro. "Liberar" devolve a marca para a loja (o jogador recebe o valor de volta automaticamente quando o jogo dele sincronizar).</p>
+        <div class="ad-tablewrap"><table><thead><tr><th>marca</th><th>dono</th><th>desde</th><th></th></tr></thead><tbody id="ad-owners"></tbody></table></div>
       </section>
 
       <section data-panel="news" hidden>

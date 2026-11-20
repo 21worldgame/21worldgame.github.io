@@ -1,5 +1,6 @@
 // Concorrentes do ranking: jogadores fixos do mundo, iguais para todo mundo (regras puras).
 // A fortuna deles cresce com o tempo de mundo (com altos e baixos), então o ranking se mexe sozinho mesmo sem ninguém online.
+import { T } from './tune.js';
 import { rank } from './logic.js';
 
 import { NPCS, worthAt as npcWorth, levelFor as npcLevel } from './npcs.js';
@@ -13,11 +14,11 @@ export const hunted = new Map();   // id do npc -> fortuna de caçador (para o p
 export function rivals(month, leader = 0, me = 0) {
   const rows = NPCS.map(n => { const worth = npcWorth(n, month); return { pid: `npc:${n.id}`, id: n.id, name: n.nick, worth, look: n.look }; });
   hunted.clear();
-  if (leader > 0) [...rows].sort((a, b) => b.worth - a.worth).slice(0, HUNT.length).forEach((r, k) => {
-    const chase = Math.round(leader * HUNT[k] * (1 + HUNT_WAVE * Math.sin(month * 0.9 + k * 2.1)));
+  if (leader > 0 && T.hunt) [...rows].sort((a, b) => b.worth - a.worth).slice(0, HUNT.length).forEach((r, k) => {
+    const chase = Math.round(leader * HUNT[k] * (T.huntLead / HUNT[0]) * (1 + HUNT_WAVE * Math.sin(month * 0.9 + k * 2.1)));
     if (chase > r.worth) { r.worth = chase; hunted.set(r.id, chase); }
   });
-  if (me > 0 && me < leader) {   // quem não é o líder sempre tem 3 concorrentes logo acima (os seguintes depois dos caçadores)
+  if (T.near && me > 0 && me < leader) {   // quem não é o líder sempre tem 3 concorrentes logo acima (os seguintes depois dos caçadores)
     const free = [...rows].sort((a, b) => b.worth - a.worth).filter(r => !hunted.has(r.id)).slice(0, NEAR.length);
     free.forEach((r, k) => { const near = Math.round(me * NEAR[k] * (1 + 0.03 * Math.sin(month * 1.3 + k))); if (near > r.worth && near < leader) { r.worth = near; hunted.set(r.id, near); } });
   }

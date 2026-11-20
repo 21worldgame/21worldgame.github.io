@@ -22,8 +22,8 @@ export async function refreshOwners() {
   const s = G.S; NG.ensure(s); let changed = false;
   // acerta o save com o servidor: registra o que é seu, devolve o dinheiro do que outro registrou antes, libera o que você já vendeu
   for (const cat of Object.keys(CATS)) for (const b of [...s.biz[cat]]) {
-    const row = owners.map[b.brand];
-    if (!row) { const { data } = await sb.rpc('claim_company', { p_brand: b.brand, p_name: profileOf().name }); if (data === 'ok') owners.map[b.brand] = { brand: b.brand, owner: me, owner_name: profileOf().name }; continue; }
+    let row = owners.map[b.brand];
+    if (!row) { const { data } = await sb.rpc('claim_company', { p_brand: b.brand, p_name: profileOf().name }); if (data === 'ok') { owners.map[b.brand] = { brand: b.brand, owner: me, owner_name: profileOf().name }; continue; } if (data !== 'released') continue; row = { owner: null, owner_name: 'o administrador' }; }
     if (row.owner !== me) {
       const C = listOf(cat)[b.brand], r = NG.sell(s, cat, b.id), extra = Math.round(C.price * 0.15);
       s.money += extra; note(`${C.name} já tinha dono (${row.owner_name || 'outro jogador'}): valor devolvido`, (r.value || 0) + extra); changed = true;

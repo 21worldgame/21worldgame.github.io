@@ -952,3 +952,9 @@ console.log('mina ok');
   const a = { kind: 'dog', name: 'A', coat: 0 }, b = { kind: 'dog', name: 'B', coat: 0 }; s.stable.animals.push(a); ST4.photo(a, s); b.ph = a.ph; s.stable.animals.push(b); ST4.photo(b, s);
   assert.notEqual(a.ph, b.ph); console.log('foto de animal comprado ok');
 }
+{ // regras do painel: valores fora do limite nunca quebram o jogo
+  const TU = await import('./tune.js');
+  const t = TU.applyTune({ npcBoost: 999, incomeTax: -5, hunt: false, landOffers: 'abc' });
+  assert.equal(t.npcBoost, 10); assert.equal(t.incomeTax, 0); assert.equal(t.hunt, false); assert.equal(t.landOffers, 24);
+  TU.applyTune(null); assert.equal(TU.T.npcBoost, 3); console.log('regras do painel ok');
+}

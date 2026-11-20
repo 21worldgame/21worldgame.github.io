@@ -1,5 +1,6 @@
 // Ligação do jogo com o painel administrativo: configuração e eventos, avisos, suspensões e ordens do admin.
 // Se as tabelas do supabase/admin.sql ainda não existirem, tudo aqui fica quieto e o jogo segue normal.
+import { applyTune } from './tune.js';
 import { G, $, esc, brl, int, say, save, note, badge, levelUp, blankState, profileOf } from './store.js';
 import * as P from './progress.js';
 import * as Auth from './auth.js';
@@ -77,6 +78,7 @@ async function loadConfig(sb) {
   Object.assign(CFG, { xp_mult: num(d.xp_mult, 1), daily_mult: num(d.daily_mult, 1), job_mult: num(d.job_mult, 1), prize_mult: num(d.prize_mult, 1),
     maintenance: !!d.maintenance, maintenance_msg: String(d.maintenance_msg || '').slice(0, 280), event: String(d.event || '').slice(0, 120) });
   P.setXpMult(CFG.xp_mult);
+  applyTune(d.tuning);
   renderBar();
 }
 

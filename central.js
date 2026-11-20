@@ -141,7 +141,9 @@ async function openPlayer(id) {
   const s = save?.data || {};
   const facts = [['dinheiro', brl(s.money)], ['fichas', int(s.chips)], ['nível', s.level ?? '—'], ['mês do jogo', s.month ?? '—'],
     ['terras', (s.lands || []).filter(l => l.own).length], ['gado', int((s.herd || []).reduce((a, h) => a + h.heads, 0))],
-    ['carros', (s.cars || []).length], ['animais de corrida', (s.stable?.animals || []).length], ['mãos de 21', int(s.stats?.hands)], ['clube de futebol', s.fut?.club ? esc(s.fut.club) : '—']];
+    ['carros', (s.cars || []).length], ['animais de corrida', (s.stable?.animals || []).length], ['mãos de 21', int(s.stats?.hands)], ['clube de futebol', s.fut?.club ? esc(s.fut.club) : '—'],
+    ['empresas', ['banks', 'isps', 'markets'].reduce((t, c) => t + (s.biz?.[c] || []).length, 0)], ['usinas', (s.biz?.usinas || []).length], ['mina de ouro', s.mina ? 'sim' : 'não'],
+    ['troféus', (s.trophies || []).length], ['perfil', s.privateProfile ? 'privado' : 'público']];
   $('#ap-body').innerHTML = `
     <h2 id="ap-name">${esc(u.name || '(sem nome)')}</h2>
     <p class="muted small">${esc(u.email || '')}, cadastro em ${when(u.created_at)}, último acesso em ${when(u.last_sign_in_at)}, save salvo em ${when(save?.updated_at)}</p>
@@ -331,3 +333,62 @@ function watchGrant(gid, uid) {
 }
 // números do painel se atualizam sozinhos
 setInterval(() => { if (!$('#ad-app').hidden && !$('[data-panel="overview"]').hidden) loadOverview(); }, 15000);
+
+// ---------- regras do jogo (game_config.data.tuning, lidas pelo jogo em tune.js) ----------
+import('./tune.js').then(({ DEFAULTS }) => {
+  const f = $('#ad-tune'); if (!f) return;
+  const fill = t => {
+    const v = { ...DEFAULTS, ...(t || {}) };
+    f.npcBoost.value = v.npcBoost; f.npcRampDays.value = v.npcRampDays; f.hunt.checked = !!v.hunt; f.huntLeadPct.value = Math.round((v.huntLead - 1) * 100);
+    f.near.checked = !!v.near; f.eliteMult.value = v.eliteMult; f.top1.checked = !!v.top1; f.incomeTaxPct.value = +(v.incomeTax * 100).toFixed(1); f.incomeMin.value = v.incomeMin;
+    f.landPremiumPct.value = Math.round((v.landPremium - 1) * 100); f.landOffers.value = v.landOffers; f.bizMult.value = v.bizMult;
+  };
+  const read = () => ({ npcBoost: +f.npcBoost.value, npcRampDays: +f.npcRampDays.value, hunt: f.hunt.checked, huntLead: 1 + f.huntLeadPct.value / 100, near: f.near.checked,
+    eliteMult: +f.eliteMult.value, top1: f.top1.checked, incomeTax: f.incomeTaxPct.value / 100, incomeMin: +f.incomeMin.value,
+    landPremium: 1 + f.landPremiumPct.value / 100, landOffers: +f.landOffers.value, bizMult: +f.bizMult.value });
+  const save = async (tuning, what) => {
+    const { data: cur, error: e0 } = await sb.from('game_config').select('data').eq('id', 1).maybeSingle();
+    if (e0) return fail(e0, 'ler a configuração');
+    const data = { ...(cur?.data || {}), tuning }; cfg = data;
+    const { error } = await sb.from('game_config').update({ data, updated_at: new Date().toISOString() }).eq('id', 1);
+    if (error) return fail(error, 'salvar as regras');
+    await log('tuning', null, { what, ...tuning }); fill(tuning); toast('Regras salvas. Todos os jogos aplicam em até 1 minuto.');
+  };
+  document.querySelector('[data-tab="rules"]')?.addEventListener('click', async () => { const { data } = await sb.from('game_config').select('data').eq('id', 1).maybeSingle(); fill(data?.data?.tuning); });
+  f.addEventListener('submit', e => { e.preventDefault(); save(read(), 'manual'); });
+  $('#ad-tune-reset').addEventListener('click', () => { if (confirm('Voltar todas as regras ao padrão?')) save({ ...DEFAULTS }, 'padrão'); });
+  document.querySelectorAll('[data-tune-preset]').forEach(b => b.addEventListener('click', () => {
+    const easy = b.dataset.tunePreset === 'facil';
+    fill(easy ? { ...DEFAULTS, npcBoost: 1.5, npcRampDays: 60, huntLead: 0.97, near: false, eliteMult: 0.6, top1: false, incomeTax: 0.03, landPremium: 1.15, bizMult: 1.2 }
+      : { ...DEFAULTS, npcBoost: 5, npcRampDays: 14, huntLead: 1.08, eliteMult: 1.5, incomeTax: 0.1, incomeMin: 150000, landPremium: 1.6, bizMult: 0.85 });
+    toast('Preenchido. Confira e clique em "salvar regras".');
+  }));
+});
+
+// ---------- donos únicos (mina e marcas) ----------
+const BRAND_NAMES = { roxinho: 'Roxinho Bank', enter: 'Banco Enter', santandre: 'Santandré', caixa: 'Caixa Federau', bradeskao: 'Bradeskão', itai: 'Itaí Unibanco', brasa: 'Banco do Brasa',
+  netroca: 'NetRoça Fibra', giga21: 'Giga21 Telecom', timtim: 'TimTim Live', oi: 'Ói Fibra', clarao: 'Clarão Net', viva: 'Viva Fibra',
+  zezinho: 'Mercadinho do Zezinho', acai: 'Açaí Atacadista', paoacucre: 'Pão de Açucre', carrefur: 'Carrefur',
+  canaa: 'Usina Canaã', bomjesus: 'Usina Bom Jesus do Açúcar', dourado: 'Citrus Dourado Sucos', laranjal: 'Laranjal Paulista Sucos' };
+async function loadOwners() {
+  const [m, c] = await Promise.all([sb.from('gold_mine').select('owner, owner_name, since').eq('id', 1).maybeSingle(), sb.from('company_owner').select('brand, owner, owner_name, since').order('since', { ascending: false })]);
+  const rows = [];
+  if (m.error) rows.push('<tr><td>mina de ouro</td><td colspan="3" class="muted">tabela ainda não criada: rode supabase/mina.sql</td></tr>');
+  else rows.push(`<tr><td>⛏️ mina de ouro</td><td>${m.data?.owner ? esc(m.data.owner_name || 'jogador') : '<span class="muted">à venda</span>'}</td><td>${when(m.data?.since)}</td><td>${m.data?.owner ? '<button class="btn btn--danger btn--sm" data-free-mine>liberar</button>' : ''}</td></tr>`);
+  if (c.error) rows.push('<tr><td>empresas</td><td colspan="3" class="muted">tabela ainda não criada: rode supabase/empresas.sql</td></tr>');
+  else {
+    const owned = new Map((c.data || []).map(r => [r.brand, r]));
+    for (const [id, name] of Object.entries(BRAND_NAMES)) { const r = owned.get(id); rows.push(`<tr><td>${esc(name)}</td><td>${r ? esc(r.owner_name || 'jogador') : '<span class="muted">à venda</span>'}</td><td>${r ? when(r.since) : '—'}</td><td>${r ? `<button class="btn btn--danger btn--sm" data-free-brand="${id}">liberar</button>` : ''}</td></tr>`); }
+  }
+  $('#ad-owners').innerHTML = rows.join('');
+}
+document.querySelector('[data-tab="owners"]')?.addEventListener('click', loadOwners);
+$('#ad-own-reload')?.addEventListener('click', loadOwners);
+document.addEventListener('click', async e => {
+  const bm = e.target.closest('[data-free-mine]'), bb = e.target.closest('[data-free-brand]'); if (!bm && !bb) return;
+  const what = bm ? 'a mina de ouro' : BRAND_NAMES[bb.dataset.freeBrand];
+  if (!confirm(`Liberar ${what} para a loja? O dono atual perde e recebe o valor de volta quando o jogo dele sincronizar.`)) return;
+  const { data, error } = bm ? await sb.rpc('admin_release_mine') : await sb.rpc('admin_release_company', { p_brand: bb.dataset.freeBrand });
+  if (error || data !== 'ok') return fail(error || data, 'liberar (rode supabase/admin-extra.sql)');
+  await log('release_owner', null, { what }); toast(`${what} voltou para a loja.`); loadOwners();
+});
