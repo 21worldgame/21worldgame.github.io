@@ -947,3 +947,8 @@ console.log('leilão ok');
   assert.equal(MI.sell(s), MI.MINE.price * MI.MINE.resale); assert.equal(s.mina, undefined);
 }
 console.log('mina ok');
+{ // animal comprado com a foto de outro do mesmo dono troca de foto
+  const ST4 = await import('./stable.js'), s = { stable: { animals: [], offers: [] } };
+  const a = { kind: 'dog', name: 'A', coat: 0 }, b = { kind: 'dog', name: 'B', coat: 0 }; s.stable.animals.push(a); ST4.photo(a, s); b.ph = a.ph; s.stable.animals.push(b); ST4.photo(b, s);
+  assert.notEqual(a.ph, b.ph); console.log('foto de animal comprado ok');
+}

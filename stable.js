@@ -194,8 +194,9 @@ export const PHOTO_POOL = POOL;
 const pick = a => (a.coat || 0) + [...String(a.name || '')].reduce((t, c) => t + c.charCodeAt(0), 0);
 export function photo(a, s) {
   const pool = a.kind === 'horse' ? POOL[a.breed] || POOL.horse : POOL.dog;
-  if (!pool.includes(a.ph)) {
-    const taken = new Set([...(s?.stable?.animals || []), ...(s?.stable?.offers || [])].filter(x => x !== a).map(x => x.ph));
+  const taken = new Set([...(s?.stable?.animals || []), ...(s?.stable?.offers || [])].filter(x => x !== a).map(x => x.ph));
+  const mine = (s?.stable?.animals || []).includes(a);   // animal comprado com a foto de outro seu: troca
+  if (!pool.includes(a.ph) || (mine && taken.has(a.ph))) {
     let k = pick(a) % pool.length;
     for (let n = 0; n < pool.length && taken.has(pool[k]); n++) k = (k + 1) % pool.length;
     a.ph = pool[k];

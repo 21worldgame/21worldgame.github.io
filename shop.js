@@ -122,13 +122,17 @@ export function npcListings(s, now = Date.now()) {
   const ids = [...NPCS.onlineSet(win * NPC_WIN)].sort(), seller = () => NPCS.byId(ids[Math.floor(r() * ids.length)])?.nick || 'A Boiadeira';
   const cars = Object.entries(CARS).filter(([, c]) => c.type !== 'maquina' && c.price <= 4e6), maqs = Object.entries(CARS).filter(([, c]) => c.type === 'maquina');
   const add = (cat, label, price, items, extra = {}) => out.push({ id: `n${win}-${out.length}`, cat, label, price: r100(price), items, seller: seller(), ...extra });
-  for (let k = 0; k < 2; k++) { const [m, c] = cars[Math.floor(r() * cars.length)], v = r100(c.price * (0.7 + r() * 0.2)); add('veiculo', `${c.name} seminovo`, v * 1.06, [{ kind: 'car', data: { model: m, value: v } }], { img: c.img }); }
-  { const [m, c] = maqs[Math.floor(r() * maqs.length)], v = r100(c.price * (0.75 + r() * 0.15)); add('maquina', `${c.name} usado`, v * 1.06, [{ kind: 'car', data: { model: m, value: v } }], { img: c.img }); }
-  for (let k = 0; k < 2; k++) { const tmp = { nextId: 1, offers: [] }; L.refreshOffers(tmp, r); const o = tmp.offers[0]; add('terra', `${o.ha} ha, ${o.region}`, o.value * 1.06, [{ kind: 'land', data: { ...o, own: true, leasedOut: false } }], { land: o }); }
-  for (const kind of ['horse', 'dog']) { const a = ST.newAnimal(kind, 44 + Math.floor(r() * 30), r, 0); add('animal', `${ST.KINDS[kind].label} ${a.name}, nota ${ST.rating(a)}`, ST.value(a) * 1.12, [{ kind: 'animal', data: a }], { animal: a }); }
+  // vitrine cheia, mas sem repetir foto: cada anúncio é um modelo, produto, campeão ou animal diferente
+  const mix = arr => { const x = [...arr]; for (let i = x.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [x[i], x[j]] = [x[j], x[i]]; } return x; };
+  for (const [m, c] of mix(cars).slice(0, 6)) { const v = r100(c.price * (0.7 + r() * 0.2)); add('veiculo', `${c.name} seminovo`, v * 1.06, [{ kind: 'car', data: { model: m, value: v } }], { img: c.img }); }
+  for (const [m, c] of mix(maqs).slice(0, 3)) { const v = r100(c.price * (0.75 + r() * 0.15)); add('maquina', `${c.name} usado`, v * 1.06, [{ kind: 'car', data: { model: m, value: v } }], { img: c.img }); }
+  for (let k = 0; k < 6; k++) { const tmp = { nextId: 1, offers: [] }; L.refreshOffers(tmp, r); const o = tmp.offers[0]; add('terra', `${o.ha} ha, ${o.region}`, o.value * 1.06, [{ kind: 'land', data: { ...o, own: true, leasedOut: false } }], { land: o }); }
+  const pen = { stable: { animals: [], offers: [] } };   // fotos já usadas pelos anúncios de animais
+  for (const kind of ['horse', 'horse', 'horse', 'horse', 'dog', 'dog', 'dog', 'dog']) { const a = ST.newAnimal(kind, 44 + Math.floor(r() * 30), r, 0); ST.photo(a, pen); pen.stable.animals.push(a); add('animal', `${ST.KINDS[kind].label} ${a.name}, nota ${ST.rating(a)}`, ST.value(a) * 1.12, [{ kind: 'animal', data: a }], { animal: a }); }
   { const n = 10 + Math.floor(r() * 31); add('gado', `${n} bezerros nelore desmamados`, n * (s.prices?.bezerro || 2600) * 1.06, [], { heads: n }); }
-  for (const g of ['soja', 'milho', 'cafe', 'laranja'].sort(() => r() - 0.5).slice(0, 2)) { const q = (g === 'cafe' ? 20 : 200) + Math.floor(r() * (g === 'cafe' ? 80 : 800)), p = s.prices?.[g] || { soja: 130, milho: 60, cafe: 1400, laranja: 38 }[g]; add('produto', `${q} ${g === 'laranja' ? 'caixas de laranja' : `sacas de ${g === 'cafe' ? 'café' : g}`}`, q * p * 1.05, [{ kind: 'good', good: g, qty: q }], { good: g }); }
-  for (let k = 0; k < 2; k++) { const c = { ...CD.draw(r, k), born: Math.max(0, month - Math.floor(r() * 24)) }; add('carta', `carta ${CD.label(c)}`, CD.value(c, month) * (1.02 + r() * 0.12), [{ kind: 'card', data: c }], { card: c }); }
+  for (const g of ['soja', 'milho', 'cafe', 'laranja']) { const q = (g === 'cafe' ? 20 : 200) + Math.floor(r() * (g === 'cafe' ? 80 : 800)), p = s.prices?.[g] || { soja: 130, milho: 60, cafe: 1400, laranja: 38 }[g]; add('produto', `${q} ${g === 'laranja' ? 'caixas de laranja' : `sacas de ${g === 'cafe' ? 'café' : g}`}`, q * p * 1.05, [{ kind: 'good', good: g, qty: q }], { good: g }); }
+  const champs = new Set();
+  for (let k = 0; k < 30 && champs.size < 5; k++) { const c = { ...CD.draw(r, k % 3), born: Math.max(0, month - Math.floor(r() * 24)) }; if (champs.has(c.champ)) continue; champs.add(c.champ); add('carta', `carta ${CD.label(c)}`, CD.value(c, month) * (1.02 + r() * 0.12), [{ kind: 'card', data: c }], { card: c }); }
   { const pos = Object.keys(FT.POS)[Math.floor(r() * 6)], p = FT.genPlayer(pos, 55 + Math.floor(r() * 25), r); add('futebol', `${FT.POS[pos]} ${p.name}, nota ${p.ovr}`, FT.value(p) * 1.1, [{ kind: 'player', data: p }]); }
   const sold = new Set(s.npcSold?.win === win ? s.npcSold.ids : []);
   return out.filter(l => !sold.has(l.id));
