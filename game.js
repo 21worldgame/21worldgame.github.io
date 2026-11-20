@@ -213,8 +213,8 @@ function orchardBox(l) {
   return `<div class="orchard${o.pest >= 3 ? ' is-sick' : ''}"><img src="assets/farm-laranja.webp" alt="" loading="lazy">
     <div><b>pomar de laranja · ${l.ha} ha</b> <span class="small muted">${o.age < PM.ORANGE.grow ? `em formação (${o.age} de ${PM.ORANGE.grow} meses)` : `produzindo · ${o.harvests} colheitas`}</span>
     ${o.age < PM.ORANGE.grow ? `<span class="bar"><i style="transform:scaleX(${pr})"></i></span>` : ''}
-    <span class="small">próxima colheita em ${nh} ${nh === 1 ? 'mês' : 'meses'}: ~${int(PM.expected(l))} caixas · saúde ${Math.round(o.health * 100)}% · praga ${PM.PEST_LABEL[Math.min(6, o.pest)]}</span>
-    <div class="row"><button class="btn btn--sm ${o.spray ? 'btn--gold' : 'btn--glass'}" data-act="pm-spray" data-id="${l.id}" aria-pressed="${o.spray}">${o.spray ? 'defensivo ligado' : 'defensivo desligado'} (${brl(l.ha * PM.ORANGE.spray)}/mês)</button>
+    <span class="small">próxima colheita em ${nh} ${nh === 1 ? 'mês' : 'meses'}: ~${int(PM.expectedWith(S(), l))} caixas${PM.coverage(S(), 'plataforma') ? ' (com plataforma)' : ''} · saúde ${Math.round(o.health * 100)}% · praga ${PM.PEST_LABEL[Math.min(6, o.pest)]}</span>
+    <div class="row"><button class="btn btn--sm ${o.spray ? 'btn--gold' : 'btn--glass'}" data-act="pm-spray" data-id="${l.id}" aria-pressed="${o.spray}">${o.spray ? 'defensivo ligado' : 'defensivo desligado'} (${brl(PM.sprayCost(S(), l))}/mês${PM.coverage(S(), 'pulv') ? `, era ${brl(l.ha * PM.ORANGE.spray)}` : ''})</button>
       <button class="btn btn--glass btn--sm" data-act="pm-uproot" data-id="${l.id}">arrancar pomar</button></div></div></div>`;
 }
 function caneBox(l) {
@@ -398,9 +398,10 @@ function renderCana() {
 function renderPomar() {
   const s = S(); PM.ensure(s);
   const own = s.lands.filter(l => l.own), orch = own.filter(l => l.orchard), free = own.filter(l => PM.canPlant(l));
-  const ha = orch.reduce((t, l) => t + l.ha, 0), spray = orch.filter(l => l.orchard.spray).reduce((t, l) => t + l.ha * PM.ORANGE.spray, 0);
+  const ha = orch.reduce((t, l) => t + l.ha, 0), spray = orch.filter(l => l.orchard.spray).reduce((t, l) => t + PM.sprayCost(s, l), 0);
   const next = orch.length ? Math.min(...orch.map(l => PM.nextHarvest(l.orchard))) : 0;
-  $('#pm-stats').innerHTML = [['pomares', orch.length], ['hectares', `${int(ha)} ha`], ['defensivo por mês', brl(spray)], ['próxima colheita', orch.length ? `em ${next} ${next === 1 ? 'mês' : 'meses'}` : '—']]
+  $('#pm-stats').innerHTML = [['pomares', orch.length], ['hectares', `${int(ha)} ha`], ['defensivo por mês', brl(spray)], ['próxima colheita', orch.length ? `em ${next} ${next === 1 ? 'mês' : 'meses'}` : '—'],
+    ...['pulv', 'plataforma'].map(m => { const n = PM.machines(s, m), need = PM.need(s, m), cov = PM.coverage(s, m); return [m === 'pulv' ? 'pulverizadores' : 'plataformas', `${n} de ${need}${ha ? ` · ${Math.round(cov * 100)}% coberto` : ''}${m === 'pulv' ? ` · −${Math.round(PM.SPRAY_CUT * cov * 100)}% no defensivo` : ` · +${Math.round(PM.HARVEST_PLUS * cov * 100)}% de laranja`}`]; })]
     .map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${v}</strong></div>`).join('');
   const p = s.prices.laranja, pv = s.prev?.laranja ?? p, ch = pv ? (p / pv - 1) * 100 : 0, stock = s.stock.laranja || 0;
   $('#pm-sell').innerHTML = `<div><span class="muted small">no armazém</span><strong>${int(stock)} caixas</strong></div>
@@ -448,7 +449,7 @@ function renderGranja() {
 
 // ---------- mercado ----------
 const GOODS = { soja: 'soja', milho: 'milho', cafe: 'café', laranja: 'laranja', cana: 'cana-de-açúcar', arroba: 'boi gordo', bezerro: 'bezerro', frango: 'frango vivo', suino: 'suíno vivo', ouro: 'ouro' };
-const PHOTO = { soja: 'farm-soja', milho: 'farm-colheita', cafe: 'farm-cafe', laranja: 'farm-laranja', arroba: 'farm-pasto2', bezerro: 'farm-bezerro', suino: 'farm-pasto', ouro: 'photo-chips', cana: 'maq-colhedora', frango: 'granja-frangos', pintinho: 'granja-pintinhos', racao: 'granja-aviario' };
+const PHOTO = { soja: 'farm-soja', milho: 'farm-colheita', cafe: 'farm-cafe', laranja: 'farm-laranja', arroba: 'farm-pasto2', bezerro: 'farm-bezerro', suino: 'farm-pasto', ouro: 'photo-chips', cana: 'mk-cana', frango: 'granja-frangos', pintinho: 'granja-pintinhos', racao: 'granja-aviario' };
 const UNIT = { soja: 'saca 60 kg', milho: 'saca 60 kg', cafe: 'saca 60 kg', laranja: 'caixa 40,8 kg', arroba: 'arroba', bezerro: 'cabeça', suino: 'kg vivo', ouro: 'kg', cana: 'tonelada', frango: 'kg vivo', pintinho: 'cabeça', racao: 'kg' };
 const NOTE = { ouro: 'Preço pago pelo ouro da única mina do jogo.', suino: 'Preço do lote de suínos (aba suínos).', arroba: 'Preço da venda do seu gado (aba gado).', bezerro: 'Preço do leilão de bezerros (aba gado).', cana: 'Pago pela usina no corte (aba cana).', frango: 'Preço do lote na venda (aba granja).', pintinho: 'Custo para alojar (aba granja).', racao: 'Maior custo da granja.' };
 function mkLive() {
@@ -510,11 +511,12 @@ function renderCarros() {
 // máquinas: só aparecem as da cultura que a pessoa tem (pomar -> laranja, canavial -> cana)
 function renderMaq(s) {
   const hasO = s.lands.some(l => l.orchard), hasC = s.lands.some(l => l.cane) || !!s.caneHarvester;
-  const card = (id, c) => { const owned = s.cars.some(x => x.model === id);
-    return `<article class="glass ccard ccard--maq"><div class="ccard__photo"><img src="assets/${c.img}.webp" alt="${esc(c.name)}" loading="lazy"><span class="tag tag--green">${c.cat}</span>${owned ? '<span class="tag tag--gold ccard__own">na fazenda</span>' : ''}</div>
+  const card = (id, c) => { const n = s.cars.filter(x => x.model === id).length, multi = !!PM.COVER[id], owned = n > 0 && !multi;
+    const cov = multi ? `<p class="small ${n >= PM.need(s, id) ? 'good' : 'bad'}">você tem ${n} · seu pomar de ${int(PM.orchardHa(s))} ha pede ${PM.need(s, id)} (cada ${id === 'pulv' ? 'um' : 'uma'} atende ${PM.COVER[id]} ha)</p>` : '';
+    return `<article class="glass ccard ccard--maq"><div class="ccard__photo"><img src="assets/${c.img}.webp" alt="${esc(c.name)}" loading="lazy"><span class="tag tag--green">${c.cat}</span>${n ? `<span class="tag tag--gold ccard__own">${multi ? `${n} na fazenda` : 'na fazenda'}</span>` : ''}</div>
       <div class="ccard__body"><h4>${esc(c.name)}</h4><p class="price">${brl(c.price)}</p>
-        <p class="small good perk">vantagem: ${esc(c.perk)}</p><p class="muted small">desvaloriza 1,5% e paga ${brl(c.price * L.CAR_UPKEEP)} de seguro por mês</p>
-        ${owned ? '<button class="btn btn--glass" disabled>já está na fazenda</button>' : `<button class="btn btn--gold" data-act="buy-car" data-id="${id}">comprar</button>`}</div></article>`; };
+        <p class="small good perk">vantagem: ${esc(c.perk)}</p>${cov}<p class="muted small">desvaloriza 1,5% e paga ${brl(c.price * L.CAR_UPKEEP)} de seguro por mês</p>
+        ${owned ? '<button class="btn btn--glass" disabled>já está na fazenda</button>' : `<button class="btn btn--gold" data-act="buy-car" data-id="${id}">${multi && n ? 'comprar mais um' : 'comprar'}</button>`}</div></article>`; };
   const list = crop => Object.entries(L.CARS).filter(([, c]) => c.crop === crop).map(([id, c]) => card(id, c)).join('');
   const hv = s.caneHarvester, colh = `<article class="glass ccard ccard--maq"><div class="ccard__photo"><img src="assets/maq-colhedora.webp" alt="colhedora de cana" loading="lazy"><span class="tag tag--green">cana</span>${hv ? '<span class="tag tag--gold ccard__own">na fazenda</span>' : ''}</div>
       <div class="ccard__body"><h4>Colhedora de cana Case A9000</h4><p class="price">${brl(hv ? hv.value : CN.HARVESTER.price)}</p>
@@ -934,7 +936,7 @@ const ACTS = {
   },
   'buy-car'(id) {
     const c = L.CARS[id];
-    if (c.type === 'maquina' && S().cars.some(x => x.model === id)) return say('Essa máquina já está na sua fazenda.', true);
+    if (c.type === 'maquina' && !PM.COVER[id] && S().cars.some(x => x.model === id)) return say('Essa máquina já está na sua fazenda.', true);
     if (!confirm(`Comprar ${c.name} por ${brl(c.price)}?`)) return;
     if (!pay(c.price, `loja 21: ${c.name}`)) return;
     S().cars.push({ id: S().nextId++, model: id, value: c.price });
@@ -1262,7 +1264,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 45;
+const APP_VERSION = 46;
 let updateShown = false, updateMsg = '';
 let checking = false;
 async function checkUpdate() {

@@ -151,8 +151,8 @@ export const CARS = {
   g63: { name: 'Mercedez G36 AMJ', type: 'suv', price: 2000000, cat: 'luxo', img: 'car-g63', hp: 585, top: 220 },
   huracan: { name: 'Lamborgini Huracão', type: 'super', price: 3600000, cat: 'superesportivo', img: 'car-huracan', hp: 640, top: 325 },
   // máquinas agrícolas: aparecem na concessionária para quem tem pomar ou canavial
-  pulv: { name: 'Jactu Arbos 3030 (pulverizador)', type: 'maquina', crop: 'laranja', price: 380000, cat: 'laranja', img: 'maq-pulv', hp: 0, top: 25, perk: 'defensivo do pomar 30% mais barato' },
-  plataforma: { name: 'Plataforma Citrus PC-22', type: 'maquina', crop: 'laranja', price: 260000, cat: 'laranja', img: 'maq-plataforma', hp: 0, top: 20, perk: 'colhe 10% mais laranja (menos fruta no chão)' },
+  pulv: { name: 'Jactu Arbos 3030 (pulverizador)', type: 'maquina', crop: 'laranja', price: 380000, cat: 'laranja', img: 'maq-pulv', hp: 0, top: 25, perk: 'defensivo do pomar 30% mais barato; cada um atende 150 ha de pomar' },
+  plataforma: { name: 'Plataforma Citrus PC-22', type: 'maquina', crop: 'laranja', price: 260000, cat: 'laranja', img: 'maq-plataforma', hp: 0, top: 20, perk: 'colhe 10% mais laranja (menos fruta no chão); cada uma atende 200 ha de pomar' },
   transbordo: { name: 'Transbordo Antoniossi 12 t', type: 'maquina', crop: 'cana', price: 320000, cat: 'cana', img: 'maq-transbordo', hp: 0, top: 30, perk: 'carregamento da cana de R$ 6 para R$ 2 por tonelada' },
   rodotrem: { name: 'Volvu FH rodotrem canavieiro', type: 'maquina', crop: 'cana', price: 1400000, cat: 'cana', img: 'maq-rodotrem', hp: 540, top: 90, perk: 'frete da cana até a usina 45% mais barato' },
   veyron: { name: 'Bugati Veiron 61.4', type: 'super', price: 15000000, cat: 'hiperesportivo', img: 'car-veyron', hp: 1001, top: 407 },
@@ -303,10 +303,11 @@ export function tick(s, rng = Math.random) {
 // gain: parte dos ganhos do mês que fica com o mundo (pedágio dos mais ricos)
 export const ELITE = [
   { min: 3e6, name: 'jornada dos mais ricos', price: 0.12, bills: 1.4, tax: 0.0006, gain: 0.08 },
-  { min: 1e7, name: 'magnata do mundo', price: 0.2, bills: 1.8, tax: 0.0012, gain: 0.14 },
-  { min: 5e7, name: 'bilionário em formação', price: 0.3, bills: 2.3, tax: 0.002, gain: 0.2 },
-  { min: 2e8, name: 'dono do mundo', price: 0.42, bills: 3, tax: 0.003, gain: 0.27 },
-  { min: 1e9, name: 'imperador do 21 World', price: 0.6, bills: 4, tax: 0.004, gain: 0.35 },
+  { min: 5e6, name: 'milionário do topo', price: 0.16, bills: 1.6, tax: 0.03, gain: 0.11 },
+  { min: 1e7, name: 'magnata do mundo', price: 0.2, bills: 1.8, tax: 0.04, gain: 0.14 },
+  { min: 5e7, name: 'bilionário em formação', price: 0.3, bills: 2.3, tax: 0.05, gain: 0.2 },
+  { min: 2e8, name: 'dono do mundo', price: 0.42, bills: 3, tax: 0.06, gain: 0.27 },
+  { min: 1e9, name: 'imperador do 21 World', price: 0.6, bills: 4, tax: 0.07, gain: 0.35 },
 ];
 export const eliteIdx = s => { const w = netWorth(s); let i = -1; ELITE.forEach((e, k) => { if (w >= e.min) i = k; }); return i; };
 // o 1º do ranking paga ainda mais (s.top1 vem do ranking do servidor): a coroa pesa
