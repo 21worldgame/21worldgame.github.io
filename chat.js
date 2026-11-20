@@ -104,11 +104,15 @@ function casual(t, r) {
   if (r() < 0.08) t = t.replace(/([aeiou])([^aeiou]*)$/, '$1$1$1$2');   // "bora" vira "boraaa"
   return t;
 }
+// frase da vez: percorre a lista toda em ordem embaralhada antes de repetir (passo primo com o tamanho da lista)
+const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+const STEP = (() => { let k = 11; while (gcd(k, LINES.length) !== 1) k++; return k; })();
+export const lineOf = slot => ((slot * STEP) % LINES.length + LINES.length) % LINES.length;
 export function npcLine(slot, nicks) {
   let a = (slot * 2654435761) >>> 0;
   const r = () => { a = (a + 0x6D2B79F5) >>> 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   if (!nicks.length || r() < 0.25) return null;
   const name = turnOf(slot, nicks, NPC_GAP), others = nicks.filter(n => n !== name);
-  const text = others.length && r() < 0.2 ? `@${pick(r, others)} ${pick(r, REPLIES)}` : casual(pick(r, LINES)(r), r);
+  const text = others.length && r() < 0.2 ? `@${pick(r, others)} ${pick(r, REPLIES)}` : casual(LINES[lineOf(slot)](r), r);
   return { id: `npc${slot}`, name, text, at: slot * NPC_GAP + Math.floor(r() * 20000) };
 }

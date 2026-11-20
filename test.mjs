@@ -1168,3 +1168,4 @@ console.log('mina ok');
   out.forEach((n, i) => assert.ok(!out.slice(Math.max(0, i - NP.TURN_AVOID), i).includes(n), `repetiu ${n}`));
   assert.ok(new Set(out).size > 60); assert.equal(NP.turnOf(5, ['A', 'B'], 0), NP.turnOf(5, ['B', 'A'], 0));
   console.log('rodízio de quem fala ok'); }
+{ const Cq = await import('./chat.js'); const seen = new Set(); for (let s = 1000; s < 1020; s++) seen.add(Cq.lineOf(s)); assert.equal(seen.size, 20, 'frases da Resenha não repetem em 20 falas seguidas'); console.log('frases sem repetir ok'); }
