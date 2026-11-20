@@ -900,6 +900,13 @@ console.log('suínos, negócios e galpões ok');
   for (let i = 0; i < ST3.PHOTO_POOL.dog.length; i++) { const d = { kind: 'dog', name: 'Rex', coat: 0 }; st.stable.animals.push(d); ST3.photo(d, st); }
   assert.equal(new Set(st.stable.animals.map(x => x.ph)).size, ST3.PHOTO_POOL.dog.length, 'nenhum galgo repete a foto');
 }
+{
+  const RV2 = await import('./rivals.js');
+  const calm = RV2.rivals(60), lead = 5e9, hunt = RV2.rivals(60, lead), top = Math.max(...hunt.map(r => r.worth));
+  assert.ok(top > Math.max(...calm.map(r => r.worth)) && top > lead * 0.97 && top < lead * 1.11, 'caçador colado no líder');
+  let ahead = 0; for (let m = 50; m < 250; m++) if (Math.max(...RV2.rivals(m, lead).map(r => r.worth)) > lead) ahead++;
+  assert.ok(ahead > 100 && ahead < 200, 'o líder às vezes ainda consegue o 1º lugar: ' + ahead);
+}
 console.log('mais ricos ok');
 
 // ---------- leilão de cavalos de raça ----------

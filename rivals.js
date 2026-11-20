@@ -5,8 +5,18 @@ import { rank } from './logic.js';
 import { NPCS, worthAt as npcWorth, levelFor as npcLevel } from './npcs.js';
 export const levelFor = npcLevel;
 // month pode ser fracionário (mês + progresso), para os números andarem de verdade
-export function rivals(month) {
-  return NPCS.map(n => { const worth = npcWorth(n, month); return { pid: `npc:${n.id}`, name: n.nick, level: npcLevel(worth), worth, rank: rank(worth), look: n.look }; });
+// caçadores do topo: os 3 maiores concorrentes do mundo perseguem o líder real (leader = maior patrimônio de jogador).
+// O 1º caçador fica em média ~4% acima do líder, com uma onda lenta: o jogador só segura o 1º lugar nos vales da onda.
+export const HUNT = [1.04, 0.99, 0.94], HUNT_WAVE = 0.06;
+export const hunted = new Map();   // id do npc -> fortuna de caçador (para o perfil mostrar o mesmo número do ranking)
+export function rivals(month, leader = 0) {
+  const rows = NPCS.map(n => { const worth = npcWorth(n, month); return { pid: `npc:${n.id}`, id: n.id, name: n.nick, worth, look: n.look }; });
+  hunted.clear();
+  if (leader > 0) [...rows].sort((a, b) => b.worth - a.worth).slice(0, HUNT.length).forEach((r, k) => {
+    const chase = Math.round(leader * HUNT[k] * (1 + HUNT_WAVE * Math.sin(month * 0.9 + k * 2.1)));
+    if (chase > r.worth) { r.worth = chase; hunted.set(r.id, chase); }
+  });
+  return rows.map(({ id, ...r }) => ({ ...r, level: npcLevel(r.worth), rank: rank(r.worth) }));
 }
 // ranking final: jogadores reais da nuvem (com o seu valor sempre ao vivo), vizinhos online e os concorrentes do mundo
 export function merge({ cloud = [], me, peers = [], rivalRows = [], limit = 10 }) {

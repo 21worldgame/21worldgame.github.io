@@ -143,7 +143,7 @@ export function rankingRows(limit = 10) {
   const w = Live.world(), t = Live.now(), month = W.current(w, t) + W.progress(w, t);
   const meP = profileOf(), myId = Auth.account()?.id;
   const cloud = (Auth.account() ? globalRows || [] : []).filter(r => r.user_id !== myId).map(r => ({ name: r.name, level: r.level, rank: r.rank || '', worth: Number(r.worth), look: r.look || {} }));
-  return RV.merge({ cloud, me: { ...meP, pid: 'me' }, peers, rivalRows: RV.rivals(month), limit });
+  return RV.merge({ cloud, me: { ...meP, pid: 'me' }, peers, rivalRows: RV.rivals(month, Math.max(Number(meP.worth) || 0, ...cloud.map(r => r.worth || 0), ...peers.map(p => p.worth || 0))), limit });
 }
 export function renderRanking() {
   const el = $('#ranking'); if (!el) return;
@@ -151,7 +151,7 @@ export function renderRanking() {
   const w = Live.world(), t = Live.now(), month = W.current(w, t) + W.progress(w, t);
   const meP = profileOf(), myId = Auth.account()?.id;
   const cloud = (Auth.account() ? globalRows || [] : []).filter(r => r.user_id !== myId).map(r => ({ name: r.name, level: r.level, rank: r.rank || '', worth: Number(r.worth), look: r.look || {} }));
-  const list = RV.merge({ cloud, me: { ...meP, pid: 'me' }, peers, rivalRows: RV.rivals(month), limit: 10 });
+  const list = RV.merge({ cloud, me: { ...meP, pid: 'me' }, peers, rivalRows: RV.rivals(month, Math.max(Number(meP.worth) || 0, ...cloud.map(r => r.worth || 0), ...peers.map(p => p.worth || 0))), limit: 10 });
   $('#ranking-title').textContent = 'ranking global ao vivo';
   const now = new Map(list.map((x, i) => [x.name, i]));
   el.innerHTML = list.map((x, i) => {
@@ -166,7 +166,7 @@ export function renderRanking() {
 
 export function findProfile(pid) {
   if (pid === 'me') return profileOf();
-  if (String(pid).startsWith('npc:')) { const n = NPC.byId(pid.slice(4)); if (n) { const w = Live.world(), t = Live.now(); return NPC.profile(n, W.current(w, t) + W.progress(w, t)); } }
+  if (String(pid).startsWith('npc:')) { const n = NPC.byId(pid.slice(4)); if (n) { const w = Live.world(), t = Live.now(); const p = NPC.profile(n, W.current(w, t) + W.progress(w, t)), hw = RV.hunted.get(n.id); return hw ? { ...p, worth: hw, level: RV.levelFor(hw) } : p; } }
   const p = lobby?.peers.get(pid)?.profile;
   if (p) return p;
   return prev?.seats.find(s => s.pid === pid)?.profile || null;
