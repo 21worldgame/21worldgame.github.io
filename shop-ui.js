@@ -4,6 +4,8 @@ import * as SH from './shop.js';
 import * as TD from './trade.js';
 import { G, $, esc, brl, say, save, note, award, confetti, profileOf } from './store.js';
 import * as sfx from './sfx.js';
+import * as Auth from './auth.js';
+import * as NGU from './negocios-ui.js';
 
 let lobby = null, media = () => '', kindName = {}, announce = () => {}, cat = 'all';
 export const setCat = c => { cat = c || 'all'; render(); };
@@ -122,21 +124,25 @@ export function buy(arg) {
   const [pid, lid, price] = String(arg).split('|'), p = Number(price);
   if (!lobby) return say('Sem conexão com o salão agora.', true);
   if (!(p > 0) || p > G.S.money) return say('Dinheiro insuficiente para essa compra.', true);
+  const l = lobby.peers.get(pid)?.shop?.find(x => x.id === lid);
+  if (l?.kind === 'club' && G.S.fut?.club) return say('Você já comanda um clube: venda o seu antes de comprar outro.', true);
   pending.add(lid);
   lobby.sendTrade({ t: 'shopbuy', lid, price: p, name: profileOf().name }, pid);
   setTimeout(() => { if (pending.delete(lid)) { say('O vendedor não respondeu. Tente de novo.', true); render(); } }, 15000);
   render();
 }
 // mensagens da loja entre jogadores
-export function onMsg(d, peer) {
+export async function onMsg(d, peer) {
   const s = G.S;
   if (d.t === 'shopbuy') {
     const l = (s.shop || []).find(x => x.id === d.lid), it = l && SH.find(s, l.key);
-    if (!l || !it || Number(d.price) !== l.price || l.kind === 'club') return lobby.sendTrade({ t: 'shopno', lid: d.lid, why: 'esse anúncio não está mais disponível.' }, peer);
-    const give = [it.kind === 'good' ? { kind: 'good', good: it.good, qty: it.qty } : { kind: it.kind, data: it.data }];
+    if (!l || !it || Number(d.price) !== l.price) return lobby.sendTrade({ t: 'shopno', lid: d.lid, why: 'esse anúncio não está mais disponível.' }, peer);
+    const give = [it.kind === 'good' ? { kind: 'good', good: it.good, qty: it.qty } : it.kind === 'acc' ? { kind: 'acc', acc: it.acc } : it.kind === 'empresa' ? { kind: 'empresa', cat: it.cat, data: it.data }
+      : it.kind === 'club' ? { kind: 'club', data: { club: s.fut.club, squad: s.fut.squad, stadium: s.fut.stadium, trophies: s.fut.trophies } } : { kind: it.kind, data: it.data }];
     const err = TD.apply(s, give, [{ kind: 'money', amount: l.price }]);
     if (err) return lobby.sendTrade({ t: 'shopno', lid: d.lid, why: err }, peer);
     SH.unlist(s, l.id);
+    if (it.kind === 'empresa') { try { await Auth.sbClient()?.rpc('release_company', { p_brand: it.data.brand }); } catch {} }   // a marca passa para o comprador
     lobby.sendTrade({ t: 'shopok', lid: d.lid, price: l.price, item: give[0] }, peer);
     note(`loja: ${String(d.name || 'jogador').slice(0, 18)} comprou ${l.label}`, l.price); say(`${String(d.name || 'Um jogador').slice(0, 18)} comprou ${l.label} por ${brl(l.price)}!`);
     sfx.play('stack', 0.7); award('trade'); save(); announce(); G.render();
@@ -145,6 +151,7 @@ export function onMsg(d, peer) {
     const err = TD.apply(s, [{ kind: 'money', amount: Math.floor(Number(d.price) || 0) }], [d.item]);
     if (err) return say(`Compra não concluída: ${err}`, true);
     note(`loja: comprou ${TD.describe(TD.sanitize([d.item])[0] || {})}`, -d.price); say(`Compra feita: ${brl(d.price)}.`);
+    if (d.item?.kind === 'empresa') NGU.refreshOwners();   // registra a marca no seu nome
     confetti(40); award('trade'); save(); G.render();
   }
   if (d.t === 'shopno' && pending.delete(d.lid)) { say(String(d.why || 'Compra recusada.').slice(0, 120), true); render(); }

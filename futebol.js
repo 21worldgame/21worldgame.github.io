@@ -150,6 +150,15 @@ export function takeClub(s, name, rng = Math.random) {
   return null;
 }
 
+// clube comprado de outro jogador no Feirão: mesmo clube, elenco, estádio e títulos; temporada nova
+export function adoptClub(s, d, rng = Math.random) {
+  if (s.fut?.club) return 'você já comanda um clube.';
+  const c = club(d.club); if (!c) return 'clube inválido.';
+  const div = divOf(c.n);
+  s.fut = { club: c.n, colors: c.c, div, season: 1, formation: '4-4-2', style: 'equilibrado', squad: [...(d.squad || []), ...(s.freeAgents || [])], market: [], offers: [], history: [], earned: 0, trophies: d.trophies || 0, stadium: d.stadium || 1, morale: 0 };
+  s.freeAgents = []; s.fut.league = newLeague(div, c.n, rng); refreshMarket(s.fut, rng);
+  return null;
+}
 export function refreshMarket(f, rng = Math.random) {
   const base = [76, 65, 56][f.div];
   f.market = Object.keys(POS).flatMap(pos => [genPlayer(pos, base + (rng() - 0.3) * 18, rng), genPlayer(pos, base + (rng() - 0.6) * 14, rng), genPlayer(pos, base - 8 + rng() * 6, rng)])
@@ -166,7 +175,9 @@ export function buy(s, id, price) {
   const { price: _, club: __, ...player } = p; f.squad.push(player);
   return null;
 }
-export const dealFor = (f, id, rng = Math.random) => { const p = f.market.find(x => x.id === id); return p ? newDeal(p.price, rng, 'sell') : null; };
+// piso da compra negociada e teto das propostas de clubes (abaixo do piso): comprar e revender jogador nunca dá lucro
+export const BUY_FLOOR = 0.95, OFFER_MAX = 0.94;
+export const dealFor = (f, id, rng = Math.random) => { const p = f.market.find(x => x.id === id); return p ? (d => (d.limit = Math.max(d.limit, Math.round(d.ask * BUY_FLOOR)), d))(newDeal(p.price, rng, 'sell')) : null; };   // nunca compra abaixo de 95% do valor
 export function sell(s, id, price) {
   const f = s.fut, p = f?.squad.find(x => x.id === id);
   if (!p) return 0;
@@ -193,7 +204,7 @@ function botOffers(f, rng) {
   const p = [...f.squad].sort((a, b) => b.ovr - a.ovr)[Math.floor(rng() * 6)];
   if (!p || f.offers.some(o => o.pid === p.id)) return;
   const buyer = pick(CLUBS[Math.max(0, f.div - (rng() < 0.4 ? 1 : 0))].filter(c => c.n !== f.club), rng);
-  f.offers.push({ id: `o${Date.now().toString(36)}${pid++}`, pid: p.id, name: p.name, club: buyer.n, amount: Math.round(value(p) * (0.85 + rng() * 0.45) / 1000) * 1000, until: f.league.round + 2 });
+  f.offers.push({ id: `o${Date.now().toString(36)}${pid++}`, pid: p.id, name: p.name, club: buyer.n, amount: Math.round(value(p) * (0.75 + rng() * (OFFER_MAX - 0.75)) / 1000) * 1000, until: f.league.round + 2 });
 }
 export function answerOffer(s, oid, yes) {
   const f = s.fut, o = (f.offers || []).find(x => x.id === oid);
