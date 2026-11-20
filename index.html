@@ -54,6 +54,7 @@
   })();
   </script>
   <script type="module" src="game.js"></script>
+  <script type="module" src="pix.js"></script>
 </head>
 <body>
   <div class="splash" id="splash" aria-hidden="true"><img src="assets/brand/logo-mark.svg" width="120" height="120" alt=""><span>carregando a mesa</span></div>
@@ -433,7 +434,8 @@
         <section class="feira"><div class="listhead"><h3>feira de negócios</h3><span class="muted small" id="fe-idx"></span></div>
           <p class="muted small">Negociantes vendem seminovos, sacas e acessórios e às vezes querem comprar o que é seu. O preço acompanha a economia dos jogadores: quanto mais rico o ranking, mais caro. Negocie: oferta baixa demais faz o negociante desistir. As bancas mudam todo mês do jogo.</p>
           <div id="fe-list"></div><div id="fe-want"></div></section>
-        <aside class="glass inv-online"><h3>jogadores online</h3><p class="muted small">Negocie carros, animais, terras, jogadores de futebol, sacas, fichas e dinheiro. Os dois montam a oferta, ficam "prontos" e confirmam. Se alguém mexer na oferta, os dois precisam confirmar de novo.</p><ul class="inv-peers" id="inv-peers"></ul></aside>
+        <div class="inv-side"><section class="pix glass" id="pix" aria-label="Pix 21"></section>
+        <aside class="glass inv-online"><h3>jogadores online</h3><p class="muted small">Negocie carros, animais, terras, jogadores de futebol, sacas, fichas e dinheiro. Os dois montam a oferta, ficam "prontos" e confirmam. Se alguém mexer na oferta, os dois precisam confirmar de novo.</p><ul class="inv-peers" id="inv-peers"></ul></aside></div>
       </div>
     </section>
 
