@@ -577,8 +577,8 @@ import * as GR from './granja.js';
 {
   const mk = () => { const s = { money: 2e6, prices: {}, nextId: 1 }; GR.ensure(s); return s; };
   const s = mk(); assert.equal(GR.buyHouse(s, 'convencional'), null); const hid = s.granja.houses[0].id;
-  assert.ok(GR.house(s, hid, 20000).includes('comporta'));
-  assert.equal(GR.house(s, hid, 15000, true), null); assert.ok(GR.house(s, hid, 100).includes('já tem'));
+  assert.ok(GR.house(s, hid, 20000).err.includes('comporta'));
+  assert.ok(GR.house(s, hid, 15000, true).cost > 0); assert.ok(GR.house(s, hid, 100).err.includes('já tem'));
   const lid = s.granja.lots[0].id; assert.ok(GR.sellLot(s, lid).err);
   const before = s.money + GR.housingCost(s, 15000, true);
   GR.monthly(s, () => 0.5); GR.monthly(s, () => 0.5);
@@ -1124,4 +1124,26 @@ console.log('mina ok');
   s.month = 13; const back = CT.refundOf(s), m0 = s.money; assert.equal(back, Math.round(s.acct.paid * 9 / 12 * 0.7), 'devolve 70% dos meses não usados');
   CT.fire(s); assert.equal(s.money, m0 + back); assert.equal(SF.active(s).length, 0, 'demitido sai da equipe');
   console.log('equipe ok');
+}
+
+{
+  const CT = await import('./contador.js');
+  const closes = [{ month: 3, lines: [{ txt: 'parcela do banco', val: -300 }, { txt: 'venda', val: 900 }] }, { month: 2, lines: [{ txt: 'parcela do banco', val: -200 }] }];
+  const t = CT.monthTable(CT.history({ closes })); assert.deepEqual(t.months, [2, 3]); assert.deepEqual(t.totals, [200, 300]); assert.deepEqual(t.incomes, [0, 900]);
+  assert.equal(t.rows[0].key, 'juros'); assert.equal(Math.round(t.rows[0].delta * 100), 50, 'subiu 50%');
+  assert.equal(CT.summarize(closes[0].lines).ins[0].val, 900); console.log('mês a mês ok');
+}
+
+{
+  const CT = await import('./contador.js'); const s = {};
+  for (let m = 1; m <= 10; m++) CT.record(s, m, [{ txt: 'parcela do banco', val: -100 * m }, { txt: 'granja: ração do lote', val: -10 }]);
+  assert.equal(s.closes.length, 6); assert.deepEqual(s.closesArc.map(a => a.month), [4, 3, 2, 1], 'arquivo guarda os meses que saíram');
+  assert.equal(s.closesArc[0].total, 410); assert.equal(s.closesArc[0].groups.granja, 10);
+  CT.record(s, 10, [{ txt: 'parcela do banco', val: -5 }]); assert.equal(CT.history(s).length, 10, 'mesmo mês não duplica');
+  assert.equal(CT.history(s)[0].total, 5); console.log('arquivo ok');
+}
+{
+  const GR = await import('./granja.js'); const s = { money: 1e6, prices: {} }; GR.buyHouse(s, 'pequeno'); const h = s.granja.houses[0].id, m0 = s.money;
+  const r = GR.house(s, h, 5000.7, true); assert.equal(m0 - s.money, r.cost, 'cobra o que registra'); assert.ok(GR.house(s, h, 5000, true).err, 'galpão cheio não cobra de novo');
+  assert.equal(m0 - s.money, r.cost, 'pintinho cobrado 1 vez só'); console.log('granja 1 cobrança ok');
 }

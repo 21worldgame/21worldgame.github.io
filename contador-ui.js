@@ -12,6 +12,49 @@ const typeRows = (types, total) => Object.entries(types).sort((a, b) => b[1] - a
 const groupCard = G2 => `<article class="ct-g glass"><header><h4>${esc(G2.label)}</h4><b class="bad">${brl(G2.total)}</b></header>
   <ul class="ct-types">${typeRows(G2.types, G2.total)}</ul>
   <details><summary>${G2.lines.length} ${G2.lines.length === 1 ? 'lançamento' : 'lançamentos'}</summary><ul class="ct-lines">${G2.lines.map(l => `<li><span>${esc(l.txt)}</span><b>${brl(l.val)}</b></li>`).join('')}</ul></details></article>`;
+const stamp = at => new Date(at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const sumv = a => a.reduce((x, y) => x + y, 0), avg = a => sumv(a) / (a.length || 1);
+const insList = x => (x.ins.length ? `<details class="ct-in"><summary>o que entrou: <b class="good">${brl(x.income)}</b> · ${x.ins.length} ${x.ins.length === 1 ? 'lançamento' : 'lançamentos'}</summary><ul class="ct-lines">${x.ins.map(l => `<li><span>${esc(l.txt)}</span><b class="good">${brl(l.val)}</b></li>`).join('')}</ul></details>` : '');
+const closeBody = x => `<p class="small">Entrou ${brl(x.income)} e saiu ${brl(x.total)}: saldo do mês <b class="${x.income - x.total >= 0 ? 'good' : 'bad'}">${brl(x.income - x.total)}</b>.${x.groups[0] ? ` Quem mais gastou: <b>${esc(x.groups[0].label)}</b> (${pct(x.groups[0].total, x.total)}%).` : ''}</p>
+  ${insList(x)}<div class="ct-sum glass"><h4>por tipo de gasto</h4><ul class="ct-types">${typeRows(x.types, x.total)}</ul></div><div class="ct-grid">${x.groups.map(groupCard).join('')}</div>`;
+// mês do arquivo (só totais): tipos e produções em barras
+const arcBody = a => `<div class="ct-arc"><div><h4>por tipo de gasto</h4><ul class="ct-types">${typeRows(a.types, a.total)}</ul></div>
+  <div><h4>por produção</h4><ul class="ct-types">${Object.entries(a.groups).sort((x, y) => y[1] - x[1]).map(([k, v]) => `<li><span>${esc(CT.GROUP_LABEL[k] || k)}</span><b>${brl(v)}</b><i style="--w:${pct(v, a.total)}%"></i></li>`).join('')}</ul></div></div>`;
+// indicadores do topo
+function kpis(hist, fc) {
+  const h = hist.slice(0, 12), t = h.map(a => a.total), last = h[0], prev = h[1], big = last && Object.entries(last.types).sort((a, b) => b[1] - a[1])[0];
+  const d = last && prev && prev.total ? last.total / prev.total - 1 : null;
+  const k = (lbl, val, sub = '', cls = '') => `<div class="ct-kpi glass"><span>${lbl}</span><b class="${cls}">${val}</b><small>${sub}</small></div>`;
+  return `<div class="ct-kpis">${k('próximo fechamento', brl(fc.total), 'previsão', 'bad')}${k('último mês', last ? brl(last.total) : '—', last ? W.dateLabel(last.month) : 'ainda sem fechamento', 'bad')}
+    ${k('média por mês', h.length ? brl(avg(t)) : '—', h.length ? `últimos ${h.length} ${h.length === 1 ? 'mês' : 'meses'}` : '')}
+    ${k('vs mês anterior', d == null ? '—' : `${d > 0 ? '▲' : d < 0 ? '▼' : '='} ${Math.abs(Math.round(d * 100))}%`, d == null ? 'precisa de 2 fechamentos' : d > 0 ? 'gastou mais' : 'gastou menos', d == null ? '' : d > 0 ? 'bad' : 'good')}
+    ${k('maior gasto', big ? esc(CT.TYPES[big[0]] || big[0]) : '—', big ? `${brl(big[1])} · ${pct(big[1], last.total)}% do mês` : '')}</div>`;
+}
+// tabela mês a mês (linhas por tipo de gasto ou por produção, uma coluna por mês)
+let by = 'types';
+const dl = d => (d == null ? '<td class="num muted">—</td>' : `<td class="num ${d > 0.005 ? 'bad' : d < -0.005 ? 'good' : 'muted'}">${d > 0.005 ? '▲' : d < -0.005 ? '▼' : '='} ${Math.abs(Math.round(d * 100))}%</td>`);
+function monthly(hist) {
+  const t = CT.monthTable(hist, by), n = t.months.length, last = t.totals[n - 1], prev = t.totals[n - 2];
+  const head = `<tr><th>${by === 'types' ? 'tipo de gasto' : 'produção'}</th>${t.months.map(m => `<th class="num">${W.dateLabel(m)}</th>`).join('')}<th class="num">média</th><th class="num">vs anterior</th></tr>`;
+  const rows = t.rows.map(r => `<tr><td>${esc(r.label)}</td>${r.vals.map(v => `<td class="num">${v ? brl(v) : '<span class="muted">—</span>'}</td>`).join('')}<td class="num">${brl(r.avg)}</td>${dl(r.delta)}</tr>`).join('');
+  const foot = `<tr class="ct-mt__tot"><td>total de gastos</td>${t.totals.map(v => `<td class="num bad">${brl(v)}</td>`).join('')}<td class="num bad">${brl(avg(t.totals))}</td>${dl(n > 1 && prev ? last / prev - 1 : null)}</tr>
+    <tr><td>entrou</td>${t.incomes.map(v => `<td class="num good">${brl(v)}</td>`).join('')}<td class="num good">${brl(avg(t.incomes))}</td><td></td></tr>
+    <tr class="ct-mt__tot"><td>saldo</td>${t.incomes.map((v, i) => `<td class="num ${v - t.totals[i] >= 0 ? 'good' : 'bad'}">${brl(v - t.totals[i])}</td>`).join('')}<td class="num">${brl(avg(t.incomes) - avg(t.totals))}</td><td></td></tr>`;
+  return `<section class="ct-sec"><div class="ct-sec__h"><h3>gastos mês a mês <small class="muted">últimos ${n} ${n === 1 ? 'mês' : 'meses'}</small></h3>
+    <span class="ct-by" role="group" aria-label="agrupar por"><button class="btn btn--sm ${by === 'types' ? 'btn--gold' : 'btn--glass'}" data-ct="by" data-id="types" aria-pressed="${by === 'types'}">por tipo</button><button class="btn btn--sm ${by === 'groups' ? 'btn--gold' : 'btn--glass'}" data-ct="by" data-id="groups" aria-pressed="${by === 'groups'}">por produção</button></span></div>
+    <p class="small muted">Cada coluna é um fechamento já cobrado. A última coluna compara o mês mais recente com o anterior: <span class="bad">▲ gastou mais</span>, <span class="good">▼ gastou menos</span>.</p>
+    <div class="ct-mt glass"><table class="ct-hist"><thead>${head}</thead><tbody>${rows}</tbody><tfoot>${foot}</tfoot></table></div></section>`;
+}
+// arquivo: todos os meses guardados, separados por ano
+function archive(s, hist) {
+  if (hist.length < 2) return '';
+  const full = Object.fromEntries((s.closes || []).map(c => [c.month, c])), years = {};
+  for (const a of hist.slice(1)) (years[W.yearOf(a.month)] ??= []).push(a);
+  return `<section class="ct-sec"><div class="ct-sec__h"><h3>arquivo mês a mês <small class="muted">toque num mês para ver o detalhe</small></h3><span class="small muted">guarda até ${CT.ARCHIVE} meses</span></div>
+    ${Object.entries(years).sort((a, b) => b[0] - a[0]).map(([y, ms]) => `<div class="ct-year"><h4>ano ${y} <small class="muted">gastos ${brl(sumv(ms.map(a => a.total)))} · entrou ${brl(sumv(ms.map(a => a.income)))}</small></h4>
+      ${ms.map(a => `<details class="ct-old glass"><summary><b>${W.dateLabel(a.month)}</b><span class="small muted">cobrado em ${stamp(a.at)}</span><span class="good">+${brl(a.income)}</span><span class="bad">−${brl(a.total)}</span><b class="${a.income - a.total >= 0 ? 'good' : 'bad'}">${brl(a.income - a.total)}</b></summary>${full[a.month] ? closeBody(CT.summarize(full[a.month].lines)) : arcBody(a)}</details>`).join('')}</div>`).join('')}
+    <p class="small muted">Os últimos ${CT.KEEP} meses guardam cada lançamento; os mais antigos ficam com os totais por tipo e por produção.</p></section>`;
+}
 const when = s => { try { const w = Live.world(), t = Live.now(); return W.fmt(W.msLeft(w, t)); } catch { return '…'; } };
 
 export function render() {
@@ -29,16 +72,16 @@ export function render() {
   const head = `<div class="ct-head glass"><div><h3>relatório do contador</h3><p class="small">${a.plan === 'mensal' ? `plano mensal · próximo honorário ${brl(CT.nextMensal(s, worth))} (sobe ${Math.round(CT.FEE.rise * 100)}% a cada mês)` : `plano ${CT.PLANS[a.plan].label} pago (${brl(a.paid)}) · ${CT.monthsLeft(s)} ${CT.monthsLeft(s) === 1 ? 'mês restante' : 'meses restantes'}`}</p></div>
     <button class="btn btn--glass btn--sm" data-eq="fire" data-id="contador">demitir</button></div>`;
   const last = closes[0], ls = last && CT.summarize(last.lines);
-  el.innerHTML = head + `<section class="ct-sec"><div class="ct-sec__h"><h3>previsão do próximo fechamento <small class="muted">em ${when(s)}</small></h3><span class="ct-total bad">${brl(fc.total)}</span></div>
+  const hist = CT.history(s);
+  el.innerHTML = head + kpis(hist, fc) + `<section class="ct-sec"><div class="ct-sec__h"><h3>previsão do próximo fechamento <small class="muted">em ${when(s)}</small></h3><span class="ct-total bad">${brl(fc.total)}</span></div>
       <p class="small muted">Contas fixas (funcionários, luz, água, aluguel, seguro, impostos, parcelas) são exatas; ração, frete e o que depende de preço do mercado podem variar um pouco.</p>
       <div class="ct-sum glass"><h4>por tipo de gasto</h4><ul class="ct-types">${typeRows(fc.types, fc.total)}</ul></div>
       <div class="ct-grid">${fc.groups.map(groupCard).join('') || '<p class="muted">Nenhum gasto previsto.</p>'}</div></section>
-    <section class="ct-sec"><div class="ct-sec__h"><h3>último fechamento cobrado ${last ? `<small class="muted">${W.dateLabel(last.month)} · ${new Date(last.at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} · <span class="good">cobrado 1 vez</span></small>` : ''}</h3>${ls ? `<span class="ct-total bad">${brl(ls.total)}</span>` : ''}</div>
-      ${ls ? `<p class="small">Entrou ${brl(ls.income)} e saiu ${brl(ls.total)}: saldo do mês <b class="${ls.income - ls.total >= 0 ? 'good' : 'bad'}">${brl(ls.income - ls.total)}</b>.</p>
-        <div class="ct-sum glass"><h4>por tipo de gasto</h4><ul class="ct-types">${typeRows(ls.types, ls.total)}</ul></div><div class="ct-grid">${ls.groups.map(groupCard).join('')}</div>`
+    <section class="ct-sec"><div class="ct-sec__h"><h3>último fechamento cobrado ${last ? `<small class="muted">${W.dateLabel(last.month)} · ${stamp(last.at)} · <span class="good">cobrado 1 vez</span></small>` : ''}</h3>${ls ? `<span class="ct-total bad">${brl(ls.total)}</span>` : ''}</div>
+      ${ls ? closeBody(ls)
         : '<p class="muted">O primeiro fechamento com o contador aparece aqui quando o mês virar.</p>'}</section>
-    ${closes.length > 1 ? `<section class="ct-sec"><h3>fechamentos anteriores</h3><table class="ct-hist"><thead><tr><th>mês</th><th>cobrado em</th><th class="num">entrou</th><th class="num">saiu</th><th class="num">saldo</th></tr></thead><tbody>${closes.map(c => { const x = CT.summarize(c.lines); return `<tr><td>${W.dateLabel(c.month)}</td><td>${new Date(c.at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td><td class="num good">${brl(x.income)}</td><td class="num bad">${brl(x.total)}</td><td class="num">${brl(x.income - x.total)}</td></tr>`; }).join('')}</tbody></table>
-      <p class="small muted">Um fechamento por mês do mundo, cada um cobrado uma única vez.</p></section>` : ''}`;
+    ${hist.length ? monthly(hist) : ''}
+    ${archive(s, hist)}`;
 }
 
 // resumo do contador no topo das abas de produção
@@ -56,6 +99,7 @@ export function inject(tab) {
 
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-ct]'); if (!b) return;
+  if (b.dataset.ct === 'by') { by = b.dataset.id; return render(); }
   const s = G.S;
   if (b.dataset.ct === 'hire') {
     const k = b.dataset.id, P = CT.PLANS[k], price = CT.quote(L.netWorth(s), k);

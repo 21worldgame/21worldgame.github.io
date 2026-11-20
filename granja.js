@@ -44,16 +44,16 @@ export function sellHouse(s, hid) {
 export const housingCost = (s, birds, vac) => Math.round(birds * ((s.prices.pintinho || PRICES.pintinho) + (vac ? VACCINE : 0)));
 export function house(s, hid, birds, vac = true) {
   const g = ensure(s), h = g.houses.find(x => x.id === hid);
-  if (!h) return 'galpão não encontrado.';
-  if (lotOf(s, hid)) return 'o galpão já tem um lote. Venda antes de alojar outro.';
+  if (!h) return { err: 'galpão não encontrado.' };
+  if (lotOf(s, hid)) return { err: 'o galpão já tem um lote. Venda antes de alojar outro.' };
   birds = Math.floor(Number(birds) || 0);
-  if (birds < 100) return 'aloje pelo menos 100 pintinhos.';
-  if (birds > HOUSES[h.type].cap) return `esse galpão comporta até ${HOUSES[h.type].cap.toLocaleString('pt-BR')} aves.`;
+  if (birds < 100) return { err: 'aloje pelo menos 100 pintinhos.' };
+  if (birds > HOUSES[h.type].cap) return { err: `esse galpão comporta até ${HOUSES[h.type].cap.toLocaleString('pt-BR')} aves.` };
   const cost = housingCost(s, birds, vac);
-  if (cost > s.money) return 'dinheiro insuficiente para os pintinhos.';
+  if (cost > s.money) return { err: 'dinheiro insuficiente para os pintinhos.' };
   s.money -= cost;
   g.lots.push({ id: `l${(s.nextId = (s.nextId || 1) + 1)}`, house: hid, birds, start: birds, age: 0, vac: !!vac, events: [] });
-  return null;
+  return { cost, birds };
 }
 export function sellLot(s, lid) {
   const g = ensure(s), l = g.lots.find(x => x.id === lid);
@@ -72,7 +72,7 @@ export function monthly(s, rng = Math.random) {
     const H = HOUSES[g.houses.find(x => x.id === l.house)?.type] || HOUSES.pequeno;
     const gain = kgAt(l.age + 1) - kgAt(l.age), conv = H.conv * (l.age >= 2 ? 1.45 : 1);          // passou do ponto: come muito e engorda pouco
     const feed = Math.round(l.birds * gain * conv * (s.prices.racao || PRICES.racao));
-    add(`granja: ração do lote (${l.birds.toLocaleString('pt-BR')} aves)`, -feed);
+    add(`granja: ração do ${l.age + 1}º mês do lote (${l.birds.toLocaleString('pt-BR')} aves)`, -feed);
     add('granja: energia, cama e mão de obra', -Math.round(l.birds * H.energy));
     let dead = l.birds * H.mort;
     if (rng() < (l.vac ? 0.01 : 0.05)) { const d = l.birds * (l.vac ? 0.05 : 0.2); dead += d; l.events.push('doença'); add(`granja: surto de doença no lote${l.vac ? ' (a vacina segurou boa parte)' : ' sem vacina'}: ${Math.round(d)} aves perdidas`); }

@@ -2431,3 +2431,22 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
   .sn-pl .sn-av { width: 34px !important; height: 34px !important; flex: none; }
   .sn-pl b { font-size: .8rem; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .sn-pl small { font-size: .68rem; }
 }
+
+/* contador: indicadores, mês a mês e arquivo */
+.ct-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 12px 0 4px; }
+.ct-kpi { padding: 12px 14px; border-radius: 14px; display: grid; gap: 2px; align-content: start; }
+.ct-kpi span { font: 800 .68rem/1.2 var(--font-body); text-transform: uppercase; letter-spacing: .07em; color: var(--color-muted); }
+.ct-kpi b { font: 800 1.15rem/1.2 var(--font-display); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; } .ct-kpi small { font-size: .74rem; color: var(--color-muted); }
+.ct-by { display: inline-flex; gap: 6px; }
+.ct-mt { border-radius: 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 4px 0; }
+.ct-mt table { border-collapse: collapse; min-width: 100%; white-space: nowrap; } .ct-mt th, .ct-mt td { padding: 7px 12px; border-bottom: 1px solid rgba(255, 255, 255, .06); }
+.ct-mt tbody tr:nth-child(even) td { background-color: rgba(255, 255, 255, .025); } .ct-mt tbody tr:hover td { background-color: rgba(250, 204, 21, .07); }
+.ct-mt th { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--color-muted); text-align: left; } .ct-mt .num { text-align: right; font-variant-numeric: tabular-nums; }
+.ct-mt td:first-child, .ct-mt th:first-child { position: sticky; left: 0; background: #0b1220; z-index: 1; }
+.ct-mt tfoot td { font-weight: 700; } .ct-mt__tot td { border-top: 1px solid rgba(255, 255, 255, .18); }
+.ct-in { padding: 10px 14px; border-radius: 14px; margin: 8px 0; background: rgba(74, 222, 128, .06); box-shadow: inset 0 0 0 1px rgba(74, 222, 128, .2); } .ct-in summary { cursor: pointer; font-size: .88rem; }
+.ct-year { margin: 0 0 14px; } .ct-year h4 { margin: 0 0 8px; font: 800 1rem/1.2 var(--font-display); }
+.ct-old { border-radius: 14px; margin: 0 0 8px; padding: 0 14px; } .ct-old[open] { padding-bottom: 14px; }
+.ct-old summary { cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; padding: 12px 0; font-variant-numeric: tabular-nums; } .ct-old summary > b:last-child { margin-left: auto; }
+.ct-arc { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; } .ct-arc h4 { margin: 0 0 6px; font-size: .85rem; }
+@media (max-width: 40rem) { .ct-kpis { grid-template-columns: 1fr 1fr; gap: 8px; } .ct-kpi:first-child { grid-column: 1 / -1; } .ct-kpi { padding: 10px 12px; } .ct-kpi b { font-size: 1rem; } }

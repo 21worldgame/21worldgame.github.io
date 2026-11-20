@@ -435,7 +435,7 @@ function renderGranja() {
       <p class="small muted">até ${int(H.cap)} aves · conversão ${H.conv.toString().replace('.', ',')} kg de ração por kg · mortalidade ${(H.mort * 100).toFixed(1).replace('.', ',')}%/mês</p>
       <div class="row"><label class="field"><span>pintinhos</span><input class="input input--s" id="gr-q-${hs.id}" type="number" min="100" step="100" max="${H.cap}" value="${H.cap}" inputmode="numeric"></label>
         <label class="check small"><input type="checkbox" id="gr-v-${hs.id}" checked><span>vacinar (R$ ${GR.VACCINE.toFixed(2).replace('.', ',')}/ave)</span></label></div>
-      <p class="small">custo do alojamento: <b>${brl(GR.housingCost(s, H.cap, true))}</b> para ${int(H.cap)} pintinhos</p>
+      <p class="small">custo do alojamento: <b>${brl(GR.housingCost(s, H.cap, true))}</b> para ${int(H.cap)} pintinhos (pago 1 vez). Depois, em cada fechamento do mês, vêm a ração e a energia.</p>
       <div class="row"><button class="btn btn--gold" data-act="gr-house" data-id="${hs.id}">alojar pintinhos</button><button class="btn btn--glass btn--sm" data-act="gr-sellhouse" data-id="${hs.id}">vender galpão ${brl(Math.round(hs.value * GR.HOUSE_RESALE))}</button></div></div></article>`;
     const [stage, img] = grStage(l.age), kg = GR.kgAt(l.age), k = Math.min(1, l.age / 2);
     return `<article class="glass grcard${l.age >= 3 ? ' is-late' : l.age === 2 ? ' is-ready' : ''}"><img class="grcard__img" src="assets/${img}.webp" alt="" loading="lazy">
@@ -787,7 +787,7 @@ const ACTS = {
   'card-close'() { $('#dlg-card').close(); },
   'fe-goto'() { $('.feira').scrollIntoView({ behavior: 'smooth', block: 'start' }); },
   'gr-buy'(id) { const H = GR.HOUSES[id]; if (!confirm(`Construir ${H.label} por ${brl(H.price)}?`)) return; const err = GR.buyHouse(S(), id); if (err) return say(err[0].toUpperCase() + err.slice(1), true); note(`granja: ${H.label}`, -H.price); award('land'); confetti(40); say(`${H.label} pronto para receber pintinhos.`); },
-  'gr-house'(id) { const q = Number($(`#gr-q-${id}`)?.value), v = !!$(`#gr-v-${id}`)?.checked, cost = GR.housingCost(S(), q, v); const err = GR.house(S(), id, q, v); if (err) return say(err[0].toUpperCase() + err.slice(1), true); note(`granja: ${int(q)} pintinhos alojados`, -cost); say(`${int(q)} pintinhos alojados. Venda no 2º mês, com ~2,8 kg.`); },
+  'gr-house'(id) { const q = Number($(`#gr-q-${id}`)?.value), v = !!$(`#gr-v-${id}`)?.checked, r = GR.house(S(), id, q, v); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true); note(`granja: compra de ${int(r.birds)} pintinhos (pago 1 vez)`, -r.cost); say(`${int(r.birds)} pintinhos alojados por ${brl(r.cost)}. A ração é cobrada em cada fechamento do mês. Venda no 2º mês, com ~2,8 kg.`); },
   'gr-sell'(id) { const l = GR.ensure(S()).lots.find(x => x.id === id); if (l && l.age < 2 && !confirm('Ainda não chegou no ponto (2º mês). Vender mesmo assim?')) return; const r = GR.sellLot(S(), id); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true); note(`granja: venda de ${int(r.lot.birds)} frangos`, r.amount); confetti(50); sfx.play('stack', 0.6); say(`Lote vendido ao frigorífico por ${brl(r.amount)}.`); },
   'gr-sellhouse'(id) { if (!confirm('Vender este galpão?')) return; const r = GR.sellHouse(S(), id); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true); note('granja: venda de galpão', r.amount); say(`Galpão vendido por ${brl(r.amount)}.`); },
   'pm-plant'(id) { const l = find(S().lands, id); if (!confirm(`Plantar pomar de laranja em ${l.ha} ha por ${brl(l.ha * PM.ORANGE.plant)}? A primeira colheita vem em ${PM.ORANGE.grow} meses e depois a cada ${PM.ORANGE.cycle}.`)) return; const err = PM.plant(S(), l); if (err) return say(err[0].toUpperCase() + err.slice(1), true); note(`pomar de laranja, ${l.ha} ha`, -l.ha * PM.ORANGE.plant); award('plant'); say('Mudas plantadas. Mantenha o defensivo ligado para segurar a praga.'); },
@@ -1325,7 +1325,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 55;
+const APP_VERSION = 56;
 let updateShown = false, updateMsg = '';
 let checking = false;
 async function checkUpdate() {

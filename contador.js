@@ -42,11 +42,18 @@ export function monthly(s, worth) {
 }
 
 // ---------- fechamentos guardados (o que foi cobrado, uma vez por mês) ----------
-export const KEEP = 6;
+export const KEEP = 6, ARCHIVE = 36;     // 6 meses com cada lançamento; 36 meses no arquivo (totais por tipo e por produção)
+const r0 = o => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, Math.round(v)]));
+export const compact = c => { const x = summarize(c.lines); return { month: c.month, at: c.at, income: Math.round(x.income), total: Math.round(x.total), types: r0(x.types), groups: Object.fromEntries(x.groups.map(g => [g.key, Math.round(g.total)])) }; };
 export function record(s, month, lines, now = Date.now()) {
-  s.closes = [{ month, at: now, lines: lines.filter(l => l && l.val).slice(0, 250).map(l => ({ txt: String(l.txt).slice(0, 140), val: Math.round(l.val), ...(l.parts ? { parts: l.parts } : {}) })) },
-    ...(s.closes || []).filter(c => c.month !== month)].slice(0, KEEP);
+  const all = [{ month, at: now, lines: lines.filter(l => l && l.val).slice(0, 250).map(l => ({ txt: String(l.txt).slice(0, 140), val: Math.round(l.val), ...(l.parts ? { parts: l.parts } : {}) })) },
+    ...(s.closes || []).filter(c => c.month !== month)];
+  s.closes = all.slice(0, KEEP);
+  const out = all.slice(KEEP).map(compact);
+  if (out.length) s.closesArc = [...out, ...(s.closesArc || []).filter(a => !out.some(o => o.month === a.month))].sort((a, b) => b.month - a.month).slice(0, ARCHIVE);
 }
+// todos os meses guardados, do mais novo ao mais antigo, no mesmo formato compacto
+export const history = s => [...(s.closes || []).map(compact), ...(s.closesArc || []).filter(a => !(s.closes || []).some(c => c.month === a.month))].sort((a, b) => b.month - a.month);
 
 // ---------- de onde vem cada gasto ----------
 const esc = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -112,16 +119,23 @@ export function partsOf(l) {
 }
 // resumo de um fechamento (ou de uma previsão): por produção e por tipo, só gastos
 export function summarize(lines) {
-  const groups = {}, types = {}; let total = 0, income = 0;
+  const groups = {}, types = {}, ins = []; let total = 0, income = 0;
   for (const l of lines || []) {
-    if (l.val > 0) { income += l.val; continue; }
+    if (l.val > 0) { income += l.val; ins.push({ txt: l.txt, val: l.val }); continue; }
     if (!(l.val < 0)) continue;
     const g = groupOf(l.txt), p = partsOf(l);
     const G = groups[g] ??= { key: g, label: GROUP_LABEL[g], total: 0, types: {}, lines: [] };
     G.total -= l.val; G.lines.push({ txt: l.txt, val: -l.val, parts: p }); total -= l.val;
     for (const [k, x] of Object.entries(p)) { G.types[k] = (G.types[k] || 0) + x; types[k] = (types[k] || 0) + x; }
   }
-  return { total, income, types, groups: Object.values(groups).sort((a, b) => b.total - a.total) };
+  return { total, income, ins: ins.sort((a, b) => b.val - a.val), types, groups: Object.values(groups).sort((a, b) => b.total - a.total) };
+}
+export function monthTable(hist, by = 'types', max = 12) {
+  const cols = [...(hist || [])].slice(0, max).reverse(), keys = {};
+  cols.forEach((c, i) => { for (const [k, v] of Object.entries(c[by] || {})) (keys[k] ??= cols.map(() => 0))[i] = v; });
+  const rows = Object.entries(keys).map(([k, vals]) => ({ key: k, label: by === 'types' ? TYPES[k] || k : GROUP_LABEL[k] || k, vals, avg: vals.reduce((a, b) => a + b, 0) / vals.length,
+    delta: vals.length > 1 && vals[vals.length - 2] ? vals[vals.length - 1] / vals[vals.length - 2] - 1 : null })).sort((a, b) => b.avg - a.avg);
+  return { months: cols.map(c => c.month), totals: cols.map(c => c.total), incomes: cols.map(c => c.income), rows };
 }
 // bots também pagam contador: o mesmo honorário pelo patrimônio deles
 export const npcFee = worth => feeFor(worth);
