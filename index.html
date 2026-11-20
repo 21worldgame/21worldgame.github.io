@@ -802,10 +802,16 @@
   </nav>
   <div class="mnav-sheet" id="mnav-sheet" hidden><div class="mnav-sheet__in"><div class="mnav-sheet__head"><b>todas as áreas</b><button type="button" class="btn btn--glass btn--sm" data-mnav="close">fechar</button></div><div class="mnav-grid" id="mnav-grid"></div></div></div>
   <!-- chat global -->
-  <button class="chat-fab btn btn--gold" id="chat-fab" type="button" aria-expanded="false" aria-controls="chat-box">chat <span class="chat-fab__n" id="chat-n" hidden></span></button>
-  <section class="chat-box glass" id="chat-box" hidden aria-label="chat global">
-    <header class="chat-box__head"><h3>chat global</h3><span class="muted small" id="chat-online"></span><button class="btn btn--glass btn--sm" id="chat-x" type="button" aria-label="fechar o chat">fechar</button></header>
+  <aside class="tv glass" id="tv" aria-label="TV 21, notícias do mundo" title="TV 21: o que os jogadores estão comprando e vendendo. Clique para ver todas.">
+    <header class="tv__head"><i class="tv__dot" aria-hidden="true"></i><b>TV 21</b><span>plantão</span><button type="button" class="tv__min" id="tv-min" aria-label="minimizar a TV">–</button></header>
+    <div class="tv__screen" id="tv-screen" aria-live="polite"></div>
+  </aside>
+  <button class="chat-fab btn btn--gold" id="chat-fab" type="button" aria-expanded="false" aria-controls="chat-box">resenha <span class="chat-fab__n" id="chat-n" hidden></span></button>
+  <section class="chat-box glass" id="chat-box" hidden aria-label="Resenha, o chat de todos os jogadores">
+    <header class="chat-box__head"><h3>Resenha</h3><span class="muted small" id="chat-online"></span><button class="btn btn--glass btn--sm" id="chat-x" type="button" aria-label="fechar o chat">fechar</button></header>
+    <nav class="chat-tabs" aria-label="Resenha"><button type="button" class="is-on" data-chat-tab="chat">conversa</button><button type="button" data-chat-tab="tv"><i class="tv__dot" aria-hidden="true"></i> TV 21</button></nav>
     <ul class="chat-list" id="chat-list" aria-live="polite"></ul>
+    <ul class="chat-list tv-list" id="tv-list" hidden></ul>
     <form class="chat-form" id="chat-form">
       <label class="visually-hidden" for="chat-to">para</label><select class="input chat-to" id="chat-to"><option value="all">todos (global)</option></select>
       <label class="visually-hidden" for="chat-in">mensagem</label><input class="input" id="chat-in" maxlength="200" autocomplete="off" placeholder="Mensagem... use @Nome para chamar alguém">

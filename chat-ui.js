@@ -7,6 +7,7 @@ import { G, $, esc, brl, say, save, note, profileOf } from './store.js';
 import * as sfx from './sfx.js';
 import * as NPC from './npcs.js';
 import * as Live from './live.js';
+import * as NEWS from './news-ui.js';
 
 let lobby = null, lastAt = 0, unread = 0, idx = 1, to = 'all';
 const msgs = [], seen = new Set();
@@ -16,9 +17,10 @@ const myName = () => profileOf().name;
 export function attach(l) {
   lobby = l;
   if (!l.setOnChat) return;
-  l.setOnChat((d, peer) => { if (d?.t === 'hist' && Array.isArray(d.list)) d.list.slice(-30).forEach(m => add({ ...m, pv: false }, false)); else add(d, false, peer); });
+  NEWS.setSender(m => lobby?.sendChat?.(m));
+  l.setOnChat((d, peer) => { if (d?.t === 'news') return NEWS.receive(d); if (d?.t === 'nhist' && Array.isArray(d.list)) return d.list.slice(-15).forEach(NEWS.receive); if (d?.t === 'hist' && Array.isArray(d.list)) d.list.slice(-30).forEach(m => add({ ...m, pv: false }, false)); else add(d, false, peer); });
   setInterval(() => { if (isOpen() && document.activeElement !== $('#chat-to')) { fillTo(); $('#chat-online').textContent = onlineLabel(); } }, 2500);   // lista de quem está online sempre em dia
-  l.setOnJoin(id => { const pub = msgs.filter(m => !m.sys && !m.pv).slice(-20); if (pub.length) l.sendChat({ t: 'hist', list: pub }, id); });
+  l.setOnJoin(id => { const pub = msgs.filter(m => !m.sys && !m.pv).slice(-20); if (pub.length) l.sendChat({ t: 'hist', list: pub }, id); const nh = NEWS.history(); if (nh.length) l.sendChat({ t: 'nhist', list: nh }, id); });
 }
 async function refreshIdx() { try { idx = FE.econIndex(((await Auth.ranking?.()) || []).map(r => Number(r.worth))); } catch {} }
 const online = () => (lobby ? [...lobby.peers.entries()].filter(([, p]) => p.profile).map(([pid, p]) => ({ pid, name: p.profile.name })) : []);

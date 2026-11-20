@@ -1155,3 +1155,10 @@ console.log('mina ok');
   const g = { nextId: 3, prices: {}, granja: { houses: [{ id: 'g3', type: 'pequeno', value: 1 }, { id: 'g3', type: 'pequeno', value: 1 }], lots: [] } };
   GR.ensure(g); assert.equal(new Set(g.granja.houses.map(h => h.id)).size, 2); console.log('ids únicos ok');
 }
+{ const Nw = await import('./news.js');
+  assert.equal(Nw.fromNote('Ana', 'compra de 100 fichas', -1000), null); assert.equal(Nw.fromNote('Ana', 'imposto sobre grandes fortunas (x)', -9e6), null);
+  assert.equal(Nw.fromNote('Ana', 'loja 21: Lamborgini Huracão', -3600000).kind, 'compra'); assert.equal(Nw.fromNote('Ana', 'troca com Beto: deu Hilux', 0).kind, 'troca');
+  assert.equal(Nw.accept({ kind: 'hack', name: 'x' }), null); assert.ok(!/[<>]/.test(Nw.accept({ kind: 'compra', name: '<b>x', what: '<script>', val: 5 }).name + Nw.accept({ kind: 'compra', name: 'x', what: '<script>', val: 5 }).what));
+  let n = 0; for (let s = 0; s < 200; s++) { const x = Nw.npcNews(s, ['A', 'B']); if (x) { n++; assert.ok(Nw.headline(x).length > 10 && !/undefined|NaN/.test(Nw.headline(x))); } } assert.ok(n > 100);
+  assert.deepEqual(Nw.npcNews(77, ['A', 'B']), Nw.npcNews(77, ['A', 'B']), 'igual para todos');
+  console.log('TV 21: notícias ok'); }

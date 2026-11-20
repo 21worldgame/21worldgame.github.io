@@ -40,6 +40,7 @@ import * as AB from './abate.js';
 import * as FN from './frig-net.js';
 import * as CD from './cards.js';
 import * as CHUI from './chat-ui.js';
+import './news-ui.js';
 import * as SHUI from './shop-ui.js';
 import * as RKUI from './ranking-ui.js';
 import { openDeal } from './deal-ui.js';
@@ -1242,7 +1243,8 @@ setInterval(topCheck, 60000); setTimeout(topCheck, 8000);
 // ---------- tempo de mundo: o mês passa sozinho, igual para todos ----------
 // Um relógio único (config do servidor) define o mês do mundo. O jogo do jogador acompanha: roda os meses que faltam
 // (no máximo 6 de uma vez, quem ficou muito tempo fora é "perdoado"), sem botão para adiantar o próprio mês.
-function worldMonths() {
+function worldMonths() { G.newsQuiet = true; try { worldMonths0(); } finally { G.newsQuiet = false; } }   // fechamento do mês não vira notícia na TV 21
+function worldMonths0() {
   const w = Live.world(), t = Live.now(), target = W.current(w, t), s = S();
   GR.ensure(s); PM.ensure(s); AB.ensure(s); CN.ensure(s); SU.ensure(s); NG.ensure(s); CD.setMonth(s.month); CD.ensure(s);
   if (s.worldSync !== true) { s.month = target; s.worldSync = true; CD.setMonth(s.month); save(); render(); return; }     // primeira vez: entra no mês atual do mundo
@@ -1336,7 +1338,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 58;
+const APP_VERSION = 59;
 let updateShown = false, updateMsg = '';
 let checking = false;
 async function checkUpdate() {

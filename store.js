@@ -74,7 +74,7 @@ export function adopt(state) { G.S = normalize(state); try { localStorage.setIte
 export function writeSave(u, state) { try { localStorage.setItem(keyFor(u), JSON.stringify(state)); localStorage.setItem(UID_KEY, u); } catch {} }
 export function forgetUser() { try { localStorage.removeItem(UID_KEY); } catch {} }
 export function reset() { G.S = blankState(G.S.avatar?.name && G.S.avatar.name !== 'você' ? G.S.avatar.name : ''); save(); }
-export function note(txt, val = 0) { G.S.log.unshift({ m: G.S.month, txt, val: Math.round(val) }); }
+export function note(txt, val = 0) { G.S.log.unshift({ m: G.S.month, txt, val: Math.round(val) }); try { G.onNote?.(txt, val); } catch {} }   // onNote: TV 21 (news-ui)
 export function pay(v, why, buy = true) {   // buy=false: quitar dívida / emprestar não é compra, não leva a taxa dos mais ricos
   const e = buy && L.eliteOf(G.S); if (e) { v = Math.round(v * (1 + e.price)); why += ` (+${Math.round(e.price * 100)}% de taxa para os mais ricos)`; }
   if (v > G.S.money) { say(`Dinheiro insuficiente para ${why}.`, true); return false; }
