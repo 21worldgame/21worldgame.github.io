@@ -18,7 +18,10 @@ function add(n, fresh = true) {
   draw();
 }
 // chegou pelo salão
-export function receive(d) { const n = N.accept(d); if (n) add(n); }
+// um mesmo jogador aparece no máximo 1 vez a cada 3 min (quem negocia muito não toma conta da TV)
+export const NAME_GAP = 180000;
+const recentName = (name, at) => items.some(x => x.real && x.name === name && Math.abs(at - x.at) < NAME_GAP);
+export function receive(d) { const n = N.accept(d); if (n && !recentName(n.name, n.at)) add(n); }
 export const history = () => items.filter(n => n.real).slice(-15).map(({ id, kind, name, what, val, at }) => ({ id, kind, name, what, val, at }));
 
 // linha do livro-caixa do próprio jogador (ver store.note): vira notícia para todos
@@ -27,6 +30,7 @@ G.onNote = (txt, val) => {
   const s = G.S, name = s?.privateProfile ? 'um investidor misterioso' : profileOf().name;
   const n = N.fromNote(name, txt, val); if (!n) return;
   const m = { ...n, id: Math.random().toString(36).slice(2, 12), at: Date.now() };
+  if (recentName(m.name, m.at)) return;
   add({ ...m, real: true, mine: true });
   send?.({ t: 'news', ...m });
 };

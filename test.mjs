@@ -1162,3 +1162,9 @@ console.log('mina ok');
   let n = 0; for (let s = 0; s < 200; s++) { const x = Nw.npcNews(s, ['A', 'B']); if (x) { n++; assert.ok(Nw.headline(x).length > 10 && !/undefined|NaN/.test(Nw.headline(x))); } } assert.ok(n > 100);
   assert.deepEqual(Nw.npcNews(77, ['A', 'B']), Nw.npcNews(77, ['A', 'B']), 'igual para todos');
   console.log('TV 21: notícias ok'); }
+{ // TV 21 / Resenha: o mesmo jogador do mundo não fala de novo nas 6 janelas seguintes
+  const G = 70000, t0 = Math.floor(Date.now() / G), out = [];
+  for (let s = t0 - 200; s < t0; s++) { const nk = [...NP.onlineSet(s * G)].map(id => NP.byId(id)?.nick).filter(Boolean); out.push(NP.turnOf(s, nk, G)); }
+  out.forEach((n, i) => assert.ok(!out.slice(Math.max(0, i - NP.TURN_AVOID), i).includes(n), `repetiu ${n}`));
+  assert.ok(new Set(out).size > 60); assert.equal(NP.turnOf(5, ['A', 'B'], 0), NP.turnOf(5, ['B', 'A'], 0));
+  console.log('rodízio de quem fala ok'); }

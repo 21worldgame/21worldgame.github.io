@@ -112,3 +112,21 @@ export function onlineNow(now = Date.now(), max = 12) {
   const slot = Math.floor(now / 1200000), want = Math.min(NPCS.length, Math.max(4, Math.round(onlineCount(now) / 5)));
   return [...NPCS].filter(n => !isAway(n, now)).sort((a, b) => hash(a.i * 97 + slot) - hash(b.i * 97 + slot)).slice(0, Math.min(max, want));
 }
+
+// vez de quem fala na TV 21 / Resenha: ordem embaralhada fixa (igual em todo aparelho), um por janela e sem repetir
+// quem falou nas últimas janelas (gap = tamanho da janela em ms), para não aparecer sempre o mesmo jogador
+const nickHash = s => [...String(s)].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261);
+const nicksAt = t => [...onlineSet(t)].map(id => byId(id)?.nick).filter(Boolean);
+function rot(slot, nicks, avoid) {
+  const o = [...nicks].sort((a, b) => nickHash(a) - nickHash(b) || (a < b ? -1 : 1));
+  for (let k = 0; k < o.length; k++) { const n = o[((slot + k) % o.length + o.length) % o.length]; if (!avoid.has(n)) return n; }
+  return o[((slot % o.length) + o.length) % o.length] ?? null;
+}
+export const TURN_AVOID = 6;
+export function turnOf(slot, nicks, gap) {
+  if (!nicks.length) return null;
+  // refaz em ordem as janelas anteriores (cada uma evitando as suas anteriores), igual em todo aparelho
+  const chain = [];
+  if (gap) for (let k = TURN_AVOID * 2; k >= 1; k--) chain.push(rot(slot - k, nicksAt((slot - k) * gap), new Set(chain.slice(-TURN_AVOID))));
+  return rot(slot, nicks, new Set(chain.slice(-TURN_AVOID)));
+}

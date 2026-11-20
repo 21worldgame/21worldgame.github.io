@@ -4,6 +4,7 @@ import { CARS, REGIONS } from './logic.js';
 import { CLUBS, clubPrice } from './futebol.js';
 import { LISTS } from './negocios.js';
 import { CHAMPS } from './cards.js';
+import { turnOf } from './npcs.js';
 
 export const ANCHORS = ['Willian Borner', 'Retana Rater'];
 export const NEWS_MIN = 30000;        // movimentos a partir de R$ 30 mil viram notícia
@@ -62,7 +63,7 @@ const GEN = [
 export function npcNews(slot, nicks) {
   const r = seeded(slot * 2246822519 + 7);
   if (!nicks.length || r() < 0.2) return null;
-  const name = pick(r, nicks), n = pick(r, GEN)(r);
+  const name = turnOf(slot, nicks, NEWS_GAP), n = pick(r, GEN)(r);
   return { id: `nn${slot}`, name, ...n, at: slot * NEWS_GAP + Math.floor(r() * 15000), real: false };
 }
 // âncora da vez: alterna pelo id (o mesmo âncora para a mesma notícia em qualquer aparelho)
