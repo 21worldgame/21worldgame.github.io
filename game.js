@@ -1424,3 +1424,15 @@ document.addEventListener('click', e => { const g = e.target.closest('[data-tab-
     openSheet(false); G.goto(v); scrollTo({ top: 0, behavior: 'smooth' });
   });
 }
+
+// olhinho nos campos de senha: mostra/esconde o que foi digitado
+{
+  const EYE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>',
+    OFF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.8 9.8 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+  for (const i of document.querySelectorAll('input[type="password"]')) {
+    const w = document.createElement('span'); w.className = 'pw'; i.replaceWith(w); w.append(i);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'pw__eye'; b.innerHTML = EYE; b.setAttribute('aria-label', 'mostrar senha'); b.setAttribute('aria-pressed', 'false'); w.append(b);
+    i.form?.addEventListener('submit', () => { if (i.type === 'text') b.click(); });
+    b.addEventListener('click', () => { const show = i.type === 'password'; i.type = show ? 'text' : 'password'; b.innerHTML = show ? OFF : EYE; b.setAttribute('aria-label', show ? 'esconder senha' : 'mostrar senha'); b.setAttribute('aria-pressed', String(show)); i.focus(); });
+  }
+}

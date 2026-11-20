@@ -2457,3 +2457,8 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 #dlg-taxes h2 { margin-top: 2.4rem; }
 #dlg-taxes th, #dlg-taxes td { padding-inline: 8px; white-space: nowrap; }
 #dlg-taxes td small { white-space: normal; }
+/* olhinho da senha */
+.pw { position: relative; display: block; } .pw > .input { width: 100%; padding-right: 46px; }
+.pw__eye { position: absolute; top: 50%; right: 4px; transform: translateY(-50%); width: 38px; height: 38px; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; color: var(--color-muted); cursor: pointer; }
+.pw__eye:hover, .pw__eye[aria-pressed="true"] { color: #fde047; } .pw__eye:focus-visible { outline: 2px solid #fde047; outline-offset: 1px; }
+.pw__eye svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
