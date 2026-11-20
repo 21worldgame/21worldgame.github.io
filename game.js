@@ -1344,7 +1344,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 65;
+const APP_VERSION = 66;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;
@@ -1360,10 +1360,12 @@ async function checkUpdateNow() {
     const j = await r.json(), v = Number(j.v) || 0;
     if (v <= APP_VERSION) return;
     // já recarregou por causa desta versão: nunca de novo (sem laço); o código novo entra sozinho na próxima abertura
-    let tried = false; try { tried = sessionStorage.getItem('21world.updTried') === String(v); } catch {}
+    // aparelho travado com versão velha (não sincroniza até atualizar): tenta de novo a cada 2 min em vez de desistir
+    let tried = false; try { const t = sessionStorage.getItem('21world.updTried') || ''; tried = Auth.isOutdated?.() ? Date.now() - (Number(t.split('@')[1]) || 0) < 120000 : t === String(v); } catch {}
     if (tried) return;
-    // o GitHub publica o version.json antes do resto: só recarrega quando o código novo já está no ar
-    const g = await fetch(`game.js?t=${Date.now()}`, { cache: 'no-store' }).then(x => (x.ok ? x.text() : '')).catch(() => '');
+    // o GitHub publica o version.json antes do resto: só recarrega quando o game.js que a página vai carregar (mesmo endereço,
+    // sem ?t=, que o CDN guarda até 10 min) já é o novo; cache:'reload' também renova a cópia do navegador
+    const g = await fetch('game.js', { cache: 'reload' }).then(x => (x.ok ? x.text() : '')).catch(() => '');
     if ((Number(g.match(/APP_VERSION = (\d+)/)?.[1]) || 0) < v) return;   // ainda propagando: tenta de novo em 30 s
     updateMsg = String(j.msg || '').slice(0, 140);
     showUpdate(true, v);
@@ -1382,7 +1384,7 @@ async function doReload() {
 }
 function showUpdate(auto = true, v = 0) {
   updateShown = true;
-  try { sessionStorage.setItem('21world.updTried', String(v)); } catch {}
+  try { sessionStorage.setItem('21world.updTried', Auth.isOutdated?.() ? `x@${Date.now()}` : String(v)); } catch {}
   const host = [...document.querySelectorAll('dialog[open]')].pop() || document.body;   // janela aberta deixa o resto sem clique
   host.insertAdjacentHTML('beforeend', `<div class="upd" role="status" title="${esc(updateMsg)}"><span class="upd__dot" aria-hidden="true"></span>
     <span><strong>Atualização</strong> <span id="upd-txt">recarrega em 15 s</span></span>

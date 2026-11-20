@@ -191,6 +191,7 @@ export async function push() {
       takeRemote(row); return false;
     }
     base = res.data[0].updated_at; pushed = stamp; lastPush = stamp; saveMeta();
+    try { bc?.send({ type: 'broadcast', event: 'saved', payload: { dev: DEV } })?.catch?.(() => {}); } catch {}   // avisa o outro aparelho na hora
     let row = profileRow(), r = await sb.from('public_profiles').upsert(row);
     if (r.error && /card/i.test(r.error.message || '')) { noCardUntil = Date.now() + 300000; row = profileRow(); r = await sb.from('public_profiles').upsert(row); }   // coluna card ainda não criada no servidor
     if (r.error && isNameTaken(r.error)) {                      // outro jogador já usa esse nome: troca por um com número
@@ -206,8 +207,15 @@ export async function push() {
 }
 // celular e computador abertos ao mesmo tempo: confere a versão da nuvem a cada 5 s (e ao voltar para a aba);
 // se outro aparelho gravou, aplica na hora (nunca no meio de uma mão, corrida ou partida)
+export const isOutdated = () => outdated;   // game.js: aparelho travado esperando a versão nova continua tentando recarregar
+// outro aparelho gravou: o aviso chega pelo Realtime em ~1 s e só dispara a conferência normal (gravação condicional e versão continuam valendo)
+let bc = null;
+function watchSaves() {
+  if (bc || !sb || !user) return;
+  try { bc = sb.channel(`save-${user.id}`).on('broadcast', { event: 'saved' }, ({ payload }) => { if (payload?.dev !== DEV) setTimeout(checkRemote, 300); }).subscribe(); } catch {}
+}
 async function checkRemote() {
-  if (!sb || !user || pushing || document.visibilityState === 'hidden' || G.busy?.()) return;
+  if (!sb || !user || pushing || outdated || document.visibilityState === 'hidden' || G.busy?.()) return;
   try {
     const { data } = await sb.from('saves').select('updated_at').eq('user_id', user.id).maybeSingle();
     if (!data || sameAt(data.updated_at, base)) return;
@@ -267,7 +275,7 @@ async function afterLogin() {
   if (dlg().open) dlg().close();
   try { localStorage.setItem('21world.hadAccount', '1'); } catch {}
   G.afterSave = scheduleSync;
-  watchRanking();
+  watchRanking(); watchSaves();
   await push().catch(() => {});
   renderAccount();
   G.onLogin?.();
