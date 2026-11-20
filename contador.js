@@ -185,47 +185,100 @@ const WORDS = [
   ['lavoura', /soja|milho|cafe|lavoura|plantio|colheita|saca/], ['terras', /terra|arrendamento|itr|fazenda|hectare/], ['banco', /emprestimo|parcela|divida|banco/], ['impostos', /imposto|pedagio|fortuna/], ['contador', /contador|honorario/],
   ['jogos', /cassino|truco|sinuca|poquer|roleta|aviator|trader|aposta|ficha/], ['futebol', /futebol|clube|estadio|time/],
 ];
-const PNAME = { frango: 'frango (kg vivo)', pintinho: 'pintinho', racao: 'ração da granja (kg)', suino: 'suíno (kg vivo)', leitao: 'leitão', racaoSuino: 'ração dos suínos (kg)' };
+const PNAME = { frango: 'frango (kg vivo)', pintinho: 'pintinho', racao: 'ração da granja (kg)', suino: 'suíno (kg vivo)', leitao: 'leitão', racaoSuino: 'ração dos suínos (kg)',
+  arroba: 'arroba do boi', bezerro: 'bezerro', soja: 'soja (saca)', milho: 'milho (saca)', cafe: 'café (saca)', cana: 'cana (tonelada)', laranja: 'laranja (caixa)' };
+const PRICE_OF = { gado: ['arroba', 'bezerro'], frigorifico: ['arroba'], granja: ['frango', 'pintinho', 'racao'], suinos: ['suino', 'leitao', 'racaoSuino'], lavoura: ['soja', 'milho', 'cafe'], cana: ['cana'], laranja: ['laranja'] };
+const HELD = { gado: 'bois no rebanho', lavoura: 'sacas no armazém', laranja: 'caixas de laranja no armazém', granja: 'frangos nos galpões', suinos: 'porcos nos barracões' };
 const groupIn = q => WORDS.find(([, re]) => re.test(q))?.[0] || null;
-export const QUICK = ['qual meu lucro real?', 'o que está vindo caro?', 'quanto a granja deu de lucro?', 'com a granja vazia eu pago alguma coisa?', 'o que o frigorífico gasta?', 'quanto vou pagar no próximo fechamento?'];
-// ctx: { brl, forecast: summarize(previsão), prices, base, monthLabel }
+// Regra do jogo: o contador conta o que aconteceu e o que vai ser cobrado. Nunca diz onde investir, o que comprar/vender nem quando.
+export const ADVICE = /compensa|vale (mais )?a pena|vale comprar|melhor (investimento|negocio|opcao|empresa|producao|coisa|jeito|hora|momento)|(devo|deveria|tenho que|preciso) (investir|comprar|vender|abrir|entrar|plantar|criar|montar|largar|sair)|onde (eu )?(invisto|investir|coloco|aplico|aplicar|ponho)|qual (da|rende|lucra|paga) mais|o que (e )?mais lucrativo|recomend|\bdica|conselho|sugest|me (indica|aconselha|sugere|ajuda a escolher)|o que (eu )?(faco|fazer|compro|comprar|vendo|vender)\b|quando (devo )?(vender|comprar)|hora (certa )?de (vender|comprar)|e bom (comprar|investir|vender)|qual (empresa|negocio|producao|setor|investimento)/;
+export const QUICK = ['qual meu lucro real?', 'por que tive prejuízo?', 'o que está vindo caro?', 'quanto tempo meu dinheiro aguenta?', 'quanto vale meu patrimônio?', 'quanto vou pagar no próximo fechamento?'];
+// período pedido: "últimos 3 meses"; o padrão é 12 meses
+const periodOf = q => { const x = /ult\w* (\d{1,2}) mes/.exec(q); return x ? Math.max(1, Math.min(ARCHIVE, +x[1])) : 12; };
+const money2 = v => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
+// ctx: { brl, forecast: summarize(previsão), prices, base, held, worth, loans }
 export function answer(s, q0, ctx) {
-  const q = norm(q0), brl = ctx.brl, g = groupIn(q), L = g ? GROUP_LABEL[g] : null, m = s.month || 0, fc = ctx.forecast;
+  const q = norm(q0), brl = ctx.brl, g = groupIn(q), L = g ? GROUP_LABEL[g] : null, m = s.month || 0, fc = ctx.forecast, held = ctx.held || {}, N = periodOf(q);
   const res = (from, to) => results(s, from, to), line = R => `entrou ${brl(R.in)}, saiu ${brl(R.out)}: ${R.lucro >= 0 ? 'lucro' : 'prejuízo'} de ${brl(Math.abs(R.lucro))}`;
   const pick = (r, k) => r.rows.find(x => x.key === k) || { in: 0, out: 0, bem: 0, lucro: 0 };
-  if (/compensa|vale (mais )?a pena|melhor (investimento|negocio|opcao)|devo (investir|comprar|vender)|onde investir|qual (da|rende) mais|o que (e )?mais lucrativo|recomenda/.test(q))
-    return ['Isso eu não posso dizer: a escolha de onde investir é sua, faz parte do jogo.', 'O que eu posso fazer é mostrar quanto cada produção deu de lucro ou prejuízo. Pergunte, por exemplo, "quanto a granja deu de lucro?" ou "qual meu lucro real?".'];
+  const per = `últimos ${N} ${N === 1 ? 'mês' : 'meses'}`;
+  // preço de agora contra o normal (só o fato, sem dizer se é hora de vender)
+  const priceLine = k => { const v = ctx.prices?.[k], b = ctx.base?.[k]; if (!(v > 0 && b > 0)) return null; const d = Math.round((v / b - 1) * 100); return `• ${PNAME[k] || k}: ${money2(v)} (normal ${money2(b)}, ${d > 0 ? `${d}% acima` : d < 0 ? `${-d}% abaixo` : 'igual'})`; };
+  // o que ainda está guardado: já custou, mas só vira entrada quando for vendido
+  const heldLine = k => (held[k] > 0 ? `• ainda tem ${brl(held[k])} em ${HELD[k]} (valor de hoje). Isso já custou, mas só entra no lucro quando for vendido.` : null);
+  // gasto por tipo de uma produção nos fechamentos guardados com detalhe (até KEEP meses)
+  const costTypes = (k, from) => { const out = {}; for (const c of s.closes || []) if (c.month >= from) { const G2 = summarize(c.lines).groups.find(x => x.key === k); if (G2) for (const [t, v] of Object.entries(G2.types)) out[t] = (out[t] || 0) + v; } return Object.entries(out).sort((a, b) => b[1] - a[1]); };
+
+  if (ADVICE.test(q))
+    return ['Isso eu não posso dizer: onde investir, o que comprar ou vender e quando é escolha sua, faz parte do jogo.', 'O que eu posso fazer é mostrar os seus números: quanto cada produção deu de lucro ou prejuízo, o que está caro e quanto vai ser cobrado. Pergunte, por exemplo, "por que tive prejuízo?" ou "qual meu lucro real?".'];
+  if (/patrimonio|quanto (eu )?valho|meus bens|o que eu tenho/.test(q) && ctx.worth) {
+    const W = ctx.worth;
+    return [`Seu patrimônio hoje: ${brl(W.total)}.`, ...W.parts.filter(([, v]) => Math.round(v) > 0).map(([k, v]) => `• ${k}: ${brl(v)}`), W.debt > 0 ? `• menos a dívida no banco: −${brl(W.debt)}` : ''].filter(Boolean);
+  }
+  if (/quanto devo|minha divida|meus emprestimos|devo ao banco|parcelas? que faltam/.test(q)) {
+    const ls = ctx.loans || [];
+    if (!ls.length) return ['Você não deve nada ao banco.'];
+    return [`Você deve ${brl(ls.reduce((t, l) => t + l.bal, 0))} ao banco:`, ...ls.map((l, i) => `• empréstimo ${i + 1}: ${brl(l.bal)}, juros de ${(l.rate * 100).toFixed(1).replace('.', ',')}% ao mês, faltam ${l.left} ${l.left === 1 ? 'parcela' : 'parcelas'} de uns ${brl(l.bal * (1 + l.rate) / Math.max(1, l.left))}`), 'Duas parcelas atrasadas e o banco toma a terra mais cara.'];
+  }
+  if (/aguenta|quanto tempo|quebrar|sem dinheiro|falir|falencia|dinheiro dura/.test(q)) {
+    const net = fc.total - fc.income, cash = s.money || 0;
+    if (net <= 0) return [`Você tem ${brl(cash)} em dinheiro. No próximo fechamento entram ${brl(-net)} a mais do que saem: do jeito que está, o dinheiro não diminui.`];
+    const n = Math.floor(cash / net);
+    return [`Você tem ${brl(cash)} em dinheiro e o próximo fechamento tira ${brl(net)} a mais do que coloca.`, n < 1 ? 'O dinheiro de agora não paga o próximo fechamento inteiro.' : `Se todo mês fosse igual, o dinheiro dura uns ${n} ${n === 1 ? 'mês' : 'meses'}.`, 'A conta não inclui vendas que você ainda vai fazer (gado, estoque, lotes) nem compras novas.'];
+  }
   if (/vazi|sem (pintinho|lote|animal|boi|porco|leitao|ninguem|nada)|parad|desocupad/.test(q) && g) {
     const G2 = fc.groups.find(x => x.key === g);
     const extra = g === 'granja' ? ' Galpão vazio não paga ração, energia nem mão de obra: isso só começa quando você aloja pintinhos. O galpão perde 0,5% do valor por mês (desvalorização), mas isso não sai do seu dinheiro.' : g === 'suinos' ? ' Barracão vazio paga 40% da energia, água e mão de obra.' : '';
     return G2 ? [`Do jeito que está agora, ${L} vai cobrar ${brl(G2.total)} no próximo fechamento:`, ...G2.lines.map(l => `• ${l.txt}: ${brl(l.val)}`), extra.trim()].filter(Boolean)
       : [`Do jeito que está agora, ${L} não tem nenhuma cobrança no próximo fechamento.${extra}`];
   }
-  if (/preco|cotacao|valor do (frango|pintinho|racao|boi|suino)/.test(q)) {
-    const ks = Object.keys(ctx.base).filter(k => g ? (g === 'granja' ? ['frango', 'pintinho', 'racao'] : g === 'suinos' ? ['suino', 'leitao', 'racaoSuino'] : []).includes(k) : true);
-    if (ks.length) return ['Preços de agora (e o normal):', ...ks.map(k => { const v = ctx.prices[k], b = ctx.base[k], d = Math.round((v / b - 1) * 100); return `• ${PNAME[k] || k}: R$ ${v.toFixed(2).replace('.', ',')} (normal R$ ${b.toFixed(2).replace('.', ',')}, ${d > 0 ? `${d}% acima` : d < 0 ? `${-d}% abaixo` : 'igual'})`; }), 'Os preços variam todo mês, mas sempre voltam para perto do normal.'];
+  if (/preco|cotacao|valor do (frango|pintinho|racao|boi|suino|bezerro)/.test(q)) {
+    const ks = (g ? PRICE_OF[g] || [] : Object.keys(PNAME)).filter(k => ctx.base?.[k]);
+    if (ks.length) return ['Preços de agora (e o normal):', ...ks.map(priceLine).filter(Boolean), 'Os preços variam todo mês, mas sempre voltam para perto do normal (ficam entre 80% e 125% dele).'];
+  }
+  // por que deu prejuízo / onde estou perdendo: explica com os números, sem dizer o que fazer
+  if (/por ?que|motivo|explica|onde (estou |to |eu )?(perd|ganh)|perdendo|nao (da|deu|esta dando|ta dando) lucro|so (da|deu) prejuizo/.test(q)) {
+    const from = m - N + 1, r = res(from, m);
+    if (g) {
+      const R = pick(r, g), ct = costTypes(g, Math.max(from, m - KEEP + 1)), ps = (PRICE_OF[g] || []).map(priceLine).filter(Boolean);
+      return [`${L} nos ${per}: ${line(R)}.`,
+        ct.length ? `Para onde foi o dinheiro (fechamentos com detalhe, até ${KEEP} meses):` : '', ...ct.slice(0, 5).map(([k, v]) => `• ${TYPES[k] || k}: ${brl(v)}`),
+        R.out > 0 && R.in === 0 ? '• nada foi vendido nesse período: só teve custo.' : '',
+        heldLine(g), ps.length ? 'Preços de agora, contra o normal:' : '', ...ps,
+        'Esses são os fatos; o que fazer com eles é decisão sua.'].filter(Boolean);
+    }
+    const bad = r.rows.filter(x => x.lucro < 0).sort((a, b) => a.lucro - b.lucro), good = r.rows.filter(x => x.lucro > 0);
+    const hs = Object.keys(HELD).map(heldLine).filter(Boolean);
+    if (!bad.length) return [`Nos ${per} nenhuma produção ficou no prejuízo: ${line(r)}.`, ...hs];
+    return [`Nos ${per}: ${line(r)}.`, 'Onde saiu mais do que entrou:', ...bad.map(x => `• ${x.label}: −${brl(-x.lucro)} (entrou ${brl(x.in)}, saiu ${brl(x.out)})`),
+      good.length ? `Onde entrou mais do que saiu: ${good.map(x => x.label).join(', ')}.` : '', ...hs,
+      'Quer o detalhe de uma delas? Pergunte, por exemplo, "por que o gado deu prejuízo?".'].filter(Boolean);
   }
   if (/proximo|previs|vou pagar|vai cobrar|fechamento/.test(q)) {
     if (g) { const G2 = fc.groups.find(x => x.key === g); return G2 ? [`${L}: ${brl(G2.total)} no próximo fechamento.`, ...G2.lines.map(l => `• ${l.txt}: ${brl(l.val)}`)] : [`${L} não tem cobrança prevista no próximo fechamento.`]; }
     return [`No próximo fechamento saem ${brl(fc.total)}${fc.income ? ` e entram ${brl(fc.income)}` : ''}.`, ...fc.groups.slice(0, 6).map(x => `• ${x.label}: ${brl(x.total)}`)];
   }
-  if (/caro|gasto|gastando|custo|despesa|manutencao|paga|sai(ndo)? (dinheiro|muito)/.test(q)) {
+  if (/caro|gasto|gastei|gastando|custo|despesa|manutencao|paga|sai(ndo)? (dinheiro|muito)/.test(q)) {
     const hist = history(s), last = hist[0], prev = hist[1];
     if (g) {
-      const G2 = fc.groups.find(x => x.key === g), r = pick(res(m - 11, m), g);
-      return [`${L}: nos últimos 12 meses saíram ${brl(r.out)} (custos do dia a dia).`, G2 ? `No próximo fechamento: ${brl(G2.total)}, assim:` : 'Não tem cobrança prevista no próximo fechamento.', ...(G2 ? Object.entries(G2.types).sort((a, b) => b[1] - a[1]).map(([k, v]) => `• ${TYPES[k] || k}: ${brl(v)}`) : [])];
+      const G2 = fc.groups.find(x => x.key === g), r = pick(res(m - N + 1, m), g);
+      return [`${L}: nos ${per} saíram ${brl(r.out)} (custos do dia a dia).`, G2 ? `No próximo fechamento: ${brl(G2.total)}, assim:` : 'Não tem cobrança prevista no próximo fechamento.', ...(G2 ? Object.entries(G2.types).sort((a, b) => b[1] - a[1]).map(([k, v]) => `• ${TYPES[k] || k}: ${brl(v)}`) : [])];
     }
     const out = [`Os maiores gastos do próximo fechamento (${brl(fc.total)} no total):`, ...Object.entries(fc.types).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, v]) => `• ${TYPES[k] || k}: ${brl(v)} (${Math.round(v / (fc.total || 1) * 100)}%)`)];
     if (last && prev) { const up = Object.entries(last.types).map(([k, v]) => [k, v - (prev.types[k] || 0)]).filter(([, d]) => d > 0).sort((a, b) => b[1] - a[1]).slice(0, 3); if (up.length) out.push('O que mais subiu do mês passado para cá:', ...up.map(([k, d]) => `• ${TYPES[k] || k}: +${brl(d)}`)); }
     return out;
   }
-  if (/lucro|prejuizo|resultado|ganhei|perdi|deu|rend|saldo|ganho|real/.test(q) || g) {
-    const r12 = res(m - 11, m), r1 = res(m, m), r0 = res(m - 1, m - 1);
+  if (/lucro|prejuizo|resultado|ganhei|perdi|deu|rend|saldo|ganho|real|melhorando|piorando/.test(q) || g) {
+    const rN = res(m - N + 1, m), r1 = res(m, m), r0 = res(m - 1, m - 1);
     if (g) {
-      const a = pick(r1, g), b = pick(r0, g), c = pick(r12, g);
-      return [`${L}:`, `• este mês: ${line(a)}`, `• mês passado: ${line(b)}`, `• últimos 12 meses: ${line(c)}`, c.bem ? `• bens (compra/venda de ${g === 'granja' ? 'galpões' : 'patrimônio'}): ${c.bem < 0 ? `investiu ${brl(-c.bem)}` : `recebeu ${brl(c.bem)}`}. Isso não entra no lucro: virou patrimônio.` : ''].filter(Boolean);
+      const a = pick(r1, g), b = pick(r0, g), c = pick(rN, g);
+      return [`${L}:`, `• este mês: ${line(a)}`, `• mês passado: ${line(b)}`, `• ${per}: ${line(c)}`, heldLine(g), c.bem ? `• bens (compra/venda de ${g === 'granja' ? 'galpões' : 'patrimônio'}): ${c.bem < 0 ? `investiu ${brl(-c.bem)}` : `recebeu ${brl(c.bem)}`}. Isso não entra no lucro: virou patrimônio.` : ''].filter(Boolean);
     }
-    return ['Seu lucro real (só o que entrou e saiu da operação; compra e venda de bens fica à parte):', `• este mês: ${line(r1)}`, `• mês passado: ${line(r0)}`, `• últimos 12 meses: ${line(r12)}`, ...r12.rows.filter(x => x.in || x.out).map(x => `  – ${x.label}: ${x.lucro >= 0 ? '+' : '−'}${brl(Math.abs(x.lucro))}`), r12.bem ? `• bens nos 12 meses: ${r12.bem < 0 ? `investiu ${brl(-r12.bem)}` : `vendeu ${brl(r12.bem)}`} (virou patrimônio, não é prejuízo).` : ''].filter(Boolean);
+    const avgN = rN.lucro / N;
+    return ['Seu lucro real (só o que entrou e saiu da operação; compra e venda de bens fica à parte):', `• este mês: ${line(r1)}`, `• mês passado: ${line(r0)}`, `• ${per}: ${line(rN)}`,
+      N > 1 ? `• média por mês nesse período: ${avgN >= 0 ? '' : '−'}${brl(Math.abs(avgN))}; este mês ficou ${r1.lucro >= avgN ? 'acima' : 'abaixo'} da média.` : '',
+      ...rN.rows.filter(x => x.in || x.out).map(x => `  – ${x.label}: ${x.lucro >= 0 ? '+' : '−'}${brl(Math.abs(x.lucro))}`), ...Object.keys(HELD).map(heldLine).filter(Boolean),
+      rN.bem ? `• bens no período: ${rN.bem < 0 ? `investiu ${brl(-rN.bem)}` : `vendeu ${brl(rN.bem)}`} (virou patrimônio, não é prejuízo).` : ''].filter(Boolean);
   }
-  return ['Eu sou o seu contador. Posso responder com os seus números, por exemplo:', ...QUICK.map(x => `• ${x}`), 'Só não digo o que compensa mais: essa escolha é sua.'];
+  return ['Eu sou o seu contador. Posso responder com os seus números, por exemplo:', ...QUICK.map(x => `• ${x}`), 'Também entendo períodos ("nos últimos 3 meses") e cada produção ("por que o gado deu prejuízo?"). Só não digo onde investir nem o que comprar: essa escolha é sua.'];
 }

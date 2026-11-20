@@ -5,8 +5,8 @@ import * as L from './logic.js';
 import * as W from './world.js';
 import * as Live from './live.js';
 import { G, $, esc, brl, say, save, note } from './store.js';
-import { PRICES as GR_P } from './granja.js';
-import { PRICES as SU_P } from './suinos.js';
+import * as GR from './granja.js';
+import * as SU from './suinos.js';
 
 // contador registra TUDO que entra e sai (para o lucro real), contratado ou não; na 1ª vez aproveita o livro-caixa
 G.track = (s, txt, val) => { CT.backfill(s); CT.track(s, txt, val); };
@@ -75,7 +75,18 @@ function profit(s) {
     ${c.bem ? `<p class="small muted">Bens nos 12 meses (galpões, terras, carros, empresas): ${c.bem < 0 ? `investiu ${brl(-c.bem)}` : `vendeu ${brl(c.bem)}`}. Não entra no lucro porque virou patrimônio (ou saiu dele).</p>` : ''}</section>`;
 }
 let chat = [];
-const ctx = () => ({ brl, forecast: CT.summarize(G.ctForecast?.() || []), prices: G.S.prices || {}, base: { ...GR_P, ...SU_P } });
+// o que ainda não foi vendido (não entra no lucro até vender) e de onde vem o patrimônio
+function held(s) {
+  const p = s.prices || {}, st = s.stock || {};
+  return { gado: L.herdValue(s), lavoura: ['soja', 'milho', 'cafe'].reduce((t, k) => t + (st[k] || 0) * (p[k] || 0), 0), laranja: (st.laranja || 0) * (p.laranja || 0),
+    granja: (s.granja?.lots || []).reduce((t, l) => t + GR.lotValue(s, l), 0), suinos: (s.suinos?.lots || []).reduce((t, l) => t + SU.lotValue(s, l), 0) };
+}
+function worthParts(s) {
+  const h = held(s), lands = s.lands.filter(l => l.own).reduce((t, l) => t + (l.value || 0), 0), debt = L.debt(s), total = L.netWorth(s);
+  const parts = [['dinheiro', s.money || 0], ['terras', lands], ['gado', h.gado], ['estoque no armazém', h.lavoura + h.laranja], ['lotes da granja e dos suínos', h.granja + h.suinos]];
+  return { total, debt, parts: [...parts, ['o resto (carros, empresas, animais, cartas, indústrias...)', total + debt - parts.reduce((t, [, v]) => t + v, 0)]] };
+}
+const ctx = () => ({ brl, forecast: CT.summarize(G.ctForecast?.() || []), prices: G.S.prices || {}, base: L.ANCHOR, held: held(G.S), worth: worthParts(G.S), loans: G.S.loans || [] });
 function assistant() {
   return `<section class="ct-sec ct-ai glass"><div class="ct-sec__h"><h3>pergunte ao contador</h3><span class="small muted">responde com os seus números</span></div>
     <div class="ct-ai__log" id="ct-log" aria-live="polite">${chat.map(c => `<p class="ct-ai__q">${esc(c.q)}</p><div class="ct-ai__a">${c.a.map(l => `<p>${esc(l)}</p>`).join('')}</div>`).join('') || '<p class="muted small">Ex.: "qual meu lucro real?", "com a granja vazia eu pago alguma coisa?", "o que o frigorífico gasta?"</p>'}</div>

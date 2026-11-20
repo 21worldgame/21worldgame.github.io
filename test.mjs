@@ -1189,3 +1189,23 @@ import * as CT from './contador.js';
   const ctx = { brl: v => String(Math.round(v)), forecast: CT.summarize([]), prices: {}, base: {} };
   assert.ok(CT.answer(s, 'o que compensa mais?', ctx)[0].includes('não posso')); assert.ok(CT.answer(s, 'granja vazia paga algo?', ctx)[0].includes('não tem nenhuma cobrança'));
   console.log('contador lucro real ok'); }
+// contador: nunca diz onde investir; explica prejuízo, quanto o dinheiro aguenta, patrimônio e dívida
+{
+  const brl = v => 'R$ ' + Math.round(v);
+  const s = { month: 10, money: 5000, closes: [], pl: { 10: { gado: { in: 0, out: 3895, bem: 0 } }, 9: { granja: { in: 900, out: 500, bem: 0 } } } };
+  const ctx = { brl, forecast: { total: 2000, income: 500, groups: [], types: {} }, prices: { arroba: 121 }, base: { arroba: 310 }, held: { gado: 4700 },
+    worth: { total: 9000, debt: 1000, parts: [['dinheiro', 5000], ['gado', 4700]] }, loans: [{ bal: 1000, rate: 0.018, left: 5 }] };
+  const A = q => CT.answer(s, q, ctx).join('\n');
+  const NO = 'não posso dizer';
+  for (const q of ['o que compensa mais?', 'vale a pena comprar um banco?', 'devo vender meu gado?', 'onde invisto meu dinheiro?', 'qual empresa comprar?', 'me dá uma dica', 'quando vender o boi?', 'o que eu faço agora?', 'qual rende mais, granja ou gado?', 'me recomenda algo', 'melhor negócio do jogo?'])
+    assert.ok(A(q).includes(NO), 'deveria recusar: ' + q);
+  for (const q of ['por que tive prejuízo?', 'por que o gado deu prejuízo?', 'quanto tempo meu dinheiro aguenta?', 'quanto vale meu patrimônio?', 'quanto devo ao banco?', 'preço do boi', 'qual meu lucro real nos ultimos 3 meses?'])
+    assert.ok(!A(q).includes(NO), 'não deveria recusar: ' + q);
+  const gado = A('por que o gado deu prejuízo?');
+  assert.ok(gado.includes('prejuízo de R$ 3895') && gado.includes('R$ 4700') && gado.includes('61% abaixo') && gado.includes('nada foi vendido'), gado);
+  assert.ok(A('quanto tempo meu dinheiro aguenta?').includes('uns 3 meses'));
+  assert.ok(A('quanto devo ao banco?').includes('R$ 1000'));
+  assert.ok(A('qual meu lucro real nos ultimos 3 meses?').includes('últimos 3 meses'));
+  assert.ok(A('por que tive prejuízo?').includes('gado: −R$ 3895'));
+  console.log('contador ok');
+}
