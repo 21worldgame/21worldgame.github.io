@@ -665,11 +665,12 @@ function renderInv() {
   $('#inv-items').innerHTML = SHUI.mineHTML(invCat);
   renderFeira();
   const ppl = TUI.online();
-  $('#inv-peers').innerHTML = ppl.length ? ppl.map(p => `<li><span class="who__av">${avatarSVG(p.look || {}, { label: p.name })}</span><span>${esc(p.name)}<small class="muted"> nível ${p.level}</small></span>
-    <button class="btn btn--gold btn--sm" data-act="trade-invite" data-id="${esc(p.pid)}">propor troca</button></li>`).join('') : '<li class="muted small">Nenhuma pessoa online agora. Chame os amigos pelo link do jogo.</li>';
+  $('#inv-peers').innerHTML = ppl.length ? ppl.map(p => `<li><span class="who__av">${avatarSVG(p.look || {}, { label: p.name })}</span><span class="inv-peers__n"><span>${esc(p.name)}</span><small class="muted"> nível ${p.level}</small></span>
+    <span class="inv-peers__a"><button class="btn btn--gold btn--sm" data-act="trade-invite" data-id="${esc(p.pid)}">propor troca</button></span></li>`).join('') : '';
   const npcOn = NPC.onlineNow(Live.now(), 10);
-  $('#inv-peers').insertAdjacentHTML('beforeend', npcOn.map(n => `<li><span class="who__av">${avatarSVG(n.look, { label: n.nick })}</span><span>${esc(n.nick)}<small class="muted"> nível ${NPC.levelFor(NPC.worthAt(n, S().month))}</small></span>
-    <button class="btn btn--gold btn--sm" data-act="trade-bot" data-id="${n.id}">negociar</button> <button class="btn btn--glass btn--sm" data-profile="npc:${n.id}">ver perfil</button></li>`).join(''));
+  if (!ppl.length && !npcOn.length) $('#inv-peers').innerHTML = '<li class="muted small">Ninguém online agora. Chame os amigos pelo link do jogo.</li>';
+  $('#inv-peers').insertAdjacentHTML('beforeend', npcOn.map(n => `<li><span class="who__av">${avatarSVG(n.look, { label: n.nick })}</span><span class="inv-peers__n"><span>${esc(n.nick)}</span><small class="muted"> nível ${NPC.levelFor(NPC.worthAt(n, S().month))}</small></span>
+    <span class="inv-peers__a"><button class="btn btn--gold btn--sm" data-act="trade-bot" data-id="${n.id}">negociar</button><button class="btn btn--glass btn--sm" data-profile="npc:${n.id}">perfil</button></span></li>`).join(''));
 }
 // visual estável por nome de bot
 const NPC_LOOK = n => NPC.byNick(n)?.look || NPC_LOOK_HASH(n);
@@ -1348,7 +1349,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 71;
+const APP_VERSION = 72;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;

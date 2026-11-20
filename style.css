@@ -2546,3 +2546,12 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
   .tvx__lower .tv__line { font-size: .64rem; }
   body:has(#chat-box:not([hidden])) .tvx { display: none; }
 }
+/* jogadores online: nome encolhe, botões juntos à direita */
+.inv-peers li { grid-template-columns: 32px minmax(0, 1fr) auto; }
+.inv-peers li.muted { display: block; }
+.inv-peers__n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inv-peers__n small { white-space: nowrap; }
+.inv-peers__a { display: flex; gap: 6px; justify-content: flex-end; }
+.inv-peers__a .btn { white-space: nowrap; }
+.inv-peers__n { display: grid; line-height: 1.15; } .inv-peers__n small { font-size: .74rem; overflow: hidden; text-overflow: ellipsis; }
+.inv-peers__n > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
