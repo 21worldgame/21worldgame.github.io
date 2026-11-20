@@ -1,5 +1,9 @@
 // Roleta europeia (um zero): roda animada, bola e mesa de apostas.
 import * as GM from './games.js';
+import * as C from './casino.js';
+import { botsFor } from './botpool.js';
+import { avatarSVG, NPC_LOOKS } from './avatar.js';
+import * as NPC from './npcs.js';
 import { G, $, int, say, save, award, note, confetti, ms, RM } from './store.js';
 import * as sfx from './sfx.js';
 
@@ -81,6 +85,7 @@ function renderBets() {
     st.textContent = v ? int(v) : ''; st.classList.toggle('is-on', !!v);
   });
   $('#rl-total').textContent = int(Object.values(bets).reduce((a, b) => a + b, 0));
+  C.setPlay({ bet: Object.values(bets).reduce((a, b) => a + b, 0) });
   $('[data-act="rl-spin"]').disabled = spinning || !Object.keys(bets).length;
 }
 
@@ -106,11 +111,26 @@ function landFx(n) {
   }
 }
 
+// na mesa: você, os jogadores de verdade na roleta agora e os jogadores da casa (apostas mudam a cada giro)
+let botBets = [];
+const rollBots = () => { botBets = botsFor('rl').slice(0, 5 + Math.floor(Math.random() * 4)).map(name => ({ name, bet: [25, 50, 100, 250, 500, 1000][Math.floor(Math.random() * 6)] })); };
+export function renderWho() {
+  const el = document.querySelector('#rl-who'); if (!el) return;
+  if (!botBets.length) rollBots();
+  const mine = Object.values(bets).reduce((a, b) => a + b, 0), real = C.playersIn('roleta');
+  const row = (name, look, bet, cls) => `<li class="${cls}"><span class="who-av">${avatarSVG(look || {}, { label: name })}</span><b>${name}</b><span class="muted small">${bet ? `${int(bet)} fichas` : 'olhando'}</span></li>`;
+  const esc = s => String(s).replace(/[<>&"]/g, '');
+  el.innerHTML = row(`${esc(G.S.avatar?.name || 'você')} (você)`, G.S.avatar, mine, 'is-me')
+    + real.map(p => row(esc(p.name), p.look, p.bet, 'is-real')).join('')
+    + botBets.map(b => row(esc(b.name), NPC.byNick(b.name)?.look || NPC_LOOKS.Dorival, b.bet, '')).join('');
+  const n = document.querySelector('#rl-who-n'); if (n) n.textContent = `${real.length + 1} de verdade · ${botBets.length} da casa`;
+}
+setInterval(renderWho, 4000);
 export async function spin() {
   const total = Object.values(bets).reduce((a, b) => a + b, 0);
   if (spinning || !total) return;
   if (total > G.S.chips) return say('Fichas insuficientes.', true);
-  spinning = true; renderBets();
+  spinning = true; renderBets(); rollBots(); renderWho();
   G.S.chips -= total; save(); G.render();
   document.querySelectorAll('.rl-cell.is-hit').forEach(c => c.classList.remove('is-hit'));
   document.querySelectorAll('.rl-dolly').forEach(d => d.remove());

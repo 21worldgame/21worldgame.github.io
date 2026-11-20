@@ -8,7 +8,7 @@ const SPEC = [
   ['bot-dia', 6], ['pk-magnata', 5], ['bot-vip', 6], ['pk-vip', 5], ['tr-ouro', 3], ['sn-pro', 1], ['bot-esm', 6], ['pk-leilao', 5],
   ['pk-pro', 5], ['bot-porto', 6], ['pk-fazenda', 5], ['sn-clube', 1], ['bot-azul', 6], ['pk-clube', 5], ['tr-praca', 3], ['pk-praca', 5],
   ['bot-dorival', 6], ['pk-boteco', 5], ['tr-boteco', 3], ['sn-bar', 1], ['pk-calcada', 5],
-  ['av', 15], ['sub', 4], ['am-21', 6], ['am-pk', 5], ['am-tr', 3], ['am-sn', 1],
+  ['av', 15], ['sub', 4], ['am-21', 6], ['am-pk', 5], ['am-tr', 3], ['am-sn', 1], ['rl', 8],
 ];
 const POOL = {};
 { let k = 0; for (const [id, n] of SPEC) POOL[id] = NPCS.slice(k, k += n).map(x => x.nick); }

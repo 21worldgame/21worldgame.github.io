@@ -85,13 +85,17 @@ let annTimer;
 // outros jogos (truco, sinuca) leem quem está no salão por aqui
 export const peerList = () => (lobby ? [...lobby.peers.entries()] : []);
 export const selfPid = () => selfId;
+let play = { game: null };
+// cada jogo avisa aqui onde você está e a aposta da vez; vai junto no anúncio do salão para os outros verem
+export function setPlay(patch) { const n = { ...play, ...patch }; if (JSON.stringify(n) !== JSON.stringify(play)) { play = n; announce(); } }
+export const playersIn = game => peerList().filter(([, p]) => p.play?.game === game && p.profile).map(([pid, p]) => ({ pid, name: p.profile.name, look: p.profile.look, bet: Number(p.play.bet) || 0, out: Number(p.play.out) || 0 }));
 export function announce() {
   clearTimeout(annTimer);
   annTimer = setTimeout(() => {
     if (!lobby) return;
     const tables = cur?.host && cur.pub ? [summary(cur.table.view())] : [];
     const games = Object.values(G.gameHosts || {}).map(f => f()).filter(Boolean);   // mesas de truco e sinuca que eu hospedo
-    lobby.announce({ profile: profileOf(), tables, games, shop: SH.publicListings(G.S) });
+    lobby.announce({ profile: profileOf(), tables, games, shop: SH.publicListings(G.S), play });
   }, 400);
 }
 const summary = v => ({ id: v.id, name: v.name, minBet: v.minBet, phase: v.phase, house: cur?.house || null,

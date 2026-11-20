@@ -78,6 +78,9 @@ Os nomes de carros no jogo são paródias; marcas visíveis nas fotos pertencem 
 - assets/biz-markets.webp: "Aisle in L Intermarche supermarket in Quebec City.jpg", de Wilfredor, CC BY-SA 4.0 (https://commons.wikimedia.org/wiki/File:Aisle_in_L_Intermarche_supermarket_in_Quebec_City.jpg)
 - assets/mina-ouro.webp: "Sunrise Dam Gold Mine open pit 11.jpg", de Calistemon, CC BY-SA 4.0 (https://commons.wikimedia.org/wiki/File:Sunrise_Dam_Gold_Mine_open_pit_11.jpg)
 - assets/farm-cana.webp: "Sugarcane Field Srirangapatna Karnataka Jul22 R16 06192.jpg", de Timothy A. Gonsalves, CC BY-SA 4.0 (https://commons.wikimedia.org/wiki/File:Sugarcane_Field_Srirangapatna_Karnataka_Jul22_R16_06192.jpg)
+- assets/maq-pulv.webp: "Beim Birnenspritzen 2014-08.jpg", de Kopiersperre, CC BY-SA 3.0 (https://commons.wikimedia.org/wiki/File:Beim_Birnenspritzen_2014-08.jpg)
+- assets/maq-plataforma.webp: "124035 kfar maimon - orange picking PikiWiki Israel.jpg", de ליזי שאנן, CC BY 2.5 (https://commons.wikimedia.org/wiki/File:124035_kfar_maimon_-_orange_picking_PikiWiki_Israel.jpg)
+- assets/mk-cana.webp: "Cut sugarcane.jpg", de ruurmo, CC BY-SA 2.0 (https://commons.wikimedia.org/wiki/File:Cut_sugarcane.jpg)
 - assets/wh-g2000.webp: "Gifford, IL silo and grain elevator.jpg", de TheTechnician27, CC0 (https://commons.wikimedia.org/wiki/File:Gifford,_IL_silo_and_grain_elevator.jpg)
 
 

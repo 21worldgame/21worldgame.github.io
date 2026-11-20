@@ -1,6 +1,7 @@
 // Aviator: o multiplicador sobe até o avião "voar". Saque antes disso.
 import { botsFor } from './botpool.js';
 import * as GM from './games.js';
+import * as C from './casino.js';
 import { G, $, esc, int, say, save, award, note, confetti, RM } from './store.js';
 import * as sfx from './sfx.js';
 
@@ -17,8 +18,9 @@ function newRound() {
   st = { phase: 'wait', until: performance.now() + 6000, crash: GM.crashPoint(), t0: 0, mult: 1 };
   mine = next ? { ...next, done: false, won: 0 } : null;
   if (next) next = null;
-  bots = Array.from({ length: 6 + Math.floor(Math.random() * 7) }, () => ({
-    name: BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)], bet: [10, 20, 50, 100, 200, 500][Math.floor(Math.random() * 6)],
+  const pick = [...BOT_NAMES].sort(() => Math.random() - 0.5);   // cada nome uma vez só na rodada
+  bots = Array.from({ length: Math.min(BOT_NAMES.length, 6 + Math.floor(Math.random() * 7)) }, (_, i) => ({
+    name: pick[i], bet: [10, 20, 50, 100, 200, 500][Math.floor(Math.random() * 6)],
     target: Math.max(1.1, Math.round((1 / (1 - Math.random() * 0.93)) * 100) / 100), out: 0,
   }));
   renderPlayers(); renderBtn();
@@ -95,13 +97,15 @@ function renderBtn() {
 }
 
 function renderPlayers() {
-  const rows = [...(mine ? [{ name: G.S.avatar.name && G.S.avatar.name !== 'você' ? `${G.S.avatar.name} (você)` : 'você', bet: mine.bet, out: mine.at || 0, me: true }] : []), ...bots];
+  C.setPlay({ bet: mine?.bet || 0, out: mine?.at || 0 });
+  const real = C.playersIn('aviator').map(p => ({ name: p.name, bet: p.bet, out: p.out, real: true }));
+  const rows = [...(mine ? [{ name: G.S.avatar.name && G.S.avatar.name !== 'você' ? `${G.S.avatar.name} (você)` : 'você', bet: mine.bet, out: mine.at || 0, me: true }] : []), ...real, ...bots];
   $('#av-players').innerHTML = rows.map(r => {
     const lost = st.phase === 'crash' && !r.out;
-    return `<li class="${r.out ? 'is-out' : ''} ${lost ? 'is-lost' : ''} ${r.me ? 'is-me' : ''}"><span>${esc(r.name)}</span><span>${int(r.bet)}</span>
+    return `<li class="${r.out ? 'is-out' : ''} ${lost && !r.real ? 'is-lost' : ''} ${r.me ? 'is-me' : ''} ${r.real ? 'is-real' : ''}"><span>${r.real ? '<i class="real-dot" title="jogador de verdade"></i>' : ''}${esc(r.name)}</span><span>${r.bet ? int(r.bet) : '—'}</span>
       <span>${r.out ? `${r.out.toFixed(2)}x` : '—'}</span><span>${r.out ? `+${int(r.bet * r.out)}` : lost ? 'voou' : ''}</span></li>`;
   }).join('');
-  $('#av-count').textContent = `${rows.length} apostas`;
+  $('#av-count').textContent = `${rows.length} na rodada${real.length ? ` · ${real.length} de verdade` : ''}`;
 }
 
 function draw(now) {
@@ -153,3 +157,4 @@ function drawPlane(g, x, y, ang, css) {
   g.fillStyle = css('--av-plane'); g.strokeStyle = css('--shade'); g.lineWidth = 1.5; g.fill(PLANE); g.stroke(PLANE);
   g.restore();
 }
+setInterval(() => { if (active) renderPlayers(); }, 4000);   // jogadores de verdade entrando/saindo do aviator
