@@ -121,11 +121,11 @@ export function apply(s, give, receive) {
     if (i.kind === 'land') s.lands.push({ ...i.data, id: s.nextId++ });
     if (i.kind === 'card') CD.give(s, i.data);
     if (i.kind === 'acc' && !(s.owned ??= []).includes(`acc:${i.acc}`)) s.owned.push(`acc:${i.acc}`);
-    if (i.kind === 'galpao') { NG.ensure(s); s.biz.wh.push({ ...i.data, id: `b${s.nextId++}` }); }
-    if (i.kind === 'aviario') { s.granja ??= { houses: [], lots: [] }; (s.granja.houses ??= []).push({ ...i.data, id: `g${s.nextId++}` }); }
-    if (i.kind === 'empresa') { NG.ensure(s); if (!s.biz[i.cat].some(b => b.brand === i.data.brand)) s.biz[i.cat].push({ ...i.data, id: `b${s.nextId++}` }); }
+    if (i.kind === 'galpao') { NG.ensure(s); s.biz.wh.push({ ...i.data, id: `b${(s.nextId = (s.nextId || 1) + 1)}` }); }
+    if (i.kind === 'aviario') { s.granja ??= { houses: [], lots: [] }; (s.granja.houses ??= []).push({ ...i.data, id: `g${(s.nextId = (s.nextId || 1) + 1)}` }); }
+    if (i.kind === 'empresa') { NG.ensure(s); if (!s.biz[i.cat].some(b => b.brand === i.data.brand)) s.biz[i.cat].push({ ...i.data, id: `b${(s.nextId = (s.nextId || 1) + 1)}` }); }
     if (i.kind === 'club') adoptClub(s, i.data);
-    if (i.kind === 'player') { const p = { ...i.data, id: `t${s.nextId++}` }; if (s.fut?.club) s.fut.squad.push(p); else (s.freeAgents ??= []).push(p); }   // sem clube: espera até assumir um
+    if (i.kind === 'player') { const p = { ...i.data, id: `t${(s.nextId = (s.nextId || 1) + 1)}` }; if (s.fut?.club) s.fut.squad.push(p); else (s.freeAgents ??= []).push(p); }   // sem clube: espera até assumir um
   }
   return null;
 }

@@ -157,13 +157,22 @@ export async function profileCard(id) {
 }
 // cada aparelho tem um id: o save marca de onde veio, para o outro aparelho saber que precisa se atualizar
 const DEV = (() => { try { let d = localStorage.getItem('21world.dev'); if (!d) { d = Math.random().toString(36).slice(2, 10); localStorage.setItem('21world.dev', d); } return d; } catch { return Math.random().toString(36).slice(2, 10); } })();
-let lastRemote = '';
+let lastRemote = '', seen = 0;   // seen = savedAt do save da nuvem mais novo que este aparelho já conhece
 export async function push() {
   if (!sb || !user) return false;
+  const head = await sb.from('saves').select('updated_at, sa:data->savedAt, dev:data->>dev').eq('user_id', user.id).maybeSingle();
+  if (head.error) return false;
+  const hd = head.data;
+  if (hd && hd.dev && hd.dev !== DEV && Number(hd.sa || 0) > seen) {      // o outro aparelho mexeu e este ainda não viu
+    if (G.busy?.()) return false;                                     // no meio de uma mão: tenta de novo no próximo save
+    const full = await pull(); if (!full?.data) return false;
+    adopt(full.data); seen = Number(full.data.savedAt || 0); lastPush = seen; lastRemote = full.updated_at; G.render();
+    say('Atualizado com o que você fez no outro aparelho.'); return false;
+  }
   const stamp = G.S.savedAt || Date.now(), at = new Date().toISOString();
   const { error } = await sb.from('saves').upsert({ user_id: user.id, data: { ...G.S, dev: DEV }, updated_at: at });
   if (error) return false;
-  lastRemote = at;
+  lastRemote = at; seen = Math.max(seen, stamp);
   let row = profileRow(), r = await sb.from('public_profiles').upsert(row);
   if (r.error && /card/i.test(r.error.message || '')) { noCardUntil = Date.now() + 300000; row = profileRow(); r = await sb.from('public_profiles').upsert(row); }   // coluna card ainda não criada no servidor
   if (r.error && isNameTaken(r.error)) {                      // outro jogador já usa esse nome: troca por um com número
@@ -182,8 +191,8 @@ async function checkRemote() {
     const { data } = await sb.from('saves').select('updated_at').eq('user_id', user.id).maybeSingle();
     if (!data || data.updated_at === lastRemote || Date.parse(data.updated_at) === Date.parse(lastRemote)) return;
     const full = await pull(), d = full?.data; lastRemote = full?.updated_at || data.updated_at;
-    if (!d || d.dev === DEV || (d.savedAt || 0) <= (G.S.savedAt || 0)) return;
-    adopt(d); lastPush = d.savedAt || 0; G.render(); say('Atualizado com o que você fez no outro aparelho.');
+    if (!d || d.dev === DEV || (d.savedAt || 0) <= seen) return;
+    adopt(d); seen = lastPush = d.savedAt || 0; G.render(); say('Atualizado com o que você fez no outro aparelho.');
   } catch {}
 }
 setInterval(checkRemote, 8000);
@@ -231,6 +240,7 @@ async function afterLogin() {
   if (cloud && (cloud.data?.savedAt || 0) > (G.S.savedAt || 0) + 1000) { writeSave(user.id, cloud.data); location.reload(); return new Promise(() => {}); }
   if (dlg().open) dlg().close();
   try { localStorage.setItem('21world.hadAccount', '1'); } catch {}
+  seen = Number(cloud?.data?.savedAt || 0);   // o que está na nuvem agora já foi visto (o local é igual ou mais novo)
   G.afterSave = scheduleSync;
   watchRanking();
   await push().catch(() => {});

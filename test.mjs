@@ -1147,3 +1147,11 @@ console.log('mina ok');
   const r = GR.house(s, h, 5000.7, true); assert.equal(m0 - s.money, r.cost, 'cobra o que registra'); assert.ok(GR.house(s, h, 5000, true).err, 'galpão cheio não cobra de novo');
   assert.equal(m0 - s.money, r.cost, 'pintinho cobrado 1 vez só'); console.log('granja 1 cobrança ok');
 }
+
+{
+  const NG = await import('./negocios.js'), GR = await import('./granja.js');
+  const s = { nextId: 5, biz: { wh: [{ id: 'b5', type: 'g500', value: 1 }, { id: 'b5', type: 'g2000', value: 2 }] }, stock: {} };
+  NG.ensure(s); assert.equal(new Set(s.biz.wh.map(w => w.id)).size, 2, 'galpões com id repetido ganham ids próprios'); assert.equal(s.biz.wh.length, 2);
+  const g = { nextId: 3, prices: {}, granja: { houses: [{ id: 'g3', type: 'pequeno', value: 1 }, { id: 'g3', type: 'pequeno', value: 1 }], lots: [] } };
+  GR.ensure(g); assert.equal(new Set(g.granja.houses.map(h => h.id)).size, 2); console.log('ids únicos ok');
+}

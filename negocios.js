@@ -156,6 +156,7 @@ export const CAT_KEYS = Object.keys(LISTS);
 export function ensure(s) {
   s.biz ??= { banks: [], isps: [], markets: [], wh: [] };
   for (const k of [...CAT_KEYS, 'wh']) s.biz[k] = (s.biz[k] || []).filter(Boolean);
+  { const ids = new Set(); for (const k of [...CAT_KEYS, 'wh']) for (const x of s.biz[k]) { if (ids.has(x.id)) x.id = nid(s); ids.add(x.id); } }
   if (s.biz.legacy == null) { const t = tons(s); s.biz.legacy = Math.max(0, Math.ceil(t - FREE_TONS)); }   // quem já tinha estoque grande não perde nada
   return s.biz;
 }
