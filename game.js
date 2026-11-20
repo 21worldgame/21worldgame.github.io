@@ -11,6 +11,7 @@ import * as FB from './aposta-ui.js';
 import * as TRU from './truco-ui.js';
 import * as SNU from './sinuca-ui.js';
 import * as PKU from './poker-ui.js';
+import { botsFor as BOTS } from './botpool.js';
 import * as NG from './negocios.js';
 import * as SH from './shop.js';
 import * as NGU from './negocios-ui.js';
@@ -401,7 +402,7 @@ function renderPomar() {
   const ha = orch.reduce((t, l) => t + l.ha, 0), spray = orch.filter(l => l.orchard.spray).reduce((t, l) => t + PM.sprayCost(s, l), 0);
   const next = orch.length ? Math.min(...orch.map(l => PM.nextHarvest(l.orchard))) : 0;
   $('#pm-stats').innerHTML = [['pomares', orch.length], ['hectares', `${int(ha)} ha`], ['defensivo por mês', brl(spray)], ['próxima colheita', orch.length ? `em ${next} ${next === 1 ? 'mês' : 'meses'}` : '—'],
-    ...['pulv', 'plataforma'].map(m => { const n = PM.machines(s, m), need = PM.need(s, m), cov = PM.coverage(s, m); return [m === 'pulv' ? 'pulverizadores' : 'plataformas', `${n} de ${need}${ha ? ` · ${Math.round(cov * 100)}% coberto` : ''}${m === 'pulv' ? ` · −${Math.round(PM.SPRAY_CUT * cov * 100)}% no defensivo` : ` · +${Math.round(PM.HARVEST_PLUS * cov * 100)}% de laranja`}`]; })]
+    ...['pulv', 'plataforma'].map(m => { const n = PM.machines(s, m), need = PM.need(s, m), cov = PM.coverage(s, m); return [m === 'pulv' ? 'pulverizadores' : 'plataformas', `${n} de ${need} · ${m === 'pulv' ? `−${Math.round(PM.SPRAY_CUT * cov * 100)}% defensivo` : `+${Math.round(PM.HARVEST_PLUS * cov * 100)}% laranja`}`]; })]
     .map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${v}</strong></div>`).join('');
   const p = s.prices.laranja, pv = s.prev?.laranja ?? p, ch = pv ? (p / pv - 1) * 100 : 0, stock = s.stock.laranja || 0;
   $('#pm-sell').innerHTML = `<div><span class="muted small">no armazém</span><strong>${int(stock)} caixas</strong></div>
@@ -622,7 +623,7 @@ function openProfile(pid, fetched) {
 }
 
 // nome e foto de cada tipo de item (inventário, loja e trocas). Tipo novo sem entrada aqui ainda ganha nome e foto genéricos.
-export const ITEM_KIND = { car: 'veículo', animal: 'animal', land: 'terra', good: 'armazém', card: 'carta rara', player: 'jogador de futebol', squad: 'futebol', club: 'clube de futebol', aviario: 'granja', galpao: 'galpão', empresa: 'empresa' };
+export const ITEM_KIND = { car: 'veículo', animal: 'animal', land: 'terra', good: 'armazém', card: 'carta rara', player: 'jogador de futebol', squad: 'futebol', club: 'clube de futebol', aviario: 'granja', galpao: 'galpão', empresa: 'empresa', acc: 'acessório' };
 const GOOD_IMG = { soja: 'farm-soja', milho: 'farm-colheita', cafe: 'farm-cafe', laranja: 'farm-laranja' };
 export function itemMedia(i) {
   const d = i.data || {};
@@ -632,6 +633,7 @@ export function itemMedia(i) {
   if (i.kind === 'good') return `<img src="assets/${GOOD_IMG[i.good] || 'farm-colheita'}.webp" alt="" loading="lazy">`;
   if (i.kind === 'card') return `<span class="icard__cardart" style="background-image:url(assets/cards/${d.champ}.webp)"></span>`;
   if (i.kind === 'player' || i.kind === 'squad' || i.kind === 'club') return '<img src="assets/photo-stadium.webp" alt="" loading="lazy">';
+  if (i.kind === 'acc') return `<div class="fcard__acc">${avatarSVG({ ...S().avatar, acc: i.acc }, { label: i.acc })}</div>`;
   if (i.kind === 'galpao') return `<img src="assets/wh-${d.type}.webp" alt="" loading="lazy">`;
   if (i.kind === 'empresa') return `<img src="assets/biz/${d.brand}.webp" alt="" loading="lazy">`;
   if (i.kind === 'aviario') return `<img src="assets/${GR.HOUSES[d.type]?.img || 'granja-galpao'}.webp" alt="" loading="lazy">`;
@@ -1003,8 +1005,29 @@ document.addEventListener('click', e => {
   FB.setActive(b.dataset.fsub === 'live');
 });
 
+// quem está em cada jogo agora: você + jogadores de verdade (anel roxo) + quantos jogadores da casa estão nas mesas
+const HOUSE_BOTS = { 21: ['bot-dorival', 'bot-azul', 'bot-porto', 'bot-esm', 'bot-vip', 'bot-dia', 'bot-high', 'bot-mag'], roleta: ['rl'], aviator: ['av'],
+  truco: ['tr-boteco', 'tr-praca', 'tr-ouro', 'tr-magnata'], sinuca: ['sn-bar', 'sn-clube', 'sn-pro', 'sn-magnata'],
+  poker: ['pk-calcada', 'pk-boteco', 'pk-praca', 'pk-clube', 'pk-fazenda', 'pk-pro', 'pk-leilao', 'pk-vip', 'pk-magnata', 'pk-diamante', 'pk-high', 'pk-dono'] };
+let curSub = '21';
+function liveStrip() {
+  const onMesa = !$('#p-mesa')?.hidden;
+  C.setPlay({ game: onMesa ? curSub : null, ...(onMesa ? {} : { bet: 0, out: 0 }) });
+  if (!onMesa) return;
+  const box = document.getElementById(`sub-${curSub}`); if (!box) return;
+  let el = box.querySelector(':scope > .live-strip');
+  if (!el) { el = document.createElement('div'); el.className = 'live-strip glass'; box.prepend(el); }
+  const real = C.playersIn(curSub), bots = (HOUSE_BOTS[curSub] || []).flatMap(id => BOTS(id));
+  const av = (name, look, cls) => `<span class="ls-p ${cls}" title="${esc(name)}"><span class="ls-av">${avatarSVG(look || {}, { label: name })}</span><em>${esc(name)}</em></span>`;
+  el.innerHTML = `<span class="ls-t"><i></i>jogando agora</span><div class="ls-list">${av('você', profileOf().look, 'is-me')}${real.map(p => av(p.name, p.look, 'is-real')).join('')}
+    ${bots.slice(0, 6).map(n => av(n, NPC.byNick(n)?.look, 'is-bot')).join('')}</div>
+    <span class="ls-n"><b>${real.length + 1}</b> de verdade · <b>${bots.length}</b> da casa</span>`;
+}
+setInterval(liveStrip, 4000);
+
 // abas internas do cassino
 function showSub(name) {
+  curSub = name; setTimeout(liveStrip, 0);
   document.querySelectorAll('[data-sub]').forEach(b => b.classList.toggle('is-on', b.dataset.sub === name));
   for (const s of ['21', 'roleta', 'aviator', 'truco', 'sinuca', 'poker']) document.getElementById(`sub-${s}`).hidden = s !== name;
   AV.setActive(name === 'aviator' && !$('#p-mesa').hidden);
@@ -1264,7 +1287,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 46;
+const APP_VERSION = 47;
 let updateShown = false, updateMsg = '';
 let checking = false;
 async function checkUpdate() {

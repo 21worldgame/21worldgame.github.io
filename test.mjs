@@ -1050,3 +1050,16 @@ console.log('mina ok');
   const r = AB.slaughterAt(s, 'h1', 50); assert.equal(r.heads, 10); assert.equal(s.herd.length, 0); assert.equal(s.money, Math.round(10 * player));
   console.log('frigorífico de jogador ok');
 }
+
+{
+  const PM = await import('./pomar.js');
+  const s = { cars: [], lands: [{ ha: 450, orchard: { age: 6, health: 1, pest: 0 } }] };
+  assert.equal(PM.sprayMult(s), 1); assert.equal(PM.need(s, 'pulv'), 3);
+  s.cars.push({ model: 'pulv' }); assert.ok(Math.abs(PM.sprayMult(s) - 0.9) < 1e-9, 'um pulverizador em 450 ha cobre 1/3');
+  s.cars.push({ model: 'pulv' }, { model: 'pulv' }); assert.ok(Math.abs(PM.sprayMult(s) - 0.7) < 1e-9, 'três cobrem tudo');
+  s.cars.push({ model: 'plataforma' }); assert.ok(PM.expectedWith(s, s.lands[0]) > PM.expected(s.lands[0]), 'plataforma aumenta a colheita');
+  console.log('pulverizador e plataforma por hectare ok');
+}
+{ const SHq = await import('./shop.js'), Lq = await import('./logic.js'); const s = Lq.newState(() => 0.5); (s.owned ??= []).push('acc:corrente de ouro'); (s.avatar ??= {}).acc = 'corrente de ouro';
+  assert.ok(SHq.items(s).some(i => i.kind === 'acc' && i.label === 'corrente de ouro')); const m = s.money; const r = SHq.sellToHouse(s, 'acc:corrente de ouro');
+  assert.equal(r.amount, 12500); assert.equal(s.money, m + 12500); assert.equal(s.avatar.acc, 'nenhum'); assert.ok(!s.owned.includes('acc:corrente de ouro')); console.log('acessório no inventário ok'); }

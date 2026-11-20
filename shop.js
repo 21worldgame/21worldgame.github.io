@@ -10,6 +10,7 @@ import * as PM from './pomar.js';
 import * as CN from './cana.js';
 import * as NG from './negocios.js';
 import { debt } from './logic.js';
+import { CATALOG } from './avatar.js';
 
 export const HOUSE_RATE = { car: CAR_BUYBACK, land: 0.95, card: CD.SELL, player: 0.8 };
 export const NPC_MAX = 1.05;            // comprador da casa paga até 5% acima do preço de venda na hora
@@ -27,6 +28,7 @@ export function clubValue(f) {
 export function items(s) {
   const out = inventory(s).map(i => ({ ...i, key: `${i.kind}:${i.id}` }));
   for (const h of (s.granja?.houses || []).filter(h => h && GR.HOUSES[h.type])) out.push({ kind: 'aviario', id: h.id, key: `aviario:${h.id}`, label: `${GR.HOUSES[h.type].label} (granja)`, value: h.value, data: h });
+  for (const t of s.owned || []) { const id = t.startsWith('acc:') && t.slice(4), o = id && CATALOG.acc.opts.find(x => x.id === id && x.price); if (o) out.push({ kind: 'acc', id, key: `acc:${id}`, label: id, value: o.price, acc: id }); }
   if (s.fut?.club) out.push({ kind: 'club', id: 'club', key: 'club:club', label: `clube ${s.fut.club} (${FT.DIVS[s.fut.div]})`, value: clubValue(s.fut) });
   for (const w of s.biz?.wh || []) out.push({ kind: 'galpao', id: w.id, key: `galpao:${w.id}`, label: NG.WAREHOUSES[w.type].label, value: w.value, data: w });
   for (const c of NG.CAT_KEYS) for (const b of s.biz?.[c] || []) { const C = NG.LISTS[c][b.brand]; if (!C) continue; out.push({ kind: 'empresa', id: b.id, key: `empresa:${b.id}`, cat: c, label: `${C.name} (${({ banks: 'banco', isps: 'provedor', markets: 'supermercado', usinas: 'usina' })[c] || NG.SECTORS[c]?.one})`, value: NG.saleValue(s, c, b), data: b }); }
@@ -40,6 +42,7 @@ export function housePrice(s, it) {
   if (it.kind === 'card') return Math.round(CD.value(it.data) * CD.SELL);
   if (it.kind === 'player') return Math.round(FT.value(it.data) * 0.8);
   if (it.kind === 'club') return clubValue(s.fut);
+  if (it.kind === 'acc') return Math.round(CATALOG.acc.opts.find(o => o.id === it.acc).price * 0.5);
   if (it.kind === 'aviario') return Math.round(it.data.value * GR.HOUSE_RESALE);
   if (it.kind === 'galpao') return Math.round(it.data.value * 0.8);
   if (it.kind === 'empresa') return NG.saleValue(s, it.cat, it.data);
@@ -64,6 +67,7 @@ export function remove(s, it) {
   if (it.kind === 'card') s.cards = s.cards.filter(c => c.id !== it.id);
   if (it.kind === 'player') s.fut.squad = s.fut.squad.filter(p => p.id !== it.id);
   if (it.kind === 'club') delete s.fut;
+  if (it.kind === 'acc') { s.owned = s.owned.filter(t => t !== `acc:${it.acc}`); if (s.avatar?.acc === it.acc) s.avatar.acc = 'nenhum'; }
   if (it.kind === 'aviario') s.granja.houses = s.granja.houses.filter(h => h.id !== it.id);
   if (it.kind === 'galpao') s.biz.wh = s.biz.wh.filter(w => w.id !== it.id);
   if (it.kind === 'empresa') s.biz[it.cat] = s.biz[it.cat].filter(b => b.id !== it.id);
@@ -82,6 +86,7 @@ export function sellToHouse(s, key) {
 export function list(s, key, price, now = Date.now()) {
   const it = find(s, key);
   if (!it) return 'esse item não é mais seu.';
+  if (it.kind === 'acc') return 'acessório só dá para vender direto para a loja.';
   const b = blocked(s, it); if (b) return b;
   price = Math.round(Number(price) || 0);
   if (price < 100) return 'preço mínimo R$ 100.';
@@ -114,7 +119,7 @@ import * as L from './logic.js';
 import * as NPCS from './npcs.js';
 import { apply as tradeApply } from './trade.js';
 export const NPC_WIN = 10 * 60 * 1000;
-export const CATS = { veiculo: 'veículos', maquina: 'máquinas', terra: 'terras', animal: 'cavalos e galgos', gado: 'gado', produto: 'produtos', carta: 'cartas', futebol: 'futebol', granja: 'granja', galpao: 'galpões', empresa: 'empresas' };
+export const CATS = { veiculo: 'veículos', maquina: 'máquinas', terra: 'terras', animal: 'cavalos e galgos', gado: 'gado', produto: 'produtos', carta: 'cartas', futebol: 'futebol', granja: 'granja', galpao: 'galpões', empresa: 'empresas', acessorio: 'acessórios' };
 function seeded(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const r100 = v => Math.round(v / 100) * 100;
 export function npcListings(s, now = Date.now()) {
@@ -150,7 +155,7 @@ export function buyNpc(s, id, now = Date.now()) {
 }
 // categoria de um item seu (para os filtros da loja)
 export const catOf = it => it.kind === 'galpao' ? 'galpao' : it.kind === 'empresa' ? 'empresa' : it.kind === 'car' ? (CARS[it.data?.model]?.type === 'maquina' ? 'maquina' : 'veiculo') : it.kind === 'land' ? 'terra' : it.kind === 'animal' ? 'animal'
-  : it.kind === 'good' ? 'produto' : it.kind === 'card' ? 'carta' : it.kind === 'player' || it.kind === 'club' ? 'futebol' : it.kind === 'aviario' ? 'granja' : 'produto';
+  : it.kind === 'good' ? 'produto' : it.kind === 'card' ? 'carta' : it.kind === 'player' || it.kind === 'club' ? 'futebol' : it.kind === 'aviario' ? 'granja' : it.kind === 'acc' ? 'acessorio' : 'produto';
 
 // ---------- propostas dos jogadores do mundo pelos seus anúncios ----------
 // Sempre abaixo do anúncio; se você está endividado, eles apertam mais (sabem que você precisa vender).
