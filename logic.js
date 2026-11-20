@@ -1,10 +1,10 @@
 import { T } from './tune.js';
 import { value as cardValue } from './cards.js';
-import { value as suinosValue } from './suinos.js';
+import { value as suinosValue, PRICES as SU_PRICES } from './suinos.js';
 import { value as bizValue } from './negocios.js';
 import { value as minaValue } from './mina.js';
 import * as PK from './perks.js';
-import { granjaValue } from './granja.js';
+import { granjaValue, PRICES as GR_PRICES } from './granja.js';
 import { orchardValue } from './pomar.js';
 import { caneValue } from './cana.js';
 import { plantValue } from './abate.js';
@@ -184,6 +184,7 @@ export function newState(rng = Math.random) {
 
 const id = s => s.nextId++;
 const walk = (v, rng, pct) => v * (1 + (rng() * 2 - 1) * pct);
+const ANCHOR = { ...GR_PRICES, ...SU_PRICES };
 
 export function refreshOffers(s, rng = Math.random) {
   s.offers = Array.from({ length: T.landOffers }, () => {
@@ -240,7 +241,9 @@ export function tick(s, rng = Math.random) {
   const add = (txt, val = 0) => { s.money += val; log.push({ m: s.month, txt, val: Math.round(val) }); };
 
   s.prev = { ...s.prices };
-  for (const k of Object.keys(s.prices)) { const v = walk(s.prices[k], rng, 0.06); s.prices[k] = v < 100 ? Math.round(v * 100) / 100 : Math.round(v); }   // preço pequeno (frango, ração) anda em centavos
+  for (const k of Object.keys(s.prices)) { const b = ANCHOR[k]; let v = walk(b ? s.prices[k] + (b - s.prices[k]) * 0.1 : s.prices[k], rng, 0.06);   // ancorado: volta 10%/mês ao preço base, sem isso frango/ração derivavam sem limite e a granja virava prejuízo certo
+    if (b) v = Math.min(b * 1.25, Math.max(b * 0.8, v));   // faixa realista: save antigo já derivado volta no próximo mês
+    s.prices[k] = v < 100 ? Math.round(v * 100) / 100 : Math.round(v); }   // preço pequeno (frango, ração) anda em centavos
   for (const l of s.lands) l.value = Math.round(l.value * (1 + 0.006 + (rng() * 2 - 1) * 0.02));
 
   // gado: engorda no pasto; o excedente come ração

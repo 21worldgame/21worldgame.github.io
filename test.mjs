@@ -1169,3 +1169,6 @@ console.log('mina ok');
   assert.ok(new Set(out).size > 60); assert.equal(NP.turnOf(5, ['A', 'B'], 0), NP.turnOf(5, ['B', 'A'], 0));
   console.log('rodízio de quem fala ok'); }
 { const Cq = await import('./chat.js'); const seen = new Set(); for (let s = 1000; s < 1020; s++) seen.add(Cq.lineOf(s)); assert.equal(seen.size, 20, 'frases da Resenha não repetem em 20 falas seguidas'); console.log('frases sem repetir ok'); }
+// preços da granja/suínos voltam ao base: frango derrubado se recupera, ração disparada cai
+{ const s = L.newState(() => 0.5); s.prices.frango = 3.9; s.prices.racao = 2.6; for (let i = 0; i < 40; i++) L.tick(s, () => 0.5);
+  assert.ok(Math.abs(s.prices.frango - 6.2) < 0.2 && Math.abs(s.prices.racao - 1.9) < 0.1, 'preço ancorado ' + s.prices.frango + ' ' + s.prices.racao); console.log('preço ancorado ok'); }
