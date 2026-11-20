@@ -1,6 +1,6 @@
 // Login, cadastro e save na nuvem (Supabase). Sem url/anonKey em supabase-config.js, o jogo roda local, sem login.
 import { SUPABASE } from './supabase-config.js';
-import { G, $, save, say, writeSave, forgetUser, blankState, currentUid, keyFor, profileOf } from './store.js';
+import { adopt, G, $, save, say, writeSave, forgetUser, blankState, currentUid, keyFor, profileOf } from './store.js';
 import * as L from './logic.js';
 import { cleanName, validateSignup, validateLogin, validatePassword, translateError, isNameTaken, withSuffix, MIN_PASSWORD } from './authrules.js';
 
@@ -155,11 +155,15 @@ export async function profileCard(id) {
   const { card, ...base } = r.data;
   return { ...(card || {}), ...base, worth: Number(base.worth), noCard: !card };
 }
+// cada aparelho tem um id: o save marca de onde veio, para o outro aparelho saber que precisa se atualizar
+const DEV = (() => { try { let d = localStorage.getItem('21world.dev'); if (!d) { d = Math.random().toString(36).slice(2, 10); localStorage.setItem('21world.dev', d); } return d; } catch { return Math.random().toString(36).slice(2, 10); } })();
+let lastRemote = '';
 export async function push() {
   if (!sb || !user) return false;
-  const stamp = G.S.savedAt || Date.now();
-  const { error } = await sb.from('saves').upsert({ user_id: user.id, data: G.S, updated_at: new Date().toISOString() });
+  const stamp = G.S.savedAt || Date.now(), at = new Date().toISOString();
+  const { error } = await sb.from('saves').upsert({ user_id: user.id, data: { ...G.S, dev: DEV }, updated_at: at });
   if (error) return false;
+  lastRemote = at;
   let row = profileRow(), r = await sb.from('public_profiles').upsert(row);
   if (r.error && /card/i.test(r.error.message || '')) { noCardUntil = Date.now() + 300000; row = profileRow(); r = await sb.from('public_profiles').upsert(row); }   // coluna card ainda não criada no servidor
   if (r.error && isNameTaken(r.error)) {                      // outro jogador já usa esse nome: troca por um com número
@@ -170,6 +174,20 @@ export async function push() {
   lastPush = stamp;
   return true;
 }
+// celular e computador abertos ao mesmo tempo: confere a nuvem a cada 8 s (e ao voltar para a aba);
+// se o outro aparelho salvou algo mais novo, aplica na hora (nunca no meio de uma mão, corrida ou partida)
+async function checkRemote() {
+  if (!sb || !user || document.visibilityState === 'hidden' || G.busy?.()) return;
+  try {
+    const { data } = await sb.from('saves').select('updated_at').eq('user_id', user.id).maybeSingle();
+    if (!data || data.updated_at === lastRemote || Date.parse(data.updated_at) === Date.parse(lastRemote)) return;
+    const full = await pull(), d = full?.data; lastRemote = full?.updated_at || data.updated_at;
+    if (!d || d.dev === DEV || (d.savedAt || 0) <= (G.S.savedAt || 0)) return;
+    adopt(d); lastPush = d.savedAt || 0; G.render(); say('Atualizado com o que você fez no outro aparelho.');
+  } catch {}
+}
+setInterval(checkRemote, 8000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkRemote(); });
 function scheduleSync() {
   if (!user) return;
   clearTimeout(timer);

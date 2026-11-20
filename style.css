@@ -2398,3 +2398,36 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 @media (max-width: 40rem) { .eq-on { grid-template-columns: auto 1fr; } .eq-on__a { grid-column: 1 / -1; justify-content: flex-start; } .btn--team { display: none; } }
 .btn--team { white-space: nowrap; flex: none; } .btn--team .pill { margin-left: 4px; }
 [data-tab="equipe"] .pill--team { margin-left: 6px; font-size: .68rem; padding: 0 6px; border-radius: 99px; }
+
+@media (max-width: 22.5rem) {
+  .rkrow { grid-template-columns: 28px 34px minmax(0, 1fr) auto !important; gap: 6px !important; padding-inline: 8px !important; }
+  .rkrow__name { min-width: 0; overflow: hidden; } .rkrow__name > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rkrow__val { font-size: .74rem !important; }
+}
+/* celular com entalhe / app instalado: nada fica por baixo do relógio ou das bordas da tela (no computador env() é 0) */
+@media (max-width: 40rem) {
+  body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+  .hud { padding-top: env(safe-area-inset-top); }
+}
+/* ===== celular: jogabilidade dentro das mesas (desktop não muda) ===== */
+@media (max-width: 40rem) {
+  /* sentado numa mesa, a faixa "jogando agora" sai do caminho (a mesa sobe para a tela) */
+  .sub:has(#room:not([hidden])) > .live-strip, .sub:has(#tr-room:not([hidden])) > .live-strip, .sub:has(#sn-room:not([hidden])) > .live-strip, .sub:has(#pk-room:not([hidden])) > .live-strip { display: none; }
+  .live-strip { padding: 6px 10px; gap: 8px; margin-bottom: 8px; } .ls-av { width: 28px; height: 28px; } .ls-p { width: 46px; } .ls-p em { max-width: 46px; font-size: .6rem; }
+  /* chat vira um botão redondo pequeno no canto, sem cobrir fichas, cartas e o "tacar" */
+  .chat-fab { width: 46px; height: 46px; padding: 0 !important; font-size: 0 !important; display: grid; place-items: center; right: 10px; }
+  .chat-fab::before { content: "💬"; font-size: 1.3rem; line-height: 1; }
+  .chat-fab .chat-fab__n { position: absolute; top: -4px; right: -4px; font-size: .68rem; }
+  /* mesa de 21: os 6 lugares cabem inteiros na mesa */
+  .seat--0 { left: 15%; } .seat--1 { left: 29%; } .seat--2 { left: 43.5%; } .seat--3 { left: 56.5%; } .seat--4 { left: 71%; } .seat--5 { left: 85%; }
+  .seat .plate { max-width: 14cqw; }
+  /* botões de jogo maiores para o dedo */
+  .tr-actions .btn, .pk-actions .btn, .sn-ctrl .btn, .controls .btn { min-height: 46px; }
+  .roombar { gap: 8px; } .roombar h2 { font-size: 1.15rem; }
+}
+@media (max-width: 40rem) {
+  .sn-players { display: grid !important; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; align-items: center; }
+  .sn-pl { min-width: 0; padding: 6px 8px !important; gap: 6px !important; margin: 0 !important; }
+  .sn-pl .sn-av { width: 34px !important; height: 34px !important; flex: none; }
+  .sn-pl b { font-size: .8rem; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .sn-pl small { font-size: .68rem; }
+}

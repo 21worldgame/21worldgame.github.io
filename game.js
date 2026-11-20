@@ -1325,7 +1325,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 54;
+const APP_VERSION = 55;
 let updateShown = false, updateMsg = '';
 let checking = false;
 async function checkUpdate() {
@@ -1350,6 +1350,7 @@ async function checkUpdateNow() {
   } catch {}
 }
 // a página recarrega sozinha em 15 s, a não ser que a pessoa esteja no meio de uma mão, corrida, turno ou troca
+G.busy = () => busyNow();
 const busyNow = () => C.busyRound() || SUI.isRunning() || !!document.querySelector('#dlg-race[open], #dlg-match[open], #dlg-trade[open], #dlg-deal[open], #dlg-card[open]');
 async function doReload() {
   const b = $('#upd-go'); if (b) { b.disabled = true; b.textContent = 'salvando...'; }
@@ -1402,7 +1403,7 @@ document.addEventListener('click', e => { const g = e.target.closest('[data-tab-
 // celular: menu em grade montado a partir das abas (cada área com ícone, tudo à vista)
 {
   const grid = document.getElementById('mnav-grid'), sheet = document.getElementById('mnav-sheet');
-  if (grid) grid.innerHTML = [...document.querySelectorAll('.tabs [role="tab"]')].map(t => `<button type="button" data-mnav="${t.dataset.tab}">${t.querySelector('svg')?.outerHTML || ''}<span>${t.textContent.trim()}</span></button>`).join('');
+  if (grid) grid.innerHTML = [...document.querySelectorAll('.tabs [role="tab"]')].map(t => `<button type="button" data-mnav="${t.dataset.tab}">${t.querySelector('svg')?.outerHTML || ''}<span>${[...t.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("").trim()}</span></button>`).join('');
   const openSheet = on => { sheet.hidden = !on; document.querySelector('[data-mnav="menu"]')?.setAttribute('aria-expanded', String(on)); document.body.classList.toggle('mnav-open', on); };
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-mnav]'); if (!b) { if (!sheet.hidden && e.target === sheet) openSheet(false); return; }

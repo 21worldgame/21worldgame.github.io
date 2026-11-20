@@ -70,6 +70,7 @@ export function save() {
 }
 // save novo de uma conta (nome vindo do cadastro)
 export function blankState(name) { const s = normalize(null); if (name) s.avatar.name = name; s.savedAt = Date.now(); return s; }
+export function adopt(state) { G.S = normalize(state); try { localStorage.setItem(keyFor(uid), JSON.stringify(G.S)); } catch {} }
 export function writeSave(u, state) { try { localStorage.setItem(keyFor(u), JSON.stringify(state)); localStorage.setItem(UID_KEY, u); } catch {} }
 export function forgetUser() { try { localStorage.removeItem(UID_KEY); } catch {} }
 export function reset() { G.S = blankState(G.S.avatar?.name && G.S.avatar.name !== 'você' ? G.S.avatar.name : ''); save(); }

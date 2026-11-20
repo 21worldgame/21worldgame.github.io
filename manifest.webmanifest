@@ -26,5 +26,45 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "id": "./",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "categories": [
+    "games"
+  ],
+  "shortcuts": [
+    {
+      "name": "Salão de jogos",
+      "url": "./#mesa",
+      "icons": [
+        {
+          "src": "assets/brand/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Ranking",
+      "url": "./#ranking",
+      "icons": [
+        {
+          "src": "assets/brand/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Sua equipe",
+      "url": "./#equipe",
+      "icons": [
+        {
+          "src": "assets/brand/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }
