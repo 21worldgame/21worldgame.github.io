@@ -1,18 +1,50 @@
 // Telas dos negócios: aba "negócios" (administrar) e as vitrines da loja (marcas e galpões à venda).
 import * as NG from './negocios.js';
-import { G, $, esc, brl, int, say, save, note, confetti } from './store.js';
+import * as Auth from './auth.js';
+import { G, $, esc, brl, int, say, save, note, confetti, profileOf } from './store.js';
 
 const CATS = { banks: { label: 'bancos', list: NG.BANKS, icon: '🏦' }, isps: { label: 'provedores de internet', list: NG.ISPS, icon: '📡' }, markets: { label: 'supermercados', list: NG.MARKETS, icon: '🛒' } };
 const logo = (c, txt) => `<span class="biz-logo" style="--c:${c.color}">${esc(txt.split(' ').map(w => w[0]).join('').slice(0, 3))}</span>`;
+
+// ---------- dono único de cada marca no jogo inteiro (tabela company_owner, supabase/empresas.sql) ----------
+// sem o servidor (tabela ainda não criada ou jogando sem internet) a compra continua funcionando só no aparelho
+let owners = { ok: false, map: {} };
+const listOf = cat => CATS[cat].list;
+const catOfBrand = brand => Object.keys(CATS).find(c => listOf(c)[brand]);
+export async function refreshOwners() {
+  const sb = Auth.sbClient(); if (!sb) return;
+  try {
+    const { data, error } = await sb.from('company_owner').select('brand, owner, owner_name');
+    if (error) { owners = { ok: false, map: {} }; return; }
+    owners = { ok: true, map: Object.fromEntries(data.map(r => [r.brand, r])) };
+  } catch { return; }
+  const me = Auth.account()?.id; if (!me) return;
+  const s = G.S; NG.ensure(s); let changed = false;
+  // acerta o save com o servidor: registra o que é seu, devolve o dinheiro do que outro registrou antes, libera o que você já vendeu
+  for (const cat of Object.keys(CATS)) for (const b of [...s.biz[cat]]) {
+    const row = owners.map[b.brand];
+    if (!row) { const { data } = await sb.rpc('claim_company', { p_brand: b.brand, p_name: profileOf().name }); if (data === 'ok') owners.map[b.brand] = { brand: b.brand, owner: me, owner_name: profileOf().name }; continue; }
+    if (row.owner !== me) {
+      const C = listOf(cat)[b.brand], r = NG.sell(s, cat, b.id), extra = Math.round(C.price * 0.15);
+      s.money += extra; note(`${C.name} já tinha dono (${row.owner_name || 'outro jogador'}): valor devolvido`, (r.value || 0) + extra); changed = true;
+      say(`${C.name} já era de ${row.owner_name || 'outro jogador'}. Devolvemos ${brl((r.value || 0) + extra)} para você.`, true);
+    }
+  }
+  for (const row of Object.values(owners.map)) if (row.owner === me && !s.biz[catOfBrand(row.brand)]?.some(b => b.brand === row.brand)) { await sb.rpc('release_company', { p_brand: row.brand }); delete owners.map[row.brand]; }
+  if (changed) save();
+  if (changed || document.querySelector('#loja-biz:not(:empty), #neg-shop:not(:empty)')) G.render();
+}
+setInterval(refreshOwners, 30000); setTimeout(refreshOwners, 4000);
+const takenBy = brand => { const r = owners.ok && owners.map[brand]; return r && r.owner !== Auth.account()?.id ? (r.owner_name || 'outro jogador') : null; };
 
 // ---------- loja: marcas à venda ----------
 export function shopHTML() {
   const s = G.S; NG.ensure(s);
   const block = (cat, desc) => `<h3>${CATS[cat].icon} ${CATS[cat].label}</h3><p class="muted small">${desc}</p><div class="biz-grid">${Object.entries(CATS[cat].list).map(([id, c]) => {
-    const own = s.biz[cat].some(b => b.brand === id);
+    const own = s.biz[cat].some(b => b.brand === id), dono = !own && takenBy(id);
     const extra = cat === 'banks' ? `${c.staff} funcionários · ${int(c.req)} pedidos de empréstimo por mês` : cat === 'isps' ? `cidade com ${int(c.homes)} casas` : `~${int(c.clients)} clientes por mês · ${c.staff} funcionários`;
-    return `<article class="shopcard${own ? ' is-own' : ''}"><div class="shopcard__photo" style="--img:url(assets/biz/${id}.webp);--c:${c.color}">${logo(c, c.name)}${own ? '<span class="shopcard__badge shopcard__badge--gold">é sua</span>' : ''}</div>
-      <div class="shopcard__body"><h4>${esc(c.name)}</h4><p class="small muted">${extra}</p><div class="shopcard__buy"><span class="shopcard__price">${brl(c.price)}</span>${own ? '' : `<button class="btn btn--gold" data-biz="buy" data-cat="${cat}" data-id="${id}">comprar a marca</button>`}</div></div></article>`; }).join('')}</div>`;
+    return `<article class="shopcard${own ? ' is-own' : dono ? ' is-sold' : ''}"><div class="shopcard__photo" style="--img:url(assets/biz/${id}.webp);--c:${c.color}">${logo(c, c.name)}${own ? '<span class="shopcard__badge shopcard__badge--gold">é sua</span>' : dono ? '<span class="shopcard__badge shopcard__badge--sold">vendida</span>' : ''}</div>
+      <div class="shopcard__body"><h4>${esc(c.name)}</h4><p class="small muted">${extra}</p><div class="shopcard__buy"><span class="shopcard__price">${brl(c.price)}</span>${own ? '' : dono ? `<span class="small">dona: <b>${esc(dono)}</b></span>` : `<button class="btn btn--gold" data-biz="buy" data-cat="${cat}" data-id="${id}">comprar a marca</button>`}</div></div></article>`; }).join('')}</div>`;
   return block('banks', 'Você compra só a marca: o caixa para emprestar sai do seu bolso, e a folha e as despesas também. Os clientes pedem empréstimos pequenos, que crescem devagar com o tempo.')
     + block('isps', 'Construa a rede de fibra (caro), escolha a mensalidade (barata) e veja os assinantes entrando. Lucro mensal pequeno, valorização no longo prazo.')
     + block('markets', 'Clientes, ticket médio, mercadoria, perdas, funcionários e aluguel: preço baixo atrai gente, preço alto espanta.');
@@ -72,15 +104,24 @@ export function render() {
   $('#neg-wh').innerHTML = whHTML();
 }
 
-document.addEventListener('click', e => {
+document.addEventListener('click', async e => {
   const b = e.target.closest('[data-biz]'); if (!b) return;
   const s = G.S, a = b.dataset.biz, id = b.dataset.id; let err = null, msg = '';
-  if (a === 'buy') { const C = CATS[b.dataset.cat].list[id]; if (!confirm(`Comprar a marca ${C.name} por ${brl(C.price)}? Os custos de todo mês saem do seu bolso.`)) return; err = NG.buy(s, b.dataset.cat, id); if (!err) { note(`compra da marca ${C.name}`, -C.price); msg = `${C.name} agora é sua! Administre na aba negócios.`; confetti(60); } }
+  if (a === 'buy') { const C = CATS[b.dataset.cat].list[id]; if (!confirm(`Comprar a marca ${C.name} por ${brl(C.price)}? Ela é única no jogo: depois de sua, ninguém mais compra.`)) return;
+    if (s.money < C.price) return say('Dinheiro insuficiente para comprar a marca.', true);
+    if (owners.ok) {
+      if (!Auth.account()) return say('Entre com uma conta para comprar uma empresa: cada marca tem um dono só no jogo inteiro.', true);
+      b.disabled = true;
+      const { data } = await Auth.sbClient().rpc('claim_company', { p_brand: id, p_name: profileOf().name });
+      if (data !== 'ok') { b.disabled = false; await refreshOwners(); G.render(); return say(data === 'taken' ? `Alguém comprou a ${C.name} antes de você!` : 'Não deu para registrar a compra agora. Tente de novo.', true); }
+      owners.map[id] = { brand: id, owner: Auth.account().id, owner_name: profileOf().name };
+    }
+    err = NG.buy(s, b.dataset.cat, id); if (err && owners.ok) Auth.sbClient().rpc('release_company', { p_brand: id }); if (!err) { note(`compra da marca ${C.name}`, -C.price); msg = `${C.name} agora é sua! Administre na aba negócios.`; confetti(60); } }
   if (a === 'buywh') { const p = NG.whPrice(id, s.month); if (!confirm(`Comprar ${NG.WAREHOUSES[id].label} por ${brl(p)}?`)) return; err = NG.buyWh(s, id); if (!err) { note(`compra de ${NG.WAREHOUSES[id].label}`, -p); msg = 'Galpão pronto: mais espaço no armazém.'; } }
   if (a === 'sellwh') { const v = NG.sellWh(s, id); if (v === -1) err = 'o estoque não cabe sem esse galpão: venda parte do estoque antes.'; else if (v) { note('venda de galpão', v); msg = `Galpão vendido por ${brl(v)}.`; } }
   if (a === 'dep' || a === 'wd') { const v = Number($(`#bk-${id}`).value); err = a === 'dep' ? NG.deposit(s, id, v) : NG.withdraw(s, id, v); if (!err) { note(a === 'dep' ? 'banco: dinheiro colocado no caixa' : 'banco: dinheiro tirado do caixa', a === 'dep' ? -v : v); msg = 'Feito.'; } }
   if (a === 'build') { const n = Number(b.dataset.n), before = s.money; err = NG.build(s, id, n); if (!err) { note('provedor: construção de rede de fibra', s.money - before); msg = 'Rede ampliada: novos assinantes chegam nos próximos meses.'; } }
-  if (a === 'sell') { const x = NG.find(s, b.dataset.cat, id); if (!x || !confirm(`Vender por ${brl(NG.saleValue(s, b.dataset.cat, x))}?`)) return; const r = NG.sell(s, b.dataset.cat, id); err = r.err; if (!err) { note('venda de negócio', r.value); msg = `Vendido por ${brl(r.value)}.`; } }
+  if (a === 'sell') { const x = NG.find(s, b.dataset.cat, id); if (!x || !confirm(`Vender por ${brl(NG.saleValue(s, b.dataset.cat, x))}?`)) return; const brand = x.brand, r = NG.sell(s, b.dataset.cat, id); err = r.err; if (!err) { if (owners.ok) { Auth.sbClient().rpc('release_company', { p_brand: brand }); delete owners.map[brand]; } note('venda de negócio', r.value); msg = `Vendido por ${brl(r.value)}.`; } }
   if (err) return say(err[0].toUpperCase() + err.slice(1), true);
   if (msg) say(msg); save(); G.render();
 });
