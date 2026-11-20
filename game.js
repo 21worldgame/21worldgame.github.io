@@ -685,6 +685,7 @@ function feiraSell() {
 G.onLobby = l => { TUI.attach(l); CHUI.attach(l); SHUI.attach(l); LEU.attach(l); };
 G.onAuctionMsg = d => LEU.onMsg(d);
 G.mineOwnCard = () => MIU.ownCard();
+G.mineShopCard = () => MIU.shopCard();
 G.onShopMsg = (d, peer) => SHUI.onMsg(d, peer);
 G.onPeers = () => { if (currentTab === 'inventario') renderInv(); SHUI.onPeers(); };
 document.addEventListener('submit', e => { if (e.target.id === 'tr-chat-form') { e.preventDefault(); TUI.chat(); } });
@@ -1217,7 +1218,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 20;
+const APP_VERSION = 21;
 let updateShown = false, updateMsg = '';
 async function checkUpdate() {
   if (updateShown) return;

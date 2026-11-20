@@ -30,6 +30,7 @@ export function whHTML() {
 
 // ---------- aba negócios ----------
 export function render() {
+  if ($('#neg-shop')) $('#neg-shop').innerHTML = (G.mineShopCard?.() || '') + shopHTML();   // bancos, provedores e mercados à venda também aqui, não só na loja
   const el = $('#neg-list'); if (!el) return;
   const s = G.S; NG.ensure(s); const m = s.month || 1;
   const own = ['banks', 'isps', 'markets'].reduce((t, c) => t + s.biz[c].length, 0);

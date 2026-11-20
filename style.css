@@ -2117,3 +2117,5 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .biz-own__ph { position: relative; width: 150px; height: 110px; border-radius: 14px; background: linear-gradient(180deg, transparent 40%, rgba(7, 11, 20, .85)), var(--img) center / cover; box-shadow: inset 0 0 0 1px var(--glass-edge); }
 .biz-own__ph .biz-logo { position: absolute; left: 8px; bottom: 8px; width: 46px; height: 46px; border: 2px solid #0b1020; }
 @media (max-width: 40rem) { .biz-own__ph { width: 100%; height: 140px; } }
+
+.neg-shop-h { margin-top: 28px; }
