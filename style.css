@@ -1459,7 +1459,7 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 /* mapa: ícones dos lotes */
 .lpin { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; font-size: 15px; line-height: 1; box-shadow: 0 3px 8px rgba(0,0,0,.6); border: 2px solid #fff; background: #1d2338; transition: transform .15s; }
 .lpin:hover { transform: scale(1.25); }
-.lpin--offer { background: #f5b833; } .lpin--own { background: #2ee66b; } .lpin--rent { background: #8b5cf6; } .lpin--npc { background: #334155; border-color: #cbd5e1; }
+.lpin--offer { background: #f5b833; } .lpin--own { background: #2ee66b; } .lpin--rent { background: #8b5cf6; } .lpin--npc { background: #334155; border-color: #cbd5e1; } .lpin--player { background: #0ea5e9; border-color: #e0f2fe; }
 /* relógio: nome do mês */
 .worldclock b { font-size: .95rem; text-transform: capitalize; white-space: nowrap; }
 .worldclock small { white-space: nowrap; }

@@ -139,9 +139,11 @@ async function pull() {
 }
 // card = o perfil completo que os outros veem ao clicar (coluna nova: supabase/perfil.sql). Privado: só os troféus.
 let noCardUntil = 0;   // coluna card faltando: tenta de novo em 5 min (não desiste para sempre)
+// terras próprias que todos veem no mapa (só o essencial; perfil privado não aparece)
+const mapLandsOf = s => (s.lands || []).filter(l => l.own && Number.isFinite(l.lat) && Number.isFinite(l.lon)).slice(0, 30).map(l => ({ r: l.region, c: l.city || '', u: l.use, ha: l.ha, lat: l.lat, lon: l.lon }));
 function profileRow() {
   const s = G.S, row = { user_id: user.id, name: cleanName(s.avatar?.name) || 'jogador', level: s.level || 1, worth: Math.round(L.netWorth(s)), rank: L.rank(L.netWorth(s)), look: s.avatar || null, updated_at: new Date().toISOString() };
-  if (Date.now() > noCardUntil) { const { look, name, level, worth, rank, ...p } = profileOf(s); row.card = p.private ? { private: true, trophies: p.trophies } : p; }
+  if (Date.now() > noCardUntil) { const { look, name, level, worth, rank, ...p } = profileOf(s); row.card = p.private ? { private: true, trophies: p.trophies } : { ...p, mapLands: mapLandsOf(s) }; }
   return row;
 }
 // perfil de outro jogador da nuvem (ao clicar no ranking)
@@ -172,6 +174,17 @@ function scheduleSync() {
   if (!user) return;
   clearTimeout(timer);
   timer = setTimeout(() => push().catch(() => {}), 1500);   // quase em tempo real: outro aparelho vê o progresso em segundos
+}
+// terras dos outros jogadores de verdade, para o mapa
+let mapCache = null;
+export async function mapLands(maxAge = 60000) {
+  if (!sb || !user) return [];
+  if (mapCache && Date.now() - mapCache.at < maxAge) return mapCache.rows;
+  const { data, error } = await sb.from('public_profiles').select('user_id, name, ml:card->mapLands').not('card->mapLands', 'is', null).limit(300);
+  if (error) return mapCache?.rows || [];
+  const rows = data.filter(p => p.user_id !== user.id && Array.isArray(p.ml)).flatMap(p => p.ml.map(l => ({ owner: p.name, region: String(l.r || ''), city: String(l.c || ''), use: String(l.u || ''), ha: Number(l.ha) || 0, lat: Number(l.lat), lon: Number(l.lon) }))).filter(l => Number.isFinite(l.lat) && Number.isFinite(l.lon));
+  mapCache = { at: Date.now(), rows };
+  return rows;
 }
 export async function ranking(maxAge = 60000) {
   if (!sb || !user) return null;

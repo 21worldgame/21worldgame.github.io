@@ -296,6 +296,7 @@ function lotPin(LF, lat, lon, icon, cls, tip, pop) {
   if (pop) m.bindPopup(pop);
   return m;
 }
+let playerLands = [], playerLandsAt = 0;
 function drawLots() {
   const LF = window.L;
   if (!lmap || !LF) return;
@@ -306,6 +307,9 @@ function drawLots() {
     const icon = r.sede ? LOT_ICON.sede : LOT_ICON[r.use] || '🐂';
     lots.addLayer(lotPin(LF, r.lat, r.lon, icon, 'lpin--npc', `<strong>Dono: ${esc(r.owner)}</strong><br>${r.ha} ha de ${esc(r.use)}, perto de ${esc(r.city)}`));
   }
+  // terras de outros jogadores de verdade (buscadas na nuvem a cada 60 s)
+  for (const r of playerLands) lots.addLayer(lotPin(LF, r.lat, r.lon, r.use === 'pasto' ? LOT_ICON.pasto : LOT_ICON[r.use] || '🌾', 'lpin--player', `<strong>Dono: ${esc(r.owner)}</strong><br>${r.ha} ha de ${esc(r.use)}${r.city ? `, perto de ${esc(r.city)}` : ''}`));
+  if (Date.now() - playerLandsAt > 60000) { playerLandsAt = Date.now(); Auth.mapLands?.().then(rows => { if (JSON.stringify(rows) !== JSON.stringify(playerLands)) { playerLands = rows; drawLots(); } }).catch(() => {}); }
   const me = esc(S().avatar?.name || 'você');
   const all = [...S().offers.map(l => [l, 'offer']), ...S().lands.map(l => [l, l.own ? 'own' : 'rent'])];
   for (const [l, kind] of all) {
@@ -1252,7 +1256,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 42;
+const APP_VERSION = 43;
 let updateShown = false, updateMsg = '';
 async function checkUpdate() {
   if (updateShown) return;
