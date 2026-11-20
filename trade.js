@@ -104,7 +104,7 @@ export function apply(s, give, receive) {
     if (i.kind === 'car') s.cars = s.cars.filter(c => c.id !== i.data.id);
     if (i.kind === 'animal') s.stable.animals = s.stable.animals.filter(a => a.id !== i.data.id);
     if (i.kind === 'land') s.lands = s.lands.filter(l => l.id !== i.data.id);
-    if (i.kind === 'player') s.fut.squad = s.fut.squad.filter(p => p.id !== i.data.id);
+    if (i.kind === 'player' && s.fut) s.fut.squad = s.fut.squad.filter(p => p.id !== i.data.id);
     if (i.kind === 'card') s.cards = s.cards.filter(c => c.id !== i.data.id);
     if (i.kind === 'acc') { s.owned = s.owned.filter(t => t !== `acc:${i.acc}`); if (s.avatar?.acc === i.acc) s.avatar.acc = 'nenhum'; }
     if (i.kind === 'galpao') s.biz.wh = s.biz.wh.filter(w => w.id !== i.data.id);

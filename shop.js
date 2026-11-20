@@ -53,7 +53,7 @@ export function housePrice(s, it) {
 export function blocked(s, it) {
   if (it.kind === 'land' && it.data.crop) return 'terra com lavoura plantada: espere a colheita.';
   if (it.kind === 'aviario' && GR.lotOf(s, it.id)) return 'venda o lote de frangos antes.';
-  if (it.kind === 'player' && s.fut.squad.length <= 14) return 'o elenco precisa de pelo menos 14 jogadores.';
+  if (it.kind === 'player' && (s.fut?.squad?.length || 0) <= 14) return 'o clube precisa de pelo menos 14 jogadores. Para vender todos, venda o clube inteiro.';
   if (it.kind === 'galpao' && NG.tons(s) > NG.capacity(s) - NG.WAREHOUSES[it.data.type].cap) return 'o estoque não cabe sem esse galpão: venda parte antes.';
   return null;
 }
@@ -66,8 +66,8 @@ export function remove(s, it) {
   if (it.kind === 'land') s.lands = s.lands.filter(l => l.id !== it.id);
   if (it.kind === 'good') s.stock[it.good] = Math.max(0, (s.stock[it.good] || 0) - it.qty);
   if (it.kind === 'card') s.cards = s.cards.filter(c => c.id !== it.id);
-  if (it.kind === 'player') s.fut.squad = s.fut.squad.filter(p => p.id !== it.id);
-  if (it.kind === 'club') delete s.fut;
+  if (it.kind === 'player' && s.fut) s.fut.squad = s.fut.squad.filter(p => p.id !== it.id);
+  if (it.kind === 'club') { const ids = new Set((s.fut?.squad || []).map(p => `player:${p.id}`)); s.shop = (s.shop || []).filter(l => !ids.has(l.key)); delete s.fut; }
   if (it.kind === 'acc') { s.owned = s.owned.filter(t => t !== `acc:${it.acc}`); if (s.avatar?.acc === it.acc) s.avatar.acc = 'nenhum'; }
   if (it.kind === 'aviario') s.granja.houses = s.granja.houses.filter(h => h.id !== it.id);
   if (it.kind === 'galpao') s.biz.wh = s.biz.wh.filter(w => w.id !== it.id);

@@ -142,7 +142,7 @@ export function sell(id) {
   const p = f().squad.find(x => x.id === id);
   if (!confirm(`Vender ${p.name} por ${brl(Math.round(FT.value(p) * 0.8))}? Propostas de clubes costumam pagar mais.`)) return;
   const v = FT.sell(G.S, id);
-  if (v < 0) return say('O elenco precisa de pelo menos 14 jogadores.', true);
+  if (v < 0) return say('O clube precisa de pelo menos 14 jogadores. Para vender todos, venda o clube inteiro no inventário.', true);
   note(`venda de ${p.name}`, v); say(`${p.name} vendido.`);
 }
 export function answer(id, yes) {

@@ -50,7 +50,7 @@ function cardFor(s, it, mine) {
     <div class="scard__media">${media(it)}<span class="scard__kind">${esc(kindName[it.kind] || it.kind)}</span>${l ? '<span class="scard__on">anunciado</span>' : ''}</div>
     <div class="scard__body"><h4>${esc(it.label)}</h4>
       <p class="small">a loja paga agora <b class="good">${brl(house)}</b>${it.value ? ` <span class="muted">· vale ${brl(it.value)}</span>` : ''}</p>
-      ${b ? `<p class="small bad">${esc(b)}</p>` : l
+      ${b ? `<p class="small bad">${esc(b)}</p>${l ? `<button class="btn btn--glass btn--sm" data-act="shop-unlist" data-id="${esc(l.id)}">tirar anúncio</button>` : ''}${it.kind === 'player' && s.fut?.club ? `<button class="btn btn--gold btn--sm" data-act="shop-sell" data-id="club:club">vender o clube inteiro por ${brl(SH.clubValue(s.fut))}</button>` : ''}` : l
         ? `<p class="small">anunciado por <b>${brl(l.price)}</b></p><button class="btn btn--glass btn--sm" data-act="shop-unlist" data-id="${esc(l.id)}">tirar anúncio</button>`
         : `<div class="row"><label class="visually-hidden" for="sp-${esc(it.key)}">preço</label><input class="input input--s" id="sp-${esc(it.key)}" type="number" min="100" step="100" value="${Math.round(Math.max(house, it.value || 0) * 1.1 / 100) * 100}" inputmode="numeric">
            <button class="btn btn--gold btn--sm" data-act="shop-list" data-id="${esc(it.key)}">anunciar</button></div>
