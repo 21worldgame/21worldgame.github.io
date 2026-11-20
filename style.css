@@ -324,6 +324,10 @@ kbd { display: inline-grid; place-items: center; min-width: 1.9em; height: 1.9em
 .tile strong { font: 700 var(--text-2xl)/1 var(--font-display); }
 .buybar { display: flex; align-items: end; gap: var(--space-lg); flex-wrap: wrap; padding: var(--space-md) var(--space-lg); margin: var(--space-md) 0 var(--space-sm); }
 .buybar h3 { margin: 0; }
+.herd-guide { padding: var(--space-md) var(--space-lg); margin: var(--space-sm) 0 var(--space-md); }
+.herd-guide h3 { margin: 0 0 var(--space-xs); }
+.herd-guide ol { margin: var(--space-xs) 0; padding-left: 1.3em; display: grid; gap: .35em; }
+.herd-guide__now { font-weight: 600; }
 .buybar > div:first-child { margin-right: auto; }
 .hcard, .tcard { padding: var(--space-md); display: grid; gap: var(--space-xs); align-content: start; }
 .hcard__top, .tcard__top { display: flex; justify-content: space-between; align-items: center; gap: var(--space-xs); }

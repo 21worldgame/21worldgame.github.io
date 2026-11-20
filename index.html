@@ -549,7 +549,17 @@
           <input class="input input--s" name="calves" type="number" min="1" value="10" inputmode="numeric"></label>
         <button class="btn btn--gold" data-act="buy-calves">dar o lance</button>
       </div>
-      <p class="muted small">Não tem terra? Pode comprar mesmo assim: o gado vai para o confinamento terceirizado. No pasto próprio cada cabeça engorda 18 kg por mês, de graça. A arroba é sobre a carcaça (cerca de 52% do peso vivo), e o boi gordo dá lucro perto dos 450 kg.</p>
+      <div class="glass herd-guide">
+        <h3>como funciona o gado, passo a passo</h3>
+        <p class="small herd-guide__now" id="herd-now"></p>
+        <ol class="small">
+          <li><b>Tenha pasto.</b> Na aba de terras, compre ou arrende uma terra de <b>pasto</b>. Cada hectare comporta mais ou menos 1 boi.</li>
+          <li><b>Compre bezerros</b> aqui em cima, em "dar o lance". Eles entram no pasto sozinhos, você não precisa colocar.</li>
+          <li><b>Espere engordar.</b> No seu pasto cada boi ganha 18 kg por mês, de graça. Com uns 450 kg ele está gordo.</li>
+          <li><b>Venda.</b> Quando o lote estiver "pronto para abate", clique em abater, ou em revender vivo.</li>
+        </ol>
+        <p class="muted small">Sem terra, também dá: o boi vai para um "hotel de gado" (confinamento) e você paga uma diária por cabeça. Dá menos lucro. Arroba é a unidade de peso do preço do boi (15 kg de carne).</p>
+      </div>
       <div class="cards" id="herd"></div>
       <div class="glass abate-box" id="abate-box"></div>
     </section>

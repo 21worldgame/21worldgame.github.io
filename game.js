@@ -344,7 +344,11 @@ function renderGado() {
     ['cabeças', int(n)], ['pasto livre', `${int(Math.max(0, cap - n))} de ${int(cap)}`], ['peso médio', n ? `${int(avg)} kg` : '—'], ['valor do rebanho', brl(L.herdValue(s))],
   ].map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${v}</strong></div>`).join('');
   $('#herd-warn').hidden = n <= cap;
-  $('#herd-warn').textContent = `${int(n - cap)} cabeças no confinamento terceirizado (sem pasto próprio): R$ ${L.BOITEL_COST} por cabeça por mês, engordam ${L.BOITEL_GAIN} kg. Com terra própria o pasto sai de graça.`;
+  $('#herd-warn').textContent = `${int(n - cap)} bois estão num hotel de gado, porque seu pasto não tem lugar para todos. Você paga R$ ${L.BOITEL_COST} por boi por mês e eles engordam só ${L.BOITEL_GAIN} kg. Compre ou arrende mais terra de pasto para parar de pagar.`;
+  $('#herd-now').textContent = cap <= 0
+    ? (n ? 'Agora: você não tem pasto, então seus bois estão no hotel de gado (pago). Passo 1: consiga uma terra de pasto.' : 'Agora: você não tem pasto nem bois. Comece pelo passo 1, ou compre bezerros já (vão para o hotel de gado).')
+    : n > cap ? `Agora: seu pasto tem ${int(cap)} lugares e você tem ${int(n)} bois. Faltam ${int(n - cap)} lugares, compre mais terra de pasto.`
+    : `Agora: seu pasto tem ${int(cap)} lugares e ${int(cap - n)} estão livres. Pode comprar até ${int(cap - n)} bezerros sem pagar hotel.`;
   $('#calf-price').textContent = `${brl(s.prices.bezerro)} por bezerro de 180 kg${L.hasVehicle(s, 'caminhao') ? '. Seu caminhão leva o gado sem taxa.' : ''}`;
   $('#herd').innerHTML = s.herd.length ? s.herd.map((h, i) => {
     const val = h.heads * L.arrobas(h.kg) * s.prices.arroba, k = Math.min(1, (h.kg - 180) / (450 - 180));
@@ -357,7 +361,7 @@ function renderGado() {
       <div class="herd-acts"><button class="btn btn--glass btn--sm" data-act="sell-herd" data-id="${h.id}">revender vivo ${brl(h.heads * AB.perHead(s, h.kg, 'vivo', L.cattleFee(s)) * PK.mult(s, 'cattle'))}</button>
         <button class="btn btn--gold btn--sm" data-act="ab-kill" data-id="${h.id}">abater ${brl(h.heads * (AB.capLeft(s) >= h.heads ? AB.perHead(s, h.kg, 'proprio') : AB.perHead(s, h.kg, 'terceiros')))}</button></div>
       <p class="small muted">${AB.capLeft(s) >= h.heads ? 'abate no seu frigorífico (com couro)' : s.abate?.owned ? 'seu frigorífico lotou este mês: abate em terceiros' : 'abate em frigorífico de terceiros'}</p></article>`;
-  }).join('') : '<p class="empty glass">Sem rebanho. Dê um lance no leilão de bezerros e engorde no seu pasto.</p>';
+  }).join('') : '<p class="empty glass">Você ainda não tem bois. Compre bezerros no leilão acima: se tiver pasto, eles vão para lá sozinhos.</p>';
 }
 
 // ---------- canavial ----------
@@ -1247,7 +1251,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 34;
+const APP_VERSION = 35;
 let updateShown = false, updateMsg = '';
 async function checkUpdate() {
   if (updateShown) return;
