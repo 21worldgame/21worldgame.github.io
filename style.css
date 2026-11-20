@@ -2183,3 +2183,13 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 @media (prefers-reduced-motion: reduce) {
   .podium__frame, .podium__crown, .podium__spark, .rkrow.is-top1, .rkrow.is-top2, .rkrow.is-top3, .rkrow.is-top1::after, .rkrow.is-top2::after, .rkrow.is-top3::after { animation: none; }
 }
+
+/* suínos: barracão em card com foto pequena */
+#sn2-barns { display: grid; gap: 12px; }
+.gr-card { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 16px; align-items: start; padding: 14px; border-radius: 18px; }
+.gr-card > img { width: 170px; height: 120px; object-fit: cover; border-radius: 14px; box-shadow: inset 0 0 0 1px var(--glass-edge), 0 10px 24px -14px rgba(0, 0, 0, .9); }
+.gr-card > div { display: grid; gap: 8px; min-width: 0; }
+.gr-card h4 { margin: 0; font: 900 1.1rem/1.2 var(--font-display); }
+.gr-card .sn2-lot { display: grid; gap: 6px; }
+@media (max-width: 40rem) { .gr-card { grid-template-columns: 96px minmax(0, 1fr); gap: 12px; } .gr-card > img { width: 96px; height: 80px; } }
+.gr-card .btn { justify-self: start; }
