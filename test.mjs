@@ -1172,6 +1172,9 @@ console.log('mina ok');
 // preços da granja/suínos voltam ao base: frango derrubado se recupera, ração disparada cai
 { const s = L.newState(() => 0.5); s.prices.frango = 3.9; s.prices.racao = 2.6; for (let i = 0; i < 40; i++) L.tick(s, () => 0.5);
   assert.ok(Math.abs(s.prices.frango - 6.2) < 0.2 && Math.abs(s.prices.racao - 1.9) < 0.1, 'preço ancorado ' + s.prices.frango + ' ' + s.prices.racao); console.log('preço ancorado ok'); }
+// arroba derrubada volta para a faixa: boi de 12 meses no boitel volta a dar lucro sobre o bezerro
+{ const s = L.newState(() => 0.5); s.prices.arroba = 121; L.tick(s, () => 0.5); assert.ok(s.prices.arroba >= 248, 'arroba ancorada ' + s.prices.arroba);
+  assert.ok(L.arrobas(180 + 12 * L.BOITEL_GAIN) * 310 * 0.99 > 2600 + 12 * L.BOITEL_COST, 'gado no boitel dá lucro no preço base'); console.log('arroba ancorada ok'); }
 // granja: o lote guarda o gasto total (lucro real na venda); chapéu de granjeiro paga 8% a mais no frango
 { const s = { money: 1e6, prices: {}, nextId: 1 }; GR.ensure(s); GR.buyHouse(s, 'pequeno'); const hid = s.granja.houses[0].id;
   const r0 = GR.house(s, hid, 5000, true); const l = s.granja.lots[0]; assert.equal(l.cost, r0.cost);

@@ -184,7 +184,8 @@ export function newState(rng = Math.random) {
 
 const id = s => s.nextId++;
 const walk = (v, rng, pct) => v * (1 + (rng() * 2 - 1) * pct);
-const ANCHOR = { ...GR_PRICES, ...SU_PRICES };
+// arroba/bezerro/grãos também ancorados: soltos derivavam (arroba chegou a ~R$ 120) e o boi engordado vendia abaixo do bezerro
+const ANCHOR = { soja: 130, milho: 60, cafe: 1400, arroba: 310, bezerro: 2600, cana: 150, laranja: 38, ...GR_PRICES, ...SU_PRICES };
 
 export function refreshOffers(s, rng = Math.random) {
   s.offers = Array.from({ length: T.landOffers }, () => {
