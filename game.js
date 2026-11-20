@@ -1256,19 +1256,28 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 43;
+const APP_VERSION = 44;
 let updateShown = false, updateMsg = '';
+let checking = false;
 async function checkUpdate() {
-  if (updateShown) return;
+  if (updateShown || checking) return;   // uma verificação por vez (senão saem dois avisos e duas contagens)
+  checking = true;
+  try { await checkUpdateNow(); } finally { checking = false; }
+}
+async function checkUpdateNow() {
   try {
     const r = await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' });
     if (!r.ok) return;
     const j = await r.json(), v = Number(j.v) || 0;
     if (v <= APP_VERSION) return;
-    // já recarregou por causa desta versão e ainda veio código velho (cache): não fica em laço, só mostra o botão
+    // já recarregou por causa desta versão: nunca de novo (sem laço); o código novo entra sozinho na próxima abertura
     let tried = false; try { tried = sessionStorage.getItem('21world.updTried') === String(v); } catch {}
+    if (tried) return;
+    // o GitHub publica o version.json antes do resto: só recarrega quando o código novo já está no ar
+    const g = await fetch(`game.js?t=${Date.now()}`, { cache: 'no-store' }).then(x => (x.ok ? x.text() : '')).catch(() => '');
+    if ((Number(g.match(/APP_VERSION = (\d+)/)?.[1]) || 0) < v) return;   // ainda propagando: tenta de novo em 30 s
     updateMsg = String(j.msg || '').slice(0, 140);
-    showUpdate(!tried, v);
+    showUpdate(true, v);
   } catch {}
 }
 // a página recarrega sozinha em 15 s, a não ser que a pessoa esteja no meio de uma mão, corrida, turno ou troca
@@ -1284,16 +1293,20 @@ function showUpdate(auto = true, v = 0) {
   updateShown = true;
   try { sessionStorage.setItem('21world.updTried', String(v)); } catch {}
   const host = [...document.querySelectorAll('dialog[open]')].pop() || document.body;   // janela aberta deixa o resto sem clique
-  host.insertAdjacentHTML('beforeend', `<div class="upd" role="alert"><span class="upd__dot" aria-hidden="true"></span>
-    <span><strong>Nova atualização do 21 World!</strong> <span id="upd-txt">${updateMsg ? esc(updateMsg) + ' ' : ''}${auto ? 'Recarregando em 15 s.' : ''} Seu progresso fica salvo.</span></span>
-    <button class="btn btn--gold btn--sm" type="button" id="upd-go">recarregar agora</button></div>`);
+  host.insertAdjacentHTML('beforeend', `<div class="upd" role="status" title="${esc(updateMsg)}"><span class="upd__dot" aria-hidden="true"></span>
+    <span><strong>Atualização</strong> <span id="upd-txt">recarrega em 15 s</span></span>
+    <button class="upd__go" type="button" id="upd-go">agora</button><button class="upd__x" type="button" id="upd-x" aria-label="fechar aviso">×</button></div>`);
   $('#upd-go').addEventListener('click', doReload);
+  $('#upd-x').addEventListener('click', () => { closed = true; document.querySelector('.upd')?.remove(); });
+  let closed = false; const node = document.querySelector('.upd');
   if (!auto) return;
   let left = 15;
   const t = setInterval(() => {
-    if (busyNow()) { $('#upd-txt').textContent = 'Recarrega assim que você terminar a jogada. Seu progresso fica salvo.'; return; }
+    if (closed) { clearInterval(t); return; }
+    if (!node.isConnected) document.body.append(node);   // a janela onde estava fechou: volta para a tela
+    if (busyNow()) { $('#upd-txt').textContent = 'depois da jogada'; return; }
     if (--left <= 0) { clearInterval(t); doReload(); return; }
-    $('#upd-txt').textContent = `Recarregando em ${left} s. Seu progresso fica salvo.`;
+    $('#upd-txt').textContent = `recarrega em ${left} s`;
   }, 1000);
 }
 checkUpdate(); setInterval(checkUpdate, 30000);
