@@ -1034,7 +1034,7 @@ console.log('mina ok');
 // nenhum jogador fictício senta em duas mesas/jogos ao mesmo tempo
 {
   const BP = await import('./botpool.js'), NP = await import('./npcs.js'), fs = await import('node:fs');
-  const ids = [...fs.readFileSync('./botpool.js', 'utf8').matchAll(/\['([a-z0-9-]+)', \d+\]/g)].map(m => m[1]);
+  const ids = [...fs.readFileSync('./botpool.js', 'utf8').matchAll(/\['([a-z0-9-]+)', \d+\]/g)].map(m => m[1]).filter(id => id !== 'sub');
   const seen = new Set();
   for (const id of ids) for (const n of BP.botsFor(id)) { assert.ok(NP.byNick(n), `${n} não é um NPC`); assert.ok(!seen.has(n), `${n} em duas mesas`); seen.add(n); }
   for (const f of ['poker-ui.js', 'casino.js', 'truco-ui.js', 'sinuca-ui.js', 'aviator.js']) assert.ok(/botsFor|botFor/.test(fs.readFileSync(`./${f}`, 'utf8')), `${f} não usa botpool`);

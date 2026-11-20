@@ -60,6 +60,9 @@ for (let k = 0; EXTRA.length < 140 && k < 2000; k++) {
     look: { name: nick, skin: 1 + Math.floor(r0(k + 2500) * 5), hair: HAIR[Math.floor(r0(k + 2900) * 6)], hairColor: 1 + Math.floor(r0(k + 3300) * 5), beard: ['nenhuma', 'por fazer', 'cavanhaque', 'bigode', 'cheia'][Math.floor(r0(k + 3700) * 5)], eyes: 1 + (i % 4), outfit: OUT[Math.floor(r0(k + 4100) * 6)], cloth: 1 + Math.floor(r0(k + 4500) * 6), acc: ACC[Math.floor(r0(k + 4900) * ACC.length)] } });
 }
 export const NPCS = [...BASE, ...EXTRA];
+// folga: jogadores fora do jogo até a hora indicada (UTC). 12:20 de Brasília = 15:20 UTC. Apague a linha para voltarem antes.
+export const AWAY = { 'ReiDoGado': Date.UTC(2026, 10, 21, 15, 20), 'A Boiadeira': Date.UTC(2026, 10, 21, 15, 20) };
+export const isAway = (n, now = Date.now()) => (AWAY[n?.nick ?? n] || 0) > now;
 export const byId = id => NPCS.find(n => n.id === id);
 export const byNick = nick => NPCS.find(n => n.nick === nick);
 export const nicks = (from, n) => Array.from({ length: n }, (_, k) => NPCS[(from + k * 7) % NPCS.length].nick);
@@ -103,9 +106,9 @@ export function onlineCount(now = Date.now()) {
 // quem está online agora (rodízio a cada 20 min; sempre os mesmos para todos os aparelhos)
 export function onlineSet(now = Date.now()) {
   const slot = Math.floor(now / 1200000);
-  return new Set([...NPCS].sort((a, b) => hash(a.i * 97 + slot) - hash(b.i * 97 + slot)).slice(0, Math.min(NPCS.length, onlineCount(now))).map(n => n.id));
+  return new Set([...NPCS].filter(n => !isAway(n, now)).sort((a, b) => hash(a.i * 97 + slot) - hash(b.i * 97 + slot)).slice(0, Math.min(NPCS.length, onlineCount(now))).map(n => n.id));
 }
 export function onlineNow(now = Date.now(), max = 12) {
   const slot = Math.floor(now / 1200000), want = Math.min(NPCS.length, Math.max(4, Math.round(onlineCount(now) / 5)));
-  return [...NPCS].sort((a, b) => hash(a.i * 97 + slot) - hash(b.i * 97 + slot)).slice(0, Math.min(max, want));
+  return [...NPCS].filter(n => !isAway(n, now)).sort((a, b) => hash(a.i * 97 + slot) - hash(b.i * 97 + slot)).slice(0, Math.min(max, want));
 }
