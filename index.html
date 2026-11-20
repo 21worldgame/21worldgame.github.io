@@ -130,7 +130,7 @@
     <!-- CASSINO: salão de mesas e a mesa -->
     <section id="p-mesa" role="tabpanel" aria-labelledby="t-mesa" class="panel">
       <div class="subtabs" role="group" aria-label="jogos do cassino">
-        <button class="subtab is-on" data-sub="21">vinte e um</button><button class="subtab" data-sub="roleta">roleta</button><button class="subtab" data-sub="aviator">aviator</button><button class="subtab subtab--hot" data-sub="truco">truco</button><button class="subtab subtab--hot" data-sub="sinuca">sinuca</button>
+        <button class="subtab is-on" data-sub="21">vinte e um</button><button class="subtab" data-sub="roleta">roleta</button><button class="subtab" data-sub="aviator">aviator</button><button class="subtab subtab--hot" data-sub="truco">truco</button><button class="subtab subtab--hot" data-sub="sinuca">sinuca</button><button class="subtab subtab--hot" data-sub="poker">pôquer</button>
       </div>
       <div id="sub-21" class="sub">
       <div id="lobby" class="lobby">
@@ -327,6 +327,32 @@
           <p class="muted small">Mire movendo o dedo ou o mouse na mesa (setas ajustam fino), escolha a força e taque. Espaço também taca.</p>
         </div>
       </div>
+
+      <!-- POKER -->
+      <div id="sub-poker" class="sub" hidden>
+        <div id="pk-lobby">
+          <div class="lhero lhero--poker"><div class="lhero__txt"><span class="lhero__kicker"><i></i>texas hold'em</span><h2>pôquer</h2><p>Duas cartas na mão, cinco na mesa: monte o melhor jogo, aposte, blefe e leve o pote. Sente numa mesa da casa ou crie a sua e chame os amigos.</p></div>
+            <div class="lhero__pot"><span>você senta com</span><strong>100</strong><small>big blinds e leva o que ganhar</small></div></div>
+          <div class="cards cards--tables" id="pk-tables"></div>
+          <details class="lobby__friends"><summary>jogar com amigos: criar mesa de pôquer ou entrar com código</summary>
+            <div class="glass lobby__bar">
+              <form id="pk-create" class="row" onsubmit="return false"><label class="field"><span>nome da mesa</span><input class="input" name="pname" maxlength="24" placeholder="pôquer dos amigos"></label>
+                <label class="field"><span>big blind (compra = 100x)</span><select class="input" name="pbb"><option>10</option><option selected>50</option><option>200</option><option>1000</option></select></label>
+                <label class="field"><span>quem vê</span><select class="input" name="pvis"><option value="pub">todos no salão</option><option value="priv">só com o link</option></select></label>
+                <button class="btn btn--gold" type="button" data-pk="create">criar mesa de pôquer</button></form>
+              <div class="row"><label class="field"><span>código de convite</span><input class="input" id="pk-code" maxlength="12" autocomplete="off" placeholder="ex.: k3f9q2"></label><button class="btn btn--glass" type="button" data-pk="code">entrar</button></div>
+            </div></details>
+          <details class="lobby__friends pk-ranks"><summary>ordem das mãos (da mais forte para a mais fraca)</summary>
+            <ol class="glass pk-ranklist"><li><b>royal flush</b> A K Q J 10 do mesmo naipe</li><li><b>straight flush</b> sequência do mesmo naipe</li><li><b>quadra</b> quatro cartas iguais</li><li><b>full house</b> trinca + par</li><li><b>flush</b> cinco do mesmo naipe</li><li><b>sequência</b> cinco em ordem (o ás vale alto ou baixo)</li><li><b>trinca</b> três iguais</li><li><b>dois pares</b></li><li><b>um par</b></li><li><b>carta alta</b></li></ol></details>
+        </div>
+        <div id="pk-room" class="pk-room" hidden>
+          <div class="roombar"><button class="btn btn--glass" data-pk="leave">levantar da mesa</button><h2 id="pk-name">pôquer</h2><span class="pk-blinds" id="pk-blinds"></span><button class="btn btn--glass" data-pk="invite" id="pk-invite" hidden>convidar</button></div>
+          <div class="pk-felt"><div class="pk-center" id="pk-center"></div><div id="pk-seats"></div></div>
+          <p class="tstatus" id="pk-msg" aria-live="polite"></p>
+          <div class="pk-hand" id="pk-hand"></div>
+          <div class="pk-actions" id="pk-actions"></div>
+        </div>
+      </div>
     </section>
 
     <!-- TRADER -->
@@ -411,6 +437,7 @@
       </div>
       <div class="rk-me glass" id="rk-me"></div>
       <div class="subtabs" role="group" aria-label="categoria"><button class="subtab is-on" data-act="rk-cat" data-id="worth" data-rkcat="worth">patrimônio</button><button class="subtab" data-act="rk-cat" data-id="level" data-rkcat="level">nível</button><button class="subtab" data-act="rk-cat" data-id="farm" data-rkcat="farm">fazendeiros</button><button class="subtab" data-act="rk-cat" data-id="casino" data-rkcat="casino">cassino</button></div>
+      <label class="rk-search"><input class="input" id="rk-search" aria-label="buscar jogador pelo nome" type="search" placeholder="🔎 buscar jogador pelo nome" autocomplete="off" maxlength="30"></label>
       <p class="rk-count" id="rk-count"></p>
       <div class="rk-grid">
         <div><ol class="rk-list glass" id="rk-list"></ol><div class="rk-pages" id="rk-pages"></div></div>

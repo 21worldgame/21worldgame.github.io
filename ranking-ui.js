@@ -6,7 +6,7 @@ import * as W from './world.js';
 import { G, $, esc, brl, int, profileOf } from './store.js';
 import { avatarSVG } from './avatar.js';
 
-let cat = 'worth', last = new Map(), page = 0, onlyOn = false;
+let cat = 'worth', last = new Map(), page = 0, onlyOn = false, query = '';
 const PER = 25;
 const money = v => new Intl.NumberFormat('pt-BR', { notation: v >= 1e6 ? 'compact' : 'standard', style: 'currency', currency: 'BRL', maximumFractionDigits: v >= 1e6 ? 2 : 0 }).format(v);
 const CATS = {
@@ -18,6 +18,8 @@ const CATS = {
 export const setCat = c => { if (CATS[c]) { cat = c; page = 0; render(); } };
 export const setPage = p => { page = Math.max(0, Number(p) || 0); render(); document.getElementById('rk-count')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); };
 export const toggleOnline = () => { onlyOn = !onlyOn; page = 0; render(); };
+const fold = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+export const search = q => { query = fold(q).trim(); page = 0; render(); };
 
 // junta os dados extras (hectares, maior prêmio) que cada fonte tem
 function rows() {
@@ -34,7 +36,7 @@ function rows() {
 export function render() {
   if ($('#p-ranking')?.hidden) return;
   const C1 = CATS[cat], every = rows().sort((a, b) => C1.val(b) - C1.val(a)), all = every;
-  const shown = onlyOn ? every.filter(r => r.online) : every, pages = Math.max(1, Math.ceil(shown.length / PER));
+  const shown = every.filter(r => (!onlyOn || r.online) && (!query || fold(r.name).includes(query))), pages = Math.max(1, Math.ceil(shown.length / PER));
   page = Math.min(page, pages - 1);
   const top = every.slice(0, 3), pageRows = shown.slice(page * PER, page * PER + PER);
   const myIdx = all.findIndex(r => r.pid === 'me'), me = all[myIdx];
@@ -59,6 +61,7 @@ export function render() {
       <span class="rkrow__name">${esc(r.name)}${r.pid === 'me' ? ' <small>você</small>' : ''}${mv}<small>nível ${r.level} · ${esc(r.rank || '')}</small></span>
       <span class="rkrow__val">${C1.fmt(C1.val(r))}</span></button></li>`;
   }).join('');
+  if (!pageRows.length) $('#rk-list').innerHTML = `<li class="muted rk-empty">${query ? 'Nenhum jogador com esse nome.' : 'Ninguém online agora.'}</li>`;
   last = now;
   const onCount = every.filter(r => r.online).length;
   $('#rk-count').innerHTML = `<b>${every.length}</b> jogadores no ranking · <b class="good">${onCount}</b> online agora <button class="btn btn--glass btn--sm" data-act="rk-online" aria-pressed="${onlyOn}">${onlyOn ? 'mostrar todos' : 'só quem está online'}</button>`;
@@ -76,3 +79,4 @@ export function render() {
   ].map(([k, v]) => `<div class="rk-fact"><span class="muted small">${k}</span><b>${v}</b></div>`).join('');
 }
 setInterval(render, 4000);
+document.addEventListener('input', e => { if (e.target.id === 'rk-search') search(e.target.value); });

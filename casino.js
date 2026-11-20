@@ -14,14 +14,14 @@ import * as NPC from './npcs.js';
 import * as BJ from './bj.js';
 
 const SOLO = [
-  { id: 'bot-dorival', name: 'Mesa Bronze', minBet: 50, bots: ['Coringa021', 'SemanaUm', 'RecomecoBR', 'PrimeiroMes'] },
-  { id: 'bot-azul', name: 'Mesa Prata', minBet: 100, bots: ['FeiraMaster', 'NeloreBR', 'CafeForte', 'RoletaVermelha'] },
-  { id: 'bot-porto', name: 'Mesa Ouro', minBet: 250, bots: ['TratorBrabo', 'TerraFirme', 'LoboNoturno', 'DezVezes21'] },
-  { id: 'bot-esm', name: 'Salão Esmeralda', minBet: 500, bots: ['HarasEstrela', 'CriptoTrader', 'CartaRara', 'GalgoVeloz'] },
-  { id: 'bot-vip', name: 'Mesa VIP', minBet: 1000, bots: ['RainhaDaSoja', 'Blackjack21', 'ContaCarta', 'RelampagoBR'] },
-  { id: 'bot-dia', name: 'Sala Diamante', minBet: 2500, bots: ['A Boiadeira', 'ReiDoGado', 'RainhaDaSoja', 'HighRollerX'] },
-  { id: 'bot-high', name: 'High Roller', minBet: 5000, bots: ['ReiDoGado', 'A Boiadeira', 'CriptoTrader', 'HarasEstrela'] },
-  { id: 'bot-mag', name: 'Mesa do Magnata', minBet: 10000, bots: ['ReiDoGado', 'A Boiadeira', 'Blackjack21', 'RainhaDaSoja'] },
+  { id: 'bot-dorival', name: 'Mesa Bronze', minBet: 50, bots: ['Coringa021', 'SemanaUm', 'RecomecoBR', 'PrimeiroMes', 'Novato_BR', 'TrocaTroca'] },
+  { id: 'bot-azul', name: 'Mesa Prata', minBet: 100, bots: ['FeiraMaster', 'NeloreBR', 'CafeForte', 'RoletaVermelha', 'MengaoBR', 'Entregador99'] },
+  { id: 'bot-porto', name: 'Mesa Ouro', minBet: 250, bots: ['TratorBrabo', 'TerraFirme', 'LoboNoturno', 'DezVezes21', 'So21', 'LeaoDoSport'] },
+  { id: 'bot-esm', name: 'Salão Esmeralda', minBet: 500, bots: ['HarasEstrela', 'CriptoTrader', 'CartaRara', 'GalgoVeloz', 'MetaHaras', 'BTCnaVeia'] },
+  { id: 'bot-vip', name: 'Mesa VIP', minBet: 1000, bots: ['RainhaDaSoja', 'Blackjack21', 'ContaCarta', 'RelampagoBR', 'RumoAoMilhao', 'HighRollerX'] },
+  { id: 'bot-dia', name: 'Sala Diamante', minBet: 2500, bots: ['A Boiadeira', 'ReiDoGado', 'RainhaDaSoja', 'HighRollerX', 'CriptoTrader', 'ContaCarta'] },
+  { id: 'bot-high', name: 'High Roller', minBet: 5000, bots: ['ReiDoGado', 'A Boiadeira', 'CriptoTrader', 'HarasEstrela', 'Blackjack21', 'RainhaDaSoja'] },
+  { id: 'bot-mag', name: 'Mesa do Magnata', minBet: 10000, bots: ['ReiDoGado', 'A Boiadeira', 'Blackjack21', 'RainhaDaSoja', 'HighRollerX', 'CriptoTrader'] },
 ];
 let lobby = null, selfId = null;
 let cur = null;          // mesa aberta
@@ -99,15 +99,15 @@ const summary = v => ({ id: v.id, name: v.name, minBet: v.minBet, phase: v.phase
 const TIERS = ['bronze', 'prata', 'ouro', 'esmeralda', 'vip', 'diamante', 'high', 'magnata'];
 const lookOf = s => (s.kind === 'human' ? s.look : NPC.byNick(s.name)?.look || NPC_LOOKS.Dorival);
 function tableCard(t, kind, host) {
-  const seats = t.seats || [0, 1, 2, 3].map(i => ({ kind: 'bot', name: (t.bots || ['Coringa021', 'SemanaUm', 'RecomecoBR', 'PrimeiroMes'])[i] }));
+  const seats = t.seats || (t.bots || ['Coringa021', 'SemanaUm', 'RecomecoBR', 'PrimeiroMes', 'Novato_BR', 'TrocaTroca']).map(name => ({ kind: 'bot', name }));
   const humans = seats.filter(s => s.kind === 'human').length, tier = kind === 'online' ? 'online' : TIERS[SOLO.indexOf(t)] || 'bronze';
   const pot = Math.round(t.minBet * (6 + ((Live.now() / 60000 + t.minBet) % 9)));   // fichas em jogo agora, mexe com o tempo
   return `<article class="tcard3 tcard3--${tier}">
     <div class="tcard3__top"><span class="tcard3__live"><i></i>${kind === 'online' ? `online · ${humans} ${humans === 1 ? 'jogador' : 'jogadores'}` : 'ao vivo'}</span><span class="tcard3__stake">${int(t.minBet)} / ${int(t.minBet * 20)}</span></div>
     <div class="tcard3__table"><div class="tcard3__felt"><b>${esc(t.name)}</b><small>${int(pot)} fichas na mesa</small></div>
-      ${seats.slice(0, 4).map((s, i) => `<span class="tcard3__seat tcard3__seat--${i}" title="${esc(s.name)}"><span class="tcard3__av">${avatarSVG(lookOf(s) || {}, { label: s.name })}</span><em>${esc(s.name)}</em></span>`).join('')}
+      ${seats.slice(0, 5).map((s, i) => `<span class="tcard3__seat tcard3__seat--b${i}" title="${esc(s.name)}"><span class="tcard3__av">${avatarSVG(lookOf(s) || {}, { label: s.name })}</span><em>${esc(s.name)}</em></span>`).join('')}
       <span class="tcard3__seat tcard3__seat--you"><span class="tcard3__av tcard3__av--free">+</span><em>seu lugar</em></span></div>
-    <div class="tcard3__foot"><span class="muted small">${host ? `anfitrião: ${esc(host)}` : `${Math.min(4, seats.length)} jogadores · 1 lugar livre`}</span>
+    <div class="tcard3__foot"><span class="muted small">${host ? `anfitrião: ${esc(host)}` : `${seats.length} lugares · 1 livre para você`}</span>
       <button class="btn ${kind === 'online' || SOLO.indexOf(t) < 2 ? 'btn--gold' : 'btn--glass'}" data-act="sit" data-kind="${kind}" data-id="${esc(t.id)}">jogar</button></div></article>`;
 }
 // faixa do salão: online, pote do dia e prêmios recentes dos jogadores
@@ -299,10 +299,10 @@ export function split() {
 // ---------- desenhar a mesa a partir do estado ----------
 const mySeat = v => v?.seats.find(s => s.kind === 'human' && s.pid === myPid());
 const seatIdx = v => v.seats.findIndex(s => s.kind === 'human' && s.pid === myPid());
-const shown = [[], [], [], []];   // assinatura das cartas já desenhadas por lugar
+const shown = Array.from({ length: 6 }, () => []);   // assinatura das cartas já desenhadas por lugar
 let dealerShown = [];
 function clearTable() {
-  $('#seats').innerHTML = [0, 1, 2, 3].map(i => `<li class="seat seat--${i}" id="seat-${i}">
+  $('#seats').innerHTML = [0, 1, 2, 3, 4, 5].map(i => `<li class="seat seat--${i}" id="seat-${i}">
     <div class="seat__cards" id="cards-${i}"></div>
     <div class="spot" id="spot-${i}"><span class="spot__mark" aria-hidden="true"></span><span class="spot__chips"></span><span class="spot__amt"></span></div>
     <div class="seat__tags upright"><span class="seat__val" id="val-${i}" hidden></span><span class="seat__result" id="res-${i}" hidden></span></div>

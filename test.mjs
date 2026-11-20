@@ -958,3 +958,46 @@ console.log('mina ok');
   assert.equal(t.npcBoost, 10); assert.equal(t.incomeTax, 0); assert.equal(t.hunt, false); assert.equal(t.landOffers, 24);
   TU.applyTune(null); assert.equal(TU.T.npcBoost, 3); console.log('regras do painel ok');
 }
+
+// ---------- pôquer ----------
+{
+  const PK = await import('./poker.js');
+  const h = t => t.split(' ').map(x => ({ r: x.slice(0, -1), s: x.slice(-1) }));
+  const ev = t => PK.evaluate(h(t));
+  assert.deepEqual(ev('A♠ K♠ Q♠ J♠ 10♠ 2♥ 3♦'), [9, 14]);
+  assert.deepEqual(ev('5♥ 4♥ 3♥ 2♥ A♥ K♦ K♣'), [8, 5]);                 // roda com ás baixo
+  assert.deepEqual(ev('9♣ 9♦ 9♥ 9♠ 2♣ 3♦ K♥'), [7, 9, 13]);
+  assert.deepEqual(ev('8♣ 8♦ 8♥ 2♠ 2♣ 2♦ K♥'), [6, 8, 2]);
+  assert.deepEqual(ev('A♣ 9♣ 7♣ 4♣ 2♣ K♦ Q♥').slice(0, 2), [5, 14]);
+  assert.deepEqual(ev('A♣ 2♦ 3♥ 4♠ 5♣ 9♦ K♥'), [4, 5]);
+  assert.deepEqual(ev('Q♣ Q♦ 7♥ 7♠ 3♣ 3♦ K♥'), [2, 12, 7, 13]);
+  assert.deepEqual(ev('J♣ J♦ 9♥ 6♠ 4♣ 3♦ 2♥'), [1, 11, 9, 6, 4]);
+  assert.ok(PK.compare(ev('K♣ K♦ A♥ 6♠ 4♣ 3♦ 2♥'), ev('K♥ K♠ Q♥ J♠ 4♣ 3♦ 2♥')) > 0, 'kicker desempata');
+  assert.equal(PK.compare(ev('A♣ 2♦ 3♥ 4♠ 5♣ 9♦ K♥'), ev('A♦ 2♣ 3♠ 4♥ 5♦ 9♣ K♠')), 0);
+  // mãos inteiras: fichas nunca somem nem aparecem (fora a reposição da casa)
+  let sd = 11; const rng = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const t = new PK.Poker({ bb: 20, auto: false, rng, botNames: ['A', 'B', 'C', 'D', 'E'] });
+  t.join('me', { name: 'eu' }, 0); t.fillBots(5);
+  let hands = 0, guard = 0, sideSeen = false;
+  const sum = () => t.seats.reduce((s, x) => s + (x.stack || 0), 0);
+  let total = 0;
+  while (hands < 300 && guard++ < 200000) {
+    if (t.phase === 'play' && t.turn >= 0) t.botAct(t.turn);
+    else if (t.phase === 'show') {
+      assert.equal(sum(), total, `mão ${t.hands}: fichas conservadas`);
+      if (new Set(t.contrib.filter(Boolean)).size > 2) sideSeen = true;
+      hands++; t.flush();
+    } else { const was = t.phase; if (t.seats[0].stack < t.bb) t.rebuy('me'); t.flush(); if (was !== 'play' && t.phase === 'play') total = sum() + t.seats.reduce((x, y) => x + (y.bet || 0), 0); }
+  }
+  assert.equal(hands, 300, 'mãos rodam sem travar');
+  // all-in curto: só disputa o que cobriu
+  const a = new PK.Poker({ bb: 20, auto: false, rng });
+  a.join('x', { name: 'x' }, 0); a.join('y', { name: 'y' }, 1); a.join('z', { name: 'z' }, 2);
+  a.seats[0].stack = 100; a.flush();
+  for (const i of [0, 1, 2]) a.seats[i].cards = h(['A♠ A♥', '2♣ 7♦', 'K♣ K♦'][i]);
+  a.deck = [...h('3♥ 4♦ 9♣ J♠ 8♥').reverse()];
+  while (a.phase === 'play') { const s = a.turn; a.act(s, s === 0 ? { t: 'allin' } : a.toCall(s) ? { t: 'call' } : s === 1 ? { t: 'raise', to: 200 } : { t: 'check' }); if (a.turn < 0 && a.phase === 'play') a.flush(); }
+  const won = Object.fromEntries(a.winners.map(w => [w.seat, w.amount]));
+  assert.equal(won[0], 300, 'all-in de 100 leva só 3x100'); assert.equal(won[2], a.contrib[1] * 2 - 200, 'o resto vai para a segunda melhor mão');
+  console.log('pôquer ok', sideSeen ? '(potes paralelos vistos)' : '');
+}

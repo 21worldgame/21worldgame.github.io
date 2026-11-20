@@ -3,9 +3,9 @@
 import * as BJ from './bj.js';
 
 export const BOTS = [
-  { name: 'Coringa021' }, { name: 'SemanaUm' }, { name: 'RecomecoBR' }, { name: 'PrimeiroMes' },
+  { name: 'Coringa021' }, { name: 'SemanaUm' }, { name: 'RecomecoBR' }, { name: 'PrimeiroMes' }, { name: 'Novato_BR' }, { name: 'TrocaTroca' },
 ];
-const SEATS = 4, TURN_MS = 20000;
+export const SEATS = 6; const TURN_MS = 20000;
 
 export class Table {
   constructor({ id, name, minBet = 50, onChange = () => {}, speed = 1, rng = Math.random, bots = null }) {
