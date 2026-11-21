@@ -1133,12 +1133,22 @@ console.log('mina ok');
   // calote derruba a confiança; desmarcar devolve tudo
   const c0 = s.amigos.list[nick].conf; AM.monthly(s, [{ txt: `${nick} deu calote de R$ 1` }]); assert.ok(!AM.isFriend(s, nick) || s.amigos.list[nick].conf < c0);
   AM.setPartner(s, nick, false); assert.ok(!s.cars.some(c => c.lentTo) && Lq.hasVehicle(s, 'trator'));
-  // jogador de verdade também vira parceiro (com o retrato que ele mostrou)
-  assert.ok(AM.setPartner(s, 'GenteDeVerdade', true), 'sem retrato não marca quem não é do mundo');
-  assert.equal(AM.setPartner(s, 'GenteDeVerdade', true, { look: {}, worth: 5e6 }), null);
-  const rp = AM.friend(s, 'GenteDeVerdade'); assert.ok(rp?.npc.peer && AM.loanLimit(s, rp) > 0 && AM.lendCap(s, 'GenteDeVerdade') > 0);
-  AM.offersFrom(s, 'GenteDeVerdade');
-  AM.setPartner(s, 'GenteDeVerdade', false); assert.ok(!AM.isFriend(s, 'GenteDeVerdade'));
+  // jogador de verdade: parceria e cada negócio só depois que o outro aceita; cada lado aplica a sua metade
+  { const A = Lq.newState(() => 0.5), B = Lq.newState(() => 0.5); A.money = B.money = 1e7;
+    A.lands = [{ id: 901, region: 'Goiás', ha: 50, cap: 1.2, value: 2e6, own: true }]; A.cars.push({ id: 960, model: 'deere', value: 6e5 });
+    assert.ok(AM.setPartner(A, 'Bia', true), 'sem retrato não marca quem não é do mundo');
+    assert.ok(AM.peerApply(A, AM.askOf(A, 'give', { what: 'land', id: 901 }), 'from', 'Bia'), 'sem parceria não arrenda');
+    A.amigos.list.Bia = { conf: 20, peer: { look: {}, worth: 5e6 } }; AM.ensure(A); assert.ok(!AM.isFriend(A, 'Bia'), 'parceria antiga sem aceite cai');
+    assert.equal(AM.setPartner(A, 'Bia', true, { worth: 5e6 }), null); assert.equal(AM.setPartner(B, 'Ana', true, { worth: 3e6 }), null);   // os dois aceitaram
+    assert.equal(AM.offersFrom(A, 'Bia').length, 0, 'jogador de verdade não tem oferta inventada');
+    const land = AM.askOf(A, 'give', { what: 'land', id: 901 }), tool = AM.askOf(A, 'give', { what: 'tool', id: 960 });
+    for (const k of [land, tool]) { assert.equal(AM.peerApply(A, k, 'from', 'Bia'), null); assert.equal(AM.peerApply(B, k, 'to', 'Ana'), null); }
+    assert.ok(A.lands[0].leaseTo === 'Bia' && B.lands.some(l => l.friend === 'Ana' && l.oid === 901 && !l.own) && B.amigos.tools.some(t => t.oid === 960), 'terra e trator do lado dos dois');
+    const loan = AM.askOf(B, 'borrow', { amount: 50000, rate: AM.FRIEND_RATE_LOW, months: 12 }), a0 = A.money, b0 = B.money;
+    assert.equal(AM.peerApply(B, loan, 'from', 'Ana'), null); assert.equal(AM.peerApply(A, loan, 'to', 'Bia'), null);
+    assert.ok(A.money === a0 - 50000 && B.money === b0 + 50000 && A.lent.some(p => p.nick === 'Bia' && p.risk === 0) && B.loans.some(l => l.from === 'Ana'), 'empréstimo dos dois lados');
+    AM.peerBack(B, 'Ana', 'tool', 960, false); assert.ok(!B.amigos.tools.length, 'dono pegou a máquina de volta');
+    AM.unfriend(A, 'Bia'); AM.unfriend(B, 'Ana'); assert.ok(!A.lands[0].leaseTo && !B.lands.some(l => l.friend === 'Ana'), 'fim da parceria devolve a terra'); }
   // parcelas e as duas formas de emprestar
   const sc = AM.schedule(10000, 0.02, 6); assert.ok(sc.total > 10000 && sc.first > 10000 / 6 && sc.profit === sc.total - 10000);
   assert.ok(AM.lendRisk(s, nick, 'auto') < AM.lendRisk(s, nick, 'trust') && AM.lendMaxRate(s, nick, 'trust') > AM.lendMaxRate(s, nick, 'auto'));

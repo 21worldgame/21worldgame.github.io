@@ -680,6 +680,7 @@ export function itemMedia(i) {
   if (i.kind === 'animal') return `<img src="${ST.photo(d, S())}" alt="" loading="lazy">`;
   if (i.kind === 'land' && d.lat) return `<img src="${satThumb(d).url}" alt="" loading="lazy">`;
   if (i.kind === 'good') return `<img src="assets/${GOOD_IMG[i.good] || 'farm-colheita'}.webp" alt="" loading="lazy">`;
+  if (i.kind === 'card' && d.set) { const S = CD.SETS[d.set], it = S && CD.itemOf(d); return `<span class="icard__cardart icard__cardart--set" style="background:linear-gradient(135deg,${S?.color?.[0] || '#334'},${S?.color?.[1] || '#112'})"><span aria-hidden="true">${it?.icon || S?.icon || '🃏'}</span></span>`; }   // carta de coleção não tem foto: desenho da coleção
   if (i.kind === 'card') return `<span class="icard__cardart" style="background-image:url(assets/cards/${d.champ}.webp)"></span>`;
   if (i.kind === 'player' || i.kind === 'squad' || i.kind === 'club') return '<img src="assets/photo-stadium.webp" alt="" loading="lazy">';
   if (i.kind === 'acc') return `<div class="fcard__acc">${avatarSVG({ ...S().avatar, acc: i.acc }, { label: i.acc, full: true })}</div>`;
@@ -701,13 +702,20 @@ function renderInv() {
   $('#inv-cats').innerHTML = [['all', 'tudo'], ...Object.entries(SH.CATS)].filter(([k]) => k === 'all' || n[k]).map(([k, v]) => `<button class="shop-cat${invCat === k ? ' is-on' : ''}" data-invcat="${k}">${v}${k !== 'all' ? ` <small>${n[k]}</small>` : ''}</button>`).join('');
   $('#inv-items').innerHTML = SHUI.mineHTML(invCat);
   renderFeira();
-  const ppl = TUI.online();
+  renderPeers();
+}
+// jogadores online do inventário; a busca procura entre todos que estão online (sem busca, mostra 10)
+document.addEventListener('input', e => { if (e.target.id === 'inv-q') renderPeers(); });
+function renderPeers() {
+  const q = ($('#inv-q')?.value || '').trim().toLowerCase(), hit = name => !q || String(name).toLowerCase().includes(q);
+  const ppl = TUI.online().filter(p => hit(p.name));
   $('#inv-peers').innerHTML = ppl.length ? ppl.map(p => { const f = AM.friend(S(), p.name); return `<li class="${f ? 'is-partner' : ''}"><span class="who__av">${avatarSVG(p.look || {}, { label: p.name })}</span><span class="inv-peers__n"><span>${esc(p.name)}</span><small class="muted"> nível ${p.level}</small>${f ? AMU.confTag(f.conf) : ''}</span>
     <span class="inv-peers__a">${AMU.partnerBox(S(), p.name, p)}<button class="btn btn--gold btn--sm" data-act="trade-invite" data-id="${esc(p.pid)}">negociar</button><button class="btn btn--glass btn--sm" data-profile="${esc(p.pid)}">perfil</button></span></li>`; }).join('') : '';
   // parceiros primeiro (mesmo fora do ar), depois quem está online; a caixinha "parceiro" libera as parcerias na negociação
-  const on = NPC.onlineNow(Live.now(), 10), onIds = new Set(on.map(n => n.id)), partners = AM.friends(S()).filter(f => !f.npc.peer);   // parceiro de verdade aparece só online, na lista de cima
+  const on = q ? [...NPC.onlineSet(Live.now())].map(NPC.byId).filter(n => n && hit(n.nick)).slice(0, 20) : NPC.onlineNow(Live.now(), 10);
+  const onIds = new Set(NPC.onlineSet(Live.now())), partners = AM.friends(S()).filter(f => !f.npc.peer && hit(f.nick));   // parceiro de verdade aparece só online, na lista de cima
   const npcOn = [...partners.map(f => f.npc), ...on.filter(n => !AM.isFriend(S(), n.nick))];
-  if (!ppl.length && !npcOn.length) $('#inv-peers').innerHTML = '<li class="muted small">Ninguém online agora. Chame os amigos pelo link do jogo.</li>';
+  if (!ppl.length && !npcOn.length) $('#inv-peers').innerHTML = `<li class="muted small">${q ? `Ninguém online com “${esc(q)}” no nome.` : 'Ninguém online agora. Chame os amigos pelo link do jogo.'}</li>`;
   $('#inv-peers').insertAdjacentHTML('beforeend', npcOn.map(n => { const f = AM.friend(S(), n.nick); return `<li class="${f ? 'is-partner' : ''}"><span class="who__av">${avatarSVG(n.look, { label: n.nick })}</span><span class="inv-peers__n"><span>${esc(n.nick)}</span><small class="muted"> nível ${NPC.levelFor(NPC.worthAt(n, S().month))}${onIds.has(n.id) ? '' : ' · fora do ar'}</small>${f ? AMU.confTag(f.conf) : ''}</span>
     <span class="inv-peers__a">${AMU.partnerBox(S(), n.nick)}<button class="btn btn--gold btn--sm" data-act="trade-bot" data-id="${n.id}">negociar</button><button class="btn btn--glass btn--sm" data-profile="npc:${n.id}">perfil</button></span></li>`; }).join(''));
 }
@@ -995,8 +1003,8 @@ const ACTS = {
     if (err) return say(err[0].toUpperCase() + err.slice(1), true);
     note(`compra de ${l.ha} ha, ${l.region} (abatendo aluguel)`, -price); award('land'); confetti(60); say('Agora a terra é sua: sem aluguel, com todas as vantagens.');
   },
-  'return-land'(idv) { const l = find(S().lands, idv); S().lands.splice(S().lands.indexOf(l), 1); say('Terra devolvida ao dono.'); },
-  lease(idv) { const l = find(S().lands, idv), busy = !l.leasedOut && L.pastureBusy(S(), l); if (busy) return say(busy[0].toUpperCase() + busy.slice(1), true); l.leasedOut = !l.leasedOut; delete l.leaseTo; say(l.leasedOut ? 'Contrato de arrendamento assinado.' : 'Terra de volta para o seu uso.'); },
+  'return-land'(idv) { const l = find(S().lands, idv); if (l.oid != null && AM.isPeer(S(), l.friend)) AMU.peerMsg(l.friend, { t: 'pback', what: 'land', oid: l.oid, owner: true }); S().lands.splice(S().lands.indexOf(l), 1); say('Terra devolvida ao dono.'); },
+  lease(idv) { const l = find(S().lands, idv), busy = !l.leasedOut && L.pastureBusy(S(), l); if (busy) return say(busy[0].toUpperCase() + busy.slice(1), true); if (l.leaseTo && AM.isPeer(S(), l.leaseTo)) AMU.peerMsg(l.leaseTo, { t: 'pback', what: 'land', oid: l.id, owner: false }); l.leasedOut = !l.leasedOut; delete l.leaseTo; say(l.leasedOut ? 'Contrato de arrendamento assinado.' : 'Terra de volta para o seu uso.'); },
   'sell-land'(idv) {
     const l = find(S().lands, idv);
     const v = Math.round(l.value * 0.95 + (PM.orchardValue(S(), l) + CN.caneValue(S(), l)) * 0.9);
@@ -1431,7 +1439,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 101;
+const APP_VERSION = 102;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;

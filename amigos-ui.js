@@ -71,7 +71,7 @@ export function rentHTML(nick) {
   ];
   return `${intro}<div class="tr-cols">
     <div class="glass tr-col"><h3>o que é seu e está parado</h3><p class="tr-sub">alugue para ${esc(nick)} e receba todo mês</p><ul class="am-list">${mine.join('') || '<li class="muted small">Nada parado agora. Terra livre (sem lavoura e sem boi), galpão vazio, trator e caminhão aparecem aqui.</li>'}</ul></div>
-    <div class="glass tr-col tr-col--them"><h3>o que ${esc(nick)} tem para você</h3><p class="tr-sub">muda todo mês do mundo</p><ul class="am-list">${theirs.join('') || '<li class="muted small">Nada parado com ele este mês.</li>'}</ul></div></div>
+    <div class="glass tr-col tr-col--them"><h3>o que ${esc(nick)} tem para você</h3><p class="tr-sub">muda todo mês do mundo</p><ul class="am-list">${theirs.join('') || `<li class="muted small">${AM.isPeer(s, nick) ? 'Quando ele oferecer terra, galpão ou máquina, o pedido aparece na sua tela para você aceitar ou recusar.' : 'Nada parado com ele este mês.'}</li>`}</ul></div></div>
     ${using.length ? `<h4 class="tr-h">em andamento entre vocês</h4><ul class="am-list">${using.join('')}</ul>` : ''}`;
 }
 
@@ -136,23 +136,38 @@ const done = (err, ok) => { if (err) return say(cap(err), true); if (ok) say(ok)
 document.addEventListener('change', e => {
   const c = e.target.closest?.('[data-partner]'); if (!c) return;
   const nick = c.dataset.partner;
+  const real = !!c.dataset.peer || AM.isPeer(G.S, nick);
   if (!c.checked && !confirm(`Desfazer a parceria com ${nick}? O que está alugado entre vocês volta para o dono.`)) { c.checked = true; return; }
-  let peer = null; try { peer = c.dataset.peer ? JSON.parse(c.dataset.peer) : null; } catch {}
-  const err = AM.setPartner(G.S, nick, c.checked, peer); if (err) c.checked = false;
+  if (real && c.checked) { c.checked = false; return ask(nick, { kind: 'partner' }); }   // jogador de verdade precisa aceitar
+  if (real) { AM.unfriend(G.S, nick); peerMsg(nick, { t: 'pend' }); return done(null, 'Parceria desfeita.'); }
+  const err = AM.setPartner(G.S, nick, c.checked); if (err) c.checked = false;
   done(err, c.checked ? `${nick} agora é seu parceiro.` : 'Parceria desfeita.');
 });
+// com jogador de verdade nada acontece sem ele aceitar: trade-ui.js manda o pedido e aplica quando ele disser sim
+export const ask = (nick, a) => document.dispatchEvent(new CustomEvent('am:ask', { detail: { nick, ask: a } }));
+export const peerMsg = (nick, msg) => document.dispatchEvent(new CustomEvent('am:peer', { detail: { nick, msg } }));
+export function askText(a, from) {
+  const p = a.snap || {};
+  if (a.kind === 'partner') return `${from} quer ser seu parceiro. Aceita?\n\nParceiros podem alugar terra, galpão e máquinas e emprestar dinheiro um para o outro. Cada negócio também pede a sua permissão.`;
+  if (a.kind === 'give') return a.what === 'land' ? `${from} quer arrendar para você uma terra de ${p.ha} ha (${p.region}) por ${brl(p.value * L.RENT_FRIEND)} ao mês. Aceita?`
+    : a.what === 'wh' ? `${from} quer alugar para você o ${WH(p.type)} por ${brl(Math.round(p.value * AM.WH_LEND / 1000) * 1000)} ao mês. Aceita?`
+    : `${from} quer te emprestar o ${L.CARS[p.model]?.name || 'máquina'} por ${brl(Math.round((L.CARS[p.model]?.price || 0) * AM.TOOL_RENT * 0.8))} ao mês. Aceita?`;
+  const terms = `${brl(a.amount)} a ${pct(a.rate)} ao mês em ${a.months} parcelas no débito automático`;
+  return a.kind === 'lend' ? `${from} quer te emprestar ${terms}. Aceita?` : `${from} pede emprestado ${terms}. Você empresta?`;
+}
 const nickOf = b => b.closest('[data-nick]')?.dataset.nick;
 document.addEventListener('submit', e => { if (e.target.closest?.('.am-loan')) e.preventDefault(); });
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-am]'); if (!b) return;
-  const s = G.S, id = b.dataset.id;
+  const s = G.S, id = b.dataset.id, nk = nickOf(b);
+  if (nk && AM.isPeer(s, nk) && peerClick(s, b.dataset.am, id, nk)) return;
   switch (b.dataset.am) {
     case 'take': { const o = AM.offers(s).find(x => x.id === id), err = AM.take(s, id); if (!err) note(o.kind === 'land' ? `arrendou terra de ${o.nick} (${o.land.ha} ha)` : o.kind === 'wh' ? `alugou galpão de ${o.nick}` : `pegou ${L.CARS[o.model].name} emprestado de ${o.nick}`); return done(err, 'Parceria fechada. O aluguel sai na virada do mês.'); }
     case 'retwh': return done(AM.returnWh(s, id), 'Galpão devolvido.');
     case 'rettool': return done(AM.returnTool(s, id), 'Máquina devolvida.');
-    case 'lease': return done(AM.leaseLand(s, Number(id), nickOf(b)), 'Terra arrendada para o seu parceiro.');
-    case 'lendwh': return done(AM.lendWh(s, id, nickOf(b)));
-    case 'lendtool': return done(AM.lendTool(s, Number(id), nickOf(b)));
+    case 'lease': return done(AM.leaseLand(s, Number(id), nk), 'Terra arrendada para o seu parceiro.');
+    case 'lendwh': return done(AM.lendWh(s, id, nk));
+    case 'lendtool': return done(AM.lendTool(s, Number(id), nk));
     case 'borrow': {
       const amt = Math.round(Number($('#am-bor')?.value || 0) / 1000) * 1000, err = AM.borrow(s, id, amt);
       if (!err) note(`empréstimo de ${id}, 12 parcelas no débito automático`, amt); return done(err, `${id} mandou ${brl(amt)}. As parcelas saem sozinhas na virada do mês.`);
@@ -165,3 +180,18 @@ document.addEventListener('click', e => {
     case 'auto': AM.setAuto(s, $('#am-on').checked, $('#am-budget').value, $('#am-risk-auto').value); return done(null, s.amigos.auto.on ? 'Agiota automático ligado.' : 'Agiota automático desligado.');
   }
 });
+// parceiro de verdade: passar algo ou dinheiro vira pedido; pegar de volta / devolver é na hora e avisa o outro
+function peerClick(s, act, id, nick) {
+  const give = (what, oid) => { const a = AM.askOf(s, 'give', { what, id: oid }); if (a) ask(nick, a); return true; };
+  const back = (err, msg, ok) => { if (!err) peerMsg(nick, { t: 'pback', ...msg }); done(err, ok); return true; };
+  switch (act) {
+    case 'lease': return give('land', Number(id));
+    case 'lendwh': { const w = s.biz?.wh?.find(x => x.id === id); return w?.lentTo ? back(AM.lendWh(s, id, nick), { what: 'wh', oid: id, owner: false }, 'Galpão de volta.') : give('wh', id); }
+    case 'lendtool': { const c = s.cars.find(x => x.id === Number(id)); return c?.lentTo ? back(AM.lendTool(s, Number(id), nick), { what: 'tool', oid: Number(id), owner: false }, 'Máquina de volta.') : give('tool', Number(id)); }
+    case 'retwh': { const w = s.biz?.whRent?.find(x => x.id === id); return back(AM.returnWh(s, id), { what: 'wh', oid: w?.oid, owner: true }, 'Galpão devolvido.'); }
+    case 'rettool': { const t = AM.ensure(s).tools.find(x => x.id === id); return back(AM.returnTool(s, id), { what: 'tool', oid: t?.oid, owner: true }, 'Máquina devolvida.'); }
+    case 'borrow': { const f = AM.friend(s, nick); ask(nick, AM.askOf(s, 'borrow', { amount: Math.min(AM.loanLimit(s, f), Number($('#am-bor')?.value) || 0), rate: AM.loanRate(f), months: 12 })); return true; }
+    case 'lendto': ask(nick, AM.askOf(s, 'lend', { amount: Math.min(s.money, Number($('#am-amt')?.value) || 0), rate: $('#am-rate').value, months: $('#am-months').value })); return true;
+  }
+  return false;
+}

@@ -73,12 +73,14 @@ export function render() {
   const offs = (s.offersIn || []).filter(o => Date.now() - o.at < SH.OFFER_TTL);
   if ($('#shop-offers')) $('#shop-offers').innerHTML = offs.length ? `<h3>propostas pelos seus anúncios</h3><div class="offers">${offs.map(o => `<div class="offer glass${o.low ? ' is-low' : ''}"><span><b>${esc(o.npc)}</b> oferece <b class="good">${brl(o.price)}</b> por ${esc(o.label)}<small class="muted">você pediu ${brl(o.ask)}${o.low ? ' · proposta baixa porque você está endividado' : ''}</small></span><button class="btn btn--gold btn--sm" data-act="shop-offer-yes" data-id="${o.id}">aceitar</button><button class="btn btn--glass btn--sm" data-act="shop-offer-no" data-id="${o.id}">recusar</button></div>`).join('')}</div>` : '';
   $('#shop-others').innerHTML = others.length || npcHTML ? others.map(l => `<article class="scard scard--other${fresh.has(`${l.pid}|${l.id}`) && Date.now() - fresh.get(`${l.pid}|${l.id}`) < 60000 ? ' is-new' : ''}">
-      <div class="scard__body"><span class="scard__kind">${esc(kindName[l.kind] || l.kind)}</span><h4>${esc(String(l.label).slice(0, 60))}</h4>
+      ${l.kind === 'card' && l.card ? `<div class="scard__media">${media({ kind: 'card', data: cleanCard(l.card) })}</div>` : ''}<div class="scard__body"><span class="scard__kind">${esc(kindName[l.kind] || l.kind)}</span><h4>${esc(String(l.label).slice(0, 60))}</h4>
         <p class="small muted">vendido por ${esc(String(l.seller).slice(0, 18))}</p><p class="scard__price">${brl(Number(l.price) || 0)}</p>
         <button class="btn btn--gold btn--sm" data-act="shop-buy" data-id="${esc(l.pid)}|${esc(l.id)}|${Number(l.price) || 0}" ${pending.has(l.id) ? 'disabled' : ''}>${pending.has(l.id) ? 'aguardando...' : 'comprar'}</button></div></article>`).join('') + npcHTML
     : '<p class="empty glass">Nenhum jogador online está anunciando agora. Os seus anúncios aparecem aqui para os outros jogadores, e se ninguém comprar, um comprador da loja pode levar (pagando no máximo 5% acima do que a loja paga na hora).</p>';
 }
 
+// carta anunciada por outro jogador: só nomes simples (vão para url() e para a busca da coleção)
+const cleanCard = c => Object.fromEntries(['champ', 'set', 'key', 'tier'].map(k => [k, c[k] == null ? undefined : String(c[k]).replace(/[^\w-]/g, '').slice(0, 40)]));
 function npcCard(l) {
   const m = l.cat === 'veiculo' || l.cat === 'maquina' ? `<img src="assets/${l.img}.webp" alt="" loading="lazy">` : l.cat === 'terra' ? media({ kind: 'land', data: l.land }) : l.cat === 'animal' ? media({ kind: 'animal', data: l.animal })
     : l.cat === 'gado' ? '<img src="assets/farm-bezerro.webp" alt="" loading="lazy">' : l.cat === 'produto' ? media({ kind: 'good', good: l.good }) : l.cat === 'carta' ? media({ kind: 'card', data: l.card }) : media({ kind: 'player' });

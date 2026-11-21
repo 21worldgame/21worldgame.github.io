@@ -111,7 +111,7 @@ export function npcTick(s, rng = Math.random) {
   return sold;
 }
 // vitrine pública (vai para os outros jogadores pelo salão): só o que eles precisam ver
-export const publicListings = s => (s.shop || []).filter(l => l.kind !== 'fera').slice(0, MAX_LISTINGS).map(l => ({ id: l.id, kind: l.kind, label: String(l.label).slice(0, 60), price: l.price }));
+export const publicListings = s => (s.shop || []).filter(l => l.kind !== 'fera').slice(0, MAX_LISTINGS).map(l => { const d = l.kind === 'card' ? find(s, l.key)?.data : null; return { id: l.id, kind: l.kind, label: String(l.label).slice(0, 60), price: l.price, ...(d ? { card: { champ: d.champ, set: d.set, key: d.key, tier: d.tier } } : {}) }; });   // carta leva o desenho para a vitrine dos outros
 
 // ---------- anúncios dos jogadores do mundo (todas as categorias) ----------
 // trocam a cada 10 min, iguais para todo mundo; a compra entrega o item de verdade.

@@ -30,6 +30,7 @@ const r1000 = v => Math.round(v / 1000) * 1000;
 export function ensure(s) {
   s.amigos ??= {};
   s.amigos.list ??= {}; s.amigos.taken ??= {}; s.amigos.tools ??= []; s.amigos.auto ??= { on: false, budget: 200000, risk: 0.08 };
+  for (const [n, f] of Object.entries(s.amigos.list)) if (f.peer && !f.ok) delete s.amigos.list[n];   // v98 marcava jogador de verdade sem ele aceitar
   return s.amigos;
 }
 // jogador de verdade vira um "bot" de mentira com o que ele mostrou quando você marcou (visual e patrimônio)
@@ -45,10 +46,12 @@ const k = f => 0.5 + (f?.conf || 0) / 200;   // 0,5 a 1: peso da confiança no d
 export function setPartner(s, nick, on, peer = null) {
   const a = ensure(s);
   if (!on) { unfriend(s, nick); return null; }
-  if (a.list[nick]) { if (peer) a.list[nick].peer = { look: peer.look || {}, worth: Number(peer.worth) || 0 }; return null; }
+  // jogador de verdade: só chega aqui depois que ele aceitou o pedido (peer = perfil dele no salão)
+  const snap = peer && !NPC.byNick(nick) ? { peer: { look: peer.look || {}, worth: Number(peer.worth) || 0 }, ok: true } : {};
+  if (a.list[nick]) { Object.assign(a.list[nick], snap); return null; }
   if (!NPC.byNick(nick) && !peer) return 'esse jogador não está no mundo.';
   if (Object.keys(a.list).length >= MAX) return `no máximo ${MAX} parceiros. Desmarque um antes.`;
-  a.list[nick] = { since: s.month || 1, conf: START, ...(peer && !NPC.byNick(nick) ? { peer: { look: peer.look || {}, worth: Number(peer.worth) || 0 } } : {}) }; return null;
+  a.list[nick] = { since: s.month || 1, conf: START, ...snap }; return null;
 }
 // fim da parceria: o que estava com ele volta para você; o que era dele volta para ele
 export function unfriend(s, nick) {
@@ -57,11 +60,14 @@ export function unfriend(s, nick) {
   for (const w of s.biz?.wh || []) if (w.lentTo === nick) delete w.lentTo;
   for (const c of s.cars || []) if (c.lentTo === nick) delete c.lentTo;
   s.amigos.tools = s.amigos.tools.filter(t => t.friend !== nick);
+  // terra e galpão que eram de um jogador de verdade (oid = id no jogo dele) também voltam
+  if (s.lands) s.lands = s.lands.filter(l => !(l.friend === nick && l.oid != null));
+  if (s.biz?.whRent) s.biz.whRent = s.biz.whRent.filter(w => !(w.friend === nick && w.oid != null));
 }
 
 // o que um parceiro tem para oferecer este mês (muda todo mês do mundo)
 export function offersFrom(s, nick) {
-  const a = ensure(s), f = friend(s, nick); if (!f) return [];
+  const a = ensure(s), f = friend(s, nick); if (!f || f.npc.peer) return [];   // jogador de verdade oferece o que é dele por proposta (peerApply)
   const m = s.month || 1, r = seeded(m * 977 + f.npc.i * 13), out = [];
   if (r() < 0.7) {
     const tmp = { nextId: 1, offers: [] }; L.refreshOffers(tmp, r); const o = tmp.offers[0];
@@ -154,7 +160,7 @@ export function lendTo(s, nick, amount, rate, months, mode = 'auto') {
 // pedidos de empréstimo dos jogadores do mundo (agiotagem): parceiro paga menos juros mas quase não dá calote
 function worldBorrowers(s, rng) {
   const m = s.month || 1, out = [], r = seeded(m * 6151 + 3);
-  for (const f of friends(s)) if (r() < 0.35) {
+  for (const f of friends(s).filter(f => !f.npc.peer)) if (r() < 0.35) {
     const risk = (0.02 + r() * 0.08) * (1 - f.conf / 130);
     out.push({ id: s.nextId++, name: f.nick, nick: f.nick, friend: true, amount: r1000(10000 + r() * Math.min(300000, 20000 + f.conf * 3000)), rate: +(0.025 + r() * 0.02).toFixed(3), months: 3 + Math.floor(r() * 6), risk: +risk.toFixed(3) });
   }
@@ -170,6 +176,57 @@ export function lend(s, b) {
   s.money -= b.amount; s.borrowers = s.borrowers.filter(x => x.id !== b.id);
   s.lent.push({ id: b.id, name: b.name, nick: b.nick, bal: b.amount, rate: b.rate, left: b.months, risk: b.risk });
   return true;
+}
+// ---------- jogador de verdade: tudo é proposta que o outro aceita ----------
+// ask = { kind: 'give' (dono passa terra/galpão/máquina parada), 'lend' (quem propõe empresta), 'borrow' (quem propõe pede) }
+// role 'from' = quem propôs, 'to' = quem aceitou; cada lado aplica a sua metade no próprio jogo.
+export const isPeer = (s, nick) => !!ensure(s).list[nick]?.peer;
+const num = (v, max) => Math.max(0, Math.min(max, Number(v) || 0));
+export function askOf(s, kind, a) {   // monta a proposta do meu lado (com o retrato do que vai)
+  if (kind === 'give') {
+    const it = a.what === 'land' ? s.lands.find(l => l.id === a.id) : a.what === 'wh' ? s.biz?.wh?.find(w => w.id === a.id) : s.cars.find(c => c.id === a.id);
+    if (!it) return null;
+    const snap = a.what === 'land' ? { region: it.region, uf: it.uf, use: it.use, ha: it.ha, water: it.water, improv: it.improv, cap: it.cap, value: it.value }
+      : a.what === 'wh' ? { type: it.type, value: it.value } : { model: it.model };
+    return { kind, what: a.what, id: a.id, snap };
+  }
+  return { kind, amount: r1000(a.amount), rate: Number(a.rate), months: Math.round(Number(a.months) || 0) };
+}
+export function peerApply(s, ask, role, nick) {
+  if (!isPeer(s, nick)) return 'vocês não são parceiros.';
+  const k = ask?.kind;
+  if (k === 'give' && role === 'from') return ask.what === 'land' ? leaseLand(s, ask.id, nick) : ask.what === 'wh' ? lendWh(s, ask.id, nick) : lendTool(s, ask.id, nick);
+  if (k === 'give') {   // recebo o que é dele: pago todo mês, como com bot
+    const p = ask.snap || {}, oid = ask.id;
+    if (ask.what === 'land') { const ha = num(p.ha, 5000), value = num(p.value, 1e9); if (!ha || !value) return 'terra inválida.'; s.lands.push({ region: String(p.region || 'terra'), uf: String(p.uf || ''), use: String(p.use || ''), ha, water: String(p.water || ''), improv: Array.isArray(p.improv) ? p.improv.map(String) : [], cap: num(p.cap, 10), value, id: s.nextId++, own: false, leasedOut: false, friend: nick, rate: L.RENT_FRIEND, oid }); return null; }
+    if (ask.what === 'wh') { const W = NG.WAREHOUSES[p.type]; if (!W) return 'galpão inválido.'; NG.ensure(s); (s.biz.whRent ??= []).push({ id: `wr${s.nextId++}`, type: p.type, rent: r1000(num(p.value, 1e9) * WH_LEND), friend: nick, oid }); return null; }
+    const C = L.CARS[p.model]; if (!C || !TOOLS.includes(C.type)) return 'máquina inválida.';
+    const a = ensure(s); if (a.tools.some(t => t.type === C.type)) return `você já está com um ${C.name} emprestado.`;
+    a.tools.push({ id: `tl${s.nextId++}`, type: C.type, model: p.model, fee: Math.round(C.price * TOOL_RENT * 0.8), friend: nick, oid }); return null;
+  }
+  if (k !== 'lend' && k !== 'borrow') return 'proposta inválida.';
+  const amount = r1000(num(ask.amount, 5e7)), rate = Number(ask.rate), months = Math.round(Number(ask.months) || 0);
+  if (amount < 1000 || ![...LEND_RATES, FRIEND_RATE, FRIEND_RATE_LOW].includes(rate) || months < 2 || months > 12) return 'proposta inválida.';
+  if ((k === 'lend') === (role === 'from')) {   // sou quem empresta
+    if (s.lent.some(p => p.nick === nick)) return `${nick} ainda está pagando o empréstimo anterior.`;
+    if (amount > s.money) return 'dinheiro insuficiente.';
+    s.money -= amount; s.lent.push({ id: s.nextId++, name: nick, nick, bal: amount, rate, left: months, risk: 0, mode: 'auto' });   // quem paga é o jogo dele
+    return null;
+  }
+  if (s.loans.some(l => l.from === nick)) return `você já deve para ${nick}: pague antes de pegar de novo.`;
+  s.loans.push({ id: s.nextId++, bal: amount, rate, left: months, missed: 0, from: nick }); s.money += amount; return null;
+}
+// o outro pegou de volta / devolveu: tiro do meu lado (what + oid = id no jogo do dono)
+export function peerBack(s, nick, what, oid, owner) {
+  if (owner) {   // eu sou o dono: ele devolveu
+    if (what === 'land') for (const l of s.lands) if (l.id === oid && l.leaseTo === nick) { l.leasedOut = false; delete l.leaseTo; }
+    if (what === 'wh') for (const w of s.biz?.wh || []) if (w.id === oid && w.lentTo === nick) delete w.lentTo;
+    if (what === 'tool') for (const c of s.cars || []) if (c.id === oid && c.lentTo === nick) delete c.lentTo;
+    return;
+  }
+  if (what === 'land') s.lands = s.lands.filter(l => !(l.friend === nick && l.oid === oid));
+  if (what === 'wh' && s.biz?.whRent) s.biz.whRent = s.biz.whRent.filter(w => !(w.friend === nick && w.oid === oid));
+  if (what === 'tool') ensure(s).tools = ensure(s).tools.filter(t => !(t.friend === nick && t.oid === oid));
 }
 export const lentTotal = s => (s.lent || []).reduce((t, p) => t + p.bal, 0);
 export function setAuto(s, on, budget, risk) {

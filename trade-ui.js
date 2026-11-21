@@ -61,8 +61,59 @@ function botApply() {
   return null;
 }
 
+// ---------- parceria com jogador de verdade: pedido → ele aceita → cada lado aplica a sua metade ----------
+// A pede (pask) · B confere e diz sim (pyes) · A aplica e confirma (pdone) · B aplica. Recusa = pno.
+// ponytail: só funciona com os dois online; "pegar de volta" com o outro fora do ar não chega até ele.
+const sent = new Map(), got = new Map();
+const pidOf = nick => online().find(p => p.name === nick)?.pid;
+const nameOf = pid => String(lobby?.peers.get(pid)?.profile?.name || '');
+const after = (txt, val) => { if (txt) note(txt, val); save(); G.render?.(); document.dispatchEvent(new Event('am:changed')); };
+const applyPart = (a, role, nick, pid) => a.kind === 'partner' ? AM.setPartner(G.S, nick, true, lobby?.peers.get(pid)?.profile || {}) : AM.peerApply(G.S, a, role, nick);
+document.addEventListener('am:ask', e => {
+  const { nick, ask } = e.detail, pid = pidOf(nick);
+  if (!ask) return;
+  if (!lobby || !pid) return say(`${nick} não está online agora. Com jogador de verdade, tudo precisa que ele aceite na hora.`, true);
+  const test = ask.kind === 'partner' ? null : AM.peerApply(structuredClone(G.S), ask, 'from', nick);   // confere antes de pedir
+  if (test) return say(test[0].toUpperCase() + test.slice(1), true);
+  const aid = Math.random().toString(36).slice(2, 10);
+  sent.set(aid, { pid, nick, ask }); lobby.sendTrade({ t: 'pask', aid, ask }, pid);
+  say(`Pedido enviado para ${nick}. Só vale quando ele aceitar.`);
+});
+document.addEventListener('am:peer', e => { const pid = pidOf(e.detail.nick); if (lobby && pid) lobby.sendTrade(e.detail.msg, pid); });
+function onPeerDeal(d, pid) {
+  const from = nameOf(pid), s = G.S; if (!from) return;
+  if (d.t === 'pask') {
+    const a = d.ask;
+    if (!a || typeof a !== 'object' || (a.kind !== 'partner' && !AM.isPeer(s, from))) return lobby.sendTrade({ t: 'pno', aid: d.aid }, pid);
+    if (a.kind === 'partner' && AM.isPeer(s, from)) return lobby.sendTrade({ t: 'pyes', aid: d.aid }, pid);   // já são parceiros
+    sfx.play('chip', 0.6);
+    if (!confirm(AMU.askText(a, from))) return lobby.sendTrade({ t: 'pno', aid: d.aid }, pid);
+    const err = a.kind === 'partner' ? (Object.keys(AM.ensure(s).list).length >= AM.MAX ? `você já tem ${AM.MAX} parceiros.` : null) : AM.peerApply(structuredClone(s), a, 'to', from);
+    if (err) { say(err[0].toUpperCase() + err.slice(1), true); return lobby.sendTrade({ t: 'pno', aid: d.aid, why: err }, pid); }
+    got.set(d.aid, { pid, ask: a }); lobby.sendTrade({ t: 'pyes', aid: d.aid }, pid);
+  }
+  if (d.t === 'pyes' || d.t === 'pno') {
+    const p = sent.get(d.aid); if (!p || p.pid !== pid) return; sent.delete(d.aid);
+    if (d.t === 'pno') return say(`${from} recusou${d.why ? `: ${String(d.why).slice(0, 80)}` : '.'}`, true);
+    const err = applyPart(p.ask, 'from', from, pid);
+    if (err) return say(err[0].toUpperCase() + err.slice(1), true);
+    lobby.sendTrade({ t: 'pdone', aid: d.aid }, pid);
+    say(p.ask.kind === 'partner' ? `${from} aceitou: agora vocês são parceiros.` : `${from} aceitou. Combinado!`);
+    after(p.ask.kind === 'lend' ? `empréstimo para ${from}` : p.ask.kind === 'borrow' ? `empréstimo de ${from}` : '', p.ask.kind === 'lend' ? -p.ask.amount : p.ask.kind === 'borrow' ? p.ask.amount : undefined);
+  }
+  if (d.t === 'pdone') {
+    const g = got.get(d.aid); if (!g || g.pid !== pid) return; got.delete(d.aid);
+    const err = applyPart(g.ask, 'to', from, pid); if (err) return say(err[0].toUpperCase() + err.slice(1), true);
+    say(g.ask.kind === 'partner' ? `Agora você e ${from} são parceiros.` : 'Negócio fechado com o seu parceiro.');
+    after(g.ask.kind === 'lend' ? `empréstimo de ${from}` : g.ask.kind === 'borrow' ? `empréstimo para ${from}` : '', g.ask.kind === 'lend' ? g.ask.amount : g.ask.kind === 'borrow' ? -g.ask.amount : undefined);
+  }
+  if (d.t === 'pend' && AM.isPeer(s, from)) { AM.unfriend(s, from); say(`${from} desfez a parceria.`, true); after(); }
+  if (d.t === 'pback' && AM.isPeer(s, from)) { AM.peerBack(s, from, String(d.what), d.oid, !!d.owner); after(); }
+}
+
 function onMsg(d, peerId) {
   if (!d || typeof d !== 'object') return;
+  if (/^p(ask|yes|no|done|end|back)$/.test(String(d.t))) return onPeerDeal(d, peerId);
   if (String(d.t).startsWith('shop')) return G.onShopMsg?.(d, peerId);   // compras da loja usam o mesmo canal
   if (d.t === 'lbid') return G.onAuctionMsg?.(d, peerId);                 // lances do leilão de cavalos
   if (d.t === 'invite') {
