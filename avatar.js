@@ -27,6 +27,17 @@ export const NPC_LOOKS = {
   Tião: { skin: 5, hair: 'raspado', hairColor: 1, beard: 'cavanhaque', eyes: 1, outfit: 'moletom', cloth: 5, acc: 'óculos escuros' },
 };
 
+// vários acessórios ao mesmo tempo, um por lugar do corpo (dois chapéus ou dois relógios não)
+export const SLOT = { brinco: 'orelha', 'óculos escuros': 'olhos', 'fone gamer': 'cabeça', 'boné de marca': 'cabeça', 'chapéu de peão': 'cabeça', 'chapéu de granjeiro': 'cabeça',
+  'pulseira de prata': 'pulso', 'relógio de luxo': 'pulso', 'corrente de ouro': 'pescoço', 'grillz de ouro': 'boca', 'anel de diamante': 'mão', gravata: 'pescoço' };
+// save antigo guarda um texto ('brinco' ou 'nenhum'); o novo guarda a lista
+export const accsOf = a => [].concat(a?.acc ?? []).filter(x => typeof x === 'string' && x && x !== 'nenhum').slice(0, 12);
+export function toggleAcc(a, id) {
+  const cur = accsOf(a);
+  a.acc = id === 'nenhum' ? [] : cur.includes(id) ? cur.filter(x => x !== id) : [...cur.filter(x => !SLOT[id] || SLOT[x] !== SLOT[id]), id];
+  return a.acc;
+}
+
 const INK = 'var(--ink-line)', SH = 'var(--shade)', HI = 'var(--hi)';
 let uid = 0;
 
@@ -69,7 +80,8 @@ export function avatarSVG(raw, { label = '' } = {}) {
     terno: `<path d="${torsoD}" fill="var(--suit)"/><path d="M86 147 L100 200 L114 147 Q100 156 86 147 Z" fill="var(--shirt)"/>${torsoShade}
       <path d="M80 145 L97 186 L86 200 L60 160 Z M120 145 L103 186 L114 200 L140 160 Z" fill="var(--suit)"/>${glow('M80 145 L97 186 L90 190 L70 156 Z', 0.1)}${line('M80 145 L97 186 M120 145 L103 186 M60 160 L80 145 M140 160 L120 145', 1.6)}`,
   };
-  const tie = a.acc === 'gravata'
+  const accs = accsOf(a);
+  const tie = accs.includes('gravata')
     ? `<path d="M90 150 L100 156 L110 150 L110 162 L100 156 L90 162 Z" fill="${INK}"/>`
     : a.outfit === 'terno' ? `<path d="M97 154 L103 154 L106 182 L100 190 L94 182 Z" fill="${cloth}"/>${line('M97 154 L103 154 L106 182 L100 190 L94 182 Z', 1.2)}` : '';
 
@@ -119,7 +131,7 @@ export function avatarSVG(raw, { label = '' } = {}) {
       <path d="M96 52 C116 46 150 46 162 54 C150 60 120 60 96 58 Z" fill="${cloth}"/>${shade('M96 55 C120 56 150 58 162 54 C150 60 120 60 96 58 Z', 0.35)}${line('M66 56 C64 26 84 14 100 14 C118 14 136 26 134 56 M96 52 C116 46 150 46 162 54 C150 60 120 60 96 58 M100 14 L100 52', 2)}<circle cx="100" cy="15" r="2.4" fill="${cloth}" stroke="${INK}" stroke-width="1.2"/>`,
   }[a.hair] || '';
 
-  const acc = {
+  const ACC = {
     'óculos escuros': `<path d="M74 70 Q74 82 84 83 Q95 83 96 72 Q96 66 86 66 Q74 66 74 70 Z" fill="url(#${id}-lens)"/><path d="M126 70 Q126 82 116 83 Q105 83 104 72 Q104 66 114 66 Q126 66 126 70 Z" fill="url(#${id}-lens)"/>
       <path d="M74 70 Q74 82 84 83 Q95 83 96 72 Q96 66 86 66 Q74 66 74 70 Z M126 70 Q126 82 116 83 Q105 83 104 72 Q104 66 114 66 Q126 66 126 70 Z M96 69 Q100 66 104 69 M74 69 L68 67 M126 69 L132 67" fill="none" stroke="url(#${id}-gold)" stroke-width="1.8"/>${glow('M78 70 L84 68 L80 76 Z M108 70 L114 68 L110 76 Z', 0.4)}`,
     'corrente de ouro': `<path d="M82 148 Q100 176 118 148" fill="none" stroke="url(#${id}-gold)" stroke-width="3.2" stroke-dasharray="3 1.4"/><path d="M95 166 L100 160 L105 166 L100 176 Z" fill="url(#${id}-gold)" stroke="var(--gold-lo)" stroke-width=".8"/>`,
@@ -136,7 +148,8 @@ export function avatarSVG(raw, { label = '' } = {}) {
       ${glow('M80 26 C88 18 94 17 100 18 C92 24 86 31 83 42 Z', 0.22)}${line('M42 50 Q100 65 158 50 M72 50 C70 26 82 14 100 16 C118 14 130 26 128 50', 1.6)}`,
     'grillz de ouro': `<path d="M91 105.4 Q100 109.5 109 105.4 L108 108 Q100 111 92 108 Z" fill="url(#${id}-gold)" stroke="var(--gold-lo)" stroke-width=".6"/>`,
     'pulseira de prata': '', 'relógio de luxo': '', 'anel de diamante': '',
-  }[a.acc] || '';
+  };
+  const acc = accs.map(k => ACC[k] || '').join('');
 
   return `<svg viewBox="0 0 200 200" role="img" aria-label="${label || 'personagem'}">${defs}${backHair}${neck}${outfits[a.outfit] || outfits.camiseta}${tie}${ears}${head}${beard}${eye(86, false)}${eye(114, true)}${brows}${nose}${mouth}${top}${acc}</svg>`;
 }

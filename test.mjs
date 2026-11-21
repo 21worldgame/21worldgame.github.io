@@ -1062,7 +1062,7 @@ console.log('mina ok');
 }
 { const SHq = await import('./shop.js'), Lq = await import('./logic.js'); const s = Lq.newState(() => 0.5); (s.owned ??= []).push('acc:corrente de ouro'); (s.avatar ??= {}).acc = 'corrente de ouro';
   assert.ok(SHq.items(s).some(i => i.kind === 'acc' && i.label === 'corrente de ouro')); const m = s.money; const r = SHq.sellToHouse(s, 'acc:corrente de ouro');
-  assert.equal(r.amount, 12500); assert.equal(s.money, m + 12500); assert.equal(s.avatar.acc, 'nenhum'); assert.ok(!s.owned.includes('acc:corrente de ouro')); console.log('acessório no inventário ok'); }
+  assert.equal(r.amount, 12500); assert.equal(s.money, m + 12500); assert.deepEqual(s.avatar.acc, []); assert.ok(!s.owned.includes('acc:corrente de ouro')); console.log('acessório no inventário ok'); }
 
 {
   const TD = await import('./trade.js'), SH = await import('./shop.js'), NG = await import('./negocios.js');
@@ -1209,3 +1209,11 @@ import * as CT from './contador.js';
   assert.ok(A('por que tive prejuízo?').includes('gado: −R$ 3895'));
   console.log('contador ok');
 }
+// vários acessórios: um por lugar do corpo; save antigo (texto) continua funcionando
+{ const AV = await import('./avatar.js'); const a = { acc: 'brinco' };
+  AV.toggleAcc(a, 'corrente de ouro'); AV.toggleAcc(a, 'chapéu de peão'); AV.toggleAcc(a, 'boné de marca');
+  assert.deepEqual(AV.accsOf(a), ['brinco', 'corrente de ouro', 'boné de marca'], 'um chapéu por vez');
+  AV.toggleAcc(a, 'brinco'); assert.deepEqual(AV.accsOf(a), ['corrente de ouro', 'boné de marca']);
+  const svg = AV.avatarSVG(a); assert.ok(svg.includes('stroke-dasharray="3 1.4"') && svg.includes('cx="100" cy="34" r="7"'), 'desenha os dois');
+  AV.toggleAcc(a, 'nenhum'); assert.deepEqual(AV.accsOf(a), []); assert.deepEqual(AV.accsOf({ acc: 'nenhum' }), []);
+  console.log('vários acessórios ok'); }

@@ -1,6 +1,6 @@
 import * as L from './logic.js';
 import * as P from './progress.js';
-import { CATALOG, avatarSVG } from './avatar.js';
+import { CATALOG, avatarSVG, accsOf, toggleAcc } from './avatar.js';
 import { G, $, esc, brl, int, RM, say, save, note, pay, award, checkAch, confetti, today, yesterday, reset, profileOf, levelUp } from './store.js';
 import * as C from './casino.js';
 import * as RC from './racing.js';
@@ -192,9 +192,9 @@ function renderChar() {
   const b = PK.bonuses(S());
   $('#char-perks').innerHTML = `<h3>suas vantagens</h3>${Object.keys(b).length ? `<ul>${Object.entries(b).map(([k, v]) => `<li><b class="${v > 0 === (k !== 'loan') ? 'good' : 'bad'}">${v > 0 ? '+' : ''}${Math.round(v * 100)}%</b> ${PK.EFFECTS[k]}</li>`).join('')}</ul>` : '<p class="muted small">Nenhuma ainda. Compre carros na loja ou acessórios aqui.</p>'}`;
   $('#wardrobe').innerHTML = Object.entries(CATALOG).map(([k, g]) => `
-    <fieldset class="opts"><legend>${g.label}</legend>
+    <fieldset class="opts"><legend>${k === 'acc' ? 'acessórios <small class="muted">use vários, um por lugar (cabeça, olhos, pescoço, pulso...)</small>' : g.label}</legend>
       ${g.opts.map(o => {
-        const on = String(a[k]) === String(o.id), locked = o.price && !S().owned.includes(`${k}:${o.id}`);
+        const on = k === 'acc' ? (o.id === 'nenhum' ? !accsOf(a).length : accsOf(a).includes(o.id)) : String(a[k]) === String(o.id), locked = o.price && !S().owned.includes(`${k}:${o.id}`);
         return `<button class="opt${o.swatch ? ' opt--sw' : ''}${on ? ' is-on' : ''}" aria-pressed="${on}" data-act="look" data-k="${k}" data-id="${o.id}"
           ${o.swatch ? `style="--sw:${o.swatch}" aria-label="${g.label} ${o.id}"` : ''}>${o.swatch ? '' : esc(o.id)}${locked ? `<small>${brl(o.price)}</small>` : ''}${k === 'acc' && PK.ACC_PERKS[o.id] ? `<small class="good">${esc(PK.label(PK.ACC_PERKS[o.id]))}</small>` : ''}</button>`;
       }).join('')}
@@ -886,7 +886,7 @@ const ACTS = {
       if (!pay(opt.price, `loja de luxo: ${opt.id}`)) return;
       S().owned.push(tag); say(`${opt.id} no seu guarda-roupa.`);
     }
-    S().avatar[k] = typeof CATALOG[k].opts[0].id === 'number' ? Number(id) : id;
+    if (k === 'acc') toggleAcc(S().avatar, opt.id); else S().avatar[k] = typeof CATALOG[k].opts[0].id === 'number' ? Number(id) : id;
     C.updateInfo();
   },
   'buy-land'(idv) {
@@ -1349,7 +1349,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 78;
+const APP_VERSION = 79;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;

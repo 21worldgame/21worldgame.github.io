@@ -10,7 +10,7 @@ import * as PM from './pomar.js';
 import * as CN from './cana.js';
 import * as NG from './negocios.js';
 import { debt } from './logic.js';
-import { CATALOG } from './avatar.js';
+import { CATALOG, accsOf } from './avatar.js';
 
 export const HOUSE_RATE = { car: CAR_BUYBACK, land: 0.95, card: CD.SELL, player: 0.8 };
 export const NPC_MAX = 1.05;            // comprador da casa paga até 5% acima do preço de venda na hora
@@ -68,7 +68,7 @@ export function remove(s, it) {
   if (it.kind === 'card') s.cards = s.cards.filter(c => c.id !== it.id);
   if (it.kind === 'player' && s.fut) s.fut.squad = s.fut.squad.filter(p => p.id !== it.id);
   if (it.kind === 'club') { const ids = new Set((s.fut?.squad || []).map(p => `player:${p.id}`)); s.shop = (s.shop || []).filter(l => !ids.has(l.key)); delete s.fut; }
-  if (it.kind === 'acc') { s.owned = s.owned.filter(t => t !== `acc:${it.acc}`); if (s.avatar?.acc === it.acc) s.avatar.acc = 'nenhum'; }
+  if (it.kind === 'acc') { s.owned = s.owned.filter(t => t !== `acc:${it.acc}`); if (s.avatar) s.avatar.acc = accsOf(s.avatar).filter(x => x !== it.acc); }
   if (it.kind === 'aviario') s.granja.houses = s.granja.houses.filter(h => h.id !== it.id);
   if (it.kind === 'galpao') s.biz.wh = s.biz.wh.filter(w => w.id !== it.id);
   if (it.kind === 'empresa') s.biz[it.cat] = s.biz[it.cat].filter(b => b.id !== it.id);

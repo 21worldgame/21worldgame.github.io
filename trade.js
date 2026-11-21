@@ -6,7 +6,7 @@ import * as CD from './cards.js';
 import { POS as FPOS, value as fValue, salary as fSalary, club as fClub, adoptClub } from './futebol.js';
 import * as NG from './negocios.js';
 import * as GR from './granja.js';
-import { CATALOG } from './avatar.js';
+import { CATALOG, accsOf } from './avatar.js';
 export const GOODS = { soja: 'soja', milho: 'milho', cafe: 'café', laranja: 'laranja (caixas)' };
 export const MAX_ITEMS = 8;
 
@@ -106,7 +106,7 @@ export function apply(s, give, receive) {
     if (i.kind === 'land') s.lands = s.lands.filter(l => l.id !== i.data.id);
     if (i.kind === 'player' && s.fut) s.fut.squad = s.fut.squad.filter(p => p.id !== i.data.id);
     if (i.kind === 'card') s.cards = s.cards.filter(c => c.id !== i.data.id);
-    if (i.kind === 'acc') { s.owned = s.owned.filter(t => t !== `acc:${i.acc}`); if (s.avatar?.acc === i.acc) s.avatar.acc = 'nenhum'; }
+    if (i.kind === 'acc') { s.owned = s.owned.filter(t => t !== `acc:${i.acc}`); if (s.avatar) s.avatar.acc = accsOf(s.avatar).filter(x => x !== i.acc); }
     if (i.kind === 'galpao') s.biz.wh = s.biz.wh.filter(w => w.id !== i.data.id);
     if (i.kind === 'aviario') s.granja.houses = s.granja.houses.filter(h => h.id !== i.data.id);
     if (i.kind === 'empresa') s.biz[i.cat] = s.biz[i.cat].filter(b => b.id !== i.data.id);
