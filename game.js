@@ -700,6 +700,8 @@ function openProfile(pid, fetched) {
   if (!p && String(pid).startsWith('u:')) { Auth.profileCard(pid.slice(2)).then(r => r ? openProfile(pid, r) : say('Perfil indisponível agora.', true)); return; }
   if (!p) return say('Perfil indisponível: o jogador saiu.', true);
   if (p.npc && !p.trophies) p = { ...p, trophies: L.TROPHIES.filter(t => p.worth >= t) };
+  // os 10 mais ricos do mundo (jogadores do mundo) deixam o perfil privado, como quem tem conta pode fazer a partir de R$ 10 mi
+  if (p.npc && p.worth >= L.PRIVATE_MIN) { let top = []; try { top = C.rankingRows(500).filter(r => String(r.pid).startsWith('npc:')).slice(0, 10).map(r => r.pid); } catch {} if (top.includes(`npc:${p.id}`)) p = { npc: true, id: p.id, name: p.name, look: p.look, level: p.level, rank: p.rank, worth: p.worth, trophies: p.trophies, private: true }; }   // igual ao privado de quem tem conta: só o básico e os troféus
   const me = pid === 'me', st = p.stats || {}, prTop = PK.prestigeTop(p.trophies);
   if (p.npc && !p.ach) p.ach = P.ACHIEVEMENTS.slice(0, p.achCount).map(a => a.id);
   const rate = st.hands ? Math.round((st.wins / st.hands) * 100) : 0;
@@ -1577,7 +1579,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 126;
+const APP_VERSION = 127;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
