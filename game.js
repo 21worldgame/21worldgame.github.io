@@ -1443,16 +1443,17 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 107;
+const APP_VERSION = 108;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
-let checking = false;
+let checking = false, quickNext = false;
 async function checkUpdate() {
   if (updateShown || checking) return;   // uma verificação por vez (senão saem dois avisos e duas contagens)
   checking = true;
   try { await checkUpdateNow(); } finally { checking = false; }
 }
 async function checkUpdateNow() {
+  const quick = quickNext; quickNext = false;   // só a verificação da volta ao jogo é imediata
   try {
     const r = await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' });
     if (!r.ok) return;
@@ -1467,7 +1468,7 @@ async function checkUpdateNow() {
     const g = await fetch('game.js', { cache: 'reload' }).then(x => (x.ok ? x.text() : '')).catch(() => '');
     if ((Number(g.match(/APP_VERSION = (\d+)/)?.[1]) || 0) < v) return;   // ainda propagando: tenta de novo em 30 s
     updateMsg = String(j.msg || '').slice(0, 140);
-    showUpdate(true, v);
+    showUpdate(true, v, quick);
   } catch {}
 }
 // a página recarrega sozinha em 15 s, a não ser que a pessoa esteja no meio de uma mão, corrida, turno ou troca
@@ -1481,18 +1482,17 @@ async function doReload() {
   try { await (await navigator.serviceWorker?.getRegistration())?.update(); } catch {}
   location.reload();
 }
-function showUpdate(auto = true, v = 0) {
+function showUpdate(auto = true, v = 0, quick = false) {
   updateShown = true;
   try { sessionStorage.setItem('21world.updTried', `${v}@${Date.now()}`); } catch {}
   const host = [...document.querySelectorAll('dialog[open]')].pop() || document.body;   // janela aberta deixa o resto sem clique
   host.insertAdjacentHTML('beforeend', `<div class="upd" role="status" title="${esc(updateMsg)}"><span class="upd__dot" aria-hidden="true"></span>
     <span><strong>Atualização</strong> <span id="upd-txt">recarrega em 15 s</span></span>
-    <button class="upd__go" type="button" id="upd-go">agora</button><button class="upd__x" type="button" id="upd-x" aria-label="fechar aviso">×</button></div>`);
+    <button class="upd__go" type="button" id="upd-go">agora</button></div>`);   // sem fechar: a atualização sempre acontece (celular incluso)
   $('#upd-go').addEventListener('click', doReload);
-  $('#upd-x').addEventListener('click', () => { closed = true; document.querySelector('.upd')?.remove(); updateShown = false; });   // volta a avisar em 2 min
   let closed = false; const node = document.querySelector('.upd');
   if (!auto) return;
-  let left = 15;
+  let left = quick ? 1 : 15;   // voltou para o jogo (celular saindo do segundo plano): atualiza na hora
   const t = setInterval(() => {
     if (closed) { clearInterval(t); return; }
     if (!node.isConnected) document.body.append(node);   // a janela onde estava fechou: volta para a tela
@@ -1502,9 +1502,9 @@ function showUpdate(auto = true, v = 0) {
   }, 1000);
 }
 checkUpdate(); setInterval(checkUpdate, 30000);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { quickNext = true; navigator.serviceWorker?.getRegistration().then(r => r?.update()).catch(() => {}); checkUpdate(); } });
 addEventListener('focus', checkUpdate);
-addEventListener('pageshow', checkUpdate);   // celular voltando do segundo plano / do cache de páginas
+addEventListener('pageshow', () => { quickNext = true; checkUpdate(); });   // celular voltando do segundo plano / do cache de páginas
 // aviso na hora: ao publicar, o servidor manda "versão nova" para todos conectados (não espera os 30 s)
 Auth.sbReady().then(sb => sb?.channel('21w:versao').on('broadcast', { event: 'v' }, () => { if (!document.querySelector('.upd')) updateShown = false; checkUpdate(); }).subscribe()).catch(() => {});
 

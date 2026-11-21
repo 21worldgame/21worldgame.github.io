@@ -2302,8 +2302,7 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .upd > span:nth-child(2) { min-width: 0 !important; white-space: nowrap; }
 .upd__dot { width: 8px; height: 8px; }
 .upd__go { border: 0; border-radius: 99px; padding: 4px 10px; background: #f5b833; color: #111; font: 800 .74rem/1 var(--font-body); cursor: pointer; }
-.upd__x { border: 0; background: none; color: var(--color-muted); font-size: 1.1rem; line-height: 1; padding: 2px 6px; cursor: pointer; }
-.upd__go:focus-visible, .upd__x:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.upd__go:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 @media (max-width: 40rem) { .upd { bottom: 76px; } }
 
 /* faixa "jogando agora" no topo de cada jogo do salão */
