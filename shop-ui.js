@@ -6,6 +6,7 @@ import { G, $, esc, brl, say, save, note, award, confetti, profileOf } from './s
 import * as sfx from './sfx.js';
 import * as Auth from './auth.js';
 import * as NGU from './negocios-ui.js';
+import * as ACS from './acc-stock.js';
 
 let lobby = null, media = () => '', kindName = {}, announce = () => {}, cat = 'all';
 export const setCat = c => { cat = c || 'all'; render(); };
@@ -109,6 +110,7 @@ export function sellNow(key) {
   if (!confirm(`Vender ${it.label} agora por ${brl(SH.housePrice(G.S, it))}?`)) return;
   const r = SH.sellToHouse(G.S, key);
   if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true);
+  if (r.item.kind === 'acc') ACS.give(r.item.acc);   // volta para o estoque da loja
   note(`loja: vendeu ${r.item.label}`, r.amount); say(`Vendido por ${brl(r.amount)}.`); sfx.play('stack', 0.6);
   save(); announce(); G.render();
 }

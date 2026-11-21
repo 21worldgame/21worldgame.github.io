@@ -38,6 +38,7 @@ import * as CN from './cana.js';
 import * as MK from './market.js';
 import * as AB from './abate.js';
 import * as FN from './frig-net.js';
+import * as ACS from './acc-stock.js';
 import * as CD from './cards.js';
 import * as CHUI from './chat-ui.js';
 import './news-ui.js';
@@ -191,12 +192,14 @@ function renderChar() {
   $('#char-name-hint').textContent = locked ? `Nome trocado no mês ${S().nameAt}. Próxima troca no mês ${S().nameAt + 10} do mundo (faltam ${S().nameAt + 10 - S().month}).` : 'Você pode trocar o nome a cada 10 meses do mundo. Ele fica salvo quando você sai do campo.';
   const b = PK.bonuses(S());
   $('#char-perks').innerHTML = `<h3>suas vantagens</h3>${Object.keys(b).length ? `<ul>${Object.entries(b).map(([k, v]) => `<li><b class="${v > 0 === (k !== 'loan') ? 'good' : 'bad'}">${v > 0 ? '+' : ''}${Math.round(v * 100)}%</b> ${PK.EFFECTS[k]}</li>`).join('')}</ul>` : '<p class="muted small">Nenhuma ainda. Compre carros na loja ou acessórios aqui.</p>'}`;
+  ACS.refresh(() => { if (currentTab === 'personagem') renderChar(); });
+  const stockTag = o => { const n = ACS.leftOf(o.id); return n == null ? '' : `<small class="${n ? 'muted' : 'bad'}">${n ? `restam ${n} de ${ACS.MAX}` : 'esgotado: só de jogadores no Feirão'}</small>`; };
   $('#wardrobe').innerHTML = Object.entries(CATALOG).map(([k, g]) => `
     <fieldset class="opts"><legend>${k === 'acc' ? 'acessórios <small class="muted">use vários, um por lugar (cabeça, olhos, pescoço, pulso...)</small>' : g.label}</legend>
       ${g.opts.map(o => {
         const on = k === 'acc' ? (o.id === 'nenhum' ? !accsOf(a).length : accsOf(a).includes(o.id)) : String(a[k]) === String(o.id), locked = o.price && !S().owned.includes(`${k}:${o.id}`);
         return `<button class="opt${o.swatch ? ' opt--sw' : ''}${on ? ' is-on' : ''}" aria-pressed="${on}" data-act="look" data-k="${k}" data-id="${o.id}"
-          ${o.swatch ? `style="--sw:${o.swatch}" aria-label="${g.label} ${o.id}"` : ''}>${o.swatch ? '' : esc(o.id)}${locked ? `<small>${brl(o.price)}</small>` : ''}${k === 'acc' && PK.ACC_PERKS[o.id] ? `<small class="good">${esc(PK.label(PK.ACC_PERKS[o.id]))}</small>` : ''}</button>`;
+          ${o.swatch ? `style="--sw:${o.swatch}" aria-label="${g.label} ${o.id}"` : ''}>${o.swatch ? '' : esc(o.id)}${locked ? `<small>${brl(o.price)}</small>${k === 'acc' ? stockTag(o) : ''}` : ''}${k === 'acc' && PK.ACC_PERKS[o.id] ? `<small class="good">${esc(PK.label(PK.ACC_PERKS[o.id]))}</small>` : ''}</button>`;
       }).join('')}
     </fieldset>`).join('');
 }
@@ -715,10 +718,11 @@ function renderFeira() {
 }
 function feiraBuy(id) {
   const it = S().feira?.list.find(x => x.id === id); if (!it) return;
-  openDeal({ title: it.label, sub: `Valor de referência ${brl(it.value)}.`, who: it.bot, deal: FE.buyDeal(it), onDone: price => {
+  openDeal({ title: it.label, sub: `Valor de referência ${brl(it.value)}.`, who: it.bot, deal: FE.buyDeal(it), onDone: async price => {
     if (!price) return;
+    if (it.kind === 'acc' && !(await ACS.take(it.acc))) return say(`${it.acc} esgotou: não tem mais nenhum para vender.`, true);
     const err = FE.buy(S(), id, price);
-    if (err) return say(err[0].toUpperCase() + err.slice(1), true);
+    if (err) { if (it.kind === 'acc') ACS.give(it.acc); return say(err[0].toUpperCase() + err.slice(1), true); }
     note(`feira: ${it.label} de ${it.bot}`, -price); award('trade'); confetti(30); say(`Comprado por ${brl(price)}.`); save(); render();
   } });
 }
@@ -879,11 +883,12 @@ const ACTS = {
   'edit-char'() { $('#dlg-profile').close(); G.goto('personagem'); },
   'close-profile'() { const d = $('#dlg-profile'); if (d.open) d.close(); },
   'toggle-private'() { const s = S(); if (!(s.trophies || []).includes(L.PRIVATE_MIN)) return say('O perfil privado libera aos R$ 10 milhões.', true); s.privateProfile = !s.privateProfile; save(); say(s.privateProfile ? 'Perfil privado: os outros só veem seus troféus.' : 'Perfil público de novo.'); openProfile('me'); },
-  look(id, b) {
+  async look(id, b) {
     const k = b.dataset.k, opt = CATALOG[k].opts.find(o => String(o.id) === id), tag = `${k}:${opt.id}`;
     if (opt.price && !S().owned.includes(tag)) {
       if (!confirm(`Comprar ${opt.id} por ${brl(opt.price)}?`)) return;
-      if (!pay(opt.price, `loja de luxo: ${opt.id}`)) return;
+      if (k === 'acc' && !(await ACS.take(opt.id))) { renderChar(); return say(`${opt.id} esgotou na loja. Procure de outro jogador no Feirão 21.`, true); }
+      if (!pay(opt.price, `loja de luxo: ${opt.id}`)) { if (k === 'acc') ACS.give(opt.id); return; }
       S().owned.push(tag); say(`${opt.id} no seu guarda-roupa.`);
     }
     if (k === 'acc') toggleAcc(S().avatar, opt.id); else S().avatar[k] = typeof CATALOG[k].opts[0].id === 'number' ? Number(id) : id;
@@ -1349,7 +1354,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 80;
+const APP_VERSION = 81;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;
@@ -1364,9 +1369,9 @@ async function checkUpdateNow() {
     if (!r.ok) return;
     const j = await r.json(), v = Number(j.v) || 0;
     if (v <= APP_VERSION) return;
-    // já recarregou por causa desta versão: nunca de novo (sem laço); o código novo entra sozinho na próxima abertura
-    // aparelho travado com versão velha (não sincroniza até atualizar): tenta de novo a cada 2 min em vez de desistir
-    let tried = false; try { const t = sessionStorage.getItem('21world.updTried') || ''; tried = Auth.isOutdated?.() ? Date.now() - (Number(t.split('@')[1]) || 0) < 120000 : t === String(v); } catch {}
+    // já tentou esta versão há menos de 2 min: espera (sem laço de recarga). Depois tenta de novo até o código novo entrar,
+    // mesmo que o celular tenha recarregado com arquivo velho do cache ou a pessoa tenha fechado o aviso
+    let tried = false; try { tried = Date.now() - (Number((sessionStorage.getItem('21world.updTried') || '').split('@')[1]) || 0) < 120000; } catch {}
     if (tried) return;
     // o GitHub publica o version.json antes do resto: só recarrega quando o game.js que a página vai carregar (mesmo endereço,
     // sem ?t=, que o CDN guarda até 10 min) já é o novo; cache:'reload' também renova a cópia do navegador
@@ -1389,13 +1394,13 @@ async function doReload() {
 }
 function showUpdate(auto = true, v = 0) {
   updateShown = true;
-  try { sessionStorage.setItem('21world.updTried', Auth.isOutdated?.() ? `x@${Date.now()}` : String(v)); } catch {}
+  try { sessionStorage.setItem('21world.updTried', `${v}@${Date.now()}`); } catch {}
   const host = [...document.querySelectorAll('dialog[open]')].pop() || document.body;   // janela aberta deixa o resto sem clique
   host.insertAdjacentHTML('beforeend', `<div class="upd" role="status" title="${esc(updateMsg)}"><span class="upd__dot" aria-hidden="true"></span>
     <span><strong>Atualização</strong> <span id="upd-txt">recarrega em 15 s</span></span>
     <button class="upd__go" type="button" id="upd-go">agora</button><button class="upd__x" type="button" id="upd-x" aria-label="fechar aviso">×</button></div>`);
   $('#upd-go').addEventListener('click', doReload);
-  $('#upd-x').addEventListener('click', () => { closed = true; document.querySelector('.upd')?.remove(); });
+  $('#upd-x').addEventListener('click', () => { closed = true; document.querySelector('.upd')?.remove(); updateShown = false; });   // volta a avisar em 2 min
   let closed = false; const node = document.querySelector('.upd');
   if (!auto) return;
   let left = 15;
@@ -1410,6 +1415,9 @@ function showUpdate(auto = true, v = 0) {
 checkUpdate(); setInterval(checkUpdate, 30000);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
 addEventListener('focus', checkUpdate);
+addEventListener('pageshow', checkUpdate);   // celular voltando do segundo plano / do cache de páginas
+// aviso na hora: ao publicar, o servidor manda "versão nova" para todos conectados (não espera os 30 s)
+Auth.sbReady().then(sb => sb?.channel('21w:versao').on('broadcast', { event: 'v' }, () => { if (!document.querySelector('.upd')) updateShown = false; checkUpdate(); }).subscribe()).catch(() => {});
 
 // ---------- instalar como aplicativo (Android e computador; no iPhone é pelo "Adicionar à Tela de Início") ----------
 let installEv = null;
