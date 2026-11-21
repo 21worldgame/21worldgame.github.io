@@ -3373,9 +3373,12 @@ button, .btn, [role="button"], .tab, .subtab { -webkit-touch-callout: none; -web
 .cx-out { margin: 0; min-height: 1.4em; font-size: 1rem; }
 .cx-acts { display: flex; gap: 8px; justify-content: flex-end; }
 @media (max-width: 40rem) { .chipx-ico { width: 15px; height: 15px; font-size: .6rem; } }
-/* botão "trocar fichas" no menu (some do topo no celular: lá fica no menu de baixo) */
-.hdr-chipx { gap: 6px; } .hud__in > .hdr-chipx { order: 6 !important; }
-@media (max-width: 40rem) { .hdr-chipx { display: none !important; } }
+/* "trocar fichas": botão no fim do menu "você" (computador) e no menu de baixo (celular) */
+.tab-chipx { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(250,204,21,.35); background: rgba(250,204,21,.08); color: inherit; font: inherit; font-size: .85rem; cursor: pointer; white-space: nowrap; }
+.tab-chipx:hover { background: rgba(250,204,21,.16); } .tab-chipx.is-off { display: none; }
+@media (max-width: 40rem) { .tab-chipx { display: none !important; } }
+/* garantia: diálogo fechado nunca aparece na página */
+dialog:not([open]) { display: none !important; }
 /* futebol: cor por posição (bolinha do campo e etiqueta) · goleiro mostarda, defesa azul, meio verde, ataque vermelho */
 .ply--GOL { --pc: #d4a017; } .ply--ZAG, .ply--LAT { --pc: #2563eb; } .ply--VOL, .ply--MEI { --pc: #16a34a; } .ply--ATA { --pc: #dc2626; }
 .ply[class*="ply--"] b { background: var(--pc); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); box-shadow: 0 0 0 2px var(--c1, #fff), 0 3px 0 var(--shade); }
