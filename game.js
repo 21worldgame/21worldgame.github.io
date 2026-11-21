@@ -104,8 +104,9 @@ function renderPass() {
 
 function renderHud() {
   const s = S(), worth = L.netWorth(s);
-  rollTo($('#r-money'), s.money, brl);
-  rollTo($('#r-chips'), s.chips, int);
+  const small = matchMedia('(max-width: 40rem)').matches, cmp = (v, pre) => { const a = Math.abs(v), f = (x, u) => `${pre}${String(+x.toFixed(x < 10 ? 1 : 0)).replace('.', ',')} ${u}`; return a >= 1e9 ? f(v / 1e9, 'bi') : a >= 1e6 ? f(v / 1e6, 'mi') : pre ? brl(v) : int(v); };
+  rollTo($('#r-money'), s.money, small && Math.abs(s.money) >= 1e6 ? v => cmp(v, 'R$ ') : brl);   // celular: R$ 10 bi em vez de R$ 9.999.996.000
+  rollTo($('#r-chips'), s.chips, small && s.chips >= 1e5 ? v => cmp(v, '') : int);
   rollTo($('#r-worth'), worth, brl);
   rollTo($('#chips-now'), s.chips, v => `${int(v)} fichas`);
   rollTo($('#table-chips'), s.chips, int);
@@ -444,7 +445,7 @@ function renderGado() {
         <button class="btn btn--gold btn--sm" data-act="ab-kill" data-id="${h.id}">abater ${brl(h.heads * (AB.capLeft(s) >= h.heads ? AB.perHead(s, h.kg, 'proprio') : AB.perHead(s, h.kg, 'terceiros')))}</button>
         ${(() => { const ps = FN.options(h.heads); if (!ps.length) return ''; const pay = p => brl(h.heads * AB.perHead(s, h.kg, 'jogador', p.fee));
           return ps.length === 1 ? `<button class="btn btn--gold btn--sm" data-act="ab-killp" data-id="${h.id}" data-owner="${esc(ps[0].owner)}">abater no frigorífico de ${esc(ps[0].owner_name)} ${pay(ps[0])}</button>`
-            : `<span class="abp"><label class="visually-hidden" for="abp-${h.id}">frigorífico de jogador</label><select class="input abp__sel" id="abp-${h.id}">${ps.map(p => `<option value="${esc(p.owner)}"${abpPick[h.id] === p.owner ? ' selected' : ''}>${esc(p.owner_name)} · taxa ${brl(p.fee)}/cab. · você recebe ${pay(p)} · ${int(p.left)} vagas</option>`).join('')}</select><button class="btn btn--gold btn--sm" data-act="ab-killp" data-id="${h.id}">abater no frigorífico escolhido</button></span>`; })()}</div>
+            : `<span class="abp"><label class="visually-hidden" for="abp-${h.id}">frigorífico de jogador</label><select class="input abp__sel" id="abp-${h.id}">${ps.map(p => `<option value="${esc(p.owner)}"${abpPick[h.id] === p.owner ? ' selected' : ''} title="taxa ${brl(p.fee)}/cab. · ${int(p.left)} vagas">${esc(p.owner_name)} · recebe ${pay(p)}</option>`).join('')}</select><small class="muted abp__info">taxa e vagas: ${ps.map(p => `${esc(p.owner_name)} ${brl(p.fee)}/cab. (${int(p.left)} vagas)`).join(' · ')}</small><button class="btn btn--gold btn--sm" data-act="ab-killp" data-id="${h.id}">abater no frigorífico escolhido</button></span>`; })()}</div>
       <p class="small muted">${AB.capLeft(s) >= h.heads ? 'abate no seu frigorífico (com couro)' : s.abate?.owned ? 'seu frigorífico lotou este mês: abate em terceiros' : 'abate em frigorífico de terceiros'}</p></article>`;
   }).join('') : '<p class="empty glass">Você ainda não tem bois. Compre bezerros no leilão acima: se tiver pasto, eles vão para lá sozinhos.</p>';
 }
@@ -632,17 +633,6 @@ function renderBanco() {
     <td>${l.missed ? '<span class="tag tag--red">atrasada</span>' : '<span class="tag tag--green">em dia</span>'}</td>
     <td class="acts"><button class="btn btn--glass" data-act="payoff" data-id="${l.id}">quitar</button></td></tr>`).join('')
     : '<tr><td colspan="5" class="empty">Nenhuma dívida.</td></tr>';
-  $('#borrowers').innerHTML = s.borrowers.length ? s.borrowers.map(b => {
-    const look = { skin: (b.id % 5) + 1, hair: ['curto', 'longo', 'coque', 'raspado', 'boné'][b.id % 5], hairColor: (b.id % 4) + 1, outfit: ['moletom', 'regata', 'jaqueta'][b.id % 3], cloth: (b.id % 6) + 1, acc: 'nenhum' };
-    return `<article class="glass bcard">
-      <span class="bcard__avatar">${avatarSVG(look, { label: b.name })}</span>
-      <div><h4>${esc(b.name)}</h4><p class="price">${brl(b.amount)}</p>
-      <p class="muted small">${(b.rate * 100).toFixed(1)}% ao mês em ${b.months} meses</p>
-      <p class="small"><span class="tag ${b.risk > 0.07 ? 'tag--red' : b.risk > 0.035 ? 'tag--gold' : 'tag--green'}">risco ${(b.risk * 100).toFixed(1).replace('.', ',')}%/mês</span></p>
-      <p class="muted small">paga tudo em ${Math.round((1 - b.risk) ** b.months * 100)}% das vezes · lucro esperado ${brl(b.amount * L.lendEdge(b) * b.months)}</p></div>
-      <button class="btn btn--glass" data-act="lend" data-id="${b.id}">emprestar</button></article>`;
-  }).join('') : '<p class="empty glass">Ninguém pedindo empréstimo este mês.</p>';
-  $('#lent').innerHTML = s.lent.length ? s.lent.map(p => `<tr>
     <td>${esc(p.name)}</td><td class="num">${brl(p.bal)}</td><td class="num">${(p.rate * 100).toFixed(1)}%</td><td class="num">${p.left}</td></tr>`).join('')
     : '<tr><td colspan="4" class="empty">Você ainda não emprestou para ninguém.</td></tr>';
   INVU.render();

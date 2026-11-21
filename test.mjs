@@ -940,6 +940,12 @@ console.log('suínos, negócios e galpões ok');
   assert.ok(r.filter(w => w > 1.9e6 && w < 2.5e6).length >= 3, 'vizinhos logo acima de quem está subindo');
   assert.ok(r.filter(w => w > 2.5e8).length >= 9, '10 caçadores em escada atrás do líder');
 }
+{ // duelo: ReiDoGado encosta no Nocbit mas só passa depois das 21:30 de Brasília
+  const RV4 = await import('./rivals.js'), NP = await import('./npcs.js'), rdg = NP.NPCS.find(n => n.orig === 'ReiDoGado');
+  const at = t => RV4.rivals(400, 9e8, 9e8, t, 9e8).find(r => r.name === rdg.nick).worth / 9e8;
+  for (let t = RV4.DUEL.from; t < RV4.DUEL.passAt; t += 6e4) assert.ok(at(t) < 1 && at(t) > 0.9, 'antes das 21:30 fica atrás, mas perto: ' + at(t));
+  for (let t = RV4.DUEL.passAt + 18e5; t < RV4.DUEL.passAt + 864e5; t += 6e4) assert.ok(at(t) > 1, 'depois passa');
+}
 console.log('mais ricos ok');
 
 // ---------- leilão de cavalos de raça ----------
