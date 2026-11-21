@@ -1449,3 +1449,16 @@ import * as CT from './contador.js';
   const b = s.biz[deal[0]][0]; assert.ok(b.paid < NGq.LISTS[deal[0]][deal[1]].price && b.rep === NGq.DEAL.rep, 'compra com desconto e reputação baixa');
   assert.ok(NGq.brandGrowth(1, 1.1) > 0 && NGq.brandGrowth(0.4, 0.85) < 0, 'valoriza com boa gestão, desvaloriza com má');
   console.log('empresas com análise e oportunidade ok'); }
+// economia do mundo: oferta alta derruba o preço de referência, crise só com concentração e sempre com aviso antes
+{ const E = await import('./econ.js');
+  let seen = new Set(), ok = 0;
+  for (let m = 1; m < 1500; m++) for (const e of E.events(m)) if (e.kind === 'superproducao' && !seen.has(e.id)) { seen.add(e.id); if (E.season(e.start - 6).pressure[e.good] >= 1.22) ok++; assert.equal(E.phaseOf(e, e.start - e.warn), 'aviso', 'crise tem aviso antes'); }
+  assert.ok(seen.size > 5 && ok === seen.size, 'crise só onde há concentração');
+  for (let m = 1; m < 1500; m += 7) { const s = E.state(m); for (const g of E.GOODS) assert.ok(s.price[g] >= 0.45 && s.price[g] <= 1.6, 'preço sem extremos ' + g + ' ' + s.price[g]); }
+  const hi = [...Array(600).keys()].map(m => E.season(m + 1)).find(s => E.GOODS.some(g => s.pressure[g] >= 1.3));
+  assert.ok(hi, 'mercado tem ciclos de concentração');
+  E.setReal([{ cafe: 5000 }, { cafe: 3000, soja: 100 }], 400); assert.ok(E.season(400).pressure.cafe > E.season(397).pressure.cafe, 'jogadores com conta mexem na oferta');
+  const inf = E.regionInfo([{ name: 'a', use: 'café' }, { name: 'b', use: 'pasto' }], { a: 30, b: 1 }, 400);
+  assert.ok(inf.a.risk > inf.b.risk && inf.b.tag === 'pouco explorada', 'região cheia de café é mais arriscada');
+  E.setReal([], 0);
+  console.log('economia do mundo ok'); }

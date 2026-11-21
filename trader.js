@@ -137,7 +137,7 @@ function tickerItems() {
 }
 function buildTicker() {
   const el = $('#ticker'); if (!el) return;
-  el.innerHTML = `<h4>valores do dia <small>ao vivo</small></h4><ul>${tickerItems()}</ul><p class="muted small">Clique para operar ou vender.</p>`;
+  el.innerHTML = `<h4>valores do dia <small>ao vivo</small></h4><div data-econ-chip></div><ul>${tickerItems()}</ul><p class="muted small">Clique para operar ou vender.</p>`;
   const btn = $('#tk-btn'), close = () => { el.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
   const place = () => el.style.setProperty('--tk-top', `${(b => b > innerHeight * 0.5 ? 12 : Math.max(8, b))(Math.round(btn.getBoundingClientRect().bottom + 8))}px`);   // logo abaixo do botão, onde quer que o topo esteja
   addEventListener('resize', () => { if (!el.hidden) place(); });

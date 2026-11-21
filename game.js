@@ -17,6 +17,7 @@ import * as SFU from './staff-ui.js';
 import * as SF from './staff.js';
 import { botsFor as BOTS } from './botpool.js';
 import * as NG from './negocios.js';
+import * as EC from './econ.js';
 import * as SH from './shop.js';
 import * as NGU from './negocios-ui.js';
 import * as SU from './suinos.js';
@@ -44,6 +45,7 @@ import * as CD from './cards.js';
 import * as CHUI from './chat-ui.js';
 import './news-ui.js';
 import './avisos.js';
+import './econ-ui.js';
 import * as SHUI from './shop-ui.js';
 import * as RKUI from './ranking-ui.js';
 import { openDeal } from './deal-ui.js';
@@ -244,11 +246,14 @@ function caneBox(l) {
     <div class="row"><button class="btn btn--sm ${c.care ? 'btn--gold' : 'btn--glass'}" data-act="cn-care" data-id="${l.id}" aria-pressed="${c.care}">${c.care ? 'tratos ligados' : 'tratos desligados'} (${brl(l.ha * CN.CANE.care)}/mês)</button>
       <button class="btn btn--glass btn--sm" data-act="cn-uproot" data-id="${l.id}">${c.cuts >= CN.CANE.reform ? 'reformar canavial' : 'arrancar canavial'}</button></div></div></div>`;
 }
+let REG_COUNTS = {}, REG_INFO = {};   // economia por região (econ.js): preenchido pelo econSync
 function landCard(l, kind) {
   const s = S();
   const badge = { offer: ['à venda', 'gold'], own: [l.leasedOut ? 'arrendada a terceiros' : 'sua', l.leasedOut ? 'violet' : 'green'], rent: ['arrendada de terceiros', 'violet'] }[kind];
   const benefit = kind === 'own' && !l.leasedOut ? `<p class="small good">dá: ${esc(PK.label(PK.landPerk(l)))}</p>` : kind === 'offer' ? `<p class="small good">ao comprar: ${esc(PK.label(PK.landPerk(l)))}</p>` : '';
-  const facts = [`${l.use}`, l.water, ...(l.improv || [])].map(t => `<span class="tag tag--dark">${esc(t)}</span>`).join('');
+  const ri = kind === 'offer' ? REG_INFO[l.region] : null;
+  const facts = [`${l.use}`, l.water, ...(l.improv || [])].map(t => `<span class="tag tag--dark">${esc(t)}</span>`).join('')
+    + (ri?.tag ? `<span class="tag ${ri.tag === 'saturada' ? 'tag--red' : 'tag--green'}" title="${ri.tag === 'saturada' ? 'muitos produtores aqui: risco de desvalorização' : ri.tag === 'pouco explorada' ? 'poucos jogadores nesta região: terra mais barata' : 'produto da região com pouca oferta'}">${ri.tag === 'saturada' ? '⚠️ região saturada' : ri.tag === 'pouco explorada' ? '🧭 pouco explorada' : '📈 produto em falta'}</span>` : '');
   let crop = '';
   if (kind !== 'offer' && !l.leasedOut && l.cane) {
     crop = caneBox(l);
@@ -974,6 +979,8 @@ const ACTS = {
   },
   'buy-land'(idv) {
     const o = find(S().offers, idv);
+    const al = o && EC.saturationAlert(o.region, REG_INFO, L.REGIONS);   // região saturada: avisa com os números e sugere outras
+    if (al && !confirm(`${al.title}\n\n${al.text}${al.alt.length ? `\n\nTalvez seja hora de explorar outras regiões:\n${al.alt.map(a => `• ${a.name} (${a.use}): ${a.why}`).join('\n')}` : ''}\n\nComprar mesmo assim?`)) return;
     if (o && pay(o.value, `compra de ${o.ha} ha, ${o.region}`)) {
       S().offers.splice(S().offers.indexOf(o), 1); S().lands.push({ ...o, own: true, leasedOut: false }); say('Terra registrada no seu nome.'); award('land');
     }
@@ -1346,6 +1353,20 @@ function eliteCheck() {
   } else say(i < 0 ? 'Você saiu da faixa dos mais ricos por enquanto: taxas e preços voltaram ao normal. Bora voltar ao topo!' : `Você está na faixa ${L.ELITE[i].name}. Siga firme!`);
 }
 setTimeout(() => eliteCheck(), 4000);
+// economia do mundo: aplica o mês atual (preço de referência e demanda) e, a cada 5 min, junta o que os jogadores com conta plantaram
+function econSync() {
+  try {
+    EC.apply(S().month || 1, L.ECON, NG.SHOCK);
+    REG_INFO = EC.regionInfo(L.REGIONS, REG_COUNTS, S().month || 1);
+    for (const k of Object.keys(L.REGION_K)) delete L.REGION_K[k];
+    for (const [k, v] of Object.entries(REG_INFO)) L.REGION_K[k] = v.k;
+  } catch (e) { console.error('economia', e); }
+}
+const regionCounts = () => Auth.mapLands?.().then(rows => { const c = {}; for (const l of rows || []) if (l.region) c[l.region] = (c[l.region] || 0) + 1; for (const l of S().lands || []) if (l.own) c[l.region] = (c[l.region] || 0) + 1; REG_COUNTS = c; econSync(); }).catch(() => {});
+setTimeout(regionCounts, 9000); setInterval(regionCounts, 300000);
+econSync(); setInterval(econSync, 60000);
+const econReal = () => Auth.cropsCloud?.().then(rows => { EC.setReal(rows, S().month); econSync(); }).catch(() => {});
+setTimeout(econReal, 8000); setInterval(econReal, 300000);
 // reembolso único do imposto alto de v46–v51 (ver L.taxRefund)
 function refund52() {
   const s = S(); if (s.refund52) return;
@@ -1382,6 +1403,7 @@ function worldMonths0() {
   const before = s.money, logBefore = s.log.length; let harvests = 0;
   const closes = [];   // o que cada fechamento lançou (o contador mostra exatamente isso)
   for (let i = 0; i < p.ticks; i++) {
+    EC.apply(s.month, L.ECON, NG.SHOCK);   // economia do mundo deste mês: preço de referência e demanda dos setores
     const lines = L.tick(s), rec = [...lines], N = l => { note(l.txt, l.val); rec.push(l); };
     for (const l of ST.monthly(s)) N(l);
     for (const l of GR.monthly(s)) N(l);
@@ -1467,7 +1489,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 111;
+const APP_VERSION = 112;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

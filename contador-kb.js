@@ -25,6 +25,10 @@ export const KB = [
   { t: 'patrimônio', k: ['patrimonio', 'valor total', 'quanto valho', 'netWorth', 'riqueza'], a: [
     'Patrimônio = dinheiro + fichas (R$ 10 cada) + terras próprias + gado + estoque pelo preço de hoje + carros + animais de corrida + cartas + granja + suínos + pomares e canaviais + frigorífico + empresas + mina + o que você emprestou, menos o que deve ao banco.',
     'Pergunte "por que meu patrimônio cai todo mês?" para ver o que puxa o seu para baixo.'] },
+  { t: 'mercado e crises', k: ['crise', 'crises', 'mercado', 'saturado', 'saturada', 'saturacao', 'oferta', 'demanda', 'alerta', 'plantao', 'relatorio', 'superproducao', 'greve', 'regiao saturada'], a: [
+    'Os preços seguem a economia do mundo: quando muita gente planta o mesmo produto, a oferta sobe e o preço de referência cai; quando poucos produzem, sobe.',
+    'Crises só acontecem quando há concentração exagerada num produto (mais ou menos a cada 2 anos do mundo, se houver) ou num evento como greve, geada ou contaminação. Sempre há aviso antes: 🟡 sinais de atenção, 🟠 risco elevado, 🔴 crise.',
+    'O relatório do mercado (no sino, nas cotações e na TV 21) mostra a oferta de cada produto, os eventos e recomendações. Terra em região saturada mostra um alerta antes de comprar.'] },
   { t: 'os mais ricos', k: ['ricos', 'rico', 'faixa', 'elite', 'imposto', 'fortuna', 'taxa dos', 'magnata', 'tubarao', 'pedagio'], a: [
     'Quanto maior a fortuna, mais caro fica tudo (para o mundo não ficar desigual demais). As faixas:',
     '• a partir de R$ 3 mi: compras +12%, contas do mês ×1,4, imposto de 0,2% ao mês sobre o que passa de R$ 3 mi',

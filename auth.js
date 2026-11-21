@@ -256,6 +256,16 @@ export async function mapLands(maxAge = 60000) {
   mapCache = { at: Date.now(), rows };
   return rows;
 }
+// o que cada jogador com conta tem plantado (perfil público): entra na conta de oferta e demanda do mundo (econ.js)
+let cropCache = null;
+export async function cropsCloud(maxAge = 300000) {
+  if (!sb || !user) return [];
+  if (cropCache && Date.now() - cropCache.at < maxAge) return cropCache.rows;
+  const { data, error } = await sb.from('public_profiles').select('user_id, cr:card->crops').not('card->crops', 'is', null).limit(500);
+  if (error) return cropCache?.rows || [];
+  cropCache = { at: Date.now(), rows: data.map(p => p.cr).filter(c => c && typeof c === 'object') };
+  return cropCache.rows;
+}
 export async function ranking(maxAge = 60000) {
   if (!sb || !user) return null;
   if (rankCache && Date.now() - rankCache.at < maxAge) return rankCache.rows;

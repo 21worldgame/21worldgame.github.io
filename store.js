@@ -184,7 +184,7 @@ export function profileOf(s = G.S) {
     stats: s.stats, ach: s.ach, lands: own.length, ha: own.reduce((a, l) => a + l.ha, 0), heads: L.heads(s),
     cars: s.cars.map(c => c.model),
     animals: (s.stable?.animals || []).map(a => ({ kind: a.kind, name: a.name, rating: ST.rating(a), wins: a.wins, ph: a.ph })),
-    trophies: s.trophies || [], private: !!s.privateProfile && (s.trophies || []).includes(L.PRIVATE_MIN),
+    crops: L.cropsOf(s), trophies: s.trophies || [], private: !!s.privateProfile && (s.trophies || []).includes(L.PRIVATE_MIN),
     landList: own.slice(0, 10).map(l => ({ region: l.region, ha: l.ha, orchard: !!l.orchard, cane: !!l.cane })),
     biz: ['usinas', 'hotel', 'air', 'boat', 'cars', 'jewel', 'food', 'realty', 'auction', 'banks', 'isps', 'markets'].flatMap(c => (s.biz?.[c] || []).map(b => ({ cat: c, brand: b.brand }))),
     mina: !!s.mina, wh: (s.biz?.wh || []).length, granja: (s.granja?.houses || []).length, suinos: (s.suinos?.barns || []).length,

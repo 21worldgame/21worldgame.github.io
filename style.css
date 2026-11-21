@@ -3201,3 +3201,26 @@ details.herd-guide > summary { margin: 0; }
 .biz-ana__grid div { padding: 6px 8px; border-radius: 8px; background: rgba(255,255,255,.04); }
 .biz-ana__grid dt { font-size: .7rem; color: var(--color-muted); } .biz-ana__grid dd { margin: 2px 0 0; font-weight: 700; } .biz-ana__grid small { display: block; font-weight: 400; color: var(--color-muted); font-size: .68rem; }
 .biz-ana p { margin: 4px 0; }
+.tv__kick--economia { background: #0ea5e9; } .tv__kick--alerta { background: #ef4444; animation: lpPulse 1.6s infinite; }
+/* economia do mundo: sinal de alerta, relatório e plantão da repórter */
+.econ-chip { border: 0; cursor: pointer; font: inherit; font-size: .78rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; margin: 0 0 8px; background: rgba(46,230,107,.12); color: #86efac; }
+.econ-chip--1 { background: rgba(250,204,21,.14); color: #fde68a; } .econ-chip--2 { background: rgba(249,115,22,.16); color: #fdba74; } .econ-chip--3 { background: rgba(239,68,68,.18); color: #fca5a5; animation: lpPulse 1.8s infinite; }
+.dlg--econ { width: min(640px, calc(100vw - 24px)); }
+.econ-level { font-size: 1.05rem; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,.05); }
+.econ-level--1 { background: rgba(250,204,21,.1); } .econ-level--2 { background: rgba(249,115,22,.12); } .econ-level--3 { background: rgba(239,68,68,.14); }
+.er-evs { list-style: none; padding: 0; display: grid; gap: 6px; } .er-ev { padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.04); border-left: 3px solid #facc15; display: grid; gap: 2px; } .er-ev p { margin: 2px 0 0; }
+.er-ev--risco { border-color: #f97316; } .er-ev--crise { border-color: #ef4444; } .er-ev--fim { border-color: #22c55e; }
+.er-tab { width: 100%; border-collapse: collapse; font-size: .85rem; } .er-tab td { padding: 4px 6px; } .er-tab td:first-child { width: 90px; }
+.er-bar { display: inline-block; width: 60%; height: 8px; border-radius: 4px; background: rgba(255,255,255,.08); vertical-align: middle; margin-right: 6px; overflow: hidden; }
+.er-bar i { display: block; height: 100%; background: #38bdf8; } .er-bar i.is-hi { background: #ef4444; } .er-bar i.is-lo { background: #22c55e; }
+.dlg--flash { width: min(560px, calc(100vw - 24px)); padding: 0; overflow: hidden; }
+.ef__set { position: relative; height: 210px; background: radial-gradient(120% 90% at 30% 20%, #1e3a8a, #020617 70%); overflow: hidden; }
+.ef__studio { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 16px 16px 70px; opacity: .35; } .ef__studio i { border-radius: 8px; background: linear-gradient(160deg, #38bdf8, #0f172a); }
+.ef__logo { position: absolute; top: 10px; left: 12px; font-weight: 900; color: #fff; letter-spacing: .04em; } .ef__logo b { color: #ef4444; }
+.ef__live { position: absolute; top: 10px; right: 12px; font-size: .72rem; font-weight: 800; color: #fff; background: #dc2626; padding: 3px 8px; border-radius: 4px; display: flex; gap: 6px; align-items: center; }
+.ef__anchor { position: absolute; left: 50%; bottom: 46px; width: 150px; height: 150px; translate: -50% 0; animation: efIn .6s ease-out both; } .ef__anchor svg { width: 100%; height: 100%; }
+.ef__lower { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 12px; background: linear-gradient(90deg, #b91c1c, #7f1d1d); color: #fff; display: grid; gap: 2px; animation: efSlide .5s .2s ease-out both; }
+.ef__kick { font-size: .7rem; font-weight: 800; letter-spacing: .06em; } .ef__body { padding: 14px 16px 16px; } .ef__body ul { margin: 4px 0 8px; padding-left: 18px; }
+.ef__acts { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+@keyframes efIn { from { transform: translateY(30px); opacity: 0; } } @keyframes efSlide { from { transform: translateX(-100%); } }
+@media (prefers-reduced-motion: reduce) { .ef__anchor, .ef__lower, .econ-chip--3 { animation: none; } }

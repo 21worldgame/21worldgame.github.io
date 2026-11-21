@@ -193,17 +193,24 @@ export function newState(rng = Math.random) {
 const id = s => s.nextId++;
 const walk = (v, rng, pct) => v * (1 + (rng() * 2 - 1) * pct);
 // arroba/bezerro/grãos também ancorados: soltos derivavam (arroba chegou a ~R$ 120) e o boi engordado vendia abaixo do bezerro
+// ECON: multiplicador do preço de referência vindo da economia do mundo (econ.js), igual para todos; o jogo preenche antes do mês
+export const ECON = {};
+export const REGION_K = {};   // região → multiplicador do preço da terra (procura e saturação), também preenchido pelo jogo
 export const ANCHOR = { soja: 130, milho: 60, cafe: 1400, arroba: 310, bezerro: 2600, cana: 150, laranja: 38, ...GR_PRICES, ...SU_PRICES };
 
 export function refreshOffers(s, rng = Math.random) {
+  const used = [];   // ofertas espalhadas pelo Brasil: regiões diferentes e longe umas das outras
+  const far = r => used.every(u => Math.hypot(u.lat - r.lat, u.lon - r.lon) > 4);
   s.offers = Array.from({ length: T.landOffers }, () => {
-    const reg = REGIONS[Math.floor(rng() * REGIONS.length)];
+    let reg = REGIONS[Math.floor(rng() * REGIONS.length)];
+    for (let i = 0; i < 25 && !far(reg); i++) reg = REGIONS[Math.floor(rng() * REGIONS.length)];
+    used.push(reg);
     const ha = rng() < 0.2 ? 100 + Math.floor(rng() * 19) * 50 : 5 + Math.floor(rng() * 16) * 5;   // 1 em 5 é fazenda grande (100 a 1.000 ha)
     const [water, wf] = WATER[Math.floor(rng() * WATER.length)];
     const improv = IMPROV.filter(() => rng() < 0.35);
     const bonus = improv.reduce((a, [, b]) => a + b, 0) + (wf < 1 ? -0.12 : 0);
     return { id: id(s), region: reg.name, uf: reg.uf, use: reg.use, ha, water, improv: improv.map(([n]) => n), ...placeLot(reg, rng),
-      cap: +(CAP_BY_USE[reg.use] * wf).toFixed(2), value: Math.round(walk(reg.perHa, rng, 0.15) * T.landPremium * ha * (1 + bonus)) };
+      cap: +(CAP_BY_USE[reg.use] * wf).toFixed(2), value: Math.round(walk(reg.perHa, rng, 0.15) * T.landPremium * ha * (1 + bonus) * (REGION_K[reg.name] || 1)) };
   });
   const names = ['seu Antônio', 'dona Lurdes', 'Jair do posto', 'Marta da feira', 'Zé Carreteiro', 'Cida Leiteira'];
   const start = Math.floor(rng() * names.length);
@@ -248,6 +255,13 @@ export function netWorth(s) {
 // troféus de patrimônio: o de 10 mi é o selo de entrada; ficam para sempre, mesmo se a fortuna cair
 export const TROPHIES = [10e6, 20e6, 30e6, 40e6, 50e6, 60e6, 70e6, 80e6, 90e6, 100e6, 200e6, 300e6, 500e6, 1e9, 2e9];   // de 100 mi para cima: marcos de prestígio (perks.js PRESTIGE)
 export const PRIVATE_MIN = 10e6;   // perfil privado libera a partir de 10 mi
+// área por produto (vai no perfil público e entra na economia do mundo): lavoura, pomar, canavial e pasto com gado
+export function cropsOf(s) {
+  const o = {};
+  for (const l of s.lands || []) { const k = l.crop?.type || (l.orchard ? 'laranja' : l.cane ? 'cana' : null); if (k) o[k] = (o[k] || 0) + (Number(l.ha) || 0); }
+  const hd = heads(s); if (hd > 0) o.arroba = Math.round(hd / 1.2);
+  return o;
+}
 export const TITLES = [[0, 'iniciante'], [150000, 'fazendeiro'], [500000, 'barão do gado'], [2000000, 'magnata']];
 export const rank = worth => (TITLES.filter(([min]) => worth >= min).pop() || TITLES[0])[1];
 
@@ -257,7 +271,7 @@ export function tick(s, rng = Math.random) {
   const add = (txt, val = 0) => { s.money += val; log.push({ m: s.month, txt, val: Math.round(val) }); };
 
   s.prev = { ...s.prices };
-  for (const k of Object.keys(s.prices)) { const b = ANCHOR[k]; let v = walk(b ? s.prices[k] + (b - s.prices[k]) * 0.1 : s.prices[k], rng, 0.06);   // ancorado: volta 10%/mês ao preço base, sem isso frango/ração derivavam sem limite e a granja virava prejuízo certo
+  for (const k of Object.keys(s.prices)) { const b = ANCHOR[k] && ANCHOR[k] * (ECON[k] || 1); let v = walk(b ? s.prices[k] + (b - s.prices[k]) * 0.1 : s.prices[k], rng, 0.06);   // ancorado: volta 10%/mês ao preço base, sem isso frango/ração derivavam sem limite e a granja virava prejuízo certo
     if (b) v = Math.min(b * 1.25, Math.max(b * 0.8, v));   // faixa realista: save antigo já derivado volta no próximo mês
     s.prices[k] = v < 100 ? Math.round(v * 100) / 100 : Math.round(v); }   // preço pequeno (frango, ração) anda em centavos
   for (const l of s.lands) l.value = Math.round(l.value * (1 + 0.006 + (rng() * 2 - 1) * 0.02));

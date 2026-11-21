@@ -9,7 +9,7 @@ import { turnOf } from './npcs.js';
 export const ANCHORS = ['Willian Borner', 'Retana Rater'];
 export const NEWS_MIN = 30000;        // movimentos a partir de R$ 30 mil viram notícia
 export const NEWS_GAP = 70000;        // notícia dos jogadores do mundo: uma a cada ~70 s (algumas janelas sem notícia)
-export const KINDS = { compra: 'COMPRA', venda: 'VENDA', troca: 'TROCA', premio: 'PRÊMIO', negocio: 'NEGÓCIO' };
+export const KINDS = { compra: 'COMPRA', venda: 'VENDA', troca: 'TROCA', premio: 'PRÊMIO', negocio: 'NEGÓCIO', economia: 'ECONOMIA', alerta: 'ALERTA' };
 
 // R$ 3,6 mi · R$ 850 mil · R$ 12.500
 export const short = v => { v = Math.abs(Math.round(v)); const f = (x, u) => `R$ ${String(+x.toFixed(x < 10 ? 1 : 0)).replace('.', ',')} ${u}`;
@@ -29,6 +29,7 @@ export function fromNote(name, txt, val) {
 }
 // manchete pronta (texto puro; a tela escapa antes de mostrar)
 export function headline(n) {
+  if (n.text) return n.text;   // economia do mundo (econ-ui.js): manchete pronta
   const v = n.val ? ` por ${short(n.val)}` : '';
   if (n.kind === 'troca') return `${n.name} fechou uma troca ${n.what.replace(/^troca /, '')}.`;
   if (n.kind === 'venda') return `${n.name} vendeu ${n.what}${v}.`;

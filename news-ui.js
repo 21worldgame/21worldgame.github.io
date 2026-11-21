@@ -10,6 +10,7 @@ import { avatarSVG } from './avatar.js';
 const items = [], seen = new Set();
 let send = null, cur = 0, slot = 0;
 export const setSender = fn => { send = fn; };
+export const push = n => add(n);   // notícia pronta (economia do mundo, econ-ui.js)
 
 function add(n, fresh = true) {
   if (!n || (n.id && seen.has(n.id))) return;
@@ -51,7 +52,7 @@ const card = (n, big) => `<span class="tv__kick tv__kick--${n.kind}">${N.KINDS[n
 
 // ---------- a TV na lateral ----------
 // apresentadores: visual fixo (o mesmo para todo mundo)
-const LOOKS = {
+export const LOOKS = {
   'Willian Borner': { skin: 2, hair: 'curto', hairColor: 5, beard: 'nenhuma', eyes: 2, outfit: 'terno', cloth: 6, acc: 'nenhum' },
   'Retana Rater': { skin: 3, hair: 'longo', hairColor: 4, beard: 'nenhuma', eyes: 3, outfit: 'terno', cloth: 2, acc: 'brinco' },
 };
