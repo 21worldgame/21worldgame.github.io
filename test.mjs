@@ -1432,3 +1432,11 @@ import * as CT from './contador.js';
   s.blocked = NPb.onlineNow(t0, 12).map(b => `npc:${b.id}`); assert.equal(BOb.offerFor(s, t0), null, 'todos bloqueados: ninguém oferece');
   console.log('bloquear jogador ok');
 }
+// marcos de prestígio: R$ 100 mi a 2 bi viram troféus com título e uma vantagem pequena que soma
+{ const PKq = await import('./perks.js'), Lq = await import('./logic.js');
+  assert.ok(PKq.PRESTIGE.every(p => Lq.TROPHIES.includes(p.min)), 'todo marco é troféu');
+  assert.equal(PKq.prestigeTop([10e6, 50e6]), null);
+  assert.equal(PKq.prestigeTop([100e6, 200e6, 300e6]).title, 'Senhor dos Mercados');
+  const s = { cars: [], lands: [], owned: [], cards: [], trophies: [100e6, 200e6] };
+  assert.ok(PKq.mult(s, 'loan') < 1 && PKq.mult(s, 'daily') > 1, 'vantagens dos marcos');
+  console.log('marcos de prestígio ok'); }

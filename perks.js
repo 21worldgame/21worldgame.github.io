@@ -63,12 +63,25 @@ export const landPerk = l => {
   return p;
 };
 const add = (out, p) => { for (const [k, v] of Object.entries(p || {})) out[k] = (out[k] || 0) + v; };
+// marcos de prestígio (troféus a partir de R$ 100 mi): título, selo, troféu com nome e uma vantagem pequena para sempre
+// (as vantagens são pequenas de propósito: prestígio sem quebrar a economia; o imposto das faixas dos mais ricos continua valendo)
+export const PRESTIGE = [
+  { min: 100e6, id: 'diamante', title: 'Magnata Nacional', icon: '💎', trophy: 'Taça Diamante', perk: { loan: -0.1 } },
+  { min: 200e6, id: 'safira', title: 'Barão da Economia', icon: '🔷', trophy: 'Cetro de Safira', perk: { daily: 0.1 } },
+  { min: 300e6, id: 'rubi', title: 'Senhor dos Mercados', icon: '♦️', trophy: 'Coroa de Rubi', perk: { xp: 0.05 } },
+  { min: 500e6, id: 'ouro', title: 'Titã dos Negócios', icon: '🏆', trophy: 'Troféu de Ouro Maciço', perk: { biz: 0.03 } },
+  { min: 1e9, id: 'bilhao', title: 'Bilionário do 21 World', icon: '👑', trophy: 'Coroa Imperial', perk: { casino: 0.05 } },
+  { min: 2e9, id: 'lenda', title: 'Lenda do 21 World', icon: '🌟', trophy: 'Estrela Eterna', perk: { grain: 0.03 } },
+];
+export const prestigeOf = trophies => PRESTIGE.filter(p => (trophies || []).includes(p.min));   // conquistados (troféu é para sempre)
+export const prestigeTop = trophies => prestigeOf(trophies).at(-1) || null;
 export function bonuses(s) {
   const out = {};
   for (const c of new Set((s.cars || []).map(c => c.model))) add(out, CAR_PERKS[c]);        // dois carros iguais não somam
   add(out, landBonuses(s.lands));
   for (const tag of s.owned || []) if (tag.startsWith('acc:')) add(out, ACC_PERKS[tag.slice(4)]);
   for (const r of collRewards(s)) add(out, r);                                                // coleções de cartas completas
+  for (const p of prestigeOf(s.trophies)) add(out, p.perk);                                   // marcos de R$ 100 mi para cima
   return out;
 }
 // multiplicador final de um efeito (juros nunca caem abaixo de 50%)

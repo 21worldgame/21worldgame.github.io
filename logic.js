@@ -246,7 +246,7 @@ export function netWorth(s) {
 }
 
 // troféus de patrimônio: o de 10 mi é o selo de entrada; ficam para sempre, mesmo se a fortuna cair
-export const TROPHIES = [10e6, 20e6, 30e6, 40e6, 50e6, 60e6, 70e6, 80e6, 90e6, 100e6];
+export const TROPHIES = [10e6, 20e6, 30e6, 40e6, 50e6, 60e6, 70e6, 80e6, 90e6, 100e6, 200e6, 300e6, 500e6, 1e9, 2e9];   // de 100 mi para cima: marcos de prestígio (perks.js PRESTIGE)
 export const PRIVATE_MIN = 10e6;   // perfil privado libera a partir de 10 mi
 export const TITLES = [[0, 'iniciante'], [150000, 'fazendeiro'], [500000, 'barão do gado'], [2000000, 'magnata']];
 export const rank = worth => (TITLES.filter(([min]) => worth >= min).pop() || TITLES[0])[1];

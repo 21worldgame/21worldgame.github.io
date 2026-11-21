@@ -5,6 +5,7 @@ import * as P from './progress.js';
 import { DEFAULT } from './avatar.js';
 import * as ST from './stable.js';
 import * as SFX from './sfx.js';
+import * as PK from './perks.js';
 import { completed as collsDone, prestige as collsPrestige } from './cards.js';
 
 // cada conta tem o próprio save neste aparelho: 21world.save.v1:<uid>. Sem login, vale a chave antiga.
@@ -179,7 +180,7 @@ export function profileOf(s = G.S) {
   const own = s.lands.filter(l => l.own);
   return {
     acct: s.acct ? s.acct.plan : null,
-    name: s.avatar.name || 'jogador', look: s.avatar, level: s.level, rank: L.rank(L.netWorth(s)), worth: L.netWorth(s),
+    name: s.avatar.name || 'jogador', look: s.avatar, level: s.level, rank: PK.prestigeTop(s.trophies)?.title || L.rank(L.netWorth(s)), prest: PK.prestigeTop(s.trophies)?.id || '', worth: L.netWorth(s),
     stats: s.stats, ach: s.ach, lands: own.length, ha: own.reduce((a, l) => a + l.ha, 0), heads: L.heads(s),
     cars: s.cars.map(c => c.model),
     animals: (s.stable?.animals || []).map(a => ({ kind: a.kind, name: a.name, rating: ST.rating(a), wins: a.wins, ph: a.ph })),

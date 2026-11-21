@@ -107,7 +107,9 @@ function renderHud() {
   $('#chips-val').textContent = `valem ${brl(s.chips * L.CHIP)}`;
   $('#hud-avatar').innerHTML = avatarSVG(s.avatar, { label: 'seu personagem' });
   $('#hud-name').textContent = s.avatar.name || 'você';
-  $('#hud-rank').textContent = $('#char-rank').textContent = L.rank(worth);
+  const prTop = PK.prestigeTop(s.trophies);
+  $('#hud-rank').textContent = $('#char-rank').textContent = prTop ? `${prTop.icon} ${prTop.title}` : L.rank(worth);
+  $('#hud-ring').dataset.prest = prTop?.id || '';
   $('#hud-level').textContent = s.level;
   $('#hud-ring').style.setProperty('--p', s.xp / P.xpNeed(s.level));
   P.passEnsure(s, today().slice(0, 7));
@@ -600,11 +602,11 @@ function renderLivro() {
 }
 
 // ---------- perfil ----------
-const mi = v => `${Math.round(v / 1e6)}M`;
+const mi = v => (v >= 1e9 ? `${v / 1e9} bi` : `${Math.round(v / 1e6)}M`);
 const BIZ_LISTS = NG.LISTS;
 function profileExtra(p, me) {
   const tr = p.trophies || [];
-  const trophies = `<h3>troféus de patrimônio <small class="muted">${tr.length} de ${L.TROPHIES.length}</small></h3><div class="pf__troph">${L.TROPHIES.map((t, i) => `<span class="troph${tr.includes(t) ? ' is-got' : ''}${i === 0 ? ' troph--selo' : ''}" title="${i === 0 ? 'selo' : 'troféu'} de ${mi(t)}"><b>${i === 0 ? '🎖️' : '🏆'}</b><small>${mi(t)}</small></span>`).join('')}</div>`;
+  const trophies = `<h3>troféus de patrimônio <small class="muted">${tr.length} de ${L.TROPHIES.length}</small></h3><div class="pf__troph">${L.TROPHIES.map((t, i) => { const pr = PK.PRESTIGE.find(x => x.min === t); return `<span class="troph${tr.includes(t) ? ' is-got' : ''}${i === 0 ? ' troph--selo' : ''}${pr ? ` troph--prest troph--${pr.id}` : ''}" title="${pr ? `${pr.trophy}: ${pr.title} (${mi(t)})` : `${i === 0 ? 'selo' : 'troféu'} de ${mi(t)}`}"><b>${pr ? pr.icon : i === 0 ? '🎖️' : '🏆'}</b><small>${mi(t)}</small></span>`; }).join('')}</div>`;
   const priv = me && tr.includes(L.PRIVATE_MIN) ? `<div class="pf__acts"><button class="btn btn--glass btn--sm" data-act="toggle-private">${S().privateProfile ? '🔒 perfil privado (tornar público)' : '🔓 perfil público (tornar privado)'}</button></div>` : me ? '<p class="muted small">Ao chegar a R$ 10 milhões você ganha o selo e pode deixar o perfil privado.</p>' : '';
   if (p.private && !me) return trophies + '<p class="pf__private glass">🔒 Este jogador deixou o perfil privado. Só os troféus aparecem.</p>';
   if (p.noCard) return trophies + '<p class="pf__private glass">Este jogador ainda está numa versão antiga do jogo. Os detalhes aparecem assim que ele abrir ou recarregar o jogo.</p>';
@@ -644,14 +646,14 @@ function openProfile(pid, fetched) {
   if (!p && String(pid).startsWith('u:')) { Auth.profileCard(pid.slice(2)).then(r => r ? openProfile(pid, r) : say('Perfil indisponível agora.', true)); return; }
   if (!p) return say('Perfil indisponível: o jogador saiu.', true);
   if (p.npc && !p.trophies) p = { ...p, trophies: L.TROPHIES.filter(t => p.worth >= t) };
-  const me = pid === 'me', st = p.stats || {};
+  const me = pid === 'me', st = p.stats || {}, prTop = PK.prestigeTop(p.trophies);
   if (p.npc && !p.ach) p.ach = P.ACHIEVEMENTS.slice(0, p.achCount).map(a => a.id);
   const rate = st.hands ? Math.round((st.wins / st.hands) * 100) : 0;
   const xp = me ? `<div class="pf__xp"><span class="small">nível ${p.level}, ${S().xp} de ${P.xpNeed(S().level)} XP</span><span class="bar"><i style="transform:scaleX(${S().xp / P.xpNeed(S().level)})"></i></span></div>` : '';
   $('#pf').innerHTML = `
     <div class="pf__head">
-      <span class="pf__avatar is-full">${avatarSVG(p.look, { label: p.name, full: true })}</span>
-      <div><h2 id="pf-name">${esc(p.name)}</h2><p><span class="tag tag--gold">nível ${p.level}</span> <span class="tag tag--dark">${esc(p.rank)}</span></p>
+      <span class="pf__avatar is-full"${prTop ? ` data-prest="${prTop.id}"` : ''}>${avatarSVG(p.look, { label: p.name, full: true })}</span>
+      <div><h2 id="pf-name">${esc(p.name)}${prTop ? ` <span class="prest-badge prest-badge--${prTop.id}" title="${esc(prTop.trophy)}">${prTop.icon}</span>` : ''}</h2><p><span class="tag tag--gold">nível ${p.level}</span> <span class="tag ${prTop ? 'tag--prest' : 'tag--dark'}">${esc(prTop ? prTop.title : p.rank)}</span></p>
       <p class="big">${brl(p.worth)}</p><p class="muted small">patrimônio</p>${xp}${p.bio ? `<p class="pf__bio">“${esc(p.bio)}”</p>` : ''}</div>
     </div>
     <div class="pf__stats">
@@ -1299,11 +1301,33 @@ for (const [id, [title, steps]] of Object.entries(HOWTO)) {
 }
 
 // ---------- faixas dos mais ricos: aviso ao entrar (e ao sair) ----------
+// marco de prestígio (R$ 100 mi para cima): tela de comemoração com título, troféu e a vantagem que liberou
+const PRESTIGE_TXT = {
+  diamante: 'A partir de agora, você faz parte de um grupo extremamente seleto de empresários do Brasil. Sua trajetória desbloqueou novas oportunidades, benefícios exclusivos e recompensas reservadas aos grandes investidores do país.',
+  safira: 'Duzentos milhões. Poucos chegam aqui, e o mercado inteiro já sabe o seu nome. Cada decisão sua agora move preços e chama atenção dos concorrentes.',
+  rubi: 'Trezentos milhões de patrimônio. Você não acompanha mais o mercado: ajuda a fazê-lo. Os grandes negócios do país passam pela sua mesa.',
+  ouro: 'Meio bilhão. Seu império atravessa fazendas, empresas e mercados. Os outros jogadores estudam os seus passos.',
+  bilhao: 'Um bilhão de reais. Você entrou para a história do 21 World. Daqui em diante, cada movimento seu vira notícia.',
+  lenda: 'Dois bilhões. Não existe mais faixa acima de você: só a sua própria lenda.',
+};
+function prestigeParty(pr) {
+  const d = $('#dlg-elite'); if (!d) return say(`${pr.trophy} conquistado: ${pr.title}!`);
+  const next = PK.PRESTIGE[PK.PRESTIGE.indexOf(pr) + 1];
+  $('#el-title').textContent = `🏆 PARABÉNS! Você alcançou um patrimônio extraordinário de ${brl(pr.min)}!`;
+  $('#el-body').innerHTML = `<div class="prest-medal prest-medal--${pr.id}" aria-hidden="true">${pr.icon}</div>
+    <p>${PRESTIGE_TXT[pr.id]}</p>
+    <p>Seu nome agora representa uma nova categoria de prestígio no mercado: <b>${pr.title}</b>.</p>
+    <ul class="prest-gets"><li><b>${pr.trophy}</b> no seu perfil, para sempre</li><li>título <b>${pr.title}</b> e selo ${pr.icon} ao lado do seu nome</li><li>vantagem permanente: <b>${PK.label(pr.perk)}</b></li><li>lugar no <b>Clube dos 100 milhões</b>, no ranking</li></ul>
+    ${next ? `<p class="muted small">Próximo marco: <b>${brl(next.min)}</b> (${next.title}).</p>` : ''}`;
+  d.showModal(); confetti(260); try { sfx.cash(true); } catch {}
+  note(`marco de prestígio: ${pr.title} (${pr.trophy})`);
+}
 function trophyCheck() {
   const s = S(), w = L.netWorth(s); s.trophies ??= [];
   const nw = L.TROPHIES.filter(t => w >= t && !s.trophies.includes(t)); if (!nw.length) return;
   s.trophies.push(...nw); save(); confetti(160);
-  const t = nw[nw.length - 1];
+  const t = nw[nw.length - 1], pr = PK.PRESTIGE.find(x => x.min === t);
+  if (pr) return prestigeParty(pr);
   say(t === L.PRIVATE_MIN ? 'Selo de R$ 10 milhões conquistado! Agora você pode deixar o perfil privado (no seu perfil).' : `Troféu de R$ ${Math.round(t / 1e6)} milhões conquistado! Ele fica no seu perfil para sempre.`);
 }
 function eliteCheck() {
@@ -1443,7 +1467,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 109;
+const APP_VERSION = 110;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
