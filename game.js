@@ -248,6 +248,22 @@ function caneBox(l) {
 }
 let REG_COUNTS = {}, REG_INFO = {};   // economia por região (econ.js): preenchido pelo econSync
 G.regInfo = () => REG_INFO; G.rankRows = n => C.rankingRows(n);   // página inicial (home-ui)
+// posição no ranking no topo (sem precisar abrir o ranking): medalha no top 3, dourado no top 10, seta quando sobe ou desce
+let rkLast = null; try { rkLast = Number(localStorage.getItem('21world.rkPos')) || null; } catch {}
+function paintRankPill() {
+  const el = document.getElementById('rkpill'); if (!el) return;
+  let rows = []; try { rows = C.rankingRows(500); } catch {}
+  const i = rows.findIndex(r => r.pid === 'me'); if (i < 0) { el.hidden = true; return; }
+  const pos = i + 1, mv = rkLast ? rkLast - pos : 0;
+  el.hidden = false; el.dataset.tier = pos <= 3 ? `top${pos}` : pos <= 10 ? 'top10' : pos <= 50 ? 'top50' : '';
+  document.getElementById('rkpill-pos').textContent = `${pos}º`;
+  document.getElementById('rkpill-of').textContent = `de ${rows.length}`;
+  el.querySelector('.rkpill__ico').textContent = ['🥇', '🥈', '🥉'][pos - 1] || '🏆';
+  el.title = `Você está em ${pos}º lugar no ranking de patrimônio, entre ${rows.length} jogadores. Toque para ver o ranking.`;
+  if (mv) { const m = document.getElementById('rkpill-mv'); m.textContent = mv > 0 ? `▲${mv}` : `▼${-mv}`; m.className = `rkpill__mv ${mv > 0 ? 'is-up' : 'is-down'}`; el.classList.remove('is-moved'); void el.offsetWidth; el.classList.add('is-moved'); setTimeout(() => { m.textContent = ''; m.className = 'rkpill__mv'; }, 8000); }
+  rkLast = pos; try { localStorage.setItem('21world.rkPos', String(pos)); } catch {}
+}
+setTimeout(paintRankPill, 3000); setInterval(paintRankPill, 15000);
 function landCard(l, kind) {
   const s = S();
   const badge = { offer: ['à venda', 'gold'], own: [l.leasedOut ? 'arrendada a terceiros' : 'sua', l.leasedOut ? 'violet' : 'green'], rent: ['arrendada de terceiros', 'violet'] }[kind];
@@ -1520,7 +1536,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 117;
+const APP_VERSION = 118;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
