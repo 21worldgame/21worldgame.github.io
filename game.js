@@ -1467,7 +1467,7 @@ function worldMonths0() {
     harvests += lines.filter(l => l.txt.startsWith('colheita')).length;
     award('month');
   }
-  { const mo = s.log.slice(0, Math.max(0, s.log.length - logBefore)), spent = -mo.filter(l => l.val < 0).reduce((t, l) => t + l.val, 0), earned = mo.filter(l => l.val > 0).reduce((t, l) => t + l.val, 0); for (const l of L.eliteBills(s, spent, earned)) { note(l.txt, l.val); closes.at(-1)?.rec.push(l); } }   // os mais ricos pagam mais
+  { const mo = s.log.slice(0, Math.max(0, s.log.length - logBefore)), spent = -mo.filter(l => l.val < 0).reduce((t, l) => t + l.val, 0), earned = mo.filter(l => l.val > 0).reduce((t, l) => t + l.val, 0); for (const l of L.eliteBills(s, spent, earned, livingOf(mo))) { note(l.txt, l.val); closes.at(-1)?.rec.push(l); } }   // os mais ricos pagam mais
   for (const c of closes) CT.record(s, c.m, c.rec);
   eliteCheck();
   if (harvests) award('harvest', harvests);
@@ -1476,6 +1476,8 @@ function worldMonths0() {
   say(p.ticks > 1 || p.skipped ? `O mundo avançou até ${W.dateLabel(s.month)}. Saldo: ${brl(s.money - before)}.` : `Chegou ${W.dateLabel(s.month)}. Saldo do mês: ${brl(s.money - before)}.${harvests ? ' Colheita no armazém.' : ''}`);
   checkAch(); save(); render();
 }
+// "contas mais caras" dos mais ricos: só sobre os gastos da casa e das fazendas (empresas, impostos e parcelas de empréstimo ficam fora)
+const livingOf = lines => -lines.filter(l => l.val < 0 && !/^parcela|empréstimo|quitação/i.test(l.txt) && !['negocios', 'impostos'].includes(CT.groupOf(l.txt))).reduce((t, l) => t + l.val, 0);
 let fcCache = { at: 0, month: -1, v: [] };
 G.ctForecast = () => {
   const s0 = S(); if (fcCache.month === s0.month && Date.now() - fcCache.at < 15000) return fcCache.v;
@@ -1486,7 +1488,7 @@ G.ctForecast = () => {
     for (const m of [ST, GR, PM, CN, SU, NG]) rec.push(...m.monthly(s, rng));
     rec.push(...MI.monthly(s, rng), ...NG.enforce(s), ...AB.monthly(s), ...AM.monthly(s, rec, rng), ...CT.monthly(s, L.netWorth(s)));
     const spent = -rec.filter(l => l.val < 0).reduce((t, l) => t + l.val, 0), earned = rec.filter(l => l.val > 0).reduce((t, l) => t + l.val, 0);
-    rec.push(...L.eliteBills(s, spent, earned));
+    rec.push(...L.eliteBills(s, spent, earned, livingOf(rec)));
   } catch (e) { console.error('previsão do contador', e); }
   fcCache = { at: Date.now(), month: s0.month, v: rec }; return rec;
 };
@@ -1505,7 +1507,7 @@ function openTaxes() {
   const rows = L.ELITE.map((e0, i) => { const e = L.eliteOf({ money: e0.min, lands: [], herd: [], loans: [], lent: [], cars: [], stock: {}, prices: {} });
     return `<tr${i === me ? ' class="is-me"' : ''}><td><b>${e0.min >= 1e9 ? `R$ ${e0.min / 1e9} bi` : `R$ ${String(e0.min / 1e6).replace('.', ',')} mi`}</b>+<small class="muted"><br>${esc(e0.name)}${i === me ? ' · <b>você</b>' : ''}</small></td><td class="num">${pct(e.gain)}</td><td class="num">${pct(e.tax)}</td><td class="num">+${pct(e.price)}</td><td class="num">+${pct(e.bills - 1)}</td></tr>`; }).join('');
   $('#tx-body').innerHTML = `<div class="scroll"><table><thead><tr><th>patrimônio</th><th class="num" title="parte de tudo o que você ganha no mês que fica com o mundo">dos ganhos</th><th class="num" title="sobre o patrimônio acima de R$ 3 mi">imposto/mês</th><th class="num">compras</th><th class="num">contas</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <p class="small muted"><b>dos ganhos</b>: parte de tudo o que você ganha no mês que fica com o mundo. O imposto ao mês é sobre o que passar de ${brl(L.ELITE[0].min)}. O 1º do ranking paga ainda mais: +${Math.round(L.TOP1.gain * 100)} pontos nos ganhos, imposto em dobro e compras +${Math.round(L.TOP1.price * 100)}%. Abaixo de ${brl(L.ELITE[0].min)} só há o imposto de renda simples sobre os ganhos do mês.</p>`;
+    <p class="small muted"><b>dos ganhos</b>: parte do <b>lucro</b> do mês (o que entrou menos o que saiu), não do faturamento. <b>imposto/mês</b>: por faixa, como o imposto de renda: cada taxa vale só para o pedaço do patrimônio dentro da faixa, a partir de ${brl(L.ELITE[0].min)}. <b>contas</b>: só os gastos da casa e das fazendas (empresas e parcelas de empréstimo ficam fora). Entre uma faixa e a próxima, as taxas sobem aos poucos: passar de um limite não dá salto. O 1º do ranking paga ainda mais: +${Math.round(L.TOP1.gain * 100)} pontos no lucro, imposto em dobro e compras +${Math.round(L.TOP1.price * 100)}%. Abaixo de ${brl(L.ELITE[0].min)} só há o imposto de renda simples sobre o lucro do mês.</p>`;
   $('#dlg-taxes').showModal();
 }
 $('#worldclock').addEventListener('click', openTaxes);
@@ -1536,7 +1538,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 118;
+const APP_VERSION = 119;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

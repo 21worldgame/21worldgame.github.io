@@ -904,10 +904,17 @@ console.log('suínos, negócios e galpões ok');
   const mid = L3.newState(() => 0.5); mid.money = 5e5; assert.equal(L3.eliteBills(mid, 0, 100000)[0].val, -6000, 'imposto de renda 6%');
   const rich = L3.newState(() => 0.5); rich.money = 12e6;
   assert.equal(L3.eliteOf(rich).name, 'magnata do mundo');
-  const m0 = rich.money, lines = L3.eliteBills(rich, 100000, 200000);
+  const er = L3.eliteOf(rich), m0 = rich.money, lines = L3.eliteBills(rich, 100000, 200000);
   assert.equal(lines.length, 3); assert.ok(rich.money < m0);
-  assert.equal(lines[0].val, -26000, 'magnata perde 13% dos ganhos');
-  assert.equal(lines[2].val, -80000, 'contas +80% para magnata');
+  assert.equal(lines[0].val, -Math.round(100000 * er.gain), 'pedágio sobre o lucro do mês (200 mil entrou - 100 mil saiu)');
+  assert.equal(lines[2].val, -Math.round(100000 * (er.bills - 1)), 'contas mais caras sobre os gastos');
+  // revisão v119: sem salto na faixa, imposto por faixa, mês no prejuízo não paga pedágio, empresas fora das contas
+  assert.equal(L3.fortuneTax(5e6), 4000, 'imposto por faixa: 0,2% sobre os 2 mi acima de 3 mi');
+  assert.equal(L3.fortuneTax(50e6), 334000, 'por faixa em 50 mi');
+  const at = w => { const x = L3.newState(() => 0.5); x.money = w; return -L3.eliteBills(x, 3.75e6, 5.2e6, 3e5).reduce((t, l) => t + l.val, 0); };
+  assert.ok(Math.abs(at(200.2e6) - at(199.8e6)) < at(199.8e6) * 0.02, 'passar de 200 mi não dá salto');
+  assert.ok(at(100e6) < 2e6, 'empresário de 100 mi com hotel não paga mais que o lucro em pedágio e contas: ' + at(100e6));
+  const loss = L3.newState(() => 0.5); loss.money = 60e6; assert.ok(!L3.eliteBills(loss, 5e6, 1e6, 0).some(l => /pedágio/.test(l.txt)), 'mês no prejuízo não paga pedágio');
   const top = L3.newState(() => 0.5); top.money = 3e8; assert.ok(L3.eliteOf(top).price > L3.eliteOf(rich).price, 'quanto mais rico, mais caro');
 }
 {

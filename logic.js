@@ -361,7 +361,19 @@ export const ELITE = [
 export const eliteIdx = s => { const w = netWorth(s); let i = -1; ELITE.forEach((e, k) => { if (w >= e.min) i = k; }); return i; };
 // o 1º do ranking paga ainda mais (s.top1 vem do ranking do servidor): a coroa pesa
 export const TOP1 = { price: 0.25, bills: 1, tax: 2, gain: 0.15 };
-export const eliteOf = s => { const e0 = ELITE[eliteIdx(s)]; if (!e0) return null; const k = T.eliteMult, e = { ...e0, price: e0.price * k, bills: 1 + (e0.bills - 1) * k, tax: e0.tax * k, gain: e0.gain * k }; return s.top1 && T.top1 ? { ...e, name: `1º do mundo (${e.name})`, price: e.price + TOP1.price, bills: e.bills + TOP1.bills, tax: e.tax * TOP1.tax, gain: e.gain + TOP1.gain } : e; };
+// sem degrau: entre um limite e o próximo, pedágio, compras e contas sobem aos poucos (escala log). O imposto sobre a fortuna é por faixa (fortuneTax)
+export const eliteOf = s => {
+  const i = eliteIdx(s), e0 = ELITE[i]; if (!e0) return null;
+  const w = netWorth(s), e1 = ELITE[i + 1], t = e1 ? Math.max(0, Math.min(1, Math.log(w / e0.min) / Math.log(e1.min / e0.min))) : 0, mix = k => e0[k] + ((e1 ? e1[k] : e0[k]) - e0[k]) * t;
+  const k = T.eliteMult, e = { ...e0, price: mix('price') * k, bills: 1 + (mix('bills') - 1) * k, tax: e0.tax * k, gain: mix('gain') * k };
+  return s.top1 && T.top1 ? { ...e, name: `1º do mundo (${e.name})`, price: e.price + TOP1.price, bills: e.bills + TOP1.bills, tax: e.tax * TOP1.tax, gain: e.gain + TOP1.gain } : e;
+};
+// imposto sobre grandes fortunas por faixa (como o imposto de renda): cada taxa só sobre o pedaço dentro da faixa
+export function fortuneTax(w, mult = 1) {
+  let t = 0;
+  ELITE.forEach((e, i) => { const hi = ELITE[i + 1]?.min ?? Infinity; if (w > e.min) t += (Math.min(w, hi) - e.min) * e.tax; });
+  return Math.round(t * T.eliteMult * mult);
+}
 // reembolso (v52): de v46 a v51 o imposto sobre fortunas foi de 3% a 7% ao mês e o pedágio chegou a 60% dos ganhos.
 // Devolve a diferença para as taxas atuais, lendo o livro-caixa a partir do mês `from` (mês do mundo quando a v46 entrou).
 const OLD_TAX = { 'milionário do topo': 0.03, 'magnata do mundo': 0.04, 'tubarão do mundo': 0.045, 'bilionário em formação': 0.05, 'dono do mundo': 0.06, 'imperador do 21 World': 0.07 };
@@ -377,15 +389,16 @@ export function taxRefund(log, from) {
   return Math.round(total);
 }
 // contas extras do mês: imposto sobre a fortuna + o quanto as contas normais encarecem
-export function eliteBills(s, spent, earned = 0) {
-  const e = eliteOf(s);
-  if (!e) {   // ainda não é elite: imposto de renda simples sobre o que ganhou no mês
-    const it = netWorth(s) >= T.incomeMin ? Math.round(Math.max(0, earned) * T.incomeTax) : 0;
-    if (it > 0) { s.money -= it; return [{ txt: `imposto de renda (${Math.round(T.incomeTax * 100)}% dos ganhos do mês)`, val: -it }]; }
+// spent/earned: tudo o que saiu/entrou no fechamento · living: só os gastos da casa e das fazendas (sem empresas e sem parcelas)
+export function eliteBills(s, spent, earned = 0, living = spent) {
+  const e = eliteOf(s), profit = Math.max(0, earned - spent);   // "dos ganhos" = do lucro do mês, não do faturamento
+  if (!e) {   // ainda não é elite: imposto de renda simples sobre o lucro do mês
+    const it = netWorth(s) >= T.incomeMin ? Math.round(profit * T.incomeTax) : 0;
+    if (it > 0) { s.money -= it; return [{ txt: `imposto de renda (${Math.round(T.incomeTax * 100)}% do lucro do mês)`, val: -it }]; }
     return [];
   }
-  const w = netWorth(s), tax = Math.round((w - ELITE[0].min) * e.tax), extra = Math.round(spent * (e.bills - 1)), cut = Math.round(Math.max(0, earned) * e.gain), out = [];
-  if (cut > 0) { s.money -= cut; out.push({ txt: `pedágio dos mais ricos: ${Math.round(e.gain * 100)}% dos ganhos do mês`, val: -cut }); }
+  const w = netWorth(s), tax = fortuneTax(w, s.top1 && T.top1 ? TOP1.tax : 1), extra = Math.round(Math.max(0, living) * (e.bills - 1)), cut = Math.round(profit * e.gain), out = [];
+  if (cut > 0) { s.money -= cut; out.push({ txt: `pedágio dos mais ricos: ${Math.round(e.gain * 100)}% do lucro do mês`, val: -cut }); }
   if (tax > 0) { s.money -= tax; out.push({ txt: `imposto sobre grandes fortunas (${e.name})`, val: -tax }); }
   if (extra > 0) { s.money -= extra; out.push({ txt: `contas mais caras para quem está no topo (+${Math.round((e.bills - 1) * 100)}%)`, val: -extra }); }
   return out;
