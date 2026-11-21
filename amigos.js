@@ -2,7 +2,7 @@
 // Marque alguém como parceiro (até 8) e, ao negociar com ele no inventário, os dois lados se ajudam:
 // ele arrenda terra parada, aluga espaço de galpão, empresta trator/caminhão e dinheiro; você faz o mesmo com o que está parado.
 // Parceria tem confiança (0 a 100): sobe todo mês e com conta paga, cai com calote; zerada, a parceria acaba.
-// Agiotagem: parceiros e jogadores do mundo pedem dinheiro a juros altos; o agiota automático empresta sozinho dentro das suas regras.
+// Agiotagem: parceiros e jogadores do mundo pedem dinheiro a juros altos; você escolhe para quem emprestar na aba banco.
 import * as NPC from './npcs.js';
 import * as L from './logic.js';
 import * as NG from './negocios.js';
@@ -29,7 +29,7 @@ const r1000 = v => Math.round(v / 1000) * 1000;
 
 export function ensure(s) {
   s.amigos ??= {};
-  s.amigos.list ??= {}; s.amigos.taken ??= {}; s.amigos.tools ??= []; s.amigos.auto ??= { on: false, budget: 200000, risk: 0.08 };
+  s.amigos.list ??= {}; s.amigos.taken ??= {}; s.amigos.tools ??= [];
   for (const [n, f] of Object.entries(s.amigos.list)) if (f.peer && !f.ok) delete s.amigos.list[n];   // v98 marcava jogador de verdade sem ele aceitar
   return s.amigos;
 }
@@ -231,10 +231,6 @@ export function peerBack(s, nick, what, oid, owner) {
   if (what === 'tool') ensure(s).tools = ensure(s).tools.filter(t => !(t.friend === nick && t.oid === oid));
 }
 export const lentTotal = s => (s.lent || []).reduce((t, p) => t + p.bal, 0);
-export function setAuto(s, on, budget, risk) {
-  const a = ensure(s).auto;
-  a.on = !!on; a.budget = Math.max(0, r1000(Number(budget) || 0)); a.risk = Math.min(0.2, Math.max(0.01, Number(risk) || 0.08));
-}
 
 // fecha o mês: depois do L.tick (que já cobrou parcelas, aluguéis e calotes). lines = o que o tick lançou.
 export function monthly(s, lines = [], rng = Math.random) {
@@ -254,9 +250,6 @@ export function monthly(s, lines = [], rng = Math.random) {
   for (const c of s.cars || []) if (c.lentTo) { add(`${L.CARS[c.model]?.name || 'máquina'} emprestado para ${c.lentTo}`, L.CARS[c.model].price * TOOL_RENT * 0.8); bump(c.lentTo, 1); }
   for (const l of s.lands || []) if (l.leaseTo) bump(l.leaseTo, 1);
   s.borrowers = [...(s.borrowers || []), ...worldBorrowers(s, rng)];
-  if (a.auto.on) for (const b of [...s.borrowers].sort((x, y) => L.lendEdge(y) - L.lendEdge(x))) {   // o que dá mais lucro esperado, não só o juro maior
-    if (b.risk > a.auto.risk || lentTotal(s) + b.amount > a.auto.budget || s.money - b.amount < 0) continue;
-    if (lend(s, b)) out.push({ txt: `agiota automático: emprestou R$ ${b.amount.toLocaleString('pt-BR')} para ${b.name} a ${(b.rate * 100).toFixed(1)}% ao mês`, val: -b.amount });   // lend() já tirou o dinheiro
-  }
+
   return out;
 }

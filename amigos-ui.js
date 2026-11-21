@@ -1,4 +1,4 @@
-// Negociação do inventário, parte de parcerias e dinheiro (regras em amigos.js), + agiota automático na aba banco.
+// Negociação do inventário, parte de parcerias e dinheiro (regras em amigos.js).
 // Abas da janela de troca: 1 troca (trade-ui.js) · 2 parceria (rentHTML) · 3 dinheiro (cashHTML). Topo: os dois lados (sideHTML).
 import * as AM from './amigos.js';
 import * as L from './logic.js';
@@ -120,16 +120,6 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('change', e => { if (e.target.closest?.('.am-loan')) e.target.dispatchEvent(new Event('input', { bubbles: true })); });
 
-// aba banco: só o agiota automático (parcerias e empréstimos diretos ficam na negociação do inventário)
-export function render() {
-  const el = $('#amigos'); if (!el) return;
-  const s = G.S, a = AM.ensure(s);
-  el.innerHTML = `<div class="glass am__auto"><label class="am-chk"><input type="checkbox" id="am-on" ${a.auto.on ? 'checked' : ''}><span>ligado</span></label>
-    <label class="field"><span>emprestar no máximo (total na rua)</span><input class="input" id="am-budget" type="number" min="0" step="10000" value="${a.auto.budget}" inputmode="numeric"></label>
-    <label class="field"><span>risco máximo de calote ao mês</span><select class="input" id="am-risk-auto">${[0.03, 0.05, 0.08, 0.12, 0.16].map(r => `<option value="${r}" ${Math.abs(a.auto.risk - r) < 1e-6 ? 'selected' : ''}>${Math.round(r * 100)}%</option>`).join('')}</select></label>
-    ${btn('auto', '', 'salvar', true)}
-    <p class="muted small">Todo mês, na virada, ele empresta sozinho para os pedidos (parceiros e jogadores do mundo) que pagam mais juros, dentro do seu limite e do risco escolhido. Na rua agora: <b>${brl(AM.lentTotal(s))}</b>. Para emprestar para alguém específico, negocie com ele no inventário (aba dinheiro).</p></div>`;
-}
 
 const cap = t => t[0].toUpperCase() + t.slice(1);
 const done = (err, ok) => { if (err) return say(cap(err), true); if (ok) say(ok); save(); G.render?.(); document.dispatchEvent(new Event('am:changed')); };
@@ -177,7 +167,6 @@ document.addEventListener('click', e => {
       const amt = Math.round(Number($('#am-amt')?.value || 0) / 1000) * 1000, err = AM.lendTo(s, id, amt, Number($('#am-rate').value), Number($('#am-months').value), mode);
       if (!err) note(`empréstimo para ${id} (${AM.MODES[mode].label})`, -amt); return done(err, `${id} assinou a promissória de ${brl(amt)} (${AM.MODES[mode].label}). As parcelas entram na virada do mês.`);
     }
-    case 'auto': AM.setAuto(s, $('#am-on').checked, $('#am-budget').value, $('#am-risk-auto').value); return done(null, s.amigos.auto.on ? 'Agiota automático ligado.' : 'Agiota automático desligado.');
   }
 });
 // parceiro de verdade: passar algo ou dinheiro vira pedido; pegar de volta / devolver é na hora e avisa o outro

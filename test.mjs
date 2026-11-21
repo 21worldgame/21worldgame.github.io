@@ -1126,9 +1126,7 @@ console.log('mina ok');
   // empréstimo ao parceiro escolhido na negociação
   const m0 = s.money; assert.equal(AM.lendTo(s, nick, 10000, 0.025, 6), null); assert.equal(s.money, m0 - 10000); assert.ok(s.lent.some(p => p.nick === nick));
   assert.ok(AM.lendTo(s, nick, 10000, 0.08, 6), 'parceiro não aceita juro de agiota'); assert.ok(AM.lendTo(s, nick, 10000, 0.025, 6), 'um empréstimo por vez');
-  // agiota automático empresta dentro do limite e do risco
-  AM.setAuto(s, true, 1e6, 0.16); s.borrowers = []; const out = AM.monthly(s, [], () => 0.1);
-  assert.ok(AM.lentTotal(s) <= 1e6 && s.lent.every(p => p.risk <= 0.16), 'agiota automático');
+  s.borrowers = []; const out = AM.monthly(s, [], () => 0.1);
   assert.ok(out.some(l => /galpão alugado de/.test(l.txt) && l.val < 0) && out.some(l => /emprestado para/.test(l.txt) && l.val > 0), 'aluguéis do mês');
   // calote derruba a confiança; desmarcar devolve tudo
   const c0 = s.amigos.list[nick].conf; AM.monthly(s, [{ txt: `${nick} deu calote de R$ 1` }]); assert.ok(!AM.isFriend(s, nick) || s.amigos.list[nick].conf < c0);

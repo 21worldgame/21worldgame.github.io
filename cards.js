@@ -23,6 +23,7 @@ export const CHAMPS = [
   { id: 'umbra', name: 'Umbra, a Ceifadora', el: 'sombra', k: 1.4 }, { id: 'corvo', name: 'Corvo Noturno', el: 'sombra', k: 1.0 },
   { id: 'raiz', name: 'Raiz Ancestral', el: 'natureza', k: 0.85 }, { id: 'vespa', name: 'Vespa Esmeralda', el: 'natureza', k: 1.05 },
 ];
+export const CHAMP_ICON = { brasa: '🪓', fenix: '🦅', nevasca: '❄️', cristal: '💎', selene: '🌙', eclipse: '🌑', trovao: '⚡', faisca: '✨', umbra: '💀', corvo: '🐦‍⬛', raiz: '🌳', vespa: '🐝' };
 // ---------- raridade e valor fixo da loja ----------
 export const RARITY = {
   comum: { label: 'comum', value: 3000, frame: 'prata', stars: 1 },
@@ -210,9 +211,10 @@ export function cardHTML(c, { small = false, act = '', missing = false } = {}) {
   const ch = champ(c.champ), t = tier(c.tier), [c1, c2] = ELEMENTS[ch.el];
   const stroke = ch.el === 'gelo' ? `fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round"` : 'fill="#fff"';
   const [title, sub] = ch.name.split(', ');
-  return `<article class="tcard tcard--${t.id}${small ? ' tcard--sm' : ''}${missing ? ' is-missing' : ''}" style="--c1:${c1};--c2:${c2};--art:url(assets/cards/${ch.id}.webp)" ${act}>
+  // campeão: emblema no mesmo estilo das coleções (raios e halo na cor do elemento), no lugar da pintura antiga
+  return `<article class="tcard tcard--${t.id} tcard--set${small ? ' tcard--sm' : ''}${missing ? ' is-missing' : ''}" style="--c1:${c1};--c2:${c2}" ${act}>
     <div class="tcard__in">
-      <div class="tcard__art el--${ch.el}"><i class="tcard__fx" aria-hidden="true"></i><i class="tcard__rays" aria-hidden="true"></i></div>
+      <div class="tcard__art tcard__art--set el--${ch.el}"><i class="tcard__fx" aria-hidden="true"></i><i class="tcard__rays" aria-hidden="true"></i><span class="tcard__emoji" aria-hidden="true">${CHAMP_ICON[ch.id] || '⭐'}</span></div>
       <i class="tcard__holo" aria-hidden="true"></i>
       <div class="tcard__top"><span class="tcard__tier">${t.label}</span><span class="tcard__el" title="${EL_LABEL[ch.el]}"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="${ICON[ch.el]}" ${stroke}/></svg></span></div>
       <div class="tcard__foot">${stars}<h4 class="tcard__name">${title}${sub ? `<small>${sub}</small>` : ''}</h4>${val}</div>

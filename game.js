@@ -589,7 +589,6 @@ function renderBanco() {
   $('#lent').innerHTML = s.lent.length ? s.lent.map(p => `<tr>
     <td>${esc(p.name)}</td><td class="num">${brl(p.bal)}</td><td class="num">${(p.rate * 100).toFixed(1)}%</td><td class="num">${p.left}</td></tr>`).join('')
     : '<tr><td colspan="4" class="empty">Você ainda não emprestou para ninguém.</td></tr>';
-  AMU.render();
 }
 
 function renderLivro() {
@@ -681,8 +680,7 @@ export function itemMedia(i) {
   if (i.kind === 'animal') return `<img src="${ST.photo(d, S())}" alt="" loading="lazy">`;
   if (i.kind === 'land' && d.lat) return `<img src="${satThumb(d).url}" alt="" loading="lazy">`;
   if (i.kind === 'good') return `<img src="assets/${GOOD_IMG[i.good] || 'farm-colheita'}.webp" alt="" loading="lazy">`;
-  if (i.kind === 'card' && d.set) { const S = CD.SETS[d.set], it = S && CD.itemOf(d); return `<span class="icard__cardart icard__cardart--set" style="background:linear-gradient(135deg,${S?.color?.[0] || '#334'},${S?.color?.[1] || '#112'})"><span aria-hidden="true">${it?.icon || S?.icon || '🃏'}</span></span>`; }   // carta de coleção não tem foto: desenho da coleção
-  if (i.kind === 'card') return `<span class="icard__cardart" style="background-image:url(assets/cards/${d.champ}.webp)"></span>`;
+  if (i.kind === 'card') { try { return `<div class="icard__tcard">${CD.cardHTML(d, { small: true })}</div>`; } catch { return '<img src="assets/photo-chips.webp" alt="" loading="lazy">'; } }   // carta inteira, o mesmo desenho das coleções
   if (i.kind === 'player' || i.kind === 'squad' || i.kind === 'club') return '<img src="assets/photo-stadium.webp" alt="" loading="lazy">';
   if (i.kind === 'acc') return `<div class="fcard__acc">${avatarSVG({ ...S().avatar, acc: i.acc }, { label: i.acc, full: true })}</div>`;
   if (i.kind === 'galpao') return `<img src="assets/wh-${d.type}.webp" alt="" loading="lazy">`;
@@ -1440,7 +1438,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 104;
+const APP_VERSION = 105;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;
