@@ -316,7 +316,7 @@ function renderTerras() {
   $('#lands').innerHTML = s.lands.length ? [...own.map(l => landCard(l, 'own')), ...rent.map(l => landCard(l, 'rent'))].join('')
     : '<p class="empty glass">Nenhuma terra ainda. Compre ou arrende uma das ofertas abaixo.</p>';
   $('#lands-sum').textContent = own.length ? `${own.reduce((a, l) => a + l.ha, 0)} ha próprios, valem ${brl(own.reduce((a, l) => a + l.value, 0))}` : '';
-  $('#offers').innerHTML = s.offers.length ? s.offers.map(o => landCard(o, 'offer')).join('') : '<p class="empty glass">Sem ofertas neste mês.</p>';
+  $('#offers').innerHTML = s.offers.length ? [...s.offers].sort((a, b) => a.value - b.value).map(o => landCard(o, 'offer')).join('') : '<p class="empty glass">Sem ofertas neste mês.</p>';
   drawLots();
 }
 
@@ -1589,7 +1589,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 128;
+const APP_VERSION = 129;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
