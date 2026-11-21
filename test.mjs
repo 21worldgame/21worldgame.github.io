@@ -1122,6 +1122,12 @@ console.log('mina ok');
   // calote derruba a confiança; desmarcar devolve tudo
   const c0 = s.amigos.list[nick].conf; AM.monthly(s, [{ txt: `${nick} deu calote de R$ 1` }]); assert.ok(!AM.isFriend(s, nick) || s.amigos.list[nick].conf < c0);
   AM.setPartner(s, nick, false); assert.ok(!s.cars.some(c => c.lentTo) && Lq.hasVehicle(s, 'trator'));
+  // jogador de verdade também vira parceiro (com o retrato que ele mostrou)
+  assert.ok(AM.setPartner(s, 'GenteDeVerdade', true), 'sem retrato não marca quem não é do mundo');
+  assert.equal(AM.setPartner(s, 'GenteDeVerdade', true, { look: {}, worth: 5e6 }), null);
+  const rp = AM.friend(s, 'GenteDeVerdade'); assert.ok(rp?.npc.peer && AM.loanLimit(s, rp) > 0 && AM.lendCap(s, 'GenteDeVerdade') > 0);
+  AM.offersFrom(s, 'GenteDeVerdade');
+  AM.setPartner(s, 'GenteDeVerdade', false); assert.ok(!AM.isFriend(s, 'GenteDeVerdade'));
   // parcelas e as duas formas de emprestar
   const sc = AM.schedule(10000, 0.02, 6); assert.ok(sc.total > 10000 && sc.first > 10000 / 6 && sc.profit === sc.total - 10000);
   assert.ok(AM.lendRisk(s, nick, 'auto') < AM.lendRisk(s, nick, 'trust') && AM.lendMaxRate(s, nick, 'trust') > AM.lendMaxRate(s, nick, 'auto'));

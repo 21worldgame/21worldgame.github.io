@@ -9,7 +9,7 @@ import { G, $, esc, brl, int, say, save, note, profileOf } from './store.js';
 
 const pct = v => `${(v * 100).toFixed(1).replace('.', ',')}%`;
 export const confTag = c => `<span class="tag ${c >= 60 ? 'tag--green' : c >= 30 ? 'tag--gold' : 'tag--red'}" title="confiança da parceria: sobe todo mês e com conta paga, cai com calote">confiança ${Math.round(c)}</span>`;
-export const partnerBox = (s, nick) => `<label class="am-chk"><input type="checkbox" data-partner="${esc(nick)}" ${AM.isFriend(s, nick) ? 'checked' : ''}><span>parceiro</span></label>`;
+export const partnerBox = (s, nick, peer) => `<label class="am-chk"><input type="checkbox" data-partner="${esc(nick)}"${peer ? ` data-peer="${esc(JSON.stringify({ look: peer.look || {}, worth: peer.worth || 0 }))}"` : ''} ${AM.isFriend(s, nick) ? 'checked' : ''}><span>parceiro</span></label>`;
 const btn = (am, id, txt, gold) => `<button class="btn ${gold ? 'btn--gold' : 'btn--glass'} btn--sm" type="button" data-am="${am}" data-id="${esc(String(id))}">${txt}</button>`;
 const row = (title, sub, b = '') => `<li><span><b>${title}</b>${sub ? `<small>${sub}</small>` : ''}</span>${b}</li>`;
 const WH = t => NG.WAREHOUSES[t]?.label || 'galpão';
@@ -36,8 +36,9 @@ export function sideBot(nick) {
       ${f ? stat('tem para você', `${AM.offersFrom(s, nick).length} oferta(s) este mês`) : ''}${owes ? stat('te deve', `<span class="good">${brl(owes)}</span>`) : ''}${debt ? stat('você deve', `<span class="bad">${brl(debt.bal)}</span>`) : ''}</dl>`;
 }
 export function sidePeer(p) {
+  const s = G.S, f = p?.name && AM.friend(s, p.name);
   return `<span class="tr-side__av">${avatarSVG(p?.look || {}, { label: p?.name || '' })}</span>
-    <div class="tr-side__id"><small>jogador de verdade, online</small><b>${esc(p?.name || 'jogador')}</b><small>nível ${p?.level || 1}${p?.rank ? ` · ${esc(p.rank)}` : ''}</small></div>
+    <div class="tr-side__id"><small>jogador de verdade, online</small><b>${esc(p?.name || 'jogador')}</b><small>nível ${p?.level || 1}${p?.rank ? ` · ${esc(p.rank)}` : ''}</small>${p?.name ? partnerBox(s, p.name, p) : ''}${f ? confTag(f.conf) : ''}</div>
     <dl class="tr-side__st">${p?.worth ? stat('patrimônio', brl(p.worth)) : ''}${p?.lands != null ? stat('terras', `${p.lands} · ${int(p.ha || 0)} ha`) : ''}${p?.heads ? stat('gado', `${int(p.heads)} cab.`) : ''}</dl>`;
 }
 
@@ -136,7 +137,8 @@ document.addEventListener('change', e => {
   const c = e.target.closest?.('[data-partner]'); if (!c) return;
   const nick = c.dataset.partner;
   if (!c.checked && !confirm(`Desfazer a parceria com ${nick}? O que está alugado entre vocês volta para o dono.`)) { c.checked = true; return; }
-  const err = AM.setPartner(G.S, nick, c.checked); if (err) c.checked = false;
+  let peer = null; try { peer = c.dataset.peer ? JSON.parse(c.dataset.peer) : null; } catch {}
+  const err = AM.setPartner(G.S, nick, c.checked, peer); if (err) c.checked = false;
   done(err, c.checked ? `${nick} agora é seu parceiro.` : 'Parceria desfeita.');
 });
 const nickOf = b => b.closest('[data-nick]')?.dataset.nick;

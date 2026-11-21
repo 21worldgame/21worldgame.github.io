@@ -6,6 +6,7 @@ import { CHIP } from './logic.js';
 import { G, $, esc, brl, int, say, save, note, award, confetti, profileOf } from './store.js';
 import * as sfx from './sfx.js';
 import * as AMU from './amigos-ui.js';
+import * as AM from './amigos.js';
 document.addEventListener('am:changed', () => render());   // parceria mexeu (empréstimo, aluguel): redesenha a janela
 document.addEventListener('click', e => { const b = e.target.closest('[data-trtab]'); if (b && ss) { ss.tab = b.dataset.trtab; render(); } });
 
@@ -96,12 +97,13 @@ function render() {
   // topo: os dois lados, cada um com o que tem
   $('#tr-me').innerHTML = AMU.sideMe();
   $('#tr-them').innerHTML = ss.bot ? AMU.sideBot(ss.name) : AMU.sidePeer(lobby?.peers.get(ss.peer)?.profile || { name: ss.name });
-  // abas: com jogador de verdade só existe a troca (parceria e empréstimo são com jogadores do mundo)
-  if (!ss.bot) ss.tab = 'troca';
+  // abas: com jogador de verdade, parceria e empréstimo só aparecem depois de marcar a caixinha "parceiro"
+  const full = ss.bot || AM.isFriend(G.S, ss.name);
+  if (!full) ss.tab = 'troca';
   ss.tab ||= 'troca';
-  for (const b of document.querySelectorAll('#tr-tabs [data-trtab]')) { b.hidden = !ss.bot && b.dataset.trtab !== 'troca'; b.classList.toggle('is-on', b.dataset.trtab === ss.tab); b.setAttribute('aria-pressed', String(b.dataset.trtab === ss.tab)); }
-  $('#tr-tabs').hidden = !ss.bot;
-  for (const p of document.querySelectorAll('#dlg-trade [data-pane]')) { p.hidden = p.dataset.pane !== ss.tab; p.dataset.nick = ss.bot ? ss.name : ''; }
+  for (const b of document.querySelectorAll('#tr-tabs [data-trtab]')) { b.hidden = !full && b.dataset.trtab !== 'troca'; b.classList.toggle('is-on', b.dataset.trtab === ss.tab); b.setAttribute('aria-pressed', String(b.dataset.trtab === ss.tab)); }
+  $('#tr-tabs').hidden = !full;
+  for (const p of document.querySelectorAll('#dlg-trade [data-pane]')) { p.hidden = p.dataset.pane !== ss.tab; p.dataset.nick = full ? ss.name : ''; }
   if (ss.tab === 'parceria') { $('#tr-partner').dataset.nick = ss.name; $('#tr-partner').innerHTML = AMU.rentHTML(ss.name); }
   if (ss.tab === 'dinheiro') { $('#tr-cash').dataset.nick = ss.name; $('#tr-cash').innerHTML = AMU.cashHTML(ss.name); }
   $('#tr-steps').innerHTML = (ss.bot

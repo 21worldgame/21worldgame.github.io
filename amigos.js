@@ -32,19 +32,23 @@ export function ensure(s) {
   s.amigos.list ??= {}; s.amigos.taken ??= {}; s.amigos.tools ??= []; s.amigos.auto ??= { on: false, budget: 200000, risk: 0.08 };
   return s.amigos;
 }
-export const friends = s => Object.entries(ensure(s).list).map(([nick, f]) => ({ nick, ...f, npc: NPC.byNick(nick) })).filter(f => f.npc);
+// jogador de verdade vira um "bot" de mentira com o que ele mostrou quando você marcou (visual e patrimônio)
+const hash = t => { let h = 0; for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
+const who = (s, nick) => NPC.byNick(nick) || ((p => p && { i: hash(nick) % 997, nick, look: p.look || {}, worth: p.worth || 0, peer: true })(ensure(s).list[nick]?.peer));
+const worthOf = (n, m) => (n.peer ? Math.max(1e6, n.worth) : NPC.worthAt(n, m));
+export const friends = s => Object.entries(ensure(s).list).map(([nick, f]) => ({ nick, ...f, npc: who(s, nick) })).filter(f => f.npc);
 export const friend = (s, nick) => friends(s).find(f => f.nick === nick) || null;
 export const isFriend = (s, nick) => !!ensure(s).list[nick];
 const k = f => 0.5 + (f?.conf || 0) / 200;   // 0,5 a 1: peso da confiança no desconto
 
 // caixinha "parceiro"
-export function setPartner(s, nick, on) {
+export function setPartner(s, nick, on, peer = null) {
   const a = ensure(s);
   if (!on) { unfriend(s, nick); return null; }
-  if (a.list[nick]) return null;
-  if (!NPC.byNick(nick)) return 'esse jogador não está no mundo.';
+  if (a.list[nick]) { if (peer) a.list[nick].peer = { look: peer.look || {}, worth: Number(peer.worth) || 0 }; return null; }
+  if (!NPC.byNick(nick) && !peer) return 'esse jogador não está no mundo.';
   if (Object.keys(a.list).length >= MAX) return `no máximo ${MAX} parceiros. Desmarque um antes.`;
-  a.list[nick] = { since: s.month || 1, conf: START }; return null;
+  a.list[nick] = { since: s.month || 1, conf: START, ...(peer && !NPC.byNick(nick) ? { peer: { look: peer.look || {}, worth: Number(peer.worth) || 0 } } : {}) }; return null;
 }
 // fim da parceria: o que estava com ele volta para você; o que era dele volta para ele
 export function unfriend(s, nick) {
@@ -117,7 +121,7 @@ export function lendTool(s, carId, nick) {
 }
 
 // ---------- dinheiro ----------
-export const loanLimit = (s, f) => r1000(Math.min(NPC.worthAt(f.npc, s.month || 1) * 0.02, 20000 + f.conf * 8000));
+export const loanLimit = (s, f) => r1000(Math.min(worthOf(f.npc, s.month || 1) * 0.02, 20000 + f.conf * 8000));
 export const loanRate = f => (f.conf >= 60 ? FRIEND_RATE : FRIEND_RATE_LOW);
 export function borrow(s, nick, amount) {
   const f = friend(s, nick); if (!f) return 'só parceiro empresta sem garantia.';
@@ -129,13 +133,13 @@ export function borrow(s, nick, amount) {
 }
 // você empresta para quem está negociando com você. Parceiro aceita juros de amigo e quase não dá calote;
 // quem não é parceiro só pega se o juro for de agiota e paga pior.
-export const lendCap = (s, nick) => { const n = NPC.byNick(nick); return n ? r1000(Math.max(10000, Math.min(2e6, NPC.worthAt(n, s.month || 1) * 0.03))) : 0; };
+export const lendCap = (s, nick) => { const n = who(s, nick); return n ? r1000(Math.max(10000, Math.min(2e6, worthOf(n, s.month || 1) * 0.03))) : 0; };
 export const lendRisk = (s, nick, mode = 'auto') => { const f = friend(s, nick); return +((f ? 0.02 * (1 - f.conf / 130) : 0.07) * (MODES[mode]?.risk ?? 1)).toFixed(4); };
 export const lendMaxRate = (s, nick, mode = 'auto') => (isFriend(s, nick) ? 0.04 : 0.08) + (MODES[mode]?.extra || 0);
 export function lendTo(s, nick, amount, rate, months, mode = 'auto') {
   if (!MODES[mode]) return 'escolha débito automático ou na confiança.';
   amount = r1000(Number(amount) || 0); rate = Number(rate); months = Math.round(Number(months) || 0);
-  if (!NPC.byNick(nick)) return 'esse jogador não está no mundo.';
+  if (!who(s, nick)) return 'esse jogador não está no mundo.';
   if (!LEND_RATES.includes(rate)) return 'escolha uma taxa da lista.';
   if (months < 2 || months > 12) return 'prazo de 2 a 12 meses.';
   if (amount < 1000 || amount > lendCap(s, nick)) return `${nick} só precisa de até R$ ${lendCap(s, nick).toLocaleString('pt-BR')}.`;
