@@ -41,7 +41,7 @@ export function attach(l) { lobby = l; }
 function npc() {
   const sold = SH.npcTick(G.S);
   if (!sold.length) return;
-  for (const l of sold) { note(`loja: vendeu ${l.label}`, l.price); say(`Vendido na loja: ${l.label} por ${brl(l.price)}.`); sfx.play('stack', 0.6); }
+  for (const l of sold) { note(`loja: vendeu ${l.label}`, l.price); say(`Vendido na loja: ${l.label} por ${brl(l.price)}.`); }
   save(); announce(); G.render();
 }
 
@@ -104,7 +104,7 @@ export function mineHTML(c = 'all') {
 export function invCats() { const s = G.S, n = {}; for (const i of SH.items(s)) n[SH.catOf(i)] = (n[SH.catOf(i)] || 0) + 1; return n; }
 export function acceptOffer(id) {
   const r = SH.acceptOffer(G.S, id); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true);
-  note(`Feirão: vendeu ${r.offer.label} para ${r.offer.npc}`, r.offer.price); say(`Vendido para ${r.offer.npc} por ${brl(r.offer.price)}.`); sfx.play('stack', 0.6); confetti(30); save(); announce(); G.render();
+  note(`Feirão: vendeu ${r.offer.label} para ${r.offer.npc}`, r.offer.price); say(`Vendido para ${r.offer.npc} por ${brl(r.offer.price)}.`); confetti(30); save(); announce(); G.render();
 }
 export function rejectOffer(id) { SH.rejectOffer(G.S, id); save(); render(); }
 export function sellNow(key) {
@@ -113,7 +113,7 @@ export function sellNow(key) {
   const r = SH.sellToHouse(G.S, key);
   if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true);
   if (r.item.kind === 'acc') ACS.give(r.item.acc);   // volta para o estoque da loja
-  note(`loja: vendeu ${r.item.label}`, r.amount); say(`Vendido por ${brl(r.amount)}.`); sfx.play('stack', 0.6);
+  note(`loja: vendeu ${r.item.label}`, r.amount); say(`Vendido por ${brl(r.amount)}.`);
   save(); announce(); G.render();
 }
 export function listItem(key) {

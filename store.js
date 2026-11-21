@@ -4,6 +4,7 @@ import * as FT from './futebol.js';
 import * as P from './progress.js';
 import { DEFAULT } from './avatar.js';
 import * as ST from './stable.js';
+import * as SFX from './sfx.js';
 import { completed as collsDone, prestige as collsPrestige } from './cards.js';
 
 // cada conta tem o próprio save neste aparelho: 21world.save.v1:<uid>. Sem login, vale a chave antiga.
@@ -79,7 +80,8 @@ export function adopt(state) { G.S = normalize(state); try { localStorage.setIte
 export function writeSave(u, state) { try { localStorage.setItem(keyFor(u), JSON.stringify(state)); localStorage.setItem(UID_KEY, u); } catch {} }
 export function forgetUser() { try { localStorage.removeItem(UID_KEY); } catch {} }
 export function reset() { G.S = blankState(G.S.avatar?.name && G.S.avatar.name !== 'você' ? G.S.avatar.name : ''); save(); }
-export function note(txt, val = 0) { try { G.track?.(G.S, txt, val); } catch {} G.S.log.unshift({ m: G.S.month, txt, val: Math.round(val) }); try { G.onNote?.(txt, val); } catch {} }   // onNote: TV 21 (news-ui)
+export function note(txt, val = 0) { try { G.track?.(G.S, txt, val); } catch {} G.S.log.unshift({ m: G.S.month, txt, val: Math.round(val) }); try { G.onNote?.(txt, val); } catch {}
+  if (val >= 2000) SFX.cash(val >= Math.max(1e6, (G.S.money || 0) * 0.05)); }   // onNote: TV 21 (news-ui) · dinheiro entrando: som (valor pequeno não toca)
 export function pay(v, why, buy = true) {   // buy=false: quitar dívida / emprestar não é compra, não leva a taxa dos mais ricos
   const e = buy && L.eliteOf(G.S); if (e) { v = Math.round(v * (1 + e.price)); why += ` (+${Math.round(e.price * 100)}% de taxa para os mais ricos)`; }
   if (v > G.S.money) { say(`Dinheiro insuficiente para ${why}.`, true); return false; }
@@ -88,7 +90,7 @@ export function pay(v, why, buy = true) {   // buy=false: quitar dívida / empre
 
 
 // avisos nas laterais (nunca no meio nem em cima): esquerda = avisos do jogo, direita = conversas e conquistas.
-// Ficam até a pessoa fechar (no máximo 4 por lado; o mais velho sai). "não mostrar" desliga aquele tipo (volta no perfil).
+// Avisos do jogo somem sozinhos e ficam guardados no sino (no máximo 4 por lado; o mais velho sai). "não mostrar" desliga aquele tipo (volta no perfil).
 export const ntOff = k => { try { return localStorage.getItem(`21world.nt.${k}`) === 'off'; } catch { return false; } };
 export function ntSet(k, on) { try { on ? localStorage.removeItem(`21world.nt.${k}`) : localStorage.setItem(`21world.nt.${k}`, 'off'); } catch {} }
 export function ntBox(side) {
@@ -111,13 +113,17 @@ export function notice({ side = 'left', kind = 'aviso', html, tone = 'ok', open 
   if (life) setTimeout(close, life);
   return c;
 }
+// central de avisos (sino no topo): tudo o que apareceu fica aqui (últimos 40). imp = conta no número do sino
+export const FEED = [];
+export function feed(item) { FEED.unshift({ at: Date.now(), ...item }); FEED.length = Math.min(FEED.length, 40); try { G.onFeed?.(); } catch {} }
 export function say(msg, bad = false) {
   const el = $('#status'); if (el) el.textContent = msg;   // leitor de tela
+  if (FEED[0]?.txt !== msg) feed({ txt: msg, bad });
   const off = ntOff('aviso');
   if (off && !bad) return;
   const box = ntBox('left'), last = box.lastElementChild;
   if (last?.dataset.msg === msg) { const n = last.querySelector('.nt__n'); last.dataset.k = (Number(last.dataset.k) || 1) + 1; n.textContent = ` ×${last.dataset.k}`; n.hidden = false; return; }   // repetido: só conta
-  const c = notice({ side: 'left', kind: 'aviso', tone: bad ? 'bad' : 'ok', life: off ? 6000 : 0,
+  const c = notice({ side: 'left', kind: 'aviso', tone: bad ? 'bad' : 'ok', life: off ? 6000 : bad ? 9000 : 4500,   // some sozinho; fica no sino
     html: `<span class="nt__ico" aria-hidden="true">${bad ? '!' : '✓'}</span><p>${esc(msg)}<b class="nt__n" hidden></b></p>` });
   c.dataset.msg = msg;
 }

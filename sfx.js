@@ -30,6 +30,25 @@ export function toggleMute() {
   return muted;
 }
 
+// dinheiro entrando: "ka-ching" de registradora (dois toques de sino + moedas), sintetizado, ~0,6 s.
+// big = versão mais cheia (mais moedas) para valores altos. Nunca toca duas vezes em 1,5 s (lançamentos em sequência).
+let lastCash = 0;
+export function cash(big = false) {
+  if (muted || Date.now() - lastCash < 1500) return;
+  lastCash = Date.now();
+  try {
+    ctx ??= new AudioContext(); if (ctx.state === 'suspended') ctx.resume();
+    const t0 = ctx.currentTime + 0.01, out = ctx.createGain(); out.gain.value = big ? 0.3 : 0.22; out.connect(ctx.destination);
+    const bell = (f, at, dur, v) => { for (const [m, g] of [[1, 1], [2.76, 0.3], [5.4, 0.1]]) {
+      const o = ctx.createOscillator(), e = ctx.createGain(); o.type = 'sine'; o.frequency.value = f * m;
+      e.gain.setValueAtTime(0, at); e.gain.linearRampToValueAtTime(v * g, at + 0.005); e.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+      o.connect(e).connect(out); o.start(at); o.stop(at + dur + 0.05); } };
+    bell(1318.5, t0, 0.45, 0.45); bell(1975.5, t0 + 0.08, 0.85, 0.6);   // ka-ching (mi e si, quinta acima)
+    const n = big ? 7 : 3;
+    for (let i = 0; i < n; i++) bell(2500 + Math.random() * 1500, t0 + 0.15 + i * (big ? 0.05 : 0.07) + Math.random() * 0.02, 0.22, 0.16);   // moedas caindo
+  } catch {}
+}
+
 // torcida do canódromo: ruído filtrado cujo volume sobe na reta final
 let ctx, crowdSrc, crowdGain;
 export function crowd(on, level = 0.5) {

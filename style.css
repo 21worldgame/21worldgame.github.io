@@ -2700,7 +2700,6 @@ button.rz__av { cursor: pointer; }
 body:has(.tvx[data-mode="min"]) .nt--left { bottom: 84px; }
 body:has(:is(#room, #tr-room, #sn-room, #pk-room):not([hidden])) .nt--left { bottom: 16px; }
 .nt--right { right: calc(var(--rz-w, 0px) + 16px); bottom: 16px; }
-body:has(#bot-offer) .nt--right { bottom: 210px; }
 .nt--m { left: 8px; right: 8px; width: auto; bottom: calc(80px + env(safe-area-inset-bottom)); }
 body.rz-open .nt--m { display: none; }
 .nt__card, .nt .badge { pointer-events: auto; }
@@ -2830,8 +2829,6 @@ body.rz-open .nt--m { display: none; }
   .rz__railt { writing-mode: horizontal-tb; rotate: none; letter-spacing: .02em; text-transform: none; font-size: .82rem; }
   .rz__rail .rz-badge { position: static; }
   body.rz-min .nt--right { bottom: 68px; }
-  body.rz-min:has(#bot-offer) .rz { bottom: 210px; }
-  body.rz-min:has(#bot-offer) .nt--right { bottom: 262px; }
 }
 
 /* avisos menores e discretos */
@@ -3163,3 +3160,22 @@ details.herd-guide > summary { margin: 0; }
 .bo__block:hover { background: rgba(255,90,106,.12); }
 .pf__blocked { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .pf__blocked li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,.04); }
+/* central de avisos (sino): histórico + proposta de negócio esperando */
+.ncmenu { position: relative; }
+.nc-btn { gap: 6px; } .nc-btn svg { width: 16px; height: 16px; }
+.nc-btn.has-new svg { color: var(--color-gold, #facc15); animation: ncRing 2.4s ease-in-out infinite; transform-origin: 50% 10%; }
+@keyframes ncRing { 0%, 80%, 100% { rotate: 0deg; } 84% { rotate: 14deg; } 88% { rotate: -12deg; } 92% { rotate: 8deg; } 96% { rotate: -4deg; } }
+.ncpanel { width: min(440px, calc(100vw - 24px)); }
+.ncpanel .bo { position: static; width: auto; margin: 0 0 10px; box-shadow: none; }
+.nc-list { list-style: none; margin: 0; padding: 0; display: grid !important; grid-template-columns: 1fr !important; gap: 4px; }
+.nc-list li { display: flex; justify-content: space-between; gap: 10px; padding: 7px 10px; border-radius: 9px; background: rgba(255,255,255,.035); font-size: .85rem; }
+.nc-list li small { flex: none; color: var(--color-muted); font-size: .72rem; }
+.nc-list li.is-bad { border-left: 3px solid #ff5a6a; } .nc-list li.is-imp { border-left: 3px solid #facc15; }
+@media (prefers-reduced-motion: reduce) { .nc-btn.has-new svg { animation: none; } }
+/* carta com ilustração oficial: a arte ocupa o alto da carta e se funde no rodapé (nome, estrelas, valor) */
+.tcard__art.tcard__art--img { background:
+    linear-gradient(180deg, rgba(4,5,10,.25) 0, transparent 14%, transparent 38%, rgba(4,5,10,.85) 55%, #05060b 68%),
+    var(--img) center top / 100% auto no-repeat,
+    linear-gradient(165deg, color-mix(in srgb, var(--c1) 70%, #000), #05060b 70%); }
+.tcard__art--img .tcard__fx { mix-blend-mode: screen; opacity: .5; }
+.tcard__art--img .tcard__rays { opacity: 0 !important; }

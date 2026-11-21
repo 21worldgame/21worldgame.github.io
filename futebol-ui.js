@@ -149,7 +149,7 @@ export function sell(id) {
 export function answer(id, yes) {
   const r = FT.answerOffer(G.S, id, yes);
   if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true);
-  if (yes) { note(`venda de ${r.offer.name} ao ${r.offer.club}`, r.amount); say(`${r.offer.name} vendido ao ${r.offer.club} por ${brl(r.amount)}.`); sfx.play('stack', 0.6); }
+  if (yes) { note(`venda de ${r.offer.name} ao ${r.offer.club}`, r.amount); say(`${r.offer.name} vendido ao ${r.offer.club} por ${brl(r.amount)}.`); }
 }
 export function stadium() {
   const cost = FT.stadiumCost(f()), err = FT.upgradeStadium(G.S);

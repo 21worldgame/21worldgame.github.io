@@ -16,11 +16,11 @@ export const TIERS = [
 ];
 export const ELEMENTS = { fogo: ['#ff5a1f', '#ffcc33'], gelo: ['#5fd3ff', '#e9fbff'], lua: ['#b38bff', '#f2e6ff'], raio: ['#ffe14d', '#6cf0ff'], sombra: ['#7a2cff', '#ff2c7a'], natureza: ['#2ee66b', '#d9ff6a'] };
 export const CHAMPS = [
-  { id: 'brasa', name: 'Brasa, o Carrasco', el: 'fogo', k: 1.5 }, { id: 'fenix', name: 'Fênix Rubra', el: 'fogo', k: 1.25 },
-  { id: 'nevasca', name: 'Nevasca', el: 'gelo', k: 1.1 }, { id: 'cristal', name: 'Cristal Eterna', el: 'gelo', k: 1.3 },
-  { id: 'selene', name: 'Selene, Lâmina da Lua', el: 'lua', k: 1.45 }, { id: 'eclipse', name: 'Eclipse', el: 'lua', k: 1.2 },
-  { id: 'trovao', name: 'Trovão de Aço', el: 'raio', k: 1.15 }, { id: 'faisca', name: 'Faísca', el: 'raio', k: 0.9 },
-  { id: 'umbra', name: 'Umbra, a Ceifadora', el: 'sombra', k: 1.4 }, { id: 'corvo', name: 'Corvo Noturno', el: 'sombra', k: 1.0 },
+  { id: 'brasa', name: 'Líder', el: 'fogo', k: 1.5 }, { id: 'fenix', name: 'Estratégia', el: 'fogo', k: 1.25 },
+  { id: 'nevasca', name: 'Devoção', el: 'gelo', k: 1.1 }, { id: 'cristal', name: 'Vitória', el: 'gelo', k: 1.3 },
+  { id: 'selene', name: 'Glória', el: 'lua', k: 1.45 }, { id: 'eclipse', name: 'Disciplina', el: 'lua', k: 1.2 },
+  { id: 'trovao', name: 'Equipe', el: 'raio', k: 1.15 }, { id: 'faisca', name: 'Faísca', el: 'raio', k: 0.9 },
+  { id: 'umbra', name: 'Conquista', el: 'sombra', k: 1.4 }, { id: 'corvo', name: 'Corvo Noturno', el: 'sombra', k: 1.0 },
   { id: 'raiz', name: 'Raiz Ancestral', el: 'natureza', k: 0.85 }, { id: 'vespa', name: 'Vespa Esmeralda', el: 'natureza', k: 1.05 },
 ];
 export const CHAMP_ICON = { brasa: '🪓', fenix: '🦅', nevasca: '❄️', cristal: '💎', selene: '🌙', eclipse: '🌑', trovao: '⚡', faisca: '✨', umbra: '💀', corvo: '🐦‍⬛', raiz: '🌳', vespa: '🐝' };
@@ -44,20 +44,20 @@ export const SETS = {
   campeoes: { name: 'Campeões', kind: 'padrao', icon: '⚔️', color: ['#7a2cff', '#ff2c7a'], reward: { xp: 0.05 }, rewardTxt: '+5% de XP em tudo', prestige: 10,
     cards: CHAMPS.map(ch => C(ch.id, ch.name.split(', ')[0], '⚔️', null)) },
   prosperidade: { name: 'Prosperidade', kind: 'padrao', icon: '🌾', color: ['#2ee66b', '#d9ff6a'], reward: { perda: -0.02 }, rewardTxt: '2 pontos a menos de perda: mortalidade da granja e dos suínos e praga do pomar e do canavial', prestige: 10,
-    cards: [C('semente', 'Semente Dourada', '🌱', 'comum'), C('chuva', 'Chuva na Hora', '🌧️', 'comum'), C('trator', 'Trator Novo', '🚜', 'comum'), C('celeiro', 'Celeiro Cheio', '🛖', 'rara'),
-      C('colheita', 'Colheita Farta', '🌾', 'rara'), C('sol', 'Sol do Cerrado', '☀️', 'rara'), C('arco', 'Arco-íris do Campo', '🌈', 'lendaria'), C('ouroverde', 'Ouro Verde', '💚', 'lendaria')] },
+    cards: [C('semente', 'Sementes', '🌱', 'comum'), C('chuva', 'Irrigação', '🌧️', 'comum'), C('trator', 'Adubação', '🚜', 'comum'), C('celeiro', 'Plantação', '🛖', 'rara'),
+      C('colheita', 'Colheita', '🌾', 'rara'), C('sol', 'Clima Favorável', '☀️', 'rara'), C('arco', 'Pomar', '🌈', 'lendaria'), C('ouroverde', 'Canavial', '💚', 'lendaria')] },
   fortuna: { name: 'Fortuna', kind: 'padrao', icon: '🎰', color: ['#ffb800', '#ff5a1f'], reward: { casino: 0.15 }, rewardTxt: '+15% no ganho de fichas no cassino (21, roleta e aviator)', prestige: 10,
-    cards: [C('ficha', 'Ficha da Sorte', '🪙', 'comum'), C('trevo', 'Trevo de Quatro Folhas', '🍀', 'comum'), C('dados', 'Dados de Ouro', '🎲', 'comum'), C('roleta', 'Roleta Real', '🎡', 'rara'),
-      C('as', 'Ás de Espadas', '♠️', 'rara'), C('coringa', 'Coringa', '🃏', 'rara'), C('jackpot', 'Jackpot', '💰', 'lendaria'), C('coroa', 'Coroa do Cassino', '👑', 'lendaria')] },
+    cards: [C('ficha', 'Fichas', '🪙', 'comum'), C('trevo', 'Sorte', '🍀', 'comum'), C('dados', 'Aposta', '🎲', 'comum'), C('roleta', 'Roleta', '🎡', 'rara'),
+      C('as', 'Blackjack 21', '♠️', 'rara'), C('coringa', 'Aviator', '🃏', 'rara'), C('jackpot', 'Jackpot', '💰', 'lendaria'), C('coroa', 'Cassino', '👑', 'lendaria')] },
   pecuaria: { name: 'Pecuária', kind: 'padrao', icon: '🐂', color: ['#c2410c', '#fbbf24'], reward: { animais: -0.15 }, rewardTxt: '15% mais barato comprar pintinhos, leitões e bezerros', prestige: 10,
-    cards: [C('pintinho', 'Pintinho', '🐣', 'comum'), C('leitao', 'Leitão', '🐖', 'comum'), C('bezerro', 'Bezerro Nelore', '🐄', 'comum'), C('galo', 'Galo Cantador', '🐓', 'rara'),
-      C('touro', 'Touro Reprodutor', '🐂', 'rara'), C('cavalo', 'Cavalo de Lida', '🐎', 'rara'), C('boiadeiro', 'Rei do Boiadeiro', '🤠', 'lendaria'), C('zebu', 'Zebu de Ouro', '🏆', 'lendaria')] },
+    cards: [C('pintinho', 'Pintinhos', '🐣', 'comum'), C('leitao', 'Leitão', '🐖', 'comum'), C('bezerro', 'Bezerro', '🐄', 'comum'), C('galo', 'Aves', '🐓', 'rara'),
+      C('touro', 'Suínos', '🐂', 'rara'), C('cavalo', 'Cocheira', '🐎', 'rara'), C('boiadeiro', 'Curral', '🤠', 'lendaria'), C('zebu', 'Gado', '🏆', 'lendaria')] },
   natal: { name: 'Natal', kind: 'sazonal', season: [12, 1, 12, 31], icon: '🎄', color: ['#dc2626', '#16a34a'], reward: {}, rewardTxt: '50 pontos de prestígio', prestige: 50,
-    cards: [C('arvore', 'Árvore de Natal', '🎄', 'exclusiva'), C('presente', 'Presente', '🎁', 'exclusiva'), C('rena', 'Rena', '🦌', 'exclusiva'), C('estrela', 'Estrela Guia', '⭐', 'exclusiva'),
-      C('sino', 'Sino de Natal', '🔔', 'exclusiva'), C('boneco', 'Boneco de Neve', '☃️', 'exclusiva'), C('noel', 'Papai Noel', '🎅', 'exclusiva', 0.4), C('ceia', 'Ceia de Natal', '🦃', 'exclusiva', 0.4)] },
+    cards: [C('arvore', 'Árvore de Natal', '🎄', 'exclusiva'), C('presente', 'Presentes', '🎁', 'exclusiva'), C('rena', 'Renas', '🦌', 'exclusiva'), C('estrela', 'Luzes', '⭐', 'exclusiva'),
+      C('sino', 'Guirlanda', '🔔', 'exclusiva'), C('boneco', 'Bolas de Natal', '☃️', 'exclusiva'), C('noel', 'Papai Noel', '🎅', 'exclusiva', 0.4), C('ceia', 'Trenó', '🦃', 'exclusiva', 0.4)] },
   junina: { name: 'Festa Junina', kind: 'sazonal', season: [6, 1, 7, 31], icon: '🔥', color: ['#f59e0b', '#7c3aed'], reward: { daily: 0.1 }, rewardTxt: '+10% na roleta do dia e 30 pontos de prestígio', prestige: 30,
-    cards: [C('fogueira', 'Fogueira', '🔥', 'exclusiva'), C('balao', 'Balão', '🎈', 'exclusiva'), C('quadrilha', 'Quadrilha', '💃', 'exclusiva'), C('pamonha', 'Pamonha', '🌽', 'exclusiva'),
-      C('bandeirinha', 'Bandeirinhas', '🎏', 'exclusiva'), C('sanfona', 'Sanfoneiro', '🪗', 'exclusiva'), C('santo', 'Santo Antônio', '⛪', 'exclusiva', 0.4), C('pescaria', 'Pescaria', '🎣', 'exclusiva', 0.4)] },
+    cards: [C('fogueira', 'Fogueira', '🔥', 'exclusiva'), C('balao', 'Chapéu de Palha', '🎈', 'exclusiva'), C('quadrilha', 'Danças', '💃', 'exclusiva'), C('pamonha', 'Pamonha', '🌽', 'exclusiva'),
+      C('bandeirinha', 'Bandeirinhas', '🎏', 'exclusiva'), C('sanfona', 'Milho', '🪗', 'exclusiva'), C('santo', 'Quentão', '⛪', 'exclusiva', 0.4), C('pescaria', 'Canjica', '🎣', 'exclusiva', 0.4)] },
 };
 // data de São Paulo (UTC−3) para saber se a temporada está aberta
 const spDate = now => { const d = new Date(now - 3 * 3600000); return [d.getUTCMonth() + 1, d.getUTCDate(), d.getUTCFullYear()]; };
@@ -74,6 +74,8 @@ const tier = id => TIERS.find(t => t.id === id) || TIERS[0];
 export const champ = id => CHAMPS.find(c => c.id === id) || CHAMPS[0];
 export const setOf = c => (c?.set && SETS[c.set] ? c.set : 'campeoes');
 export const keyOf = c => (c?.set ? c.key : c?.champ);
+export const ART = new Set(["campeoes:brasa", "campeoes:cristal", "campeoes:eclipse", "campeoes:fenix", "campeoes:nevasca", "campeoes:selene", "campeoes:trovao", "campeoes:umbra", "fortuna:as", "fortuna:coringa", "fortuna:coroa", "fortuna:dados", "fortuna:ficha", "fortuna:jackpot", "fortuna:roleta", "fortuna:trevo", "junina:balao", "junina:bandeirinha", "junina:fogueira", "junina:pamonha", "junina:pescaria", "junina:quadrilha", "junina:sanfona", "junina:santo", "natal:arvore", "natal:boneco", "natal:ceia", "natal:estrela", "natal:noel", "natal:presente", "natal:rena", "natal:sino", "pecuaria:bezerro", "pecuaria:boiadeiro", "pecuaria:cavalo", "pecuaria:galo", "pecuaria:leitao", "pecuaria:pintinho", "pecuaria:touro", "pecuaria:zebu", "prosperidade:arco", "prosperidade:celeiro", "prosperidade:chuva", "prosperidade:colheita", "prosperidade:ouroverde", "prosperidade:semente", "prosperidade:sol", "prosperidade:trator"]);   // coleção:chave com ilustração oficial em assets/cards/art (as outras mostram o emblema)
+export const artOf = c => (ART.has(`${setOf(c)}:${keyOf(c)}`) ? `assets/cards/art/${setOf(c)}-${keyOf(c)}.webp` : '');
 export const itemOf = c => SETS[setOf(c)].cards.find(x => x.key === keyOf(c));
 export const rarityOf = c => (c?.set ? (SETS[c.set]?.kind === 'sazonal' ? 'exclusiva' : itemOf(c)?.rar || 'comum') : TIER_RAR[tier(c?.tier).id]);
 export const value = c => RARITY[rarityOf(c)].value;
@@ -202,7 +204,7 @@ export function cardHTML(c, { small = false, act = '', missing = false } = {}) {
     const S = SETS[c.set], it = itemOf(c) || { name: '?', icon: '❔' }, [c1, c2] = S.color;
     return `<article class="tcard tcard--${R.frame} tcard--set${small ? ' tcard--sm' : ''}${missing ? ' is-missing' : ''}" style="--c1:${c1};--c2:${c2}" ${act}>
     <div class="tcard__in">
-      <div class="tcard__art tcard__art--set"><i class="tcard__fx" aria-hidden="true"></i><span class="tcard__emoji" aria-hidden="true">${it.icon}</span></div>
+      ${artOf(c) ? `<div class="tcard__art tcard__art--img" style="--img:url(${artOf(c)})"><i class="tcard__fx" aria-hidden="true"></i></div>` : `<div class="tcard__art tcard__art--set"><i class="tcard__fx" aria-hidden="true"></i><span class="tcard__emoji" aria-hidden="true">${it.icon}</span></div>`}
       <i class="tcard__holo" aria-hidden="true"></i>
       <div class="tcard__top"><span class="tcard__tier">${R.label}</span><span class="tcard__el" title="coleção ${S.name}">${S.icon}</span></div>
       <div class="tcard__foot">${stars}<h4 class="tcard__name">${it.name}<small>coleção ${S.name}</small></h4>${val}</div>
@@ -214,7 +216,7 @@ export function cardHTML(c, { small = false, act = '', missing = false } = {}) {
   // campeão: emblema no mesmo estilo das coleções (raios e halo na cor do elemento), no lugar da pintura antiga
   return `<article class="tcard tcard--${t.id} tcard--set${small ? ' tcard--sm' : ''}${missing ? ' is-missing' : ''}" style="--c1:${c1};--c2:${c2}" ${act}>
     <div class="tcard__in">
-      <div class="tcard__art tcard__art--set el--${ch.el}"><i class="tcard__fx" aria-hidden="true"></i><i class="tcard__rays" aria-hidden="true"></i><span class="tcard__emoji" aria-hidden="true">${CHAMP_ICON[ch.id] || '⭐'}</span></div>
+      ${artOf(c) ? `<div class="tcard__art tcard__art--img el--${ch.el}" style="--img:url(${artOf(c)})"><i class="tcard__fx" aria-hidden="true"></i><i class="tcard__rays" aria-hidden="true"></i></div>` : `<div class="tcard__art tcard__art--set el--${ch.el}"><i class="tcard__fx" aria-hidden="true"></i><i class="tcard__rays" aria-hidden="true"></i><span class="tcard__emoji" aria-hidden="true">${CHAMP_ICON[ch.id] || '⭐'}</span></div>`}
       <i class="tcard__holo" aria-hidden="true"></i>
       <div class="tcard__top"><span class="tcard__tier">${t.label}</span><span class="tcard__el" title="${EL_LABEL[ch.el]}"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="${ICON[ch.el]}" ${stroke}/></svg></span></div>
       <div class="tcard__foot">${stars}<h4 class="tcard__name">${title}${sub ? `<small>${sub}</small>` : ''}</h4>${val}</div>

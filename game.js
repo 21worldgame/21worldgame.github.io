@@ -43,6 +43,7 @@ import * as HOME from './home-ui.js';
 import * as CD from './cards.js';
 import * as CHUI from './chat-ui.js';
 import './news-ui.js';
+import './avisos.js';
 import * as SHUI from './shop-ui.js';
 import * as RKUI from './ranking-ui.js';
 import { openDeal } from './deal-ui.js';
@@ -617,21 +618,20 @@ function profileExtra(p, me) {
   return trophies + emblems + priv + (p.biz || p.landList ? `<h3>tudo o que tem</h3><div class="pf__stats">${tiles}</div>${biz ? `<div class="pf__bizs">${biz}</div>` : ''}${lands}` : '') + ads;
 }
 const agoTxt = at => { const m = Math.max(1, Math.round((Live.now() - at) / 60000)); return m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.round(m / 60)} h` : m < 2880 ? 'ontem' : `há ${Math.round(m / 1440)} dias`; };
-// proposta de um bot para você: card no canto da tela, some quando a janela acaba
+// proposta de outro jogador para você: espera na central de avisos (sino), sem pular na tela nem tocar som
 let boShown = null;
 function botOffer() {
-  const s = S(), o = BO.offerFor(s, Live.now()), el = $('#bot-offer');
-  if (!o) { if (el) el.remove(); boShown = null; return; }
-  if (el && boShown === `${o.slot}`) return;
+  const s = S(), o = BO.offerFor(s, Live.now()), slot = $('#nc-offer'); if (!slot) return;
+  if (!o) { if (slot.childElementCount) { slot.innerHTML = ''; G.ncBadge?.(); } boShown = null; return; }
+  if (slot.childElementCount && boShown === `${o.slot}`) return;
   boShown = `${o.slot}`;
-  const n = NPC.byId(o.botId), box = el || document.body.appendChild(Object.assign(document.createElement('aside'), { id: 'bot-offer', className: 'bo glass' }));
-  box.setAttribute('aria-live', 'polite');
-  box.innerHTML = `<span class="bo__av">${avatarSVG(n?.look || {}, { label: o.bot })}</span><div class="bo__body"><b>${esc(o.bot)} <small class="muted">nível ${NPC.levelFor(NPC.worthAt(n, s.month))} · online</small></b>
+  const n = NPC.byId(o.botId);
+  slot.innerHTML = `<div class="bo glass"><span class="bo__av">${avatarSVG(n?.look || {}, { label: o.bot })}</span><div class="bo__body"><b>${esc(o.bot)} <small class="muted">nível ${NPC.levelFor(NPC.worthAt(n, s.month))} · online</small></b>
     <p>“${esc(o.txt)}”</p><p class="small">total: <b class="${o.kind === 'calves' ? 'bad' : 'good'}">${brl(o.total)}</b></p>
-    <div class="bo__acts"><button class="btn btn--gold btn--sm" data-act="bo-yes">aceitar</button><button class="btn btn--glass btn--sm" data-act="bo-deal">negociar</button><button class="btn btn--glass btn--sm" data-act="bo-no">recusar</button><button class="btn btn--sm bo__block" data-act="bo-block" title="não receber mais propostas nem mensagens dessa pessoa">bloquear</button></div></div>`;
-  sfx.play('chip', 0.3);
+    <div class="bo__acts"><button class="btn btn--gold btn--sm" data-act="bo-yes">aceitar</button><button class="btn btn--glass btn--sm" data-act="bo-deal">negociar</button><button class="btn btn--glass btn--sm" data-act="bo-no">recusar</button><button class="btn btn--sm bo__block" data-act="bo-block" title="não receber mais propostas nem mensagens dessa pessoa">bloquear</button></div></div></div>`;
+  G.ncBadge?.();
 }
-function boClose(o, done) { S().botOfferDone = o.slot; $('#bot-offer')?.remove(); boShown = null; if (done) { save(); render(); } }
+function boClose(o, done) { S().botOfferDone = o.slot; const slot = $('#nc-offer'); if (slot) slot.innerHTML = ''; boShown = null; G.ncBadge?.(); if (done) { save(); render(); } }
 function boSettle(o, total) {
   const r = BO.settle(S(), o, total); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true);
   note(r.txt, r.val); say(`Negócio fechado com ${o.bot}: ${brl(Math.abs(r.val))}.`); confetti(25); boClose(o, true);
@@ -1443,7 +1443,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 108;
+const APP_VERSION = 109;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
