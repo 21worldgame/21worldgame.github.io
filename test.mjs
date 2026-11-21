@@ -950,7 +950,10 @@ console.log('suínos, negócios e galpões ok');
   const RV4 = await import('./rivals.js'), NP = await import('./npcs.js'), rdg = NP.NPCS.find(n => n.orig === 'ReiDoGado');
   const at = t => RV4.rivals(400, 9e8, 9e8, t, 9e8).find(r => r.name === rdg.nick).worth / 9e8;
   for (let t = RV4.DUEL.from; t < RV4.DUEL.passAt; t += 6e4) assert.ok(at(t) < 1 && at(t) > 0.9, 'antes das 21:30 fica atrás, mas perto: ' + at(t));
-  for (let t = RV4.DUEL.passAt + 18e5; t < RV4.DUEL.passAt + 864e5; t += 6e4) assert.ok(at(t) > 1, 'depois passa');
+  for (let t = RV4.DUEL.passAt + 3e5; t < RV4.DUEL.holdUntil; t += 6e4) assert.ok(at(t) > 1.08, 'passou e não deixa chegar perto: ' + at(t));
+  for (let t = RV4.DUEL.holdUntil; t < RV4.DUEL.holdUntil + 864e5; t += 6e4) assert.ok(at(t) > 1.05, 'depois segue em 1º: ' + at(t));
+  const top = t => { const rs = RV4.rivals(400, 9e8, 1e6, t, 5e8); return rs.sort((a, b) => b.worth - a.worth)[0].name; };
+  assert.equal(top(RV4.DUEL.passAt + 6e5), rdg.nick, 'passa o 1º do ranking, não só o alvo');
 }
 console.log('mais ricos ok');
 

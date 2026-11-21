@@ -20,13 +20,15 @@ export function huntLevel(t = Date.now(), top = T.huntLead) {
 export const NEAR = [1.03, 1.09, 1.17];   // vizinhos: sempre tem alguém logo acima de você
 export const hunted = new Map();   // id do npc -> fortuna de caçador (para o perfil mostrar o mesmo número do ranking)
 // duelo: ReiDoGado persegue o Nocbit como um jogador de verdade: chega perto, recua (vendeu, perdeu na mesa), volta a encostar,
-// e só passa a partir das 21:30 de Brasília de 21/11/2026 (00:30 UTC), subindo aos poucos em ~30 min. Depois segue um pouco à frente.
+// passa o 1º do ranking às 20:50 de Brasília de 21/11/2026 (23:50 UTC) em ~5 min, fica ~12% à frente até as 23:00 e depois ~7,5%.
 // ponytail: duelo fixo; apague DUEL (ou a linha em rivals) para ele voltar ao normal
-export const DUEL = { bot: 'ReiDoGado', target: 'nocbit', from: Date.UTC(2026, 10, 21, 15, 20), passAt: Date.UTC(2026, 10, 22, 1, 0) };   // a pedido: só passa a partir das 22:00 de Brasília (01:00 UTC)
+export const DUEL = { bot: 'ReiDoGado', target: 'nocbit', from: Date.UTC(2026, 10, 21, 15, 20), passAt: Date.UTC(2026, 10, 21, 23, 50), holdUntil: Date.UTC(2026, 10, 22, 2, 0) };   // a pedido: passa o 1º às 20:50 e abre folga até as 23:00 de Brasília
 export function duelRatio(t = Date.now()) {
   const m = t / 6e4;
   const pre = Math.min(0.993, 0.95 + 0.035 * ss((t - DUEL.from) / (DUEL.passAt - DUEL.from)) + 0.012 * Math.sin(m / 7.5) + 0.006 * Math.sin(m / 2.1));
-  const post = 1.03 + 0.012 * Math.sin(m / 9) + 0.005 * Math.sin(m / 2.7);
+  const far = 1.12 + 0.015 * Math.sin(m / 9) + 0.005 * Math.sin(m / 2.7);    // até as 23:00: bem à frente (acima dos caçadores, que vão até ~1,05)
+  const after = 1.075 + 0.01 * Math.sin(m / 9) + 0.004 * Math.sin(m / 2.7);  // depois: segue na frente, menos folga
+  const post = far + (after - far) * ss((t - DUEL.holdUntil) / 18e5);
   return pre + (post - pre) * ss((t - DUEL.passAt) / 3e5);   // ultrapassa em ~5 min
 }
 export function rivals(month, leader = 0, me = 0, t = Date.now(), duel = 0) {
@@ -41,7 +43,7 @@ export function rivals(month, leader = 0, me = 0, t = Date.now(), duel = 0) {
     free.forEach((r, k) => { const near = Math.round(me * NEAR[k] * (1 + 0.03 * Math.sin(month * 1.3 + k))); if (near > r.worth && near < leader) { r.worth = near; hunted.set(r.id, near); } });
   }
   const db = duel > 0 && rows.find(r => NPCS[+r.id.slice(1)]?.orig === DUEL.bot);
-  if (db && !db.away) { db.worth = Math.round(duel * duelRatio(t)); hunted.set(db.id, db.worth); }
+  if (db && !db.away) { db.worth = Math.round(Math.max(duel, t >= DUEL.passAt ? leader : 0) * duelRatio(t)); hunted.set(db.id, db.worth); }   // depois de passar, persegue quem estiver em 1º
   return rows.map(({ id, away, ...r }) => ({ ...r, level: npcLevel(r.worth), rank: rank(r.worth) }));
 }
 // ranking final: jogadores reais da nuvem (com o seu valor sempre ao vivo), vizinhos online e os concorrentes do mundo
