@@ -1440,3 +1440,12 @@ import * as CT from './contador.js';
   const s = { cars: [], lands: [], owned: [], cards: [], trophies: [100e6, 200e6] };
   assert.ok(PKq.mult(s, 'loan') < 1 && PKq.mult(s, 'daily') > 1, 'vantagens dos marcos');
   console.log('marcos de prestígio ok'); }
+// empresas: análise antes de comprar, oportunidade 30% abaixo com reputação baixa, marca valoriza com boa gestão
+{ const NGq = await import('./negocios.js'), Lq = await import('./logic.js');
+  const a = NGq.analysis('food', 'mcboi', 50); assert.ok(a && a.invest > a.price && a.payback > 12 && a.unitTop > a.unitNow, 'análise coerente (médio prazo)');
+  let deal = null; for (const [c, S] of Object.entries(NGq.SECTORS)) for (const b of Object.keys(S.brands)) if (NGq.dealOf(c, b, 50)) deal = [c, b];
+  assert.ok(deal, 'sempre tem uma oportunidade na janela');
+  const s = Lq.newState(() => 0.5); s.money = 1e9; s.month = 50; assert.equal(NGq.buy(s, deal[0], deal[1]), null);
+  const b = s.biz[deal[0]][0]; assert.ok(b.paid < NGq.LISTS[deal[0]][deal[1]].price && b.rep === NGq.DEAL.rep, 'compra com desconto e reputação baixa');
+  assert.ok(NGq.brandGrowth(1, 1.1) > 0 && NGq.brandGrowth(0.4, 0.85) < 0, 'valoriza com boa gestão, desvaloriza com má');
+  console.log('empresas com análise e oportunidade ok'); }

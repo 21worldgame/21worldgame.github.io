@@ -3193,3 +3193,11 @@ details.herd-guide > summary { margin: 0; }
 @keyframes prestPop { from { transform: scale(.2) rotate(-20deg); opacity: 0; } }
 .prest-gets { margin: 10px 0; padding-left: 18px; display: grid; gap: 4px; }
 @media (prefers-reduced-motion: reduce) { #hud-ring[data-prest], .pf__avatar[data-prest], .prest-medal { animation: none; } }
+/* análise do investimento nas empresas à venda */
+.biz-deal { margin: 6px 0; padding: 6px 8px; border-radius: 8px; background: rgba(249,115,22,.12); border: 1px solid rgba(249,115,22,.4); font-size: .8rem; }
+.biz-ana { margin: 6px 0; font-size: .82rem; }
+.biz-ana summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-weight: 700; }
+.biz-ana__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 8px 0; }
+.biz-ana__grid div { padding: 6px 8px; border-radius: 8px; background: rgba(255,255,255,.04); }
+.biz-ana__grid dt { font-size: .7rem; color: var(--color-muted); } .biz-ana__grid dd { margin: 2px 0 0; font-weight: 700; } .biz-ana__grid small { display: block; font-weight: 400; color: var(--color-muted); font-size: .68rem; }
+.biz-ana p { margin: 4px 0; }

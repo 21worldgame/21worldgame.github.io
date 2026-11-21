@@ -132,11 +132,50 @@ export function sellUnit(s, cat, id, t) {
   const v = unitValue(cat, b.units[k], s.month || 1); b.units.splice(k, 1); s.money += v; return { value: v };
 }
 // mês da rede: ocupação × faturamento cheio − custo fixo
+// ---------- demanda dos setores: ciclos longos iguais para todos (0,83 a 1,17) × choque de crise/evento (econ.js) ----------
+export const SHOCK = {};   // setor → multiplicador da demanda enquanto um evento durar (preenchido pela economia do mundo)
+export const sectorTrend = (cat, m) => { const k = Object.keys(SECTORS).indexOf(cat) + 1; return +((1 + 0.12 * Math.sin(m * 0.045 + k * 1.7) + 0.05 * Math.sin(m * 0.13 + k)) * (SHOCK[cat] || 1)).toFixed(3); };
+export const trendLabel = v => (v >= 1.06 ? 'em alta' : v <= 0.94 ? 'em baixa' : 'estável');
+// a marca valoriza conforme a gestão: reputação alta e setor em alta fazem crescer; reputação ruim e setor fraco desvalorizam
+export const brandGrowth = (rep, trend) => 0.002 + 0.006 * (rep - 0.6) + 0.02 * (trend - 1);
+// ---------- oportunidades de aquisição: a cada 6 meses do mundo, uma marca "em dificuldades" sai 30% mais barata ----------
+// (começa com reputação baixa: é uma recuperação, não lucro na hora)
+export const DEAL = { off: 0.3, rep: 0.45, every: 6 };
+const hsh = n => { const x = Math.sin(n * 91.345 + 7.7) * 43758.5453; return x - Math.floor(x); };
+export function dealOf(cat, brand, m) {
+  const all = Object.entries(SECTORS).flatMap(([c, S]) => Object.keys(S.brands).map(b => `${c}:${b}`)), w = Math.floor((m || 1) / DEAL.every);
+  return all[Math.floor(hsh(w) * all.length)] === `${cat}:${brand}` ? { off: DEAL.off, until: (w + 1) * DEAL.every } : null;
+}
+export const priceOf = (cat, brand, m) => { const p = LISTS[cat]?.[brand]?.price || 0, d = dealOf(cat, brand, m); return d ? Math.round(p * (1 - d.off) / 1000) * 1000 : p; };
+// análise do investimento (rede com unidades): compra + 5 unidades, reputação subindo, marca valorizando
+export const WORLD_MONTH_MIN = 10;
+export function analysis(cat, brand, m) {
+  const S = SECTORS[cat]; if (!S || !S.brands[brand]) return null;
+  const ut = unitTypes(cat, brand).find(k => S.units[k].rev > 0); if (!ut) return null;
+  const U = S.units[ut], d = dealOf(cat, brand, m), price = priceOf(cat, brand, m), tr = sectorTrend(cat, m), g = grow(m, 0.0004, 2);
+  const seasonAvg = S.season ? (S.season.length * S.seasonPull + (12 - S.season.length) * (S.offPull || 1)) / 12 : 1;
+  const unitAt = (rep, trend = tr) => U.rev * Math.min(1, S.base * rep * seasonAvg * trend * 0.97) * g - U.cost * g;
+  const fixed = S.brands[brand].price * SECTOR_FIXED, hub = Object.values(S.units).find(x => x.slots), n = Math.min(5, S.max);
+  const invest = price + n * U.price + (hub ? Math.ceil(n / hub.slots) * hub.price : 0);
+  let rep = d ? DEAL.rep : 0.75, vg = 1, cash = 0, firstProfit = null, payback = null;
+  for (let k = 1; k <= 600 && payback == null; k++) {
+    const trend = sectorTrend(cat, m + k), r = n * unitAt(rep, trend) - fixed - (hub ? hub.cost * Math.ceil(n / hub.slots) : 0);
+    cash += r; if (firstProfit == null && r > 0) firstProfit = k;
+    vg = Math.max(0.6, Math.min(2.5, vg * (1 + brandGrowth(rep, trend))));
+    const resale = S.brands[brand].price * (d ? 1 - d.off : 1) * vg * 0.85 + n * (S.appreciate ? U.price * grow(k, S.appreciate, 2.2) * 0.95 : U.price * 0.6);
+    if (cash + resale >= invest) payback = k;
+    rep = Math.min(1, rep + 0.007);
+  }
+  const margin = (U.rev * Math.min(1, S.base * seasonAvg) * 0.97 - U.cost) / U.cost;
+  const risk = margin < 0.08 || S.season ? 'alto' : margin < 0.18 || unitAt(d ? DEAL.rep : 0.75) < 0 ? 'médio' : 'baixo';
+  return { unit: U.label, units: n, price, deal: d, invest, fixed, trend: tr, unitNow: unitAt(d ? DEAL.rep : 0.75), unitTop: unitAt(1), firstProfit, payback, risk, seasonal: !!S.season, hub: hub?.label };
+}
 export function sectorMonth(s, cat, b, m, rng) {
   const S = SECTORS[cat], L = LEVELS[b.level] || LEVELS.normal, moy = monthOfYear(m);
   b.rep = Math.max(0.35, Math.min(1, (b.rep ?? 0.75) + (L.pull - 1) * 0.04 + 0.007 + (rng() - 0.5) * 0.03));
   const season = S.season ? (S.season.includes(moy) ? S.seasonPull : S.offPull || 1) : 1;
-  const occ = Math.max(0.12, Math.min(1, S.base * b.rep * L.pull * season * (0.82 + rng() * 0.3)));
+  const tr = sectorTrend(cat, m), occ = Math.max(0.12, Math.min(1, S.base * b.rep * L.pull * season * tr * (0.82 + rng() * 0.3)));
+  b.vg = Math.max(0.6, Math.min(2.5, (b.vg ?? 1) * (1 + brandGrowth(b.rep, tr))));   // valor da marca acompanha a gestão
   let rev = 0, cost = (S.brands[b.brand]?.price || 0) * SECTOR_FIXED;
   for (const u of b.units || []) { const U = S.units[u.t]; rev += U.rev * L.mult * occ * grow(m, 0.0004, 2); cost += U.cost * grow(m, 0.0004, 2); }
   if (cat === 'jewel' && s.mina) cost *= 0.92;
@@ -162,18 +201,19 @@ export function ensure(s) {
   return s.biz;
 }
 const nid = s => `b${(s.nextId = (s.nextId || 1) + 1)}`;
-export const brandValue = (b, cat, month) => Math.round(LISTS[cat][b.brand].price * grow(month - (b.at || month) + 1, 0.0004, 2) * 0.85);
+export const brandValue = (b, cat, month) => (SECTORS[cat] && b.vg != null ? Math.round((b.paid || LISTS[cat][b.brand].price) * b.vg * 0.85) : Math.round(LISTS[cat][b.brand].price * grow(month - (b.at || month) + 1, 0.0004, 2) * 0.85));
 export function buy(s, cat, brand) {
   ensure(s);
   const C = LISTS[cat]?.[brand]; if (!C) return 'marca inválida.';
   if (s.biz[cat].some(b => b.brand === brand)) return 'você já é dono dessa marca.';
-  if (s.money < C.price) return 'dinheiro insuficiente para comprar a marca.';
-  s.money -= C.price;
-  const b = { id: nid(s), brand, at: s.month || 1 };
+  const price = SECTORS[cat] ? priceOf(cat, brand, s.month || 1) : C.price, deal = SECTORS[cat] && dealOf(cat, brand, s.month || 1);
+  if (s.money < price) return 'dinheiro insuficiente para comprar a marca.';
+  s.money -= price;
+  const b = { id: nid(s), brand, at: s.month || 1, ...(SECTORS[cat] ? { paid: price, vg: 1 } : {}) };
   if (cat === 'banks') Object.assign(b, { capital: 0, loans: [], policy: 'moderado' });
   if (cat === 'isps') Object.assign(b, { ports: 0, subs: 0, plan: 69, net: 0 });
   if (cat === 'markets') Object.assign(b, { markup: 22, rep: 0.6 });
-  if (SECTORS[cat]) Object.assign(b, { units: [], level: 'normal', rep: 0.75 });
+  if (SECTORS[cat]) Object.assign(b, { units: [], level: 'normal', rep: deal ? DEAL.rep : 0.75 });   // empresa em dificuldades: reputação para recuperar
   s.biz[cat].push(b); return null;
 }
 export const find = (s, cat, id) => s.biz?.[cat]?.find(b => b.id === id);
