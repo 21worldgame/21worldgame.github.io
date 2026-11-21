@@ -31,7 +31,7 @@ export function renderLobby() {
     <div class="tcard3__table"><div class="tcard3__felt sn-felt-mini"><b>${C.lockTag(t)}${esc(t.name)}</b><small>prêmio ${int(t.stake * PAY)}</small></div>
       ${kind === 'online' ? `<span class="tcard3__seat tcard3__seat--0 is-human"><span class="tcard3__av">${avatarSVG(lookOf({ kind: 'bot', name: t.host }), { label: '' })}</span><em>${esc(t.host || 'anfitrião')}</em></span>` : '<span class="tcard3__seat tcard3__seat--0"><span class="tcard3__av tcard3__av--free">+</span><em>seu lugar</em></span>'}
       ${kind === 'house' && !t.bot ? '<span class="tcard3__seat tcard3__seat--3"><span class="tcard3__av tcard3__av--free">+</span><em>livre</em></span>' : `<span class="tcard3__seat tcard3__seat--3"><span class="tcard3__av">${avatarSVG(lookOf({ kind: 'bot', name: kind === 'online' ? t.opp : t.bot }), { label: '' })}</span><em>${esc(kind === 'online' ? t.opp || 'casa (livre)' : t.bot)}</em></span>`}</div>
-    <div class="tcard3__foot"><span class="muted small">${kind === 'online' ? (t.full ? `jogando agora${t.watchers ? ` · ${t.watchers} assistindo` : ''}` : 'contra a casa: sente no lugar dela') : t.bot ? `adversário ${['iniciante', 'bom', 'muito bom', 'profissional'][HOUSE.indexOf(t)]}` : 'mesa vazia: espera um jogador de verdade'}</span>
+    <div class="tcard3__foot"><span class="muted small">${kind === 'online' ? (t.full ? `jogando agora${t.watchers ? ` · ${t.watchers} assistindo` : ''}` : 'tem jogador esperando: sente e jogue') : t.bot ? `adversário ${['iniciante', 'bom', 'muito bom', 'profissional'][HOUSE.indexOf(t)]}` : 'mesa vazia: espera um jogador de verdade'}</span>
       <span class="row">${kind === 'online' ? `<button class="btn btn--glass btn--sm" data-sn="watch" data-id="${esc(t.id)}">assistir</button>` : ''}<button class="btn btn--gold" data-sn="${kind === 'online' ? 'join' : 'house'}" data-id="${esc(t.id)}" ${t.full ? 'disabled' : ''}>${t.full ? 'cheia' : 'jogar'}</button></span></div></article>`;
   el.innerHTML = online.map(t => card(t, 'online')).join('') + HOUSE.map(t => card(t, 'house')).join('');
 }
@@ -177,7 +177,7 @@ function hud() {
   $('#sn-shoot').disabled = !myTurn || placing;
   $('#sn-again').hidden = !(v.phase === 'end' && (cur?.h || false));
   $('#sn-invite').hidden = !!cur?.local;
-  if (cur?.watch) { $('#sn-msg').textContent = `Assistindo. ${v.msg}`; $('#sn-again').hidden = false; $('#sn-again').textContent = v.seats[1]?.kind === 'human' ? 'mesa cheia' : 'jogar no lugar da casa'; $('#sn-again').disabled = v.seats[1]?.kind === 'human'; }
+  if (cur?.watch) { $('#sn-msg').textContent = `Assistindo. ${v.msg}`; $('#sn-again').hidden = false; $('#sn-again').textContent = v.seats[1]?.kind === 'human' ? 'mesa cheia' : 'sentar e jogar'; $('#sn-again').disabled = v.seats[1]?.kind === 'human'; }
   else $('#sn-again').textContent = 'jogar de novo';
 }
 

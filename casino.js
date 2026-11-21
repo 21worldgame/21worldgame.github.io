@@ -69,7 +69,7 @@ export async function initCasino() {
   lobby = await openLobby(() => { renderLobby(); G.onPeers?.(); });
   if (lobby) G.onLobby?.(lobby);
   selfId = lobby?.selfId || (await net())?.selfId || 'me';
-  $('#online').innerHTML = lobby ? '<i class="is-on"></i>salão online' : '<i></i>sem conexão: só mesas da casa';
+  $('#online').innerHTML = lobby ? '<i class="is-on"></i>salão online' : '<i></i>sem conexão: só mesas rápidas';
   announce();
   renderLobby();
   G.onLogin = loadGlobalRanking; loadGlobalRanking(); setInterval(loadGlobalRanking, 12000);
@@ -196,7 +196,7 @@ export async function sitSolo(id) {
   if (await hostOnline({ name: def.name, minBet: def.minBet, pub: true, house: def })) return;
   leaveTable(true);
   cur = { id, local: true, name: def.name };
-  openRoom(def.name, 'mesa da casa', false);
+  openRoom(def.name, 'mesa rápida', false);
   cur.table = new Table({ ...def, onChange: v => applyView(v) });
   cur.table.join('me', seatInfo());
 }
@@ -204,7 +204,7 @@ export async function sitSolo(id) {
 export async function hostOnline({ name, minBet, pub, house, pass = '' }) {
   const tid = rid();
   const conn = await openTableRoom(tid);
-  if (!conn) { if (!house) say('Sem conexão com a internet. Jogue numa mesa da casa.', true); return false; }
+  if (!conn) { if (!house) say('Sem conexão com a internet. Jogue numa mesa rápida.', true); return false; }
   leaveTable(true);
   const pw = String(pass || '').trim();
   cur = { id: tid, host: true, pub, pass: pw, name, conn, house: house?.id || null };
@@ -219,7 +219,7 @@ export async function hostOnline({ name, minBet, pub, house, pass = '' }) {
   };
   room.onPeerJoin = pid => state.send(cur.table.view(), { target: pid });
   room.onPeerLeave = pid => cur?.table?.leave(pid);
-  openRoom(name, house ? 'mesa da casa · os outros jogadores veem você aqui' : `${pub ? 'online, no salão' : 'online, só convite'}, código ${tid}`, true);
+  openRoom(name, house ? 'mesa rápida · os outros jogadores veem você aqui' : `${pub ? 'online, no salão' : 'online, só convite'}, código ${tid}`, true);
   cur.table.join(selfId, seatInfo());
   announce();
   if (!house) invite();
@@ -246,7 +246,7 @@ export async function joinOnline(id, watch = false) {
     $('#room-name').textContent = v.name;
     if (!cur.watch && !v.seats.some(s => s.pid === selfId) && !cur.asked) { cur.asked = true; join(peerId); }
     applyView(v);
-    if (cur.watch) $('#tstatus').innerHTML = `Assistindo a mesa. <button class="btn btn--gold btn--sm" data-c21="sit">sentar no lugar de um jogador da casa</button>`;
+    if (cur.watch) $('#tstatus').innerHTML = `Assistindo a mesa. <button class="btn btn--gold btn--sm" data-c21="sit">sentar na mesa</button>`;
   };
   setTimeout(() => { if (cur?.conn === conn && !cur.hostId) { say('Mesa não encontrada. Confira o código.', true); leaveTable(); } }, 25000);
 }

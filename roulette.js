@@ -124,7 +124,7 @@ export function renderWho() {
   el.innerHTML = row(`${esc(G.S.avatar?.name || 'você')} (você)`, G.S.avatar, mine, 'is-me')
     + real.map(p => row(esc(p.name), p.look, p.bet, 'is-real')).join('')
     + botBets.map(b => row(esc(b.name), NPC.byNick(b.name)?.look || NPC_LOOKS.Dorival, b.bet, '')).join('');
-  const n = document.querySelector('#rl-who-n'); if (n) n.textContent = `${real.length + 1} de verdade · ${botBets.length} da casa`;
+  const n = document.querySelector('#rl-who-n'); if (n) n.textContent = `${real.length + 1 + botBets.length} jogando`;
 }
 setInterval(renderWho, 4000);
 export async function spin() {

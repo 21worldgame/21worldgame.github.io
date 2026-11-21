@@ -1124,7 +1124,7 @@ function liveStrip() {
   const av = (name, look, cls) => `<span class="ls-p ${cls}" title="${esc(name)}"><span class="ls-av">${avatarSVG(look || {}, { label: name })}</span><em>${esc(name)}</em></span>`;
   el.innerHTML = `<span class="ls-t"><i></i>jogando agora</span><div class="ls-list">${av('você', profileOf().look, 'is-me')}${real.map(p => av(p.name, p.look, 'is-real')).join('')}
     ${bots.slice(0, 6).map(n => av(n, NPC.byNick(n)?.look, 'is-bot')).join('')}</div>
-    <span class="ls-n"><b>${real.length + 1}</b> de verdade · <b>${bots.length}</b> da casa</span>`;
+    <span class="ls-n"><b>${real.length + 1 + bots.length}</b> jogando</span>`;
 }
 setInterval(liveStrip, 4000);
 
@@ -1443,7 +1443,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 106;
+const APP_VERSION = 107;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;

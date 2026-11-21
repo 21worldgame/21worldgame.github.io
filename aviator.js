@@ -103,10 +103,10 @@ function renderPlayers() {
   const rows = [...(mine ? [{ name: G.S.avatar.name && G.S.avatar.name !== 'você' ? `${G.S.avatar.name} (você)` : 'você', bet: mine.bet, out: mine.at || 0, me: true }] : []), ...real, ...bots];
   $('#av-players').innerHTML = rows.map(r => {
     const lost = st.phase === 'crash' && !r.out;
-    return `<li class="${r.out ? 'is-out' : ''} ${lost && !r.real ? 'is-lost' : ''} ${r.me ? 'is-me' : ''} ${r.real ? 'is-real' : ''}"><span>${r.real ? '<i class="real-dot" title="jogador de verdade"></i>' : ''}${esc(r.name)}</span><span>${r.bet ? int(r.bet) : '—'}</span>
+    return `<li class="${r.out ? 'is-out' : ''} ${lost ? 'is-lost' : ''} ${r.me ? 'is-me' : ''}"><span>${esc(r.name)}</span><span>${r.bet ? int(r.bet) : '—'}</span>
       <span>${r.out ? `${r.out.toFixed(2)}x` : '—'}</span><span>${r.out ? `+${int(r.bet * r.out)}` : lost ? 'voou' : ''}</span></li>`;
   }).join('');
-  $('#av-count').textContent = `${rows.length} na rodada${real.length ? ` · ${real.length} de verdade` : ''}`;
+  $('#av-count').textContent = `${rows.length} na rodada`;
 }
 
 function draw(now) {

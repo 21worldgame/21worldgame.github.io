@@ -72,7 +72,7 @@ const applyPart = (a, role, nick, pid) => a.kind === 'partner' ? AM.setPartner(G
 document.addEventListener('am:ask', e => {
   const { nick, ask } = e.detail, pid = pidOf(nick);
   if (!ask) return;
-  if (!lobby || !pid) return say(`${nick} não está online agora. Com jogador de verdade, tudo precisa que ele aceite na hora.`, true);
+  if (!lobby || !pid) return say(`${nick} não está online agora. Ele precisa estar online para aceitar.`, true);
   const test = ask.kind === 'partner' ? null : AM.peerApply(structuredClone(G.S), ask, 'from', nick);   // confere antes de pedir
   if (test) return say(test[0].toUpperCase() + test.slice(1), true);
   const aid = Math.random().toString(36).slice(2, 10);

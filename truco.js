@@ -44,7 +44,7 @@ export class Truco {
   constructor({ id = 't', name = 'mesa de truco', stake = 100, onChange = () => {}, rng = Math.random, auto = true, botDelay = 900, turnMs = 40000 } = {}) {
     Object.assign(this, { id, name, stake, onChange, rng, auto, botDelay, turnMs });
     this.seats = [0, 1, 2, 3].map(() => ({ kind: 'empty' }));
-    this.score = [0, 0]; this.phase = 'wait'; this.dealer = 0; this.msg = 'Esperando jogadores. Lugares vazios viram jogadores da casa.';
+    this.score = [0, 0]; this.phase = 'wait'; this.dealer = 0; this.msg = 'Esperando jogadores.';
     this.games = 0; this.timers = new Set();
   }
   // ---------- lugares ----------

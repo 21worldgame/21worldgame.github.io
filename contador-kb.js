@@ -43,7 +43,7 @@ export const KB = [
     'Você pode emprestar para jogadores do mundo: cada pedido mostra juros por mês, prazo (3 a 12 meses) e risco.',
     'Eles pagam uma parcela por mês. Quanto maior o risco, maior a chance de calote, e aí o resto se perde.'] },
   { t: 'Pix', k: ['pix', 'transferir', 'mandar dinheiro', 'enviar dinheiro'], a: [
-    'O Pix manda dinheiro na hora para outro jogador de verdade. Fica registrado no livro-caixa dos dois.'] },
+    'O Pix manda dinheiro na hora para outro jogador. Fica registrado no livro-caixa dos dois.'] },
   { t: 'mercado e preços', k: ['mercado', 'preco', 'precos', 'cotacao', 'vender saca', 'armazem', 'estoque', 'oscila', 'sobe', 'desce'], a: [
     'Os preços mudam todo mês, mas ficam entre 80% e 125% do preço normal e voltam aos poucos (10% por mês) para ele.',
     'Preços normais: soja R$ 130/saca, milho R$ 60, café R$ 1.400, arroba do boi R$ 310, bezerro R$ 2.600, cana R$ 150/t, laranja R$ 38/caixa, frango R$ 6,20/kg, suíno R$ 8,20/kg.',

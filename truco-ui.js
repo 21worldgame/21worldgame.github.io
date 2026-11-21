@@ -34,7 +34,7 @@ export function renderLobby() {
       <div class="tcard3__top"><span class="tcard3__live"><i></i>${kind === 'online' ? `online · ${esc(t.host || '')}` : 'truco paulista'}</span><span class="tcard3__stake">entrada ${int(t.stake)}</span></div>
       <div class="tcard3__table"><div class="tcard3__felt tr-felt-mini"><b>${C.lockTag(t)}${esc(t.name)}</b><small>prêmio ${int(t.stake * PAY)} por jogador</small></div>
         ${seats.slice(0, 4).map((s, i) => `<span class="tcard3__seat tr-seat--${i}${s.kind === 'human' ? ' is-human' : ''}"><span class="tcard3__av${s.free ? ' tcard3__av--free' : ''}">${s.free ? '+' : avatarSVG(lookOf({ kind: s.kind || 'bot', name: s.name, look: s.look }), { label: s.name })}</span><em>${esc(s.name || 'livre')}</em></span>`).join('')}</div>
-      <div class="tcard3__foot"><span class="muted small">${kind === 'online' ? `${t.humans} ${t.humans === 1 ? 'jogador' : 'jogadores'} de verdade${t.watchers ? ` · ${t.watchers} assistindo` : ''}` : 'você + parceiro contra dupla'}</span>
+      <div class="tcard3__foot"><span class="muted small">${kind === 'online' ? `jogando agora${t.watchers ? ` · ${t.watchers} assistindo` : ''}` : 'você + parceiro contra dupla'}</span>
         <span class="row">${kind === 'online' ? `<button class="btn btn--glass btn--sm" data-tr="watch" data-id="${esc(t.id)}">assistir</button>` : ''}<button class="btn btn--gold" data-tr="${kind === 'online' ? 'join' : 'house'}" data-id="${esc(t.id)}" ${kind === 'online' && t.humans >= 4 ? 'disabled' : ''}>${kind === 'online' && t.humans >= 4 ? 'cheia' : 'jogar'}</button></span></div></article>`;
   };
   el.innerHTML = online.map(t => card(t, 'online')).join('') + HOUSE.map(t => card(t, 'house')).join('');
@@ -58,7 +58,7 @@ export async function sitHouse(id) {
 export async function host({ name, stake, pub, house, pass = '' }) {
   if ((G.S.chips || 0) < stake) return say(`Você precisa de ${int(stake)} fichas para a entrada.`, true);
   const id = rid(), conn = await openTableRoom(`truco-${id}`);
-  if (!conn) { if (!house) say('Sem conexão com a internet agora. Jogue numa mesa da casa.', true); return false; }
+  if (!conn) { if (!house) say('Sem conexão com a internet agora. Jogue numa mesa rápida.', true); return false; }
   leave(true);
   const self = conn.selfId;
   const watchers = new Set();
@@ -174,7 +174,7 @@ function draw(v) {
   if (v.phase === 'gameEnd' && lastPhase !== 'gameEnd' && v.winner === myTeam) say('Vocês venceram a partida de truco!');
   $('#tr-shout').textContent = v.phase === 'raise' ? `${TR.RAISE_NAME[raiseTo].toUpperCase()}!` : '';
   $('#tr-invite').hidden = !!cur?.local;
-  if (my < 0) { $('#tr-actions').innerHTML = `<button class="btn btn--gold btn--lg" data-tr="sit">sentar no lugar de um jogador da casa (entrada ${int(v.stake)})</button>`; $('#tr-msg').textContent = `Assistindo. ${v.msg}`; }
+  if (my < 0) { $('#tr-actions').innerHTML = `<button class="btn btn--gold btn--lg" data-tr="sit">sentar na mesa (entrada ${int(v.stake)})</button>`; $('#tr-msg').textContent = `Assistindo. ${v.msg}`; }
   lastPhase = v.phase; lastMsg = msg;
 }
 

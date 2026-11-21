@@ -64,7 +64,7 @@ export function renderLobby() {
       <div class="tcard3__table"><div class="tcard3__felt pk-felt-mini"><b>${C.lockTag(t)}${esc(t.name)}</b><small>compra ${int(t.bb * 100)} fichas</small></div>
         ${seats.slice(0, 5).map((s, i) => `<span class="tcard3__seat tcard3__seat--b${i}${s.kind === 'human' ? ' is-human' : ''}" title="${esc(s.name || 'livre')}"><span class="tcard3__av${s.kind === 'empty' ? ' tcard3__av--free' : ''}">${s.kind === 'empty' ? '+' : avatarSVG(lookOf(s), { label: s.name })}</span><em>${esc(s.kind === 'empty' ? 'livre' : s.name)}</em></span>`).join('')}
         ${kind === 'online' && seats[5] ? `<span class="tcard3__seat tcard3__seat--you${seats[5].kind === 'human' ? ' is-human' : ''}"><span class="tcard3__av">${avatarSVG(lookOf(seats[5]), { label: seats[5].name })}</span><em>${esc(seats[5].name)}</em></span>` : '<span class="tcard3__seat tcard3__seat--you"><span class="tcard3__av tcard3__av--free">+</span><em>seu lugar</em></span>'}</div>
-      <div class="tcard3__foot"><span class="muted small">${kind === 'online' ? `${t.humans} ${t.humans === 1 ? 'jogador' : 'jogadores'} de verdade${t.watchers ? ` · ${t.watchers} assistindo` : ''}` : `adversários ${t.skill < 0.6 ? 'iniciantes' : t.skill < 0.72 ? 'bons' : t.skill < 0.82 ? 'profissionais' : 'tubarões'}`}</span>
+      <div class="tcard3__foot"><span class="muted small">${kind === 'online' ? `jogando agora${t.watchers ? ` · ${t.watchers} assistindo` : ''}` : `adversários ${t.skill < 0.6 ? 'iniciantes' : t.skill < 0.72 ? 'bons' : t.skill < 0.82 ? 'profissionais' : 'tubarões'}`}</span>
         <span class="row">${kind === 'online' ? `<button class="btn btn--glass btn--sm" data-pk="watch" data-id="${esc(t.id)}">assistir</button>` : ''}<button class="btn btn--gold" data-pk="${kind === 'online' ? 'join' : 'house'}" data-id="${esc(t.id)}" ${t.full ? 'disabled' : ''}>${t.full ? 'cheia' : 'sentar'}</button></span></div></article>`;
   };
   el.innerHTML = online.map(t => tcard(t, 'online')).join('') + HOUSE.map(t => tcard(t, 'house')).join('');
@@ -87,7 +87,7 @@ export async function sitHouse(id) {
 export async function host({ name, bb, pub, house, pass = '' }) {
   if (!enough(bb)) return;
   const id = rid(), conn = await openTableRoom(`poker-${id}`);
-  if (!conn) { if (!house) say('Sem conexão com a internet agora. Jogue numa mesa da casa.', true); return false; }
+  if (!conn) { if (!house) say('Sem conexão com a internet agora. Jogue numa mesa rápida.', true); return false; }
   leave(true);
   const self = conn.selfId;
   const watchers = new Set();
@@ -183,7 +183,7 @@ function draw(v) {
       ${s.said ? `<em class="pk-said">${esc(s.said)}</em>` : ''}${w ? `<em class="pk-won">+${int(w.amount)}${w.hand ? ` · ${esc(w.hand)}` : ''}</em>` : ''}
       ${i !== v.seat && s.cards.length ? `<span class="pk-hole">${s.cards.map(c => card(c, 'tr-card--sm')).join('')}</span>` : ''}
       ${v.button === i ? '<i class="tr-dealer pk-dealer" title="botão (quem dá as cartas)">D</i>' : ''}
-      ${s.bet ? `<span class="pk-bet">${int(s.bet)}</span>` : ''}${s.kind === 'human' && i !== v.seat ? '<i class="pk-real" title="jogador de verdade">●</i>' : ''}${take}</div>`;
+      ${s.bet ? `<span class="pk-bet">${int(s.bet)}</span>` : ''}${take}</div>`;
   }).join('');
   $('#pk-center').innerHTML = `<div class="pk-board">${[0, 1, 2, 3, 4].map(k => v.board[k] ? card(v.board[k], 'pk-in') : '<span class="pk-slot"></span>').join('')}</div>
     <div class="pk-pot"><small>pote</small><b>${int(v.pot)}</b></div>`;
@@ -206,7 +206,7 @@ function draw(v) {
   const turnName = v.seats[v.turn]?.name;
   $('#pk-msg').textContent = myTurn ? `Sua vez${call ? `: ${int(call)} para pagar` : ''}. ${v.msg}` : v.phase === 'play' && turnName ? `Vez de ${turnName}. ${v.msg}` : v.msg;
   $('#pk-invite').hidden = !!cur?.local;
-  if (v.seat < 0) $('#pk-msg').textContent = `Assistindo. ${v.msg} Toque em "sentar aqui" num lugar livre ou de jogador da casa para entrar (compra ${int(v.buyIn)} fichas).`;
+  if (v.seat < 0) $('#pk-msg').textContent = `Assistindo. ${v.msg} Toque em "sentar aqui" num lugar livre para entrar (compra ${int(v.buyIn)} fichas).`;
   $('#pk-room').classList.toggle('is-myturn', myTurn);
 }
 

@@ -31,14 +31,14 @@ export function sideBot(nick) {
   const s = G.S, n = NPC.byNick(nick); if (!n) return '';
   const p = NPC.profile(n, s.month || 1), f = AM.friend(s, nick), owes = s.lent.filter(x => x.nick === nick).reduce((t, x) => t + x.bal, 0), debt = s.loans.find(l => l.from === nick);
   return `<span class="tr-side__av">${avatarSVG(n.look || {}, { label: nick })}</span>
-    <div class="tr-side__id"><small>jogador do mundo</small><b>${esc(nick)}</b><small>nível ${p.level} · ${esc(p.rank)}</small>${partnerBox(s, nick)}${f ? confTag(f.conf) : ''}</div>
+    <div class="tr-side__id"><small>jogador online</small><b>${esc(nick)}</b><small>nível ${p.level} · ${esc(p.rank)}</small>${partnerBox(s, nick)}${f ? confTag(f.conf) : ''}</div>
     <dl class="tr-side__st">${stat('patrimônio', `~${brl(p.worth)}`)}${stat('terras', `${p.lands} · ${int(p.ha)} ha`)}${stat('gado', `${int(p.heads)} cab.`)}
       ${f ? stat('tem para você', `${AM.offersFrom(s, nick).length} oferta(s) este mês`) : ''}${owes ? stat('te deve', `<span class="good">${brl(owes)}</span>`) : ''}${debt ? stat('você deve', `<span class="bad">${brl(debt.bal)}</span>`) : ''}</dl>`;
 }
 export function sidePeer(p) {
   const s = G.S, f = p?.name && AM.friend(s, p.name);
   return `<span class="tr-side__av">${avatarSVG(p?.look || {}, { label: p?.name || '' })}</span>
-    <div class="tr-side__id"><small>jogador de verdade, online</small><b>${esc(p?.name || 'jogador')}</b><small>nível ${p?.level || 1}${p?.rank ? ` · ${esc(p.rank)}` : ''}</small>${p?.name ? partnerBox(s, p.name, p) : ''}${f ? confTag(f.conf) : ''}</div>
+    <div class="tr-side__id"><small>jogador online</small><b>${esc(p?.name || 'jogador')}</b><small>nível ${p?.level || 1}${p?.rank ? ` · ${esc(p.rank)}` : ''}</small>${p?.name ? partnerBox(s, p.name, p) : ''}${f ? confTag(f.conf) : ''}</div>
     <dl class="tr-side__st">${p?.worth ? stat('patrimônio', brl(p.worth)) : ''}${p?.lands != null ? stat('terras', `${p.lands} · ${int(p.ha || 0)} ha`) : ''}${p?.heads ? stat('gado', `${int(p.heads)} cab.`) : ''}</dl>`;
 }
 
