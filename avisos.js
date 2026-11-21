@@ -9,7 +9,16 @@ function badge() {
   if (b) { b.hidden = !n; b.textContent = n; }
   $('#nc-btn')?.classList.toggle('has-new', n > 0);
 }
+// situação da nuvem no topo da central de avisos
+function syncLine() {
+  const el = $('#nc-sync'), st = G.syncState?.(); if (!el || !st?.on) { if (el) el.hidden = true; return; }
+  const s = Math.round((Date.now() - (st.at || 0)) / 1000);
+  el.hidden = false; el.className = `nc-sync ${st.offline ? 'is-bad' : st.pending ? 'is-wait' : 'is-ok'}`;
+  el.textContent = st.offline ? '⚠️ sem internet: o que você fizer fica guardado e vai para a nuvem quando voltar' : st.pending ? '⏳ enviando para a nuvem...' : st.at ? `☁️ tudo salvo na nuvem (há ${s < 60 ? `${s} s` : `${Math.round(s / 60)} min`})` : '☁️ conectado à nuvem';
+}
+setInterval(syncLine, 3000);
 function list() {
+  syncLine();
   const el = $('#nc-list'); if (!el) return;
   el.innerHTML = FEED.length ? FEED.map(f => `<li class="${f.bad ? 'is-bad' : f.imp ? 'is-imp' : ''}"><span>${esc(f.txt)}</span><small>${ago(f.at)}</small></li>`).join('')
     : '<li class="muted small">Nada por aqui ainda.</li>';

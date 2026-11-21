@@ -172,6 +172,33 @@ const metaKey = () => `21world.sync.${user?.id}`;
 function loadMeta() { try { const m = JSON.parse(localStorage.getItem(metaKey()) || 'null'); base = m?.base || ''; pushed = Number(m?.pushed) || 0; } catch { base = ''; pushed = 0; } }
 function saveMeta() { try { localStorage.setItem(metaKey(), JSON.stringify({ base, pushed })); } catch {} }
 // cópia do save como estava na nuvem na última sincronização: é o ponto de partida para juntar o que cada aparelho fez
+// ---------- proteção contra perda ----------
+// progresso de um save: patrimônio + coisas que a pessoa tem. Serve para escolher entre duas versões (nunca pela hora do save)
+export function progressOf(d) {
+  if (!d || typeof d !== 'object') return 0;
+  let w = 0; try { w = L.netWorth({ money: 0, lands: [], herd: [], loans: [], lent: [], cars: [], stock: {}, prices: {}, ...d }); } catch { w = Number(d.money) || 0; }
+  const n = a => (Array.isArray(a) ? a.length : 0), biz = d.biz ? Object.values(d.biz).reduce((t, x) => t + n(x), 0) : 0;
+  return w + (n(d.lands) * 1e5) + (n(d.cars) * 5e4) + (biz * 2e5) + (n(d.cards) * 3e3) + (n(d.stable?.animals) * 3e4) + (Number(d.xp) || 0) + (Number(d.level) || 0) * 1e4;
+}
+// antes de qualquer versão substituir outra, a que sai vira cópia aqui (últimas 5): dá para restaurar no perfil
+const bkKey = () => `21world.backup.${user?.id || 'local'}`;
+export function backups() { try { return JSON.parse(localStorage.getItem(bkKey()) || '[]'); } catch { return []; } }
+export function backup(d, why) {
+  if (!d || typeof d !== 'object') return;
+  try {
+    const list = backups().filter(b => b.savedAt !== d.savedAt);
+    list.unshift({ at: Date.now(), why, savedAt: d.savedAt || 0, worth: Math.round(progressOf(d)), money: Math.round(Number(d.money) || 0), lands: (d.lands || []).filter(l => l.own).length, data: JSON.stringify(d) });
+    for (let k = 5; k >= 1; k--) { try { localStorage.setItem(bkKey(), JSON.stringify(list.slice(0, k))); return; } catch {} }   // sem espaço: guarda menos cópias
+  } catch {}
+}
+// volta uma cópia: ela vira o save atual e vai para a nuvem (a versão de agora também vira cópia, por garantia)
+export async function restore(i) {
+  const b = backups()[i]; if (!b) return false;
+  backup(G.S, 'antes de restaurar');
+  adopt(JSON.parse(b.data)); save(); G.render?.();
+  if (user) await push().catch(() => {});
+  return true;
+}
 let baseData = null;
 const baseKey = () => `21world.syncbase.${user?.id}`;
 function setBaseData(d) { try { baseData = d ? JSON.parse(typeof d === 'string' ? d : JSON.stringify(d)) : null; d ? localStorage.setItem(baseKey(), typeof d === 'string' ? d : JSON.stringify(d)) : localStorage.removeItem(baseKey()); } catch { baseData = null; } }
@@ -180,7 +207,8 @@ function loadBaseData() { try { baseData = JSON.parse(localStorage.getItem(baseK
 function mergeRemote(row) {
   if (newerThanMe(row.data)) return;
   const m = dirty() && baseData ? merge3(baseData, G.S, row.data) : null;
-  if (!m) return takeRemote(row);
+  if (!m) return takeRemote(row);   // takeRemote guarda cópia do que este aparelho tinha
+  backup(G.S, 'antes de juntar com o outro aparelho');
   adopt(m); base = row.updated_at; setBaseData(row.data); saveMeta();
   save(); G.render();                                              // save marca como não enviado: o próximo push grava a junção
 }
@@ -191,6 +219,8 @@ const serverIso = () => new Date(G.now?.() ?? Date.now()).toISOString();   // ho
 function newerThanMe(d) { if ((Number(d?.appV) || 0) > (G.appV || 0)) { outdated = true; G.checkUpdate?.(); say('Saiu uma versão nova do jogo: atualizando para não perder nada do seu progresso.', true); return true; } return false; }
 function takeRemote(row, msg = true) {
   if (newerThanMe(row.data)) return;                              // não aplica com código velho: espera a atualização
+  if (dirty() && progressOf(G.S) > progressOf(row.data) * 1.001) { backup(G.S, 'versão deste aparelho (a nuvem chegou junto)'); }
+  else if (dirty()) backup(G.S, 'mudanças deste aparelho antes de atualizar');
   adopt(row.data); base = row.updated_at; setBaseData(row.data); pushed = G.S.savedAt || 0; lastPush = pushed; saveMeta(); syncedAt = Date.now(); G.render();
   if (msg) say('Atualizado com o que você fez no outro aparelho.');
 }
@@ -204,7 +234,7 @@ export async function push() {
     else res = await sb.from('saves').insert({ user_id: user.id, data, updated_at: at }).select('updated_at');
     if (res.error || !res.data?.length) {
       // outro aparelho gravou antes (ou a linha já existia): a nuvem vale; este aparelho se atualiza
-      if (res.error && (base || !/duplicate|conflict|23505/i.test(`${res.error.code} ${res.error.message}`))) return false;   // erro de rede: tenta no próximo save
+      if (res.error && (base || !/duplicate|conflict|23505/i.test(`${res.error.code} ${res.error.message}`))) { lastErrAt = Date.now(); setTimeout(() => { if (dirty()) scheduleSync(); }, 8000); return false; }   // erro de rede: tenta de novo sozinho
       if (G.busy?.()) return false;                                   // no meio de uma mão: tenta de novo no próximo save
       const row = await pull();
       if (!row) { base = ''; saveMeta(); return false; }              // a linha sumiu (conta zerada pelo admin): grava de novo no próximo save
@@ -249,6 +279,13 @@ let syncedAt = 0;
 export const syncInfo = () => ({ on: !!user, at: syncedAt, pending: !!user && dirty(), email: user?.email || '' });
 export async function syncNow() { if (!user) return false; await checkRemote(); const ok = await push().catch(() => false); return ok || !dirty(); }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkRemote(); });
+// celular fecha o app ou trava a tela antes do envio de 1,5 s: manda na hora (e de novo quando a internet volta)
+const flush = () => { if (user && dirty()) { clearTimeout(timer); push().catch(() => {}); } };
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
+addEventListener('pagehide', flush);
+addEventListener('online', () => { flush(); setTimeout(checkRemote, 500); });
+let lastErrAt = 0;
+export const syncState = () => ({ on: !!user, pending: !!user && dirty(), offline: typeof navigator !== 'undefined' && navigator.onLine === false, at: syncedAt, err: lastErrAt });
 function scheduleSync() {
   if (!user) return;
   clearTimeout(timer);
@@ -302,10 +339,12 @@ async function afterLogin() {
   if (cloud) {
     if (newerThanMe(cloud.data)) { if (!base) { base = 'velho'; saveMeta(); } }   // não grava nem aplica: a versão nova, ao abrir, vê que a nuvem mudou e usa a nuvem
     else if (!base) {   // primeira vez com a sincronização nova neste aparelho: vale o mais novo (regra antiga, uma vez só)
-      if ((cloud.data?.savedAt || 0) > (G.S.savedAt || 0) + 1000) return useCloud();
-      base = cloud.updated_at; setBaseData(cloud.data); pushed = 0; saveMeta();   // o local é o mais novo: grava por cima desta versão
+      const pc = progressOf(cloud.data), pl = progressOf(G.S);
+      if (pc >= pl) { backup(G.S, 'save deste aparelho (a nuvem tinha mais progresso)'); return useCloud(); }
+      backup(cloud.data, 'save da nuvem (este aparelho tinha mais progresso)');
+      base = cloud.updated_at; setBaseData(cloud.data); pushed = 0; saveMeta();   // este aparelho tem mais progresso: grava por cima (a nuvem ficou na cópia)
     } else if (!sameAt(cloud.updated_at, base)) {                // outro aparelho gravou depois que este sincronizou
-      if (!dirty() || !baseData || !merge3(baseData, G.S, cloud.data)) return useCloud();   // nada pendente aqui: a nuvem vale
+      if (!dirty() || !baseData || !merge3(baseData, G.S, cloud.data)) { if (dirty()) backup(G.S, 'mudanças deste aparelho que não deu para juntar'); return useCloud(); }   // nada pendente aqui: a nuvem vale
       mergeRemote(cloud);                                           // havia coisa não enviada neste aparelho: junta com a nuvem
     }
   } else if (base) { base = ''; saveMeta(); }                       // não há save na nuvem: este aparelho cria

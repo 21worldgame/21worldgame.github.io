@@ -247,6 +247,7 @@ function caneBox(l) {
     <div class="row"><button class="btn btn--sm ${c.care ? 'btn--gold' : 'btn--glass'}" data-act="cn-care" data-id="${l.id}" aria-pressed="${c.care}">${c.care ? 'tratos ligados' : 'tratos desligados'} (${brl(l.ha * CN.CANE.care)}/mês)</button>
       <button class="btn btn--glass btn--sm" data-act="cn-uproot" data-id="${l.id}">${c.cuts >= CN.CANE.reform ? 'reformar canavial' : 'arrancar canavial'}</button></div></div></div>`;
 }
+G.syncState = () => Auth.syncState?.();   // central de avisos mostra se está tudo salvo na nuvem
 let REG_COUNTS = {}, REG_INFO = {};   // economia por região (econ.js): preenchido pelo econSync
 G.regInfo = () => REG_INFO; G.rankRows = n => C.rankingRows(n);   // página inicial (home-ui)
 // posição no ranking no topo (sem precisar abrir o ranking): medalha no top 3, dourado no top 10, seta quando sobe ou desce
@@ -652,7 +653,8 @@ function syncBox() {
   const i = Auth.syncInfo();
   return `<div class="syncbox glass" id="syncbox"><div><b>☁️ sincronização</b><span class="small" id="sync-st">${i.pending ? '⏳ enviando o que você fez...' : i.at ? `✅ salvo na nuvem ${agoS(i.at)}` : '✅ conectado à nuvem'}</span>
     <span class="muted small">Conta: ${esc(i.email)}. Entre com este mesmo e-mail no celular, no computador ou no app instalado e tudo aparece igual.</span></div>
-    <div class="syncbox__acts"><button class="btn btn--glass btn--sm" data-act="sync-now">sincronizar agora</button><button class="btn btn--gold btn--sm" data-act="link-phone">📱 conectar celular</button></div></div>`;
+    <div class="syncbox__acts"><button class="btn btn--glass btn--sm" data-act="sync-now">sincronizar agora</button><button class="btn btn--gold btn--sm" data-act="link-phone">📱 conectar celular</button></div>
+    ${(() => { const bk = Auth.backups?.() || []; return bk.length ? `<details class="syncbox__bk"><summary>🛟 cópias de segurança neste aparelho (${bk.length})</summary><p class="muted small">Toda vez que uma versão do jogo substitui outra (celular x computador), a que sai fica guardada aqui. Se algo sumir, restaure.</p><ul>${bk.map((b, i) => `<li><span><b>${new Date(b.at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</b> · ${brl(b.money)} na conta · ${b.lands} terra${b.lands === 1 ? '' : 's'}<small class="muted">${esc(b.why)}</small></span><button class="btn btn--glass btn--sm" data-act="sync-restore" data-id="${i}">restaurar</button></li>`).join('')}</ul></details>` : ''; })()}</div>`;
 }
 function paintSync() { const el = $('#sync-st'); if (!el) return; const i = Auth.syncInfo(); el.textContent = i.pending ? '⏳ enviando o que você fez...' : i.at ? `✅ salvo na nuvem ${agoS(i.at)}` : '✅ conectado à nuvem'; const b = $('[data-act="sync-now"]'); if (b) { b.disabled = false; b.textContent = 'sincronizar agora'; } }
 setInterval(paintSync, 5000);
@@ -951,6 +953,7 @@ const ACTS = {
   logout() { Auth.logout(); },
   async 'sync-now'() { const b = $('[data-act="sync-now"]'); if (b) { b.disabled = true; b.textContent = 'sincronizando...'; } const ok = await Auth.syncNow(); say(ok ? 'Tudo sincronizado com a nuvem.' : 'Não deu para sincronizar agora. Confira a internet: o jogo tenta de novo sozinho.', !ok); paintSync(); },
   'link-phone'() { linkPhone(); },
+  async 'sync-restore'(i) { const b = (Auth.backups?.() || [])[Number(i)]; if (!b || !confirm(`Restaurar a cópia de ${new Date(b.at).toLocaleString('pt-BR')} (${brl(b.money)} na conta, ${b.lands} terras)? A versão de agora também fica guardada como cópia.`)) return; await Auth.restore(Number(i)); say('Cópia restaurada e enviada para a nuvem.'); render(); },
   'st-kind'(id) { SUI.setKind(id); },
   'fe-buy'(id) { feiraBuy(id); },
   'fe-sell'() { feiraSell(); },
@@ -1288,7 +1291,6 @@ function show(name, focus = false) {
   if (!tabs.some(t => t.dataset.tab === name)) name = 'inicio';
   const cat = catOf(name); lastIn[cat] = name;
   for (const t of tabs) t.classList.toggle('is-off', catOf(t.dataset.tab) !== cat);
-  document.querySelector('.tab-chipx')?.classList.toggle('is-off', cat !== 'voce');   // trocar fichas: só no menu "você"
   for (const b of document.querySelectorAll('#cats [data-cat]')) b.setAttribute('aria-current', String(b.dataset.cat === cat));
   document.querySelector('.tabs')?.classList.toggle('is-single', CATS[cat].length < 2);
   for (const t of tabs) {
@@ -1575,7 +1577,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 125;
+const APP_VERSION = 126;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
@@ -1662,7 +1664,7 @@ document.addEventListener('click', e => { const g = e.target.closest('[data-tab-
   const grid = document.getElementById('mnav-grid'), sheet = document.getElementById('mnav-sheet');
   const btn = t => `<button type="button" data-mnav="${t.dataset.tab}">${t.querySelector('svg')?.outerHTML || ''}<span>${[...t.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("").trim()}</span></button>`;
   // atalhos que no celular saem do topo (passe e instalar app) ficam no começo do menu
-  if (grid) grid.innerHTML = `<div class="mnav-quick"><button type="button" data-act="open-chipx">⇄ trocar fichas</button><button type="button" data-act="open-pass">passe de temporada</button><button type="button" data-proxy="#btn-install">instalar app</button></div>` + Object.entries(CATS).map(([c, ids]) => `<h4 class="mnav-cat">${CAT_NAME[c]}</h4>${ids.map(id => btn(document.getElementById(`t-${id}`))).join('')}`).join('');
+  if (grid) grid.innerHTML = `<div class="mnav-quick"><button type="button" data-act="open-pass">passe de temporada</button><button type="button" data-proxy="#btn-install">instalar app</button></div>` + Object.entries(CATS).map(([c, ids]) => `<h4 class="mnav-cat">${CAT_NAME[c]}</h4>${ids.map(id => btn(document.getElementById(`t-${id}`))).join('')}`).join('');
   const openSheet = on => { if (on) { const i = grid.querySelector('[data-proxy="#btn-install"]'); if (i) i.hidden = !!document.getElementById('btn-install')?.hidden; } sheet.hidden = !on; document.querySelector('[data-mnav="menu"]')?.setAttribute('aria-expanded', String(on)); document.body.classList.toggle('mnav-open', on); };
   document.addEventListener('click', e => {
     const px = e.target.closest('[data-proxy]'); if (px) { openSheet(false); document.querySelector(px.dataset.proxy)?.click(); return; }

@@ -101,7 +101,7 @@
       <div class="tkmenu"><button class="btn btn--glass btn--sm tk-btn" id="tk-btn" type="button" aria-expanded="false" aria-controls="ticker"><span class="tk-btn__dot" aria-hidden="true"></span>cotações</button>
         <div class="tkpanel glass" id="ticker" hidden aria-label="valores do dia"></div></div>
       <div class="ncmenu"><button class="btn btn--glass btn--sm nc-btn" id="nc-btn" type="button" aria-expanded="false" aria-controls="nc-panel" aria-label="avisos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6V11a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-2 2v1h18v-1Z" fill="currentColor"/></svg>avisos<span class="pill" id="nc-badge" hidden>0</span></button>
-        <div class="tkpanel ncpanel glass" id="nc-panel" hidden aria-label="central de avisos"><h4>avisos <small id="nc-sub"></small></h4><div data-econ-chip></div><div id="nc-offer"></div><ul class="nc-list" id="nc-list"></ul></div></div>
+        <div class="tkpanel ncpanel glass" id="nc-panel" hidden aria-label="central de avisos"><h4>avisos <small id="nc-sub"></small></h4><p class="nc-sync" id="nc-sync" hidden></p><div data-econ-chip></div><div id="nc-offer"></div><ul class="nc-list" id="nc-list"></ul></div></div>
       <span class="hud__br" aria-hidden="true"></span>
       <button class="btn btn--glass btn--missions" data-act="open-missions"><svg><use href="#i-target"/></svg>missões<span class="pill" id="missions-badge" hidden>0</span></button>
       <button class="btn btn--gold btn--sm" type="button" id="btn-install" hidden>instalar app</button>
@@ -131,7 +131,6 @@
         <button role="tab" id="t-cartas" data-tab="cartas" aria-controls="p-cartas" aria-selected="false" tabindex="-1"><svg><use href="#i-gem"/></svg>coleções de cartas</button>
         <button role="tab" id="t-haras" data-tab="haras" aria-controls="p-haras" aria-selected="false" tabindex="-1"><svg><use href="#i-horse"/></svg>canil e haras</button>
         <button role="tab" id="t-personagem" data-tab="personagem" aria-controls="p-personagem" aria-selected="false" tabindex="-1"><svg><use href="#i-user"/></svg>personagem</button>
-        <button type="button" class="tab-chipx is-off" data-act="open-chipx" title="Trocar fichas por dinheiro (ou comprar fichas)"><span class="chipx-ico" aria-hidden="true">⇄</span>trocar fichas</button>
         <button role="tab" id="t-terras" data-tab="terras" aria-controls="p-terras" aria-selected="false" tabindex="-1"><svg><use href="#i-map"/></svg>terras</button>
         <button role="tab" id="t-gado" data-tab="gado" aria-controls="p-gado" aria-selected="false" tabindex="-1"><svg><use href="#i-herd"/></svg>gado</button>
         <button role="tab" id="t-granja" data-tab="granja" aria-controls="p-granja" aria-selected="false" tabindex="-1"><svg><use href="#i-chick"/></svg>granja</button>
