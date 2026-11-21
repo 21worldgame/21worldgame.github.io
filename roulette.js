@@ -6,6 +6,7 @@ import { avatarSVG, NPC_LOOKS } from './avatar.js';
 import * as NPC from './npcs.js';
 import { G, $, int, say, save, award, note, confetti, ms, RM } from './store.js';
 import * as sfx from './sfx.js';
+import { luck } from './perks.js';
 
 let bets = {}, chip = 25, spinning = false, wheelAngle = 0, hist = [];
 const SEG = 360 / 37;
@@ -167,8 +168,8 @@ export async function spin() {
   sfx.play('stack', 0.5);
   landFx(n);
 
-  const back = GM.roulettePay(bets, n);
-  G.S.chips += back;
+  const back = GM.roulettePay(bets, n), staked = Object.values(bets).reduce((t, v) => t + v, 0);
+  G.S.chips += back + luck(G.S, back - staked);
   hist = [n, ...hist].slice(0, 14);
   $('#rl-hist').innerHTML = hist.map(x => `<span class="rl-h is-${GM.colorOf(x)}">${x}</span>`).join('');
   const res = $('#rl-result');

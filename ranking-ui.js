@@ -14,6 +14,7 @@ const CATS = {
   level: { label: 'nível', val: r => r.level, fmt: v => `nível ${v}` },
   farm: { label: 'fazendeiros', val: r => r.ha || 0, fmt: v => `${int(v)} ha` },
   casino: { label: 'cassino', val: r => r.best || 0, fmt: v => `${int(v)} fichas` },
+  colls: { label: 'colecionadores', val: r => (r.colls?.length || 0) * 1000 + (r.prestige || 0), fmt: v => `${Math.floor(v / 1000)} ${Math.floor(v / 1000) === 1 ? 'coleção' : 'coleções'} · ${v % 1000} prestígio` },
 };
 export const setCat = c => { if (CATS[c]) { cat = c; page = 0; render(); } };
 export const setPage = p => { page = Math.max(0, Number(p) || 0); render(); document.getElementById('rk-count')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); };
@@ -21,14 +22,16 @@ export const toggleOnline = () => { onlyOn = !onlyOn; page = 0; render(); };
 const fold = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 export const search = q => { query = fold(q).trim(); page = 0; render(); };
 
+// coleções dos jogadores do mundo: fixas por pessoa (a maioria tem poucas, alguns têm várias)
+const npcColls = pid => { let h = 0; for (const ch of String(pid)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return ['campeoes', 'pecuaria', 'prosperidade', 'fortuna'].slice(0, [0, 0, 0, 1, 1, 1, 2, 2, 3, 4][h % 10]); };
 // junta os dados extras (hectares, maior prêmio) que cada fonte tem
 function rows() {
   const w = Live.world(), t = Live.now(), month = W.current(w, t) + W.progress(w, t), me = profileOf();
   const on = NPC.onlineSet(t);
   return C.rankingRows(500).map(r => {
     r = { ...r, online: r.pid === 'me' ? true : String(r.pid || '').startsWith('npc:') ? on.has(r.pid.slice(4)) : String(r.pid || '').startsWith('u:') ? false : !!r.pid };   // da nuvem sem estar no salão = fora agora
-    if (String(r.pid).startsWith('npc:')) { const p = NPC.profile(NPC.byId(r.pid.slice(4)), month); return { ...r, ha: p.ha, best: p.stats.best, wins: p.stats.wins }; }
-    if (r.pid === 'me') return { ...r, ha: me.ha, best: me.stats?.best || 0, wins: me.stats?.wins || 0 };
+    if (String(r.pid).startsWith('npc:')) { const p = NPC.profile(NPC.byId(r.pid.slice(4)), month), c = npcColls(r.pid); return { ...r, ha: p.ha, best: p.stats.best, wins: p.stats.wins, colls: c, prestige: c.length * 10 }; }
+    if (r.pid === 'me') return { ...r, ha: me.ha, best: me.stats?.best || 0, wins: me.stats?.wins || 0, colls: me.colls || [], prestige: me.prestige || 0 };
     return r;
   });
 }

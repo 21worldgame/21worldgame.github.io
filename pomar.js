@@ -1,5 +1,6 @@
 // Pomar de laranja (regras puras): cultura perene na terra própria. Planta uma vez, espera a formação e colhe a cada 4 meses
 // enquanto cuidar. Sem defensivo ("veneno") todo mês a praga aumenta, a colheita cai e o greening pode matar árvores.
+import { bonus } from './perks.js';
 export const ORANGE = {
   plant: 18000,       // R$ por hectare (mudas, covas, adubação de plantio)
   grow: 6,            // meses de formação até a primeira colheita
@@ -32,13 +33,13 @@ export const need = (s, m) => Math.ceil(orchardHa(s) / COVER[m]);
 export const sprayMult = s => 1 - SPRAY_CUT * coverage(s, 'pulv');
 export const harvestMult = s => 1 + HARVEST_PLUS * coverage(s, 'plataforma');
 export const sprayCost = (s, l) => Math.round(l.ha * ORANGE.spray * sprayMult(s));
-export const expectedWith = (s, l) => Math.round(expected(l) * harvestMult(s));
+export const expectedWith = (s, l) => Math.round(expected(l, l.orchard, -bonus(s, 'perda')) * harvestMult(s));
 export function toggleSpray(land) { if (land.orchard) land.orchard.spray = !land.orchard.spray; return land.orchard?.spray; }
 export const nextHarvest = o => (o.age < ORANGE.grow ? ORANGE.grow - o.age : ORANGE.cycle - ((o.age - ORANGE.grow) % ORANGE.cycle));
 // praga alta derruba fruta: com praga muito alta você perde a safra inteira
 export const PEST_YIELD = [1, 0.85, 0.6, 0.3, 0, 0, 0];
 export const PEST_LABEL = ['nenhuma', 'baixa', 'média', 'alta (perdendo fruta)', 'muito alta: safra perdida', 'muito alta: safra perdida', 'descontrolada: safra perdida'];
-export const expected = (land, o = land.orchard) => Math.round(land.ha * ORANGE.yield * o.health * PEST_YIELD[Math.min(6, o.pest)]);
+export const expected = (land, o = land.orchard, cut = 0) => Math.round(land.ha * ORANGE.yield * o.health * Math.min(1, PEST_YIELD[Math.min(6, o.pest)] + cut));   // cut: pontos de perda a menos (coleção Prosperidade)
 export const orchardValue = (s, land) => (land.orchard ? Math.round(land.ha * ORANGE.plant * 0.6 * land.orchard.health) : 0);
 
 // um mês do mundo: paga o defensivo (se ligado), a praga sobe ou desce, colhe quando chega a época
@@ -58,7 +59,7 @@ export function monthly(s, rng = Math.random) {
     o.age++;
     if (o.age >= ORANGE.grow && (o.age - ORANGE.grow) % ORANGE.cycle === 0) {
       const hail = rng() < 0.04;                                          // chuva de granizo derruba parte da fruta
-      const cx = Math.round(expected(l) * (0.85 + rng() * 0.3) * (hail ? 0.6 : 1) * harvestMult(s));
+      const cx = Math.round(expected(l, l.orchard, -bonus(s, 'perda')) * (0.85 + rng() * 0.3) * (hail ? 0.6 : 1) * harvestMult(s));
       s.stock.laranja = (s.stock.laranja || 0) + cx; o.harvests++;
       add(cx ? `colheita de laranja: ${cx} caixas, ${l.region}${hail ? ' (granizo derrubou parte da fruta)' : ''}` : `colheita perdida em ${l.region}: a praga derrubou toda a laranja`);
     }

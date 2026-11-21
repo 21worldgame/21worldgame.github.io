@@ -4,6 +4,7 @@ import * as GM from './games.js';
 import * as C from './casino.js';
 import { G, $, esc, int, say, save, award, note, confetti, RM } from './store.js';
 import * as sfx from './sfx.js';
+import { luck } from './perks.js';
 
 const BOT_NAMES = botsFor('av');
 let st = { phase: 'wait', until: 0, crash: 1, t0: 0, mult: 1 }, mine = null, next = null, bots = [], hist = [], raf = 0, active = false;
@@ -61,7 +62,7 @@ function crash(now) {
 function cashout(at = st.mult) {
   if (!mine || mine.done || st.phase !== 'fly') return;
   mine.done = true; mine.won = Math.floor(mine.bet * at); mine.at = at;
-  G.S.chips += mine.won;
+  G.S.chips += mine.won + luck(G.S, mine.won - mine.bet);
   note(`aviator: sacou ${at.toFixed(2)}x, +${int(mine.won)} fichas`);
   sfx.play('stack', 0.6);
   award('aviator'); award('cashout');

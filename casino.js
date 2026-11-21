@@ -9,6 +9,7 @@ import * as Auth from './auth.js';
 import * as Live from './live.js';
 import { botsFor } from './botpool.js';
 import * as W from './world.js';
+import { luck } from './perks.js';
 import * as RV from './rivals.js';
 import * as SH from './shop.js';
 import * as NPC from './npcs.js';
@@ -519,7 +520,7 @@ function accounting(v, me) {
   if (s.bet > (marks.paid || 0)) { G.S.chips -= s.bet - (marks.paid || 0); marks.paid = s.bet; save(); G.render(); }
   if (v.phase === 'done' && !s.out && marks.pay !== `${v.id}:${v.round}`) {
     marks.pay = `${v.id}:${v.round}`;
-    G.S.chips += s.pay;
+    G.S.chips += s.pay + luck(G.S, s.pay - s.bet);
     const st = G.S.stats;
     st.hands++; if (s.pay > s.bet) { st.wins++; st.best = Math.max(st.best, s.pay - s.bet); }
     award('hand');

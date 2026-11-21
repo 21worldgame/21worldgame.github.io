@@ -1,7 +1,7 @@
 // Granja de frangos de corte (regras puras): compra o galpão, aloja os pintinhos, eles engordam mês a mês e você vende o lote.
 // Lógica de verdade da avicultura: lote único por galpão ("todos dentro, todos fora"), ração é o maior custo, conversão alimentar
 // (kg de ração por kg de frango) depende do galpão, mortalidade, vacina e o ponto certo de abate (~2,8 kg no 2º mês).
-import { mult } from './perks.js';
+import { mult, bonus } from './perks.js';
 export const HOUSES = {
   pequeno: { label: 'galpão pequeno', cap: 5000, price: 150000, mort: 0.03, conv: 1.85, heat: true, energy: 0.35, img: 'granja-galpao' },
   convencional: { label: 'galpão convencional', cap: 15000, price: 420000, mort: 0.025, conv: 1.75, heat: true, energy: 0.4, img: 'granja-aviario' },
@@ -43,7 +43,7 @@ export function sellHouse(s, hid) {
   return { amount: v };
 }
 // alojar pintinhos (só com o galpão vazio)
-export const housingCost = (s, birds, vac) => Math.round(birds * ((s.prices.pintinho || PRICES.pintinho) + (vac ? VACCINE : 0)));
+export const housingCost = (s, birds, vac) => Math.round(birds * ((s.prices.pintinho || PRICES.pintinho) * mult(s, 'animais') + (vac ? VACCINE : 0)));   // coleção Pecuária: −15%
 export function house(s, hid, birds, vac = true) {
   const g = ensure(s), h = g.houses.find(x => x.id === hid);
   if (!h) return { err: 'galpão não encontrado.' };
@@ -77,7 +77,7 @@ export function monthly(s, rng = Math.random) {
     add(`granja: ração do ${l.age + 1}º mês do lote (${l.birds.toLocaleString('pt-BR')} aves)`, -feed);
     add('granja: energia, cama e mão de obra', -Math.round(l.birds * H.energy));
     if (l.cost != null) l.cost += feed + Math.round(l.birds * H.energy);
-    let dead = l.birds * H.mort;
+    let dead = l.birds * Math.max(0, H.mort + bonus(s, 'perda'));
     if (rng() < (l.vac ? 0.01 : 0.05)) { const d = l.birds * (l.vac ? 0.05 : 0.2); dead += d; l.events.push('doença'); add(`granja: surto de doença no lote${l.vac ? ' (a vacina segurou boa parte)' : ' sem vacina'}: ${Math.round(d)} aves perdidas`); }
     if (H.heat && rng() < 0.06) { const d = l.birds * 0.06; dead += d; l.events.push('calor'); add(`granja: onda de calor no galpão: ${Math.round(d)} aves perdidas`); }
     l.birds = Math.max(0, Math.round(l.birds - dead));

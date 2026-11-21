@@ -1,7 +1,8 @@
 // Vantagens de quem tem carro e acessórios (regras puras). Vale o que a pessoa POSSUI, não só o que está usando.
 // Cada efeito é um multiplicador somado: dois itens de +10% dão +20%.
+import { rewards as collRewards } from './cards.js';
 export const EFFECTS = {
-  xp: 'XP ganho', daily: 'roleta do dia',
+  xp: 'XP ganho', daily: 'roleta do dia', perda: 'pontos de perda (mortalidade e praga)', casino: 'ganho de fichas no cassino', animais: 'preço de pintinhos, leitões e bezerros',
   loan: 'juros do banco', race: 'prêmios das provas', ticket: 'bilheteria do clube', cattle: 'preço de venda do gado', frango: 'preço de venda do frango', plant: 'custo do plantio',
   suino: 'preço de venda do suíno', grain: 'venda de soja, milho e café', laranja: 'venda da laranja', cana: 'preço da cana na usina', ouro: 'venda do ouro da mina', biz: 'faturamento das empresas',
 };
@@ -67,8 +68,12 @@ export function bonuses(s) {
   for (const c of new Set((s.cars || []).map(c => c.model))) add(out, CAR_PERKS[c]);        // dois carros iguais não somam
   add(out, landBonuses(s.lands));
   for (const tag of s.owned || []) if (tag.startsWith('acc:')) add(out, ACC_PERKS[tag.slice(4)]);
+  for (const r of collRewards(s)) add(out, r);                                                // coleções de cartas completas
   return out;
 }
 // multiplicador final de um efeito (juros nunca caem abaixo de 50%)
+// coleção Fortuna: +15% no que a pessoa ganhou de fichas (só o lucro da rodada, nunca a aposta de volta)
+export const luck = (s, profit) => (profit > 0 ? Math.floor(profit * (bonuses(s).casino || 0)) : 0);
+export const bonus = (s, k) => bonuses(s)[k] || 0;   // valor cru (perda: pontos a menos de perda)
 export const mult = (s, k) => Math.max(0.5, 1 + (bonuses(s)[k] || 0));
 export const label = p => Object.entries(p || {}).map(([k, v]) => `${v > 0 ? '+' : ''}${Math.round(v * 100)}% ${EFFECTS[k]}`).join(', ');

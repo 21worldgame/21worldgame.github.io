@@ -3094,3 +3094,29 @@ details.herd-guide > summary { margin: 0; }
   .am-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .am-grid .field:first-child { grid-column: 1 / -1; }
   .am-modes { grid-template-columns: minmax(0, 1fr); }
 }
+/* ===== coleções de cartas ===== */
+.cd-colls { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr)); gap: 14px; margin-bottom: 20px; }
+.cd-coll { display: grid; gap: 10px; padding: 14px 16px; border-radius: 16px; border-top: 3px solid var(--c1); }
+.cd-coll.is-done { box-shadow: inset 0 0 0 1px rgba(245,184,51,.55), 0 0 24px rgba(245,184,51,.15); }
+.cd-coll header { display: flex; align-items: center; gap: 12px; }
+.cd-coll header > div { flex: 1; min-width: 0; }
+.cd-coll h4 { margin: 0; display: flex; align-items: center; gap: 8px; text-transform: none; }
+.cd-coll__icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; font-size: 1.5rem; background: linear-gradient(135deg, var(--c1), var(--c2)); }
+.cd-coll__n { font: 800 1.1rem/1 var(--font-display); color: #ffd76a; }
+.cd-coll__bar { height: 6px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+.cd-coll__bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--c1), var(--c2)); }
+.cd-coll p { margin: 0; }
+.cd-coll__cards { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.cd-coll__cards .cd-slot { flex: none; width: 92px; }
+.cd-coll__cards .tcard--sm { width: 92px; }
+.tcard.is-missing { filter: grayscale(1) brightness(.45); }
+.tcard.is-missing .tcard__emoji { opacity: .35; }
+.tcard__art--set { display: grid; place-items: center; background: radial-gradient(circle at 50% 40%, var(--c2), var(--c1) 70%); }
+.tcard__emoji { position: relative; z-index: 1; font-size: clamp(2rem, 5vw, 3.4rem); filter: drop-shadow(0 6px 12px rgba(0,0,0,.45)); }
+.tcard--sm .tcard__emoji { font-size: 1.8rem; }
+.tcard--set .tcard__el { font-size: 1rem; line-height: 1; }
+.cd-dup { position: absolute; top: 6px; left: 6px; z-index: 5; font-size: .62rem; }
+.tcard-slot { position: relative; }
+.cd-packbtn--sazonal { border-color: rgba(220,38,38,.7) !important; background: linear-gradient(135deg, rgba(220,38,38,.25), rgba(22,163,74,.2)) !important; }
+.cd-packbtn__season { color: #fca5a5; font-size: .72rem; font-weight: 700; }
+.cd-odds__note { grid-column: 1 / -1; margin: 6px 0 0; }

@@ -1,4 +1,4 @@
-import { mult } from './perks.js';
+import { mult, bonus } from './perks.js';
 // Suinocultura (regras puras): compra o barracão, aloja leitões de ~23 kg, eles engordam ~24 kg/mês comendo ração
 // (conversão ~2,4–2,7 kg de ração por kg ganho) e são vendidos por kg vivo. Ponto de venda: ~4º mês (~115–120 kg).
 // Números de referência: Embrapa/FAEP (GPD ~790 g/dia, CA ~2,4) e Cepea (suíno vivo R$ 7,5–9,5/kg em 2025).
@@ -21,7 +21,7 @@ export function buyBarn(s, type) {
   s.money -= B.price; s.suinos.barns.push({ id: `sb${(s.nextId = (s.nextId || 1) + 1)}`, type, value: B.price });
   return null;
 }
-export const housing = (s, n, vac) => Math.round(n * ((s.prices.leitao || PRICES.leitao) + (vac ? VACCINE : 0)));
+export const housing = (s, n, vac) => Math.round(n * ((s.prices.leitao || PRICES.leitao) * mult(s, 'animais') + (vac ? VACCINE : 0)));   // coleção Pecuária: −15%
 export function house(s, barnId, n, vac = true) {
   ensure(s); const b = s.suinos.barns.find(x => x.id === barnId), B = b && BARNS[b.type];
   if (!B) return 'barracão não encontrado.';
@@ -50,7 +50,7 @@ export function monthly(s, rng = Math.random) {
     const g = gainAt(l.age), conv = B.conv * (l.age >= 4 ? 1.25 : 1);       // depois do ponto, cada kg custa mais ração
     const feed = Math.round(l.pigs * g * conv * (s.prices.racaoSuino || PRICES.racaoSuino));
     add(`suinocultura: ração do lote (${l.pigs} suínos)`, -feed);
-    const dead = Math.round(l.pigs * B.mort * (0.7 + rng() * 0.6)); l.pigs -= dead;
+    const dead = Math.round(l.pigs * Math.max(0, B.mort + bonus(s, 'perda')) * (0.7 + rng() * 0.6)); l.pigs -= dead;
     if (!l.vac && rng() < 0.06) { const k = Math.round(l.pigs * (0.12 + rng() * 0.18)); l.pigs -= k; out.push({ txt: `suinocultura: surto de doença no lote sem vacina, ${k} suínos perdidos`, val: 0 }); }
     l.age++;
     if (l.pigs <= 0) { s.suinos.lots = s.suinos.lots.filter(x => x !== l); out.push({ txt: 'suinocultura: o lote inteiro foi perdido', val: 0 }); }

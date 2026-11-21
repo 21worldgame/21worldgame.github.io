@@ -404,8 +404,8 @@ import * as CD from './cards.js';
   const s = { money: 0, cards: [], nextId: 1 };
   CD.give(s, { tier: 'diamante', champ: 'brasa' }); CD.give(s, { tier: 'bronze', champ: 'faisca' }); CD.give(s, { tier: 'prata', champ: 'raiz' });
   const big = CD.value(s.cards[0]) * CD.LAND_RATE;
-  const p = CD.payWith(s, 50000);
-  assert.ok(!p.err && p.used.length === 1 && p.used[0].tier === 'diamante' && p.change === Math.round(big - 50000) && s.cards.length === 2);
+  const p = CD.payWith(s, 4000);
+  assert.ok(!p.err && p.used.length === 1 && p.used[0].tier === 'diamante' && p.change === Math.round(big - 4000) && s.cards.length === 2);
   assert.ok(CD.payWith(s, 1e9).err);
   assert.equal(CD.sanitize({ tier: 'deus', champ: 'brasa' }), null);
   assert.equal(TD.sanitize([{ kind: 'card', data: { tier: 'mestre', champ: 'umbra', id: 'x' } }]).length, 1);
@@ -502,13 +502,12 @@ console.log('chat pv ok');
 {
   for (const [k, P] of Object.entries(CD.PACKS)) {
     const ev = CD.packEV(k);
-    assert.ok(ev * CD.LAND_RATE < P.price && ev * CD.SELL < P.price, `${k} dá lucro: ${ev}`);
-    assert.ok(ev > P.price * 0.85, `${k} vale pouco: ${ev}`);
+    assert.ok(ev * CD.LAND_RATE < P.price && ev * CD.SELL < P.price, `${k} dá lucro na loja: ${ev}`);   // o valor de verdade vem da troca entre jogadores
   }
   const s = { money: 300000, nextId: 1 };
-  assert.equal(CD.openPack(s, 'lendario').cards.length, 5); assert.equal(s.money, 100000);
+  assert.equal(CD.openPack(s, 'lendario').cards.length, 5); assert.equal(s.money, 300000 - CD.PACKS.lendario.price);
   assert.ok(CD.openPack(s, 'lendario').err);
-  const o = CD.openPack(s, 'ouro'); assert.equal(o.cards.length, 3); assert.notEqual(o.cards[2].tier, 'bronze');
+  const o = CD.openPack(s, 'ouro'); assert.equal(o.cards.length, 3); assert.notEqual(CD.rarityOf(o.cards[2]), 'comum');
 }
 console.log('pacotes ok');
 // loja: vender tudo para a casa, anunciar, comprador da casa nunca paga a ponto de virar máquina de dinheiro
@@ -723,31 +722,43 @@ console.log('logística da cana ok');
   console.log('apostas futebol ok', Object.entries(tally).map(([k, t]) => `${k} ${(t.pay / n).toFixed(2)}`).join(' '));
 }
 
-// ---------- cartas valorizam com o tempo e pacotes têm estoque mensal ----------
+// ---------- coleções de cartas: valor fixo, repetidas não somam, completa uma vez, sazonais só na temporada ----------
 {
-  const s = { money: 1e7, month: 10, nextId: 1 };
-  CD.setMonth(10);
+  const s = { money: 1e6, month: 10, nextId: 1, cards: [] };
   const c = CD.give(s, { tier: 'mestre', champ: 'brasa' }), b = CD.give(s, { tier: 'bronze', champ: 'brasa' });
-  const v0 = CD.value(c);
-  CD.setMonth(34);
-  assert.ok(CD.value(c) > v0 * 1.25, 'mestre deveria valorizar bem em 24 meses');
-  assert.ok(CD.growth(c) > CD.growth(b), 'carta mais rara valoriza mais');
-  CD.setMonth(500); const cap = CD.value(c); CD.setMonth(900); assert.equal(CD.value(c), cap, 'valorização tem teto');
-  // mesmo no teto, vender pacote para a loja não dá lucro garantido
-  for (const [k, P] of Object.entries(CD.PACKS)) {
-    const kAvg = CD.CHAMPS.reduce((t, x) => t + x.k, 0) / CD.CHAMPS.length;
-    const evCap = P.slots.reduce((sum, w) => { const tot = Object.values(w).reduce((a, x) => a + x, 0); return sum + Object.entries(w).reduce((a, [t, x]) => a + CD.TIERS.find(y => y.id === t).base * kAvg * (1 + CD.GROW[t]) ** CD.GROW_CAP * x / tot, 0); }, 0);
-    assert.ok(evCap * CD.SELL < P.price, `${k}: vender no teto dá lucro (${Math.round(evCap * CD.SELL)})`);
-  }
-  CD.setMonth(10); s.month = 10;
-  for (let i = 0; i < CD.PACKS.ouro.stock; i++) assert.ok(!CD.openPack(s, 'ouro').err);
+  assert.equal(CD.value(c), 8000, 'lendária vale 8 mil na loja'); assert.equal(CD.value(b), 3000, 'comum vale 3 mil');
+  assert.equal(CD.value(CD.give(s, { set: 'natal', key: 'noel' })), 10000, 'sazonal é exclusiva: 10 mil');
+  assert.equal(CD.value(CD.give(s, { set: 'fortuna', key: 'jackpot' })), 8000);
+  assert.equal(CD.progress(s, 'campeoes').have, 1, 'duas brasas contam uma vez');
+  assert.equal(CD.duplicates(s).size, 1, 'a segunda brasa é repetida');
+  // completa a Pecuária: vale uma vez e dá a vantagem
+  for (const k of CD.SETS.pecuaria.cards) CD.give(s, { set: 'pecuaria', key: k.key });
+  for (const k of CD.SETS.pecuaria.cards) CD.give(s, { set: 'pecuaria', key: k.key });
+  assert.deepEqual(CD.claim(s), ['pecuaria']); assert.deepEqual(CD.claim(s), [], 'cada coleção completa uma vez só');
+  assert.equal(CD.prestige(s), 10);
+  const PKc = await import('./perks.js');
+  assert.ok(Math.abs(PKc.mult(s, 'animais') - 0.85) < 1e-9, 'Pecuária: pintinho, leitão e bezerro 15% mais baratos');
+  s.cards = s.cards.filter(x => x.set !== 'pecuaria'); assert.ok(Math.abs(PKc.mult(s, 'animais') - 0.85) < 1e-9, 'vantagem fica mesmo vendendo as cartas');
+  s.colls.fortuna = 1; assert.equal(PKc.luck(s, 1000), 150, 'Fortuna: +15% do ganho de fichas'); assert.equal(PKc.luck(s, -500), 0, 'perda não ganha bônus');
+  s.colls.prosperidade = 1; assert.ok(Math.abs(PKc.bonus(s, 'perda') + 0.02) < 1e-9, 'Prosperidade: 2 pontos a menos de perda');
+  // sazonal: só na temporada (calendário de verdade)
+  const dez = Date.UTC(2026, 11, 10, 15), mar = Date.UTC(2027, 2, 10, 15);
+  assert.ok(CD.seasonOpen('natal', dez) && !CD.seasonOpen('natal', mar) && CD.seasonOpen('natal', Date.UTC(2027, 0, 3, 15)), 'natal vai de 20/11 a 6/1');
+  assert.ok(CD.seasonOpen('junina', Date.UTC(2027, 5, 15, 15)) && !CD.seasonOpen('junina', dez));
+  const sp = CD.openPack(s, 'sazonal:natal', Math.random, dez); assert.equal(sp.cards.length, 3); assert.equal(sp.cards[0].set, 'natal', 'pacote sazonal garante 1 carta da temporada');
+  assert.match(CD.openPack(s, 'sazonal:natal', Math.random, mar).err, /acabou/);
+  for (let i = 0; i < 300; i++) { const r = CD.openPack({ money: 1e7, month: i, nextId: 1 }, 'simples', Math.random, mar); assert.ok(!r.cards.some(x => CD.SETS[x.set]?.kind === 'sazonal'), 'fora da temporada não sai sazonal'); }
+  let saz = 0; for (let i = 0; i < 2000; i++) { const r = CD.openPack({ money: 1e7, month: i, nextId: 1 }, 'simples', Math.random, dez); if (r.cards.some(x => x.set === 'natal')) saz++; }
+  assert.ok(saz > 120 && saz < 300, `na temporada os pacotes comuns às vezes trazem sazonal (${saz}/2000)`);
+  // prêmio de pacote (roleta do dia) não cobra nem gasta estoque
+  const g = { money: 0, month: 3, nextId: 1 }; assert.equal(CD.openPack(g, 'ouro', Math.random, mar, true).cards.length, 3); assert.equal(g.money, 0);
+  // estoque mensal e troca só aceita carta que existe
+  s.month = 20; for (let i = 0; i < CD.PACKS.ouro.stock; i++) assert.ok(!CD.openPack(s, 'ouro').err);
   assert.match(CD.openPack(s, 'ouro').err, /esgotado/);
-  s.month = 11; assert.ok(!CD.openPack(s, 'ouro').err, 'estoque volta no mês seguinte');
-  const tr = CD.sanitize({ tier: 'prata', champ: 'raiz', born: -999 }); const g = CD.give(s, tr);
-  assert.ok(g.born >= s.month - CD.GROW_CAP, 'carta de troca não nasce antes do teto');
-  CD.setMonth(0);
+  s.month = 21; assert.ok(!CD.openPack(s, 'ouro').err, 'estoque volta no mês seguinte');
+  assert.equal(CD.sanitize({ set: 'natal', key: 'xx' }), null); assert.deepEqual(CD.sanitize({ set: 'natal', key: 'noel', id: 'a' }), { set: 'natal', key: 'noel', id: 'a' });
 }
-console.log('cartas valorizam ok');
+console.log('coleções de cartas ok');
 
 // ---------- máquinas de laranja e cana ----------
 {
