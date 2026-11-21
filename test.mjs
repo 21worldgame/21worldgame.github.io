@@ -743,7 +743,7 @@ console.log('logística da cana ok');
   s.colls.prosperidade = 1; assert.ok(Math.abs(PKc.bonus(s, 'perda') + 0.02) < 1e-9, 'Prosperidade: 2 pontos a menos de perda');
   // sazonal: só na temporada (calendário de verdade)
   const dez = Date.UTC(2026, 11, 10, 15), mar = Date.UTC(2027, 2, 10, 15);
-  assert.ok(CD.seasonOpen('natal', dez) && !CD.seasonOpen('natal', mar) && CD.seasonOpen('natal', Date.UTC(2027, 0, 3, 15)), 'natal vai de 20/11 a 6/1');
+  assert.ok(CD.seasonOpen('natal', dez) && !CD.seasonOpen('natal', mar) && !CD.seasonOpen('natal', Date.UTC(2027, 0, 3, 15)) && !CD.seasonOpen('natal', Date.UTC(2026, 10, 25, 15)) && CD.seasonOpen('natal', Date.UTC(2026, 11, 1, 12)) && CD.seasonOpen('natal', Date.UTC(2026, 11, 31, 23)), 'natal só em dezembro');
   assert.ok(CD.seasonOpen('junina', Date.UTC(2027, 5, 15, 15)) && !CD.seasonOpen('junina', dez));
   const sp = CD.openPack(s, 'sazonal:natal', Math.random, dez); assert.equal(sp.cards.length, 3); assert.equal(sp.cards[0].set, 'natal', 'pacote sazonal garante 1 carta da temporada');
   assert.match(CD.openPack(s, 'sazonal:natal', Math.random, mar).err, /acabou/);

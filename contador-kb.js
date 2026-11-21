@@ -148,7 +148,7 @@ export const KB = [
     'Ganha quem der o maior lance até o fim do pregão.'] },
   { t: 'cartas e coleções', k: ['carta', 'cartas', 'pacote', 'pacotes', 'raridade', 'colecao', 'colecoes', 'emblema', 'prestigio', 'sazonal', 'natal', 'junina', 'repetida', 'colecionador'], a: [
     'A loja paga um valor fixo por carta: comum R$ 3 mil, rara R$ 5 mil, lendária R$ 8 mil, exclusiva (sazonal) R$ 10 mil. O valor de verdade é o que os jogadores pagam entre si.',
-    'Coleções padrão (Campeões, Prosperidade, Fortuna, Pecuária) saem nos pacotes o ano todo. Sazonais (Natal de 20/11 a 6/1, Festa Junina de 1/6 a 31/7) só no período delas, em pacote próprio com 1 carta da temporada garantida, e às vezes nos pacotes comuns. Fora da temporada, só comprando de quem tem.',
+    'Coleções padrão (Campeões, Prosperidade, Fortuna, Pecuária) saem nos pacotes o ano todo. Sazonais (Natal só em dezembro, Festa Junina de 1/6 a 31/7) só no período delas, em pacote próprio com 1 carta da temporada garantida, e às vezes nos pacotes comuns. Fora da temporada, só comprando de quem tem.',
     'Cada carta conta uma vez na coleção (repetidas não somam) e cada coleção se completa uma vez só. Completar dá emblema no perfil, sobe no ranking de colecionadores e libera a vantagem para sempre:',
     '• Campeões: +5% de XP · Prosperidade: 2 pontos a menos de mortalidade e de perda por praga · Fortuna: +15% no ganho de fichas no cassino · Pecuária: pintinhos, leitões e bezerros 15% mais baratos · Natal: 50 de prestígio · Festa Junina: +10% na roleta do dia e 30 de prestígio.',
     'Pacotes: simples R$ 6 mil (1 carta), ouro R$ 18 mil (3, 1 rara ou melhor), lendário R$ 35 mil (5, 1 lendária), com estoque por mês do mundo. A roleta do dia também dá pacote.'] },

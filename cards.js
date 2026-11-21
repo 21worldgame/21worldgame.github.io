@@ -51,7 +51,7 @@ export const SETS = {
   pecuaria: { name: 'Pecuária', kind: 'padrao', icon: '🐂', color: ['#c2410c', '#fbbf24'], reward: { animais: -0.15 }, rewardTxt: '15% mais barato comprar pintinhos, leitões e bezerros', prestige: 10,
     cards: [C('pintinho', 'Pintinho', '🐣', 'comum'), C('leitao', 'Leitão', '🐖', 'comum'), C('bezerro', 'Bezerro Nelore', '🐄', 'comum'), C('galo', 'Galo Cantador', '🐓', 'rara'),
       C('touro', 'Touro Reprodutor', '🐂', 'rara'), C('cavalo', 'Cavalo de Lida', '🐎', 'rara'), C('boiadeiro', 'Rei do Boiadeiro', '🤠', 'lendaria'), C('zebu', 'Zebu de Ouro', '🏆', 'lendaria')] },
-  natal: { name: 'Natal', kind: 'sazonal', season: [11, 20, 1, 6], icon: '🎄', color: ['#dc2626', '#16a34a'], reward: {}, rewardTxt: '50 pontos de prestígio', prestige: 50,
+  natal: { name: 'Natal', kind: 'sazonal', season: [12, 1, 12, 31], icon: '🎄', color: ['#dc2626', '#16a34a'], reward: {}, rewardTxt: '50 pontos de prestígio', prestige: 50,
     cards: [C('arvore', 'Árvore de Natal', '🎄', 'exclusiva'), C('presente', 'Presente', '🎁', 'exclusiva'), C('rena', 'Rena', '🦌', 'exclusiva'), C('estrela', 'Estrela Guia', '⭐', 'exclusiva'),
       C('sino', 'Sino de Natal', '🔔', 'exclusiva'), C('boneco', 'Boneco de Neve', '☃️', 'exclusiva'), C('noel', 'Papai Noel', '🎅', 'exclusiva', 0.4), C('ceia', 'Ceia de Natal', '🦃', 'exclusiva', 0.4)] },
   junina: { name: 'Festa Junina', kind: 'sazonal', season: [6, 1, 7, 31], icon: '🔥', color: ['#f59e0b', '#7c3aed'], reward: { daily: 0.1 }, rewardTxt: '+10% na roleta do dia e 30 pontos de prestígio', prestige: 30,
