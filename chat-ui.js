@@ -4,7 +4,7 @@
 import * as CH from './chat.js';
 import * as FE from './feira.js';
 import * as Auth from './auth.js';
-import { G, $, esc, brl, say, save, note, profileOf, notice, ntOff } from './store.js';
+import { G, $, esc, brl, say, save, note, profileOf, notice, ntOff, isBlocked } from './store.js';
 import * as sfx from './sfx.js';
 import * as NPC from './npcs.js';
 import * as Live from './live.js';
@@ -50,6 +50,7 @@ const who = c => people().find(p => p.id === c);
 function add(raw, mine, peer, extra = {}) {
   const m = CH.accept(raw);
   if (!m || (m.id && seen.has(m.id))) return;
+  if (!mine && isBlocked(m.name, NPC.byNick(m.name)?.id)) return;   // bloqueado: some da Resenha
   if (m.id) seen.add(m.id);
   Object.assign(m, { mine, pid: peer || null, conv: m.pv ? (mine ? extra.conv : peer || extra.conv) : 'all', bot: !!extra.bot });
   m.mention = !mine && CH.mentions(m.text, myName());

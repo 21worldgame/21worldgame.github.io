@@ -1420,3 +1420,15 @@ import * as CT from './contador.js';
   s.lent = [{ id: 1, name: 'Zé', bal: 10000, rate: 0.1, left: 6, risk: 1 }]; const m0 = s.money; Lq.tick(s, () => 0.5);
   assert.ok(!s.lent.length && s.log.some(e => /Zé deu calote/.test(e.txt) && e.val === 2500), 'cobrador recupera 25%');
   console.log('agiota com lógica ok'); }
+
+// bloquear: jogador do mundo bloqueado não manda mais proposta
+{
+  const BOb = await import('./bot-offers.js'), NPb = await import('./npcs.js');
+  const t0 = Date.UTC(2026, 10, 21, 15), s = { money: 1e7, prices: { bezerro: 2600, arroba: 310 }, herd: [], stock: {}, nextId: 3, month: 20 };
+  const got = []; for (let k = 0; k < 400; k++) { const o = BOb.offerFor(s, t0 + k * 1500000); if (o) got.push(o); }
+  assert.ok(got.length > 20, 'há propostas');
+  const victim = got[0].botId; s.blocked = [`npc:${victim}`];
+  for (let k = 0; k < 400; k++) { const o = BOb.offerFor(s, t0 + k * 1500000); assert.ok(!o || o.botId !== victim, 'bloqueado não manda proposta'); }
+  s.blocked = NPb.onlineNow(t0, 12).map(b => `npc:${b.id}`); assert.equal(BOb.offerFor(s, t0), null, 'todos bloqueados: ninguém oferece');
+  console.log('bloquear jogador ok');
+}

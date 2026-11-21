@@ -17,7 +17,7 @@ const LINES = {
 export function offerFor(s, now = Date.now()) {
   const slot = Math.floor(now / WIN), seed = slot * 7 + (s.nextId || 0) % 5;
   if (s.botOfferDone === slot || h(seed) > 0.55) return null;
-  const on = NPC.onlineNow(now, 12); if (!on.length) return null;
+  const on = NPC.onlineNow(now, 12).filter(b => !(s.blocked || []).includes(`npc:${b.id}`)); if (!on.length) return null;   // bloqueado não manda proposta
   const bot = on[Math.floor(h(seed + 1) * on.length)], p = s.prices || {}, r = h(seed + 2), line = a => a[Math.floor(h(seed + 3) * a.length)];
   const opts = [];
   for (const g of Object.keys(GOOD)) { const have = Math.floor(s.stock?.[g] || 0); if (have >= 20 && p[g]) opts.push(() => {

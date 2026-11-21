@@ -3164,3 +3164,8 @@ details.herd-guide > summary { margin: 0; }
 .icard__tcard > .tcard { width: 156px; box-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 18px 46px -10px color-mix(in srgb, var(--c2) 75%, transparent), 0 0 60px -20px var(--c1); transition: transform .25s ease; }
 .scard:hover .icard__tcard > .tcard { transform: translateY(-4px) rotate(-1.5deg); }
 @media (prefers-reduced-motion: reduce) { .scard:hover .icard__tcard > .tcard { transform: none; } }
+
+.bo__block { background: none; border: 1px solid rgba(255,90,106,.45); color: #fca5a5; }
+.bo__block:hover { background: rgba(255,90,106,.12); }
+.pf__blocked { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.pf__blocked li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,.04); }

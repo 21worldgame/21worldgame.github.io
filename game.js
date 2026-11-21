@@ -1,7 +1,7 @@
 import * as L from './logic.js';
 import * as P from './progress.js';
 import { CATALOG, avatarSVG, accsOf, toggleAcc } from './avatar.js';
-import { G, $, esc, brl, int, RM, say, save, note, pay, award, checkAch, confetti, today, yesterday, reset, profileOf, levelUp, ntOff, ntSet, badge } from './store.js';
+import { G, $, esc, brl, int, RM, say, save, note, pay, award, checkAch, confetti, today, yesterday, reset, profileOf, levelUp, ntOff, ntSet, badge, blockKey, isBlocked, setBlocked } from './store.js';
 import * as C from './casino.js';
 import * as RC from './racing.js';
 import * as sfx from './sfx.js';
@@ -628,7 +628,7 @@ function botOffer() {
   box.setAttribute('aria-live', 'polite');
   box.innerHTML = `<span class="bo__av">${avatarSVG(n?.look || {}, { label: o.bot })}</span><div class="bo__body"><b>${esc(o.bot)} <small class="muted">nível ${NPC.levelFor(NPC.worthAt(n, s.month))} · online</small></b>
     <p>“${esc(o.txt)}”</p><p class="small">total: <b class="${o.kind === 'calves' ? 'bad' : 'good'}">${brl(o.total)}</b></p>
-    <div class="bo__acts"><button class="btn btn--gold btn--sm" data-act="bo-yes">aceitar</button><button class="btn btn--glass btn--sm" data-act="bo-deal">negociar</button><button class="btn btn--glass btn--sm" data-act="bo-no">recusar</button></div></div>`;
+    <div class="bo__acts"><button class="btn btn--gold btn--sm" data-act="bo-yes">aceitar</button><button class="btn btn--glass btn--sm" data-act="bo-deal">negociar</button><button class="btn btn--glass btn--sm" data-act="bo-no">recusar</button><button class="btn btn--sm bo__block" data-act="bo-block" title="não receber mais propostas nem mensagens dessa pessoa">bloquear</button></div></div>`;
   sfx.play('chip', 0.3);
 }
 function boClose(o, done) { S().botOfferDone = o.slot; $('#bot-offer')?.remove(); boShown = null; if (done) { save(); render(); } }
@@ -666,6 +666,9 @@ function openProfile(pid, fetched) {
     <ul class="achs">${P.ACHIEVEMENTS.map(a => `<li class="${p.ach?.includes(a.id) ? 'is-got' : ''}"><span class="badge__medal" aria-hidden="true"></span>${esc(a.txt)}</li>`).join('')}</ul>
     ${!me && TUI.online().some(x => x.pid === pid) ? `<div class="pf__acts"><button class="btn btn--gold" data-act="trade-invite" data-id="${esc(pid)}">negociar</button></div>` : ''}
     ${!me && String(pid).startsWith('npc:') ? `<div class="pf__acts"><button class="btn btn--gold" data-act="trade-bot" data-id="${esc(String(pid).slice(4))}">negociar</button></div>` : ''}
+    ${!me ? (() => { const npcId = String(pid).startsWith('npc:') ? String(pid).slice(4) : null, key = blockKey(p.name, npcId), on = isBlocked(p.name, npcId);
+      return `<div class="pf__acts"><button class="btn btn--sm ${on ? 'btn--gold' : 'btn--glass'}" data-act="toggle-block" data-id="${esc(key)}" data-name="${esc(p.name)}" data-reopen="${esc(pid)}">${on ? 'desbloquear' : 'bloquear'}</button></div>`; })() : ''}
+    ${me && (S().blocked || []).length ? `<h3>bloqueados</h3><ul class="pf__blocked">${S().blocked.map(k => { const n = k.startsWith('npc:') ? NPC.byId(k.slice(4))?.nick : k.slice(5); return `<li><span>${esc(n || k)}</span><button class="btn btn--glass btn--sm" data-act="toggle-block" data-id="${esc(k)}" data-name="${esc(n || k)}" data-reopen="me">desbloquear</button></li>`; }).join('')}</ul>` : ''}
     ${me ? `<div class="pf__acts"><button class="btn btn--glass" data-act="edit-char">editar personagem</button><button class="btn btn--glass" data-act="toggle-nt">avisos na tela: ${ntOff('aviso') || ntOff('chat') ? 'desligados' : 'ligados'}</button>${Auth.account() ? '<button class="btn btn--glass" data-act="logout">sair da conta</button><button class="btn btn--danger btn--sm" data-act="wipe">apagar meus dados</button>' : ''}</div>${Auth.account() ? `<p class="muted small">Conta: ${esc(Auth.account().email)}</p>` : ''}` : ''}`;
   const dlg = $('#dlg-profile');
   if (!dlg.open) dlg.showModal();
@@ -893,6 +896,8 @@ const ACTS = {
   'shop-offer-yes'(id) { SHUI.acceptOffer(id); },
   'bo-yes'() { const o = BO.offerFor(S(), Live.now()); if (!o) return say('A proposta expirou.', true); boSettle(o, o.total); },
   'bo-no'() { const o = BO.offerFor(S(), Live.now()); if (o) boClose(o); },
+  'bo-block'() { const o = BO.offerFor(S(), Live.now()); if (!o || !confirm(`Bloquear ${o.bot}? Ele não vai mais te mandar propostas nem aparecer na Resenha. Dá para desbloquear no perfil dele ou no seu.`)) return; setBlocked(blockKey(o.bot, o.botId), true); boClose(o, true); say(`${o.bot} bloqueado.`); },
+  'toggle-block'(key, b) { const on = !(S().blocked || []).includes(key); if (on && !confirm(`Bloquear ${b.dataset.name}? Não vai mais mandar propostas nem aparecer na Resenha.`)) return; setBlocked(key, on); save(); say(on ? `${b.dataset.name} bloqueado.` : `${b.dataset.name} desbloqueado.`); const d = $('#dlg-profile'); if (d.open && b.dataset.reopen) openProfile(b.dataset.reopen); },
   'bo-deal'() {
     const o = BO.offerFor(S(), Live.now()); if (!o) return say('A proposta expirou.', true);
     openDeal({ title: `negócio com ${o.bot}`, sub: o.txt, who: o.bot, deal: BO.dealFor(o), onDone: price => { if (price) boSettle(o, price); else boClose(o, true); } });
@@ -1438,7 +1443,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 105;
+const APP_VERSION = 106;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;

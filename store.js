@@ -71,6 +71,10 @@ export function save() {
 }
 // save novo de uma conta (nome vindo do cadastro)
 export function blankState(name) { const s = normalize(null); if (name) s.avatar.name = name; s.savedAt = Date.now(); return s; }
+// jogadores bloqueados (não mandam proposta, somem da Resenha). Mundo: npc:<id> · pessoa: name:<nome>
+export const blockKey = (name, npcId) => (npcId ? `npc:${npcId}` : `name:${String(name || '').toLowerCase()}`);
+export const isBlocked = (name, npcId) => (G.S?.blocked || []).includes(blockKey(name, npcId));
+export function setBlocked(key, on) { const b = new Set(G.S.blocked || []); on ? b.add(key) : b.delete(key); G.S.blocked = [...b]; }
 export function adopt(state) { G.S = normalize(state); try { localStorage.setItem(keyFor(uid), JSON.stringify(G.S)); } catch {} }
 export function writeSave(u, state) { try { localStorage.setItem(keyFor(u), JSON.stringify(state)); localStorage.setItem(UID_KEY, u); } catch {} }
 export function forgetUser() { try { localStorage.removeItem(UID_KEY); } catch {} }
