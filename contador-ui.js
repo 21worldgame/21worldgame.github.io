@@ -89,7 +89,10 @@ function worthParts(s) {
   const parts = [['dinheiro', s.money || 0], ['terras', lands], ['gado', h.gado], ['estoque no armazém', h.lavoura + h.laranja], ['lotes da granja e dos suínos', h.granja + h.suinos]];
   return { total, debt, parts: [...parts, ['o resto (carros, empresas, animais, cartas, indústrias...)', total + debt - parts.reduce((t, [, v]) => t + v, 0)]] };
 }
-const ctx = () => ({ brl, forecast: CT.summarize(G.ctForecast?.() || []), prices: G.S.prices || {}, base: L.ANCHOR, held: held(G.S), worth: worthParts(G.S), loans: G.S.loans || [] });
+const ctx = () => ({ brl, forecast: CT.summarize(G.ctForecast?.() || []), prices: G.S.prices || {}, base: L.ANCHOR, held: held(G.S), worth: worthParts(G.S), loans: G.S.loans || [], drops: drops(G.S) });
+// o que faz o patrimônio cair sozinho todo mês (para o contador explicar com os números do jogador)
+const drops = s => ({ carros: (s.cars || []).reduce((t, c) => t + (c.value || 0), 0) * L.CAR_DEPREC, galpoes: (s.granja?.houses || []).reduce((t, h) => t + (h?.value || 0), 0) * GR.HOUSE_DEPREC,
+  juros: (s.loans || []).reduce((t, l) => t + (l.bal || 0) * (l.rate || 0), 0), elite: L.eliteOf(s) });
 const ACC_LOOK = () => STAFF.find(x => x.id === 'contador')?.look || {};
 const face = () => `<span class="ct-ai__av">${avatarSVG(ACC_LOOK(), { label: 'contador' })}</span>`;
 // resposta: 1ª linha em destaque, "•" vira lista, "–" vira sublista

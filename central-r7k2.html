@@ -41,6 +41,7 @@
         <button data-tab="news">avisos</button>
         <button data-tab="passwords">senhas <span class="ad-badge" id="ad-pw-badge" hidden></span></button>
         <button data-tab="terras">terras</button>
+        <button data-tab="livros">livro-caixa geral</button>
         <button data-tab="log">registro</button>
       </nav>
       <p class="muted small" id="ad-who"></p>
@@ -156,8 +157,26 @@
       <section data-panel="terras" hidden>
         <h2>terras que sumiram dos saves</h2>
         <p class="muted small">O servidor anota toda terra própria que sai de um save e procura o motivo no livro-caixa do jogador. "Sem explicação" é suspeita de perda: confira e devolva com um clique (o jogador recebe na próxima vez que abrir o jogo). Precisa do supabase/terras.sql rodado uma vez.</p>
+        <div class="ad-card">
+          <h3>analisar todas as contas</h3>
+          <p class="muted small">Lê o save de todos os jogadores e confere: toda terra que o livro-caixa diz que a pessoa comprou (ou recebeu) e não vendeu precisa estar no save. As que não estão aparecem aqui com o valor pago, para devolver.</p>
+          <div class="row"><button class="btn btn--gold" type="button" id="ad-scan">analisar agora</button> <button class="btn btn--glass" type="button" id="ad-scan-all" hidden>devolver todas</button> <span class="muted small" id="ad-scan-st"></span></div>
+          <div class="ad-tablewrap"><table><thead><tr><th>jogador</th><th>terra que sumiu</th><th>mês da compra</th><th class="num">valor pago</th><th></th></tr></thead><tbody id="ad-scan-out"></tbody></table></div>
+        </div>
+        <h3>registro do servidor</h3>
         <label class="check"><input type="checkbox" id="ad-lands-only" checked> <span>mostrar só as sem explicação</span></label>
         <div class="ad-tablewrap"><table><thead><tr><th>quando</th><th>jogador</th><th>terra</th><th>motivo</th><th class="num">dinheiro antes → depois</th><th>mês</th><th></th></tr></thead><tbody id="ad-lands"></tbody></table></div>
+      </section>
+
+      <section data-panel="livros" hidden>
+        <h2>livro-caixa de todos os jogadores</h2>
+        <p class="muted small">Os últimos lançamentos de cada save (até 200 por jogador), juntos e do mais novo para o mais velho dentro de cada mês do jogo. Filtre por categoria, jogador ou texto.</p>
+        <div class="row">
+          <label class="field"><span>categoria</span><select class="input" id="ad-bk-cat"><option value="">todas</option></select></label>
+          <label class="field ad-grow"><span>jogador ou texto</span><input class="input" id="ad-bk-q" placeholder="nome do jogador ou parte do lançamento"></label>
+          <button class="btn btn--gold" type="button" id="ad-bk-load">carregar</button> <span class="muted small" id="ad-bk-st"></span>
+        </div>
+        <div class="ad-tablewrap ad-ledger"><table><thead><tr><th>jogador</th><th>mês</th><th>categoria</th><th>lançamento</th><th class="num">valor</th></tr></thead><tbody id="ad-bk"></tbody></table></div>
       </section>
 
       <section data-panel="log" hidden>

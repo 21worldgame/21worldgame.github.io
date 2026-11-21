@@ -192,7 +192,7 @@ const HELD = { gado: 'bois no rebanho', lavoura: 'sacas no armazém', laranja: '
 const groupIn = q => WORDS.find(([, re]) => re.test(q))?.[0] || null;
 // Regra do jogo: o contador conta o que aconteceu e o que vai ser cobrado. Nunca diz onde investir, o que comprar/vender nem quando.
 export const ADVICE = /compensa|vale (mais )?a pena|vale comprar|melhor (investimento|negocio|opcao|empresa|producao|coisa|jeito|hora|momento)|(devo|deveria|tenho que|preciso) (investir|comprar|vender|abrir|entrar|plantar|criar|montar|largar|sair)|onde (eu )?(invisto|investir|coloco|aplico|aplicar|ponho)|qual (da|rende|lucra|paga) mais|o que (e )?mais lucrativo|recomend|\bdica|conselho|sugest|me (indica|aconselha|sugere|ajuda a escolher)|o que (eu )?(faco|fazer|compro|comprar|vendo|vender)\b|quando (devo )?(vender|comprar)|hora (certa )?de (vender|comprar)|e bom (comprar|investir|vender)|qual (empresa|negocio|producao|setor|investimento)/;
-export const QUICK = ['qual meu lucro real?', 'por que tive prejuízo?', 'o que está vindo caro?', 'quanto tempo meu dinheiro aguenta?', 'quanto vale meu patrimônio?', 'quanto vou pagar no próximo fechamento?'];
+export const QUICK = ['qual meu lucro real?', 'por que tive prejuízo?', 'o que está vindo caro?', 'quanto tempo meu dinheiro aguenta?', 'quanto vale meu patrimônio?', 'por que meu patrimônio cai todo mês?', 'quanto vou pagar no próximo fechamento?'];
 // período pedido: "últimos 3 meses"; o padrão é 12 meses
 const periodOf = q => { const x = /ult\w* (\d{1,2}) mes/.exec(q); return x ? Math.max(1, Math.min(ARCHIVE, +x[1])) : 12; };
 const money2 = v => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
@@ -211,6 +211,21 @@ export function answer(s, q0, ctx) {
 
   if (ADVICE.test(q))
     return ['Isso eu não posso dizer: onde investir, o que comprar ou vender e quando é escolha sua, faz parte do jogo.', 'O que eu posso fazer é mostrar os seus números: quanto cada produção deu de lucro ou prejuízo, o que está caro e quanto vai ser cobrado. Pergunte, por exemplo, "por que tive prejuízo?" ou "qual meu lucro real?".'];
+  if (/patrimonio/.test(q) && /abaix|cai|caind|diminu|baix|menor|perd|desc[ae]|reduz|encolh|logica/.test(q)) {
+    const D = ctx.drops || {}, net = fc.total - fc.income;
+    const out = ['O patrimônio é tudo o que você tem pelo valor de hoje (dinheiro, fichas, terras, gado, estoque, carros, galpões, empresas...) menos o que você deve ao banco. Ele muda todo mês por estes motivos:'];
+    out.push(net > 0
+      ? `• contas do mês: o próximo fechamento tira ${brl(fc.total)} e só tem ${brl(fc.income)} de entrada certa, então o dinheiro cai uns ${brl(net)}. Ração, energia, funcionários, arrendamento, IPVA, impostos e honorários são cobrados mesmo sem você vender nada.`
+      : `• contas do mês: hoje as entradas certas (${brl(fc.income)}) cobrem as contas do fechamento (${brl(fc.total)}), então elas não puxam o patrimônio para baixo.`);
+    if (D.carros >= 1) out.push(`• carros: perdem 1,5% do valor por mês, uns ${brl(D.carros)} a menos agora.`);
+    if (D.galpoes >= 1) out.push(`• galpões da granja: perdem 0,5% do valor por mês, uns ${brl(D.galpoes)}.`);
+    if (D.juros >= 1) out.push(`• juros do banco: a dívida cresce uns ${brl(D.juros)} por mês, e a dívida é descontada do patrimônio.`);
+    if (D.elite) out.push(`• você está na faixa ${D.elite.name}: compras saem ${Math.round((D.elite.price || 0) * 100)}% mais caras e as contas também pesam mais.`);
+    out.push('• preço do mercado: gado, estoque e produção contam pelo preço de hoje. Se a arroba ou a saca cai, o patrimônio cai junto, mesmo sem você vender nada. Quando o preço sobe, ele volta.');
+    out.push('• compras: o dinheiro sai inteiro, mas o bem entra pelo valor de revenda (carro, galpão, empresa valem menos do que você pagou). Por isso o patrimônio dá um tranco logo depois de uma compra.');
+    out.push('Ele sobe quando você vende produção com lucro (boi gordo, lote de frango, colheita) e quando os seus bens valorizam. Pergunte "qual meu lucro real?" para ver quanto cada produção deu.');
+    return out;
+  }
   if (/patrimonio|quanto (eu )?valho|meus bens|o que eu tenho/.test(q) && ctx.worth) {
     const W = ctx.worth;
     return [`Seu patrimônio hoje: ${brl(W.total)}.`, ...W.parts.filter(([, v]) => Math.round(v) > 0).map(([k, v]) => `• ${k}: ${brl(v)}`), W.debt > 0 ? `• menos a dívida no banco: −${brl(W.debt)}` : ''].filter(Boolean);

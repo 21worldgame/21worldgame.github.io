@@ -3,6 +3,7 @@ import { SUPABASE } from './supabase-config.js';
 import * as W from './world.js';
 import { LISTS as BIZ, CAT_KEYS } from './negocios.js';
 import { GROUPS, groupOf } from './contador.js';
+import { lostLands } from './land-check.js';
 
 const LIB = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/+esm';
 const $ = s => document.querySelector(s);
@@ -102,7 +103,7 @@ for (const id of ['#ad-logout', '#ad-logout2']) $(id).addEventListener('click', 
 function show(tab) {
   document.querySelectorAll('.ad-nav button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === tab));
   document.querySelectorAll('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== tab; });
-  ({ overview: loadOverview, players: loadUsers, economy: loadConfig, news: loadAnns, log: loadLog, passwords: loadPw, terras: loadLands })[tab]?.();
+  ({ overview: loadOverview, players: loadUsers, economy: loadConfig, news: loadAnns, log: loadLog, passwords: loadPw, terras: loadLands, livros: () => { if (!book.length) loadBook(); } })[tab]?.();
 }
 document.querySelector('.ad-nav').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) show(b.dataset.tab); });
 
@@ -362,6 +363,80 @@ document.addEventListener('click', e => {
   for (const x of document.querySelectorAll('#ap-ledger-f [data-ledger]')) x.className = `btn btn--sm ${x === b ? 'btn--gold' : 'btn--glass'}`;
   for (const tr of document.querySelectorAll('#ap-ledger tr')) tr.hidden = !!b.dataset.ledger && tr.dataset.g !== b.dataset.ledger;
 });
+
+// ---------- todos os saves (análise de terras e livro-caixa geral) ----------
+let allSaves = null;
+async function loadAllSaves(st) {
+  if (allSaves) return allSaves;
+  if (!users.length) await loadUsers('');
+  const out = [];
+  for (let from = 0; ; from += 200) {
+    st.textContent = `lendo saves... ${out.length}`;
+    const { data, error } = await sb.from('saves').select('user_id, lands:data->lands, log:data->log').range(from, from + 199);
+    if (error) throw error;
+    out.push(...(data || [])); if (!data || data.length < 200) break;
+  }
+  st.textContent = `${out.length} saves lidos`;
+  return (allSaves = out);
+}
+const pname = id => users.find(u => u.user_id === id)?.name || String(id).slice(0, 8);
+let found = [];
+async function scanLands() {
+  const st = $('#ad-scan-st'); $('#ad-scan').disabled = true;
+  try {
+    allSaves = null;
+    const rows = await loadAllSaves(st);
+    found = rows.flatMap(r => lostLands({ lands: r.lands, log: r.log }).map(x => ({ ...x, user_id: r.user_id })));
+    st.textContent = `${rows.length} contas analisadas · ${found.length} terra(s) sumida(s)`;
+    $('#ad-scan-all').hidden = !found.some(f => f.paid > 0);
+    drawScan();
+  } catch (e) { fail(e, 'analisar as contas'); st.textContent = ''; } finally { $('#ad-scan').disabled = false; }
+}
+function drawScan() {
+  $('#ad-scan-out').innerHTML = found.map((f, i) => `<tr><td><a href="#" data-user="${esc(f.user_id)}">${esc(pname(f.user_id))}</a></td><td>${esc(f.land)}</td><td>${f.month ?? '—'}</td><td class="num">${f.paid ? brl(f.paid) : '<small class="muted">recebida em troca</small>'}</td>
+    <td>${f.done ? '<small class="muted">devolvido</small>' : f.paid ? `<button class="btn btn--gold btn--sm" data-refund="${i}">devolver ${brl(f.paid)}</button>` : ''}</td></tr>`).join('')
+    || '<tr><td colspan="5" class="muted">Nenhuma terra sumida encontrada.</td></tr>';
+}
+async function refund(f) {
+  const { error } = await sb.from('admin_grants').insert({ user_id: f.user_id, kind: 'money', amount: f.paid, note: `devolução de terra que sumiu: ${f.land}` });
+  if (error) throw error;
+  f.done = true; await log('refund_land', f.user_id, { land: f.land, amount: f.paid });
+}
+$('#ad-scan')?.addEventListener('click', scanLands);
+$('#ad-scan-all')?.addEventListener('click', async () => {
+  const todo = found.filter(f => f.paid && !f.done); if (!todo.length || !confirm(`Devolver ${todo.length} terra(s), total ${brl(todo.reduce((t, f) => t + f.paid, 0))}?`)) return;
+  try { for (const f of todo) await refund(f); toast('Devoluções enviadas. Cada jogador recebe na próxima vez que abrir o jogo.'); } catch (e) { fail(e, 'devolver'); }
+  drawScan();
+});
+document.addEventListener('click', async e => {
+  const u = e.target.closest('#ad-scan-out [data-user], #ad-bk [data-user]'); if (u) { e.preventDefault(); return openPlayer(u.dataset.user); }
+  const b = e.target.closest('[data-refund]'); if (!b) return;
+  const f = found[Number(b.dataset.refund)]; if (!f || f.done || !confirm(`Devolver ${brl(f.paid)} para ${pname(f.user_id)} (${f.land})?`)) return;
+  b.disabled = true; try { await refund(f); toast('Devolução enviada.'); } catch (err) { b.disabled = false; fail(err, 'devolver'); } drawScan();
+});
+
+// livro-caixa geral: lançamentos de todos os jogadores
+let book = [];
+const gname = k => GROUPS.find(x => x[0] === k)?.[1] || k;
+$('#ad-bk-cat') && ($('#ad-bk-cat').innerHTML += GROUPS.map(g => `<option value="${esc(g[0])}">${esc(g[1])}</option>`).join(''));
+async function loadBook() {
+  try {
+    const rows = await loadAllSaves($('#ad-bk-st'));
+    book = rows.flatMap(r => (Array.isArray(r.log) ? r.log : []).map((e, i) => ({ u: r.user_id, n: pname(r.user_id), m: Number(e.m) || 0, i, txt: String(e.txt || ''), val: Number(e.val) || 0, g: groupOf(String(e.txt || '')) })))
+      .sort((a, b) => b.m - a.m || a.i - b.i);
+    drawBook();
+  } catch (e) { fail(e, 'carregar os livros-caixa'); }
+}
+function drawBook() {
+  const c = $('#ad-bk-cat').value, q = $('#ad-bk-q').value.trim().toLowerCase();
+  const rows = book.filter(e => (!c || e.g === c) && (!q || e.n.toLowerCase().includes(q) || e.txt.toLowerCase().includes(q)));
+  $('#ad-bk-st').textContent = `${rows.length} lançamentos${rows.length > 1500 ? ' (mostrando 1.500)' : ''}`;
+  $('#ad-bk').innerHTML = rows.slice(0, 1500).map(e => `<tr><td><a href="#" data-user="${esc(e.u)}">${esc(e.n)}</a></td><td>${e.m}</td><td>${esc(gname(e.g))}</td><td>${esc(e.txt)}</td><td class="num ${e.val < 0 ? 'neg' : ''}">${e.val ? brl(e.val) : ''}</td></tr>`).join('')
+    || '<tr><td colspan="5" class="muted">Clique em carregar.</td></tr>';
+}
+$('#ad-bk-load')?.addEventListener('click', () => { allSaves = null; loadBook(); });
+$('#ad-bk-cat')?.addEventListener('change', drawBook);
+$('#ad-bk-q')?.addEventListener('input', drawBook);
 
 // ---------- registro ----------
 async function loadLog() {

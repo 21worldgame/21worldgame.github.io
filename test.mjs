@@ -1272,3 +1272,36 @@ import * as CT from './contador.js';
   const t3 = { ...JSON.parse(JSON.stringify(pc)), month: 11 }; assert.equal(merge3(base, cell, t3).month, 11, 'só a nuvem virou o mês: vale o mês novo');
   console.log('sincronização sem perder nada ok');
 }
+
+// painel: acha terra que o livro-caixa diz que é do jogador mas sumiu do save
+{
+  const { lostLands } = await import('./land-check.js');
+  const log = [   // mais novo primeiro, como no jogo
+    { m: 9, txt: 'venda de 30 ha, várzea, tocantins', val: 250000 },
+    { m: 8, txt: 'banco tomou a terra em terra roxa, paraná (40 ha)', val: 0 },
+    { m: 7, txt: 'compra de 40 ha, terra roxa, paraná', val: -2200000 },
+    { m: 6, txt: 'compra de 80 ha, cerrado, goiás', val: -1760000 },
+    { m: 5, txt: 'compra de 30 ha, várzea, tocantins', val: -270000 },
+    { m: 4, txt: 'compra de 50 ha, chapadão, mato grosso', val: -1500000 },
+  ];
+  const s = { log, lands: [{ id: 1, own: true, ha: 50, region: 'chapadão, mato grosso' }] };
+  const lost = lostLands(s);
+  assert.equal(lost.length, 1, 'só a de goiás sumiu (a do tocantins foi vendida, a do paraná o banco tomou)');
+  assert.equal(lost[0].land, '80 ha, cerrado, goiás'); assert.equal(lost[0].paid, 1760000);
+  assert.equal(lostLands({ log: [{ m: 9, txt: 'ajuste do administrador: devolução de terra que sumiu: 80 ha, cerrado, goiás', val: 1760000 }, ...log], lands: s.lands }).length, 0, 'já devolvida não aparece de novo');
+  assert.equal(lostLands({ log: [{ m: 9, txt: 'troca com Ana: deu 80 ha, cerrado, goiás; recebeu R$ 1.000.000', val: 0 }, ...log], lands: s.lands }).length, 0, 'trocada não é perda');
+  console.log('analisador de terras sumidas ok');
+}
+
+// contador explica por que o patrimônio cai com os meses, com os números do jogador
+{
+  const CTq = await import('./contador.js');
+  const brlq = v => `R$ ${Math.round(v)}`;
+  const ctx = { brl: brlq, forecast: { total: 50000, income: 10000, groups: [] }, prices: {}, base: {}, held: {}, worth: { total: 1, parts: [], debt: 0 }, loans: [], drops: { carros: 3000, galpoes: 500, juros: 1200, elite: null } };
+  for (const q of ['por que meu patrimônio cai todo mês?', 'qual a lógica do meu patrimônio abaixar conforme passa os mês?']) {
+    const a = CTq.answer({ month: 10, log: [] }, q, ctx).join(' ');
+    assert.ok(/R\$ 40000/.test(a) && /carros/.test(a) && /juros/.test(a) && /preço do mercado/.test(a), `contador explica a queda do patrimônio: ${q}`);
+  }
+  assert.ok(CTq.QUICK.some(x => /patrimônio cai/.test(x)));
+  console.log('contador explica o patrimônio ok');
+}
