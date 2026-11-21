@@ -93,7 +93,7 @@
       </button>
       <dl class="stats-hud">
         <div class="is-money"><dt>dinheiro</dt><dd id="r-money">R$ 100.000</dd></div>
-        <div class="is-chips"><dt>fichas</dt><dd><span class="chip-ico" aria-hidden="true"></span><span id="r-chips">0</span></dd></div>
+        <div class="is-chips chipx-open" data-act="open-chipx" role="button" tabindex="0" title="Trocar fichas por dinheiro" aria-label="fichas: toque para trocar por dinheiro"><dt>fichas</dt><dd><span class="chip-ico" aria-hidden="true"></span><span id="r-chips">0</span><span class="chipx-ico" aria-hidden="true">⇄</span></dd></div>
         <div><dt>patrimônio</dt><dd id="r-worth">R$ 100.000</dd></div>
       </dl>
       <button class="rkpill" id="rkpill" type="button" data-tab-go="ranking" aria-label="sua posição no ranking" hidden><span class="rkpill__ico" aria-hidden="true">🏆</span><span class="rkpill__txt"><b id="rkpill-pos">—</b><small id="rkpill-of"></small></span><span class="rkpill__mv" id="rkpill-mv" aria-hidden="true"></span></button>
@@ -935,6 +935,13 @@
     </ul>
   </dialog>
 
+  <dialog class="dlg dlg--chipx" id="dlg-chipx" aria-labelledby="cx-title"><h2 id="cx-title">trocar fichas</h2>
+    <div class="seg cx-dir" role="group" aria-label="direção da troca"><button type="button" class="segbtn is-on" data-cx-dir="out" aria-pressed="true">fichas → dinheiro</button><button type="button" class="segbtn" data-cx-dir="in" aria-pressed="false">dinheiro → fichas</button></div>
+    <div class="cx-bal"><span class="chip-ico chip-ico--lg" aria-hidden="true"></span><div><b id="cx-have">0 fichas</b><small class="muted" id="cx-haveval">valem R$ 0</small></div></div>
+    <label class="field"><span id="cx-lbl">quantas fichas trocar</span><input class="input" id="cx-n" type="number" min="1" step="1" inputmode="numeric"></label>
+    <div class="cx-quick"><button type="button" class="btn btn--glass btn--sm" data-cx-pct="0.25">25%</button><button type="button" class="btn btn--glass btn--sm" data-cx-pct="0.5">50%</button><button type="button" class="btn btn--glass btn--sm" data-cx-pct="1">tudo</button></div>
+    <p class="cx-out" id="cx-out"></p><p class="muted small">1 ficha = R$ 10, nos dois sentidos, sem taxa.</p>
+    <div class="cx-acts"><button class="btn btn--glass" type="button" data-cx-close>cancelar</button><button class="btn btn--gold" type="button" data-act="chipx-go" id="cx-go">trocar</button></div></dialog>
   <dialog class="dlg dlg--qr" id="dlg-qr" aria-labelledby="qr-title"><h2 id="qr-title">📱 conectar celular</h2><p>Aponte a câmera do celular para o código. O jogo abre já na tela <b>entrar</b> com o seu e-mail: é só digitar a senha (ou usar o mesmo botão do Google).</p><div class="qr-box" id="qr-box"></div><p class="muted small">ou abra no celular: <b id="qr-url"></b></p><p class="muted small">Tudo o que você tem aqui aparece lá, e o que fizer lá aparece aqui em segundos. Não crie uma conta nova no celular: use a mesma.</p><form method="dialog"><button class="btn btn--gold">pronto</button></form></dialog>
   <dialog class="dlg dlg--econ" id="dlg-econ" aria-labelledby="econ-title"><h2 id="econ-title">relatório do mercado</h2><div id="econ-body"></div><form method="dialog"><button class="btn btn--gold">fechar</button></form></dialog>
   <dialog class="dlg dlg--flash" id="dlg-econ-flash" aria-label="plantão da TV 21"></dialog>

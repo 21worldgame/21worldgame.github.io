@@ -884,10 +884,45 @@ G.callout = t => { const el = $('#race-call'); el.textContent = t; el.classList.
 
 // ---------- ações ----------
 const find = (arr, id) => arr.find(x => String(x.id) === String(id));
+// troca rápida de fichas (topo da tela): fichas → dinheiro ou dinheiro → fichas, com prévia
+let cxDir = 'out';
+function cxPaint(reset) {
+  const s = S(), out = cxDir === 'out', max = out ? s.chips : Math.floor(s.money / L.CHIP), inp = $('#cx-n');
+  for (const b of document.querySelectorAll('[data-cx-dir]')) { const on = b.dataset.cxDir === cxDir; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', String(on)); }
+  $('#cx-have').textContent = out ? `${int(s.chips)} fichas` : brl(s.money);
+  $('#cx-haveval').textContent = out ? `valem ${brl(s.chips * L.CHIP)}` : `dá para ${int(max)} fichas`;
+  $('#cx-lbl').textContent = out ? 'quantas fichas trocar' : 'quantas fichas comprar';
+  if (reset) inp.value = out ? s.chips || '' : Math.min(max, 500) || '';
+  inp.max = max;
+  const n = Math.min(Math.floor(Number(inp.value) || 0), out ? s.chips : Infinity);
+  $('#cx-out').innerHTML = n > 0 ? (out ? `você recebe <b class="good">${brl(n * L.CHIP)}</b>` : `você paga <b class="bad">${brl(n * L.CHIP)}</b> e recebe <b>${int(n)} fichas</b>`) : '';
+  $('#cx-go').textContent = out ? 'trocar por dinheiro' : 'comprar fichas';
+}
+document.addEventListener('input', e => { if (e.target.id === 'cx-n') cxPaint(); });
+document.addEventListener('click', e => {
+  const d = e.target.closest('[data-cx-dir]'); if (d) { cxDir = d.dataset.cxDir; cxPaint(true); }
+  const p = e.target.closest('[data-cx-pct]'); if (p) { const s = S(), max = cxDir === 'out' ? s.chips : Math.floor(s.money / L.CHIP); $('#cx-n').value = Math.floor(max * Number(p.dataset.cxPct)) || ''; cxPaint(); }
+  if (e.target.closest('[data-cx-close]')) $('#dlg-chipx').close();
+});
+document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest?.('.chipx-open')) { e.preventDefault(); e.target.closest('.chipx-open').click(); } });
 const qty = name => Math.max(0, Math.floor(Number(document.querySelector(`[name="${name}"]`)?.value) || 0));
 
 const ACTS = {
   'buy-chips'() { const n = qty('chips-buy'); if (n && pay(n * L.CHIP, `compra de ${int(n)} fichas`)) { S().chips += n; say(`${int(n)} fichas na mão.`); } },
+  'open-chipx'() { cxDir = 'out'; cxPaint(true); $('#dlg-chipx').showModal(); },
+  'chipx-go'() {
+    const n = Math.floor(Number($('#cx-n').value) || 0), s = S();
+    if (n <= 0) return say('Digite quantas fichas.', true);
+    if (cxDir === 'out') {
+      if (C.busyRound()) return say('Termine a mão antes de trocar as fichas.', true);
+      const k = Math.min(n, s.chips); if (!k) return say('Você não tem fichas para trocar.', true);
+      s.chips -= k; s.money += k * L.CHIP; note(`resgate de ${int(k)} fichas`, k * L.CHIP); say(`${int(k)} fichas viraram ${brl(k * L.CHIP)}.`);
+    } else {
+      if (!pay(n * L.CHIP, `compra de ${int(n)} fichas`)) return;
+      s.chips += n; say(`${int(n)} fichas na mão.`);
+    }
+    save(); render(); $('#dlg-chipx').close();
+  },
   'cash-chips'() {
     if (C.busyRound()) return say('Termine a mão antes de ir ao caixa.', true);
     const n = Math.min(qty('chips-buy'), S().chips);
@@ -1540,7 +1575,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 120;
+const APP_VERSION = 121;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
