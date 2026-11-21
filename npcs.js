@@ -112,6 +112,8 @@ const byPropensity = t => [...NPCS].filter(n => !isAway(n, t)).sort((a, b) => pr
 export const NPC_LATE = 1.004, NPC_LATE_CAP = 6;
 // o reforço não entra de uma vez: começa no mês 440 do mundo (19/11/2026) e chega ao total em ~1 mês real (4320 meses de 10 min)
 export const NPC_RAMP_START = 440;   // força final e dias da rampa: painel admin (tune.js)
+// resultado das escolhas de cada um na economia do mundo (econ.js liga isto): quem apostou no produto que caiu perde, quem pegou a alta ganha
+export const PERF = { fn: null };
 // fortuna no mês do mundo (pode ser fracionário: anda devagar entre um mês e outro)
 export function worthAt(n, month, t = Date.now()) {
   const m = Math.min(48, Math.max(0, month - 1));   // arrancada nos primeiros 48 meses (~8 h de jogo)
@@ -119,7 +121,7 @@ export function worthAt(n, month, t = Date.now()) {
   const wave = 1 + 0.07 * Math.sin(month * 0.7 + n.i * 2.1) + 0.03 * Math.sin(month * 2.3 + n.i);
   const boost = 1 + (T.npcBoost - 1) * Math.min(1, m / 48);   // mundo novo continua alcançável
   const r = Math.min(1, Math.max(0, (month - NPC_RAMP_START) / NPC_RAMP));   // 0 em 19/11/2026, 1 daqui a um mês
-  return Math.round(n.base * (1 + n.g * 0.55) ** m * (1 + (boost * late - 1) * r) * wave * form(n, t));
+  return Math.round(n.base * (1 + n.g * 0.55) ** m * (1 + (boost * late - 1) * r) * wave * form(n, t) * (PERF.fn ? PERF.fn(n, month) : 1));
 }
 export const levelFor = worth => Math.max(1, Math.min(60, Math.round(Math.log10(Math.max(10, worth)) * 7 - 28)));
 

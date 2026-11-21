@@ -5,7 +5,7 @@
 //  - muita gente num produto → oferta alta → preço de referência cai; pouca gente → sobe (com atraso de uma safra).
 // Crises: a cada ~2 anos o mundo olha se há concentração exagerada num produto; se houver, avisa antes (🟡 → 🟠) e a crise
 // chega depois (🔴). Sem concentração, não há crise. Eventos temáticos (greve, ciberataque, contaminação...) seguem a exposição.
-import { NPCS } from './npcs.js';
+import { NPCS, PERF } from './npcs.js';
 
 export const GOODS = ['soja', 'milho', 'cafe', 'laranja', 'cana', 'arroba'];
 export const LABEL = { soja: 'soja', milho: 'milho', cafe: 'café', laranja: 'laranja', cana: 'cana', arroba: 'boi gordo', frango: 'frango', suino: 'suíno' };
@@ -190,4 +190,52 @@ export function saturationAlert(region, info, regions) {
   return { title: '⚠️ ALERTA DE MERCADO: REGIÃO SATURADA',
     text: `Esta região está registrando uma concentração cada vez maior de ${me.good === 'arroba' ? 'criação de boi' : `plantações de ${g}`}${me.crowd > 1.3 ? ` (${Math.round(me.crowd * 10) / 10}× mais lotes de jogadores que a média)` : ''}. A oferta nacional de ${g} está ${Math.round((me.pressure - 1) * 100)}% acima do normal.\n\nCom a entrada de novos produtores, especialistas apontam para uma possível desvalorização de ${g} nos próximos ciclos. Investir aqui pode render menos.`,
     alt: alt.map(r => ({ name: r.name, use: r.use, why: info[r.name].tag === 'pouco explorada' ? 'pouco explorada, terra mais barata' : info[r.name].tag === 'em falta' ? `${LABEL[info[r.name].good]} em falta` : `${LABEL[info[r.name].good]} sem concorrência forte` })) };
+}
+
+// ---------- cada jogador do mundo: escolha da safra, resultado e perfil de investidor ----------
+// mesma conta do npcMix, para uma pessoa: o produto que ela mais plantou na safra w e quanto da área dela foi nele
+export function npcChoice(n, w) {
+  const P = PERSONAS[personaOf(n)], fav = favOf(n), prev = w > 0 ? npcSeason(w - 1).mult : npcSeason(0).mult, fever = feverOf(w);
+  let sum = 0, best = GOODS[0], bv = -1;
+  for (const k of GOODS) {
+    let v = NORMAL[k] * Math.max(0.4, 1 + P.chase * ((prev[k] || 1) - 1) * 2.2);
+    if (k === fav) v *= 1 + P.stick * 2;
+    if (k === fever && P.chase > 0) v *= 1 + P.chase * 1.1;
+    if (P.noise) v *= 0.6 + h(n.i * 13 + w * 7 + k.length) * P.noise * 2;
+    sum += v; if (v > bv) { bv = v; best = k; }
+  }
+  return { good: best, share: bv / sum };
+}
+// fortuna × resultado das últimas 8 safras (0,8 a 1,2): concentrar no produto que caiu custa caro; crise no produto pesa mais
+const perfCache = new Map();
+export function npcPerf(n, m) {
+  const w = Math.max(0, Math.floor((m - 1) / SEASON)), key = `${n.i}:${w}`;
+  if (perfCache.has(key)) return perfCache.get(key);
+  let acc = 0, k = 0;
+  for (let j = Math.max(0, w - 8); j <= w; j++) { const c = npcChoice(n, j); acc += c.share * ((npcSeason(j).mult[c.good] || 1) - 1); k++; }
+  const v = +Math.max(0.78, Math.min(1.25, 1 + 3 * acc / Math.max(1, k))).toFixed(3);
+  if (perfCache.size > 6000) perfCache.clear();
+  perfCache.set(key, v); return v;
+}
+PERF.fn = npcPerf;
+const RISK = c => (c >= 1.3 ? 'alto' : c >= 0.6 ? 'médio' : c < 0 ? 'médio (compra na baixa)' : 'baixo');
+// perfil de investidor de um jogador do mundo: estilo, risco, foco de agora e o que ele fez nas últimas safras
+export function npcInvestor(n, m) {
+  const P = PERSONAS[personaOf(n)], w = Math.max(0, Math.floor((m - 1) / SEASON)), now = npcChoice(n, w), runs = [];
+  for (let j = w; j >= Math.max(0, w - 11); j--) {   // últimas 12 safras em trechos: "3 safras em café, com queda de 12%"
+    const c = npcChoice(n, j), mu = npcSeason(j).mult[c.good] || 1, r = runs.at(-1);
+    if (r && r.good === c.good) { r.n++; r.mu += mu; } else runs.push({ good: c.good, n: 1, mu });
+  }
+  const hist = runs.slice(0, 4).map((r, i) => { const avg = r.mu / r.n, d = Math.round((avg - 1) * 100);
+    return `${i === 0 ? 'agora: ' : ''}${r.n} ${r.n === 1 ? 'safra' : 'safras'} em ${LABEL[r.good]}${d >= 4 ? `, pegou alta de ${d}%` : d <= -4 ? `, perdeu com queda de ${-d}%` : ''}`; });
+  const perf = npcPerf(n, m);
+  return { style: P.label, risk: RISK(P.chase), focus: LABEL[now.good], share: Math.round(now.share * 100), perf, trend: perf >= 1.05 ? 'em alta' : perf <= 0.95 ? 'em dificuldade' : 'estável', hist };
+}
+// o mesmo perfil para quem tem conta, deduzido do que a pessoa mostra (área por produto e empresas)
+export function playerInvestor(p) {
+  const c = p?.crops || {}, tot = Object.values(c).reduce((a, b) => a + (Number(b) || 0), 0), biz = (p?.biz || []).length;
+  const top = Object.entries(c).sort((a, b) => b[1] - a[1])[0], share = top && tot ? top[1] / tot : 0;
+  const style = biz >= 3 && tot < 200 ? 'empresário' : share >= 0.7 ? 'agricultor especializado' : Object.keys(c).length >= 3 ? 'diversifica tudo' : biz ? 'empresário' : tot ? 'produtor' : 'jogador do cassino';
+  const st = state(p?.month || 1), hot = top && st.pressure[top[0]] >= 1.25;
+  return { style, risk: share >= 0.7 || hot ? 'alto' : share >= 0.45 ? 'médio' : 'baixo', focus: top ? LABEL[top[0]] || top[0] : biz ? 'empresas' : '—', share: Math.round(share * 100), trend: p?.inv?.trend || 'estável', hist: (p?.inv?.hist || []).map(String).slice(0, 4) };
 }

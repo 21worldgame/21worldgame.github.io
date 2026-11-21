@@ -1462,3 +1462,9 @@ import * as CT from './contador.js';
   assert.ok(inf.a.risk > inf.b.risk && inf.b.tag === 'pouco explorada', 'região cheia de café é mais arriscada');
   E.setReal([], 0);
   console.log('economia do mundo ok'); }
+// jogadores do mundo: fortuna acompanha o resultado das escolhas (uns sobem, outros apanham) e perfil de investidor igual para todos
+{ const E = await import('./econ.js'), Nq = await import('./npcs.js');
+  const pf = Nq.NPCS.map(n => E.npcPerf(n, 600)); assert.ok(Math.min(...pf) < 0.97 && Math.max(...pf) > 1.01, 'nem todo mundo enriquece igual');
+  const iv = E.npcInvestor(Nq.NPCS[2], 600); assert.ok(iv.style && iv.risk && iv.hist.length >= 1);
+  const pv = E.playerInvestor({ crops: { cafe: 300, soja: 20 }, inv: { hist: ['agora: 2 colheitas de café'], trend: 'em alta' } }); assert.ok(pv.style === 'agricultor especializado' && pv.hist.length === 1 && pv.trend === 'em alta');
+  console.log('perfis de investidor ok'); }

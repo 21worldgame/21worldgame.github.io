@@ -609,6 +609,12 @@ function renderLivro() {
 // ---------- perfil ----------
 const mi = v => (v >= 1e9 ? `${v / 1e9} bi` : `${Math.round(v / 1e6)}M`);
 const BIZ_LISTS = NG.LISTS;
+// perfil de investidor (mesmo formato para todo mundo): estilo, risco, foco e o que fez nas últimas safras
+function invHTML(p) {
+  const n = p.npc && NPC.byId(p.id), iv = n ? EC.npcInvestor(n, S().month || 1) : EC.playerInvestor({ ...p, month: S().month || 1 });
+  return `<h3>perfil de investidor</h3><div class="pf__inv glass"><div class="pf__invrow"><span class="tag tag--dark">${esc(iv.style)}</span><span class="tag ${iv.risk.startsWith('alto') ? 'tag--red' : iv.risk.startsWith('médio') ? 'tag--gold' : 'tag--green'}">risco ${esc(iv.risk)}</span>${iv.focus !== '—' ? `<span class="tag tag--dark">foco: ${esc(iv.focus)}${iv.share ? ` (${iv.share}%)` : ''}</span>` : ''}${iv.trend ? `<span class="tag ${iv.trend === 'em alta' ? 'tag--green' : iv.trend === 'em dificuldade' ? 'tag--red' : 'tag--dark'}">${esc(iv.trend)}</span>` : ''}</div>
+    ${iv.hist.length ? `<ul class="pf__invhist">${iv.hist.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</div>`;
+}
 function profileExtra(p, me) {
   const tr = p.trophies || [];
   const trophies = `<h3>troféus de patrimônio <small class="muted">${tr.length} de ${L.TROPHIES.length}</small></h3><div class="pf__troph">${L.TROPHIES.map((t, i) => { const pr = PK.PRESTIGE.find(x => x.min === t); return `<span class="troph${tr.includes(t) ? ' is-got' : ''}${i === 0 ? ' troph--selo' : ''}${pr ? ` troph--prest troph--${pr.id}` : ''}" title="${pr ? `${pr.trophy}: ${pr.title} (${mi(t)})` : `${i === 0 ? 'selo' : 'troféu'} de ${mi(t)}`}"><b>${pr ? pr.icon : i === 0 ? '🎖️' : '🏆'}</b><small>${mi(t)}</small></span>`; }).join('')}</div>`;
@@ -622,7 +628,7 @@ function profileExtra(p, me) {
   const ads = (p.listings || []).length ? `<h3>à venda agora <small class="muted">no Feirão 21</small></h3><ul class="pf__ads">${p.listings.map(l => `<li><span>${esc(l.label)}</span><b>${brl(l.price)}</b></li>`).join('')}</ul><div class="pf__acts"><button class="btn btn--gold btn--sm" data-loja-go="feirao" data-act="close-profile">ver no Feirão</button></div>` : '';
   const emb = (p.colls || []).filter(k => CD.SETS[k]);
   const emblems = `<h3>coleções de cartas <small class="muted">${emb.length} de ${Object.keys(CD.SETS).length} · ${int(p.prestige || 0)} de prestígio</small></h3><div class="pf__troph">${Object.entries(CD.SETS).map(([k, S0]) => `<span class="troph${emb.includes(k) ? ' is-got' : ''}" title="coleção ${esc(S0.name)}"><b>${S0.icon}</b><small>${esc(S0.name)}</small></span>`).join('')}</div>`;
-  return trophies + emblems + priv + (p.biz || p.landList ? `<h3>tudo o que tem</h3><div class="pf__stats">${tiles}</div>${biz ? `<div class="pf__bizs">${biz}</div>` : ''}${lands}` : '') + ads;
+  return invHTML(p) + trophies + emblems + priv + (p.biz || p.landList ? `<h3>tudo o que tem</h3><div class="pf__stats">${tiles}</div>${biz ? `<div class="pf__bizs">${biz}</div>` : ''}${lands}` : '') + ads;
 }
 const agoTxt = at => { const m = Math.max(1, Math.round((Live.now() - at) / 60000)); return m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.round(m / 60)} h` : m < 2880 ? 'ontem' : `há ${Math.round(m / 1440)} dias`; };
 // proposta de outro jogador para você: espera na central de avisos (sino), sem pular na tela nem tocar som
@@ -1489,7 +1495,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 112;
+const APP_VERSION = 113;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

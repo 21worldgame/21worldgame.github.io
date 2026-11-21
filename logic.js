@@ -262,6 +262,20 @@ export function cropsOf(s) {
   const hd = heads(s); if (hd > 0) o.arroba = Math.round(hd / 1.2);
   return o;
 }
+// histórico de investidor de quem tem conta (vai no perfil público, no mesmo formato dos jogadores do mundo)
+export function investorHist(s) {
+  const runs = [];
+  for (const e of s.log || []) {
+    let x = /^colheita de ([^:]+):/.exec(e.txt || ''), item = x ? x[1] : /^compra de \d+ ha/.test(e.txt || '') ? 'compra de terra' : (x = /^compra da marca (.+)/.exec(e.txt || '')) ? `comprou a marca ${x[1]}` : null;
+    if (!item) continue;
+    const r = runs.at(-1); if (r && r.item === item) r.n++; else runs.push({ item, n: 1 });
+    if (runs.length > 4) break;
+  }
+  const hist = runs.slice(0, 4).map((r, i) => `${i === 0 ? 'agora: ' : ''}${/^comprou|^compra de terra/.test(r.item) ? (r.item === 'compra de terra' ? `comprou terra${r.n > 1 ? ` (${r.n} vezes)` : ''}` : r.item) : `${r.n} ${r.n === 1 ? 'colheita' : 'colheitas'} de ${r.item}`}`);
+  let net = 0; for (const [m, M] of Object.entries(s.pl || {})) if (Number(m) > (s.month || 0) - 12) for (const R of Object.values(M)) net += (R.in || 0) - (R.out || 0);
+  const w = Math.max(1, netWorth(s)), trend = net > w * 0.03 ? 'em alta' : net < -w * 0.03 ? 'em dificuldade' : 'estável';
+  return { hist, trend };
+}
 export const TITLES = [[0, 'iniciante'], [150000, 'fazendeiro'], [500000, 'barão do gado'], [2000000, 'magnata']];
 export const rank = worth => (TITLES.filter(([min]) => worth >= min).pop() || TITLES[0])[1];
 

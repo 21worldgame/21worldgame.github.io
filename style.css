@@ -3224,3 +3224,7 @@ details.herd-guide > summary { margin: 0; }
 .ef__acts { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 @keyframes efIn { from { transform: translateY(30px); opacity: 0; } } @keyframes efSlide { from { transform: translateX(-100%); } }
 @media (prefers-reduced-motion: reduce) { .ef__anchor, .ef__lower, .econ-chip--3 { animation: none; } }
+/* perfil de investidor no perfil do jogador */
+.pf__inv { padding: 10px 12px; border-radius: 12px; display: grid; gap: 6px; }
+.pf__invrow { display: flex; flex-wrap: wrap; gap: 6px; }
+.pf__invhist { margin: 0; padding-left: 18px; font-size: .82rem; color: var(--color-muted); display: grid; gap: 2px; }
