@@ -22,7 +22,7 @@ export const hunted = new Map();   // id do npc -> fortuna de caçador (para o p
 // duelo: ReiDoGado persegue o Nocbit como um jogador de verdade: chega perto, recua (vendeu, perdeu na mesa), volta a encostar,
 // e só passa a partir das 21:30 de Brasília de 21/11/2026 (00:30 UTC), subindo aos poucos em ~30 min. Depois segue um pouco à frente.
 // ponytail: duelo fixo; apague DUEL (ou a linha em rivals) para ele voltar ao normal
-export const DUEL = { bot: 'ReiDoGado', target: 'nocbit', from: Date.UTC(2026, 10, 21, 15, 20), passAt: Date.UTC(2026, 10, 21, 23, 25) };   // a pedido: passa agora (20:25 de Brasília)
+export const DUEL = { bot: 'ReiDoGado', target: 'nocbit', from: Date.UTC(2026, 10, 21, 15, 20), passAt: Date.UTC(2026, 10, 22, 1, 0) };   // a pedido: só passa a partir das 22:00 de Brasília (01:00 UTC)
 export function duelRatio(t = Date.now()) {
   const m = t / 6e4;
   const pre = Math.min(0.993, 0.95 + 0.035 * ss((t - DUEL.from) / (DUEL.passAt - DUEL.from)) + 0.012 * Math.sin(m / 7.5) + 0.006 * Math.sin(m / 2.1));
