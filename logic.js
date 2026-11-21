@@ -239,6 +239,24 @@ export const YIELD = 0.52; // rendimento de carcaça: a arroba do boi gordo é s
 export const arrobas = kg => (kg * YIELD) / KG_ARROBA;
 export const herdValue = s => s.herd.reduce((a, h) => a + (h ? h.heads * arrobas(h.kg || 0) * (s.prices.arroba || 0) : 0), 0);
 export const debt = s => s.loans.reduce((a, l) => a + l.bal, 0);
+// ---------- banco da casa com capacidade limitada (clientes de alto patrimônio) ----------
+// O banco tem capital próprio (cresce devagar com o mundo) e só empresta a um cliente até uma fatia dele.
+// A partir de R$ 250 mi de patrimônio o cliente vira "alto patrimônio": o banco mede o risco e reajusta juros e limite.
+// Ter o próprio banco (aba negócios) ajuda: metade do caixa dele entra como respaldo.
+export const BANK = { capital: 400e6, perClient: 0.05, highNet: 250e6, rearm: 225e6, maxPremium: 3 };
+export function bankRisk(s) {
+  const w = netWorth(s), cap = BANK.capital * Math.min(3, 1 + (s.month || 1) / 2000), own = (s.biz?.banks || []).reduce((t, b) => t + (Number(b.capital) || 0), 0) * 0.5;
+  const lent = (s.loans || []).filter(l => !l.from).reduce((t, l) => t + l.bal, 0);          // só o que deve ao banco
+  const ceiling = (cap + own) * BANK.perClient;                                               // teto por cliente
+  const exposure = w / (cap + own);                                                           // patrimônio do cliente x força do banco
+  const usage = Math.min(2, lent / Math.max(1, ceiling));                                     // quanto do teto já usou
+  const miss = Math.max(0, (s.creditMiss || 0) - Math.floor((s.creditGood || 0) / 12));       // atrasos, perdoados aos poucos pelas parcelas em dia
+  const high = w >= BANK.highNet, base = creditLimit(s);
+  if (!high) return { high, w, cap, own, ceiling, exposure, usage, miss, premium: 0, rate: BANK_RATE * PK.mult(s, 'loan'), limit: base };
+  const premium = Math.min(BANK.maxPremium, 0.5 * Math.max(0, exposure - 0.6) + 0.8 * usage + 0.12 * Math.min(8, miss));
+  const room = ceiling * Math.max(0.15, Math.min(1, 1.6 - exposure)) - lent;                 // quanto mais o cliente supera o banco, menos ele empresta
+  return { high, w, cap, own, ceiling, exposure, usage, miss, premium, rate: +(BANK_RATE * (1 + premium) * PK.mult(s, 'loan')).toFixed(4), limit: Math.max(0, Math.floor(Math.min(base, room))) };
+}
 export const creditLimit = s =>
   Math.max(0, Math.floor(s.lands.filter(l => l.own).reduce((a, l) => a + l.value, 0) * 0.5 + herdValue(s) * 0.2 - debt(s)));
 
@@ -321,8 +339,8 @@ export function tick(s, rng = Math.random) {
     loan.bal *= 1 + loan.rate;
     const due = loan.bal / Math.max(1, loan.left);
     const who = loan.from ? `do empréstimo de ${loan.from}` : 'do banco';
-    if (s.money >= due) { add(`parcela ${who}`, -due); loan.bal -= due; loan.left--; loan.missed = 0; }
-    else if (++loan.missed >= 2) {
+    if (s.money >= due) { add(`parcela ${who}`, -due); loan.bal -= due; loan.left--; loan.missed = 0; if (!loan.from) s.creditGood = (s.creditGood || 0) + 1; }
+    else if ((!loan.from && (s.creditMiss = (s.creditMiss || 0) + 1)), ++loan.missed >= 2) {   // histórico com o banco: atraso pesa no risco
       const land = s.lands.filter(l => l.own).sort((a, b) => b.value - a.value)[0];
       if (land) {
         s.lands.splice(s.lands.indexOf(land), 1);

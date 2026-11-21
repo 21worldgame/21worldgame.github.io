@@ -1475,3 +1475,13 @@ import * as CT from './contador.js';
   const iv = E.npcInvestor(Nq.NPCS[2], 600); assert.ok(iv.style && iv.risk && iv.hist.length >= 1);
   const pv = E.playerInvestor({ crops: { cafe: 300, soja: 20 }, inv: { hist: ['agora: 2 colheitas de café'], trend: 'em alta' } }); assert.ok(pv.style === 'agricultor especializado' && pv.hist.length === 1 && pv.trend === 'em alta');
   console.log('perfis de investidor ok'); }
+// banco com capacidade limitada: a partir de R$ 250 mi juros sobem pelo risco, limite cai e empréstimo gigante é barrado
+{ const Lq = await import('./logic.js');
+  const mk = (w, lent = 0, miss = 0) => ({ ...Lq.newState(() => 0.5), money: w, loans: lent ? [{ id: 1, bal: lent, rate: 0.035, left: 12, missed: 0 }] : [], lands: [{ id: 9, own: true, ha: 1000, value: w * 0.5, region: 'x' }], creditMiss: miss, month: 600 });
+  const low = Lq.bankRisk(mk(100e6)), hi = Lq.bankRisk(mk(400e6)), huge = Lq.bankRisk(mk(1.5e9)), owing = Lq.bankRisk(mk(400e6, 15e6)), late = Lq.bankRisk(mk(400e6, 0, 4));
+  assert.ok(!low.high && low.premium === 0, 'abaixo de 250 mi nada muda');
+  assert.ok(hi.high && hi.rate > low.rate && huge.rate > hi.rate, 'juros sobem com o patrimônio acima da capacidade');
+  assert.ok(owing.rate > hi.rate && owing.limit < hi.limit, 'quem já deve muito paga mais e pega menos');
+  assert.ok(late.rate > hi.rate, 'atraso no histórico pesa');
+  assert.ok(huge.limit <= huge.ceiling && huge.limit < 50e6, 'empréstimo de valor gigante barrado');
+  console.log('banco com capacidade limitada ok'); }

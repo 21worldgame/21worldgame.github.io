@@ -3399,3 +3399,10 @@ dialog:not([open]) { display: none !important; }
 .syncbox__bk li span { display: grid; } .syncbox__bk li small { font-size: .72rem; }
 .nc-sync { margin: 0 0 8px; padding: 6px 10px; border-radius: 9px; font-size: .78rem; } .nc-sync.is-ok { background: rgba(34,197,94,.1); color: #86efac; }
 .nc-sync.is-wait { background: rgba(250,204,21,.1); color: #fde68a; } .nc-sync.is-bad { background: rgba(239,68,68,.12); color: #fca5a5; }
+
+/* alerta de risco bancário (patrimônio acima da capacidade do banco) */
+.dlg--bankrisk { width: min(520px, calc(100vw - 24px)); border: 1px solid rgba(239,68,68,.45); box-shadow: 0 0 0 1px rgba(239,68,68,.2), 0 30px 80px -20px rgba(239,68,68,.45); }
+.dlg--bankrisk h2 { color: #fca5a5; letter-spacing: .04em; font-size: 1.2rem; }
+.br-ico { font-size: 2.6rem; line-height: 1; filter: drop-shadow(0 0 14px rgba(239,68,68,.5)); }
+.br-list { margin: 8px 0; padding: 10px 12px 10px 28px; border-radius: 12px; background: rgba(239,68,68,.08); display: grid; gap: 4px; }
+.br-acts { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }

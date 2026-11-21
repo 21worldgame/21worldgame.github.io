@@ -137,9 +137,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.ma
 async function openPlayer(id) {
   if (!users.length) await loadUsers('');
   const u = users.find(x => x.user_id === id) || { user_id: id };
-  const [{ data: save }, { data: grants }] = await Promise.all([
+  const [{ data: save }, { data: grants }, hist] = await Promise.all([
     sb.from('saves').select('data, updated_at').eq('user_id', id).maybeSingle(),
     sb.from('admin_grants').select('id, kind, amount, note, created_at, applied_at').eq('user_id', id).order('created_at', { ascending: false }).limit(20),
+    sb.from('save_history').select('id, saved_at, why, money, lands').eq('user_id', id).order('saved_at', { ascending: false }).limit(60),
   ]);
   const s = save?.data || {};
   const facts = [['dinheiro', brl(s.money)], ['fichas', int(s.chips)], ['nível', s.level ?? '—'], ['mês do jogo', s.month ?? '—'],
@@ -178,6 +179,11 @@ async function openPlayer(id) {
       ${(grants || []).map(g => `<tr><td>${when(g.created_at)}</td><td>${esc(g.kind)}</td><td class="num">${int(g.amount)}</td><td>${esc(g.note || '')}</td>
         <td>${g.applied_at ? `aplicada ${when(g.applied_at)}` : `pendente <button class="btn btn--glass btn--sm" data-cancel="${g.id}">cancelar</button>`}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nenhuma ordem ainda.</td></tr>'}
     </tbody></table></div>
+    <h3>histórico do save <small class="muted">(só o painel vê; o servidor guarda a versão anterior a cada mudança importante)</small></h3>
+    ${hist.error ? '<p class="muted small">Histórico ainda não ligado: rode <b>supabase/historico.sql</b> uma vez no SQL Editor do Supabase.</p>'
+      : `<div class="ad-tablewrap"><table><thead><tr><th>quando</th><th>motivo</th><th class="num">dinheiro</th><th class="num">terras</th><th></th></tr></thead><tbody>
+      ${(hist.data || []).map(h => `<tr><td>${when(h.saved_at)}</td><td>${esc(h.why)}</td><td class="num">${brl(h.money)}</td><td class="num">${int(h.lands)}</td><td><button class="btn btn--glass btn--sm" data-restore="${h.id}">restaurar</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nenhuma versão guardada ainda.</td></tr>'}
+      </tbody></table></div>`}
     ${ledger(s)}
     <details><summary>ver o save completo</summary><pre class="ad-json">${esc(JSON.stringify(s, null, 1).slice(0, 60000))}</pre></details>`;
   const d = $('#ad-player'); if (!d.open) d.showModal();
@@ -224,6 +230,12 @@ async function openPlayer(id) {
     if (a.error || b.error) return fail(a.error || b.error, 'apagar');
     await log('wipe', id); toast('Save e perfil apagados.'); d.close(); loadUsers('');
   };
+  $('#ap-body').querySelectorAll('[data-restore]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('Restaurar esta versão do save? Ela vira o save atual do jogador (a de agora também fica no histórico). Peça para ele fechar o jogo antes, se estiver jogando.')) return;
+    const { data, error } = await sb.rpc('admin_restore_save', { p_id: Number(b.dataset.restore) });
+    if (error || data !== 'ok') return fail(error || { message: data }, 'restaurar');
+    await log('restore_save', id, { hist: b.dataset.restore }); toast('Save restaurado. O jogo dele puxa a versão da nuvem em segundos.'); openPlayer(id);
+  }));
   $('#ap-body').querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', async () => {
     const { error } = await sb.from('admin_grants').delete().eq('id', Number(b.dataset.cancel)).is('applied_at', null);
     if (error) return fail(error, 'cancelar');

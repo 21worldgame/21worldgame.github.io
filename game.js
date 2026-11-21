@@ -247,7 +247,6 @@ function caneBox(l) {
     <div class="row"><button class="btn btn--sm ${c.care ? 'btn--gold' : 'btn--glass'}" data-act="cn-care" data-id="${l.id}" aria-pressed="${c.care}">${c.care ? 'tratos ligados' : 'tratos desligados'} (${brl(l.ha * CN.CANE.care)}/mês)</button>
       <button class="btn btn--glass btn--sm" data-act="cn-uproot" data-id="${l.id}">${c.cuts >= CN.CANE.reform ? 'reformar canavial' : 'arrancar canavial'}</button></div></div></div>`;
 }
-G.syncState = () => Auth.syncState?.();   // central de avisos mostra se está tudo salvo na nuvem
 let REG_COUNTS = {}, REG_INFO = {};   // economia por região (econ.js): preenchido pelo econSync
 G.regInfo = () => REG_INFO; G.rankRows = n => C.rankingRows(n);   // página inicial (home-ui)
 // posição no ranking no topo (sem precisar abrir o ranking): medalha no top 3, dourado no top 10, seta quando sobe ou desce
@@ -610,7 +609,11 @@ document.addEventListener('click', e => {
 // ---------- banco ----------
 function renderBanco() {
   const s = S();
-  rollTo($('#credit'), L.creditLimit(s), brl);
+  const br = L.bankRisk(s), pc = v => `${(v * 100).toFixed(1).replace('.', ',')}%`;
+  rollTo($('#credit'), br.limit, brl);
+  const cn = $('.credit__note'); if (cn) cn.innerHTML = br.high
+    ? `<b>Cliente de alto patrimônio.</b> Juros de <b>${pc(br.rate)} ao mês</b> em 12 parcelas (risco ${br.premium < 0.5 ? 'moderado' : br.premium < 1.5 ? 'alto' : 'muito alto'} para o banco). Teto do banco para você: ${brl(br.ceiling)}. Duas parcelas atrasadas e o banco toma sua terra mais cara.`
+    : `${pc(br.rate)} ao mês em 12 parcelas, com terra e gado como garantia. Duas parcelas atrasadas e o banco toma sua terra mais cara.`;
   $('#loans').innerHTML = s.loans.length ? s.loans.map(l => `<tr>
     <td class="num">${brl(l.bal)}</td><td class="num">${(l.rate * 100).toFixed(1)}%</td><td class="num">${l.left}</td>
     <td>${l.missed ? '<span class="tag tag--red">atrasada</span>' : '<span class="tag tag--green">em dia</span>'}</td>
@@ -649,15 +652,10 @@ function invHTML(p) {
 }
 // sincronização (perfil): o mesmo progresso em qualquer aparelho entrando na mesma conta
 const agoS = at => { const s = Math.round((Date.now() - at) / 1000); return s < 60 ? `há ${s} s` : s < 3600 ? `há ${Math.round(s / 60)} min` : `há ${Math.round(s / 3600)} h`; };
-function syncBox() {
-  const i = Auth.syncInfo();
-  return `<div class="syncbox glass" id="syncbox"><div><b>☁️ sincronização</b><span class="small" id="sync-st">${i.pending ? '⏳ enviando o que você fez...' : i.at ? `✅ salvo na nuvem ${agoS(i.at)}` : '✅ conectado à nuvem'}</span>
-    <span class="muted small">Conta: ${esc(i.email)}. Entre com este mesmo e-mail no celular, no computador ou no app instalado e tudo aparece igual.</span></div>
-    <div class="syncbox__acts"><button class="btn btn--glass btn--sm" data-act="sync-now">sincronizar agora</button><button class="btn btn--gold btn--sm" data-act="link-phone">📱 conectar celular</button></div>
-    ${(() => { const bk = Auth.backups?.() || []; return bk.length ? `<details class="syncbox__bk"><summary>🛟 cópias de segurança neste aparelho (${bk.length})</summary><p class="muted small">Toda vez que uma versão do jogo substitui outra (celular x computador), a que sai fica guardada aqui. Se algo sumir, restaure.</p><ul>${bk.map((b, i) => `<li><span><b>${new Date(b.at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</b> · ${brl(b.money)} na conta · ${b.lands} terra${b.lands === 1 ? '' : 's'}<small class="muted">${esc(b.why)}</small></span><button class="btn btn--glass btn--sm" data-act="sync-restore" data-id="${i}">restaurar</button></li>`).join('')}</ul></details>` : ''; })()}</div>`;
+function syncBox() {   // para o jogador: só o que ajuda a jogar no celular (nada de sistema, backup ou nuvem)
+  return `<div class="syncbox glass"><div><b>📱 jogue também no celular</b><span class="muted small">Entre com este mesmo e-mail no celular, no computador ou no app instalado: suas terras, dinheiro e tudo o mais aparecem iguais.</span></div>
+    <div class="syncbox__acts"><button class="btn btn--gold btn--sm" data-act="link-phone">📱 conectar celular</button></div></div>`;
 }
-function paintSync() { const el = $('#sync-st'); if (!el) return; const i = Auth.syncInfo(); el.textContent = i.pending ? '⏳ enviando o que você fez...' : i.at ? `✅ salvo na nuvem ${agoS(i.at)}` : '✅ conectado à nuvem'; const b = $('[data-act="sync-now"]'); if (b) { b.disabled = false; b.textContent = 'sincronizar agora'; } }
-setInterval(paintSync, 5000);
 // QR para abrir o jogo no celular já na tela "entrar" com o e-mail preenchido (não leva senha nem login: só o e-mail)
 let qrLib = null;
 async function linkPhone() {
@@ -953,9 +951,7 @@ const ACTS = {
   },
   'spin-daily'() { spinDaily(); },
   logout() { Auth.logout(); },
-  async 'sync-now'() { const b = $('[data-act="sync-now"]'); if (b) { b.disabled = true; b.textContent = 'sincronizando...'; } const ok = await Auth.syncNow(); say(ok ? 'Tudo sincronizado com a nuvem.' : 'Não deu para sincronizar agora. Confira a internet: o jogo tenta de novo sozinho.', !ok); paintSync(); },
   'link-phone'() { linkPhone(); },
-  async 'sync-restore'(i) { const b = (Auth.backups?.() || [])[Number(i)]; if (!b || !confirm(`Restaurar a cópia de ${new Date(b.at).toLocaleString('pt-BR')} (${brl(b.money)} na conta, ${b.lands} terras)? A versão de agora também fica guardada como cópia.`)) return; await Auth.restore(Number(i)); say('Cópia restaurada e enviada para a nuvem.'); render(); },
   'st-kind'(id) { SUI.setKind(id); },
   'fe-buy'(id) { feiraBuy(id); },
   'fe-sell'() { feiraSell(); },
@@ -1153,8 +1149,9 @@ const ACTS = {
   borrow() {
     const v = qty('loan');
     if (!v) return;
-    if (v > L.creditLimit(S())) return say('Acima do seu crédito. O banco empresta contra terra e gado.', true);
-    S().loans.push({ id: S().nextId++, bal: v, rate: +(L.BANK_RATE * PK.mult(S(), 'loan')).toFixed(4), left: 12, missed: 0 });
+    const br = L.bankRisk(S());
+    if (v > br.limit) return say(br.high ? `O banco não tem capacidade para esse valor: o máximo para você agora é ${brl(br.limit)}. Para operar mais alto, busque uma instituição maior ou tenha o seu próprio banco (aba negócios).` : 'Acima do seu crédito. O banco empresta contra terra e gado.', true);
+    S().loans.push({ id: S().nextId++, bal: v, rate: br.rate, left: 12, missed: 0 });
     S().money += v; note('empréstimo do banco, 12 parcelas', v); say(`${brl(v)} na conta. A parcela sai todo mês.`);
   },
   payoff(idv) { const l = find(S().loans, idv); if (pay(l.bal, 'quitação de empréstimo', false)) { S().loans.splice(S().loans.indexOf(l), 1); say('Dívida quitada.'); } },
@@ -1417,6 +1414,19 @@ function prestigeParty(pr) {
   d.showModal(); confetti(260); try { sfx.cash(true); } catch {}
   note(`marco de prestígio: ${pr.title} (${pr.trophy})`);
 }
+// alerta de risco bancário: uma vez ao passar de R$ 250 mi (volta a valer se cair abaixo de R$ 225 mi)
+function bankRiskCheck() {
+  const s = S(), w = L.netWorth(s);
+  if (w < L.BANK.rearm) { if (s.bankAlert) { s.bankAlert = false; save(); } return; }
+  if (w < L.BANK.highNet || s.bankAlert) return;
+  s.bankAlert = true; save();
+  const br = L.bankRisk(s), d = $('#dlg-bankrisk'); if (!d) return;
+  $('#br-body').innerHTML = `<p>Seu patrimônio ultrapassou a capacidade financeira atual desta instituição.</p>
+    <p>O banco identificou que sua exposição financeira não é mais compatível com o seu nível de patrimônio. As condições de crédito foram reajustadas, seus limites de empréstimo foram reduzidos e as taxas bancárias sofreram alterações.</p>
+    <ul class="br-list"><li>juros para você agora: <b>${(br.rate * 100).toFixed(1).replace('.', ',')}% ao mês</b> (antes ${(L.BANK_RATE * 100).toFixed(1).replace('.', ',')}%)</li><li>novo limite de empréstimo: <b>${brl(br.limit)}</b></li></ul>
+    <p>Para continuar operando com grandes volumes financeiros, você deverá buscar uma instituição de maior capacidade ou adquirir seu próprio banco.</p>`;
+  d.showModal();
+}
 function trophyCheck() {
   const s = S(), w = L.netWorth(s); s.trophies ??= [];
   const nw = L.TROPHIES.filter(t => w >= t && !s.trophies.includes(t)); if (!nw.length) return;
@@ -1426,7 +1436,7 @@ function trophyCheck() {
   say(t === L.PRIVATE_MIN ? 'Selo de R$ 10 milhões conquistado! Agora você pode deixar o perfil privado (no seu perfil).' : `Troféu de R$ ${Math.round(t / 1e6)} milhões conquistado! Ele fica no seu perfil para sempre.`);
 }
 function eliteCheck() {
-  trophyCheck();
+  trophyCheck(); bankRiskCheck();
   const s = S(), i = L.eliteIdx(s), was = s.eliteSeen ?? -1;
   if (i === was) return;
   s.eliteSeen = i; save();
@@ -1579,7 +1589,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 127;
+const APP_VERSION = 128;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
