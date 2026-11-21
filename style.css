@@ -3298,3 +3298,27 @@ details.herd-guide > summary { margin: 0; }
   .nc-btn svg { width: 19px; height: 19px; }
   .nc-btn .pill { position: absolute; top: -4px; right: -4px; font-size: .62rem; }
 }
+/* sincronização: caixa no perfil, QR para o celular e aviso na tela de entrada */
+.syncbox { margin-top: 10px; padding: 12px 14px; border-radius: 14px; display: grid; gap: 10px; }
+.syncbox > div:first-child { display: grid; gap: 3px; }
+.syncbox__acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.dlg--qr { width: min(420px, calc(100vw - 24px)); text-align: center; }
+.qr-box { width: 230px; height: 230px; margin: 10px auto; padding: 10px; border-radius: 16px; background: #fff; display: grid; place-items: center; }
+.qr-box svg { width: 100%; height: 100%; } .qr-box p { color: #111; }
+.au__sync { margin: 4px 0 10px; padding: 9px 12px; border-radius: 12px; font-size: .82rem; line-height: 1.35; background: rgba(56,189,248,.1); border: 1px solid rgba(56,189,248,.35); }
+/* convite do contador: uma linha só */
+.ct-box--ad { flex-wrap: nowrap; padding: 6px 8px 6px 12px; gap: 8px; box-shadow: inset 0 0 0 1px rgba(134,239,172,.22); }
+.ct-box--ad .small { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ct-box__x { flex: none; width: 28px; height: 28px; border: 0; border-radius: 8px; background: none; color: var(--color-muted); font-size: 1.1rem; cursor: pointer; } .ct-box__x:hover { background: rgba(255,255,255,.06); }
+/* ===== celular / app instalado: acabamento de aplicativo ===== */
+html { -webkit-tap-highlight-color: transparent; }
+body { overscroll-behavior-y: none; }
+button, .btn, [role="button"], .tab, .subtab { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+@media (max-width: 40rem) {
+  input, select, textarea { font-size: 16px !important; }   /* iPhone não dá zoom ao tocar no campo */
+  .tvx { left: auto !important; right: 10px; }
+  .tvx__mini { padding: 4px !important; gap: 0 !important; } .tvx__mini > b, #tvx-minikick { display: none !important; }
+  .scroll table { font-size: .8rem; } .scroll th { white-space: nowrap; font-size: .72rem; }
+  .ct-box--ad .small { font-size: .74rem; }
+}
+@media (display-mode: standalone) { body { -webkit-user-select: none; user-select: none; } input, textarea, [contenteditable], .tv__line, .pf__bio, #log { -webkit-user-select: text; user-select: text; } }

@@ -616,6 +616,28 @@ function invHTML(p) {
   return `<h3>perfil de investidor</h3><div class="pf__inv glass"><div class="pf__invrow"><span class="tag tag--dark">${esc(iv.style)}</span><span class="tag ${iv.risk.startsWith('alto') ? 'tag--red' : iv.risk.startsWith('médio') ? 'tag--gold' : 'tag--green'}">risco ${esc(iv.risk)}</span>${iv.focus !== '—' ? `<span class="tag tag--dark">foco: ${esc(iv.focus)}${iv.share ? ` (${iv.share}%)` : ''}</span>` : ''}${iv.trend ? `<span class="tag ${iv.trend === 'em alta' ? 'tag--green' : iv.trend === 'em dificuldade' ? 'tag--red' : 'tag--dark'}">${esc(iv.trend)}</span>` : ''}</div>
     ${iv.hist.length ? `<ul class="pf__invhist">${iv.hist.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</div>`;
 }
+// sincronização (perfil): o mesmo progresso em qualquer aparelho entrando na mesma conta
+const agoS = at => { const s = Math.round((Date.now() - at) / 1000); return s < 60 ? `há ${s} s` : s < 3600 ? `há ${Math.round(s / 60)} min` : `há ${Math.round(s / 3600)} h`; };
+function syncBox() {
+  const i = Auth.syncInfo();
+  return `<div class="syncbox glass" id="syncbox"><div><b>☁️ sincronização</b><span class="small" id="sync-st">${i.pending ? '⏳ enviando o que você fez...' : i.at ? `✅ salvo na nuvem ${agoS(i.at)}` : '✅ conectado à nuvem'}</span>
+    <span class="muted small">Conta: ${esc(i.email)}. Entre com este mesmo e-mail no celular, no computador ou no app instalado e tudo aparece igual.</span></div>
+    <div class="syncbox__acts"><button class="btn btn--glass btn--sm" data-act="sync-now">sincronizar agora</button><button class="btn btn--gold btn--sm" data-act="link-phone">📱 conectar celular</button></div></div>`;
+}
+function paintSync() { const el = $('#sync-st'); if (!el) return; const i = Auth.syncInfo(); el.textContent = i.pending ? '⏳ enviando o que você fez...' : i.at ? `✅ salvo na nuvem ${agoS(i.at)}` : '✅ conectado à nuvem'; const b = $('[data-act="sync-now"]'); if (b) { b.disabled = false; b.textContent = 'sincronizar agora'; } }
+setInterval(paintSync, 5000);
+// QR para abrir o jogo no celular já na tela "entrar" com o e-mail preenchido (não leva senha nem login: só o e-mail)
+let qrLib = null;
+async function linkPhone() {
+  const email = Auth.account()?.email || '', url = `${location.origin}${location.pathname}?entrar=${encodeURIComponent(email)}`, d = $('#dlg-qr'); if (!d) return;
+  $('#qr-url').textContent = url.replace(/^https?:\/\//, '');
+  $('#qr-box').innerHTML = '<p class="muted small">gerando o código...</p>'; d.showModal();
+  try {
+    qrLib ??= new Promise((ok, no) => { const s = Object.assign(document.createElement('script'), { src: 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js', onload: () => ok(window.qrcode), onerror: no }); document.head.append(s); });
+    const q = (await qrLib)(0, 'M'); q.addData(url); q.make();
+    $('#qr-box').innerHTML = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
+  } catch { $('#qr-box').innerHTML = `<p class="small">Abra no celular: <b>${esc(url)}</b></p>`; }
+}
 function profileExtra(p, me) {
   const tr = p.trophies || [];
   const trophies = `<h3>troféus de patrimônio <small class="muted">${tr.length} de ${L.TROPHIES.length}</small></h3><div class="pf__troph">${L.TROPHIES.map((t, i) => { const pr = PK.PRESTIGE.find(x => x.min === t); return `<span class="troph${tr.includes(t) ? ' is-got' : ''}${i === 0 ? ' troph--selo' : ''}${pr ? ` troph--prest troph--${pr.id}` : ''}" title="${pr ? `${pr.trophy}: ${pr.title} (${mi(t)})` : `${i === 0 ? 'selo' : 'troféu'} de ${mi(t)}`}"><b>${pr ? pr.icon : i === 0 ? '🎖️' : '🏆'}</b><small>${mi(t)}</small></span>`; }).join('')}</div>`;
@@ -683,7 +705,7 @@ function openProfile(pid, fetched) {
     ${!me ? (() => { const npcId = String(pid).startsWith('npc:') ? String(pid).slice(4) : null, key = blockKey(p.name, npcId), on = isBlocked(p.name, npcId);
       return `<div class="pf__acts"><button class="btn btn--sm ${on ? 'btn--gold' : 'btn--glass'}" data-act="toggle-block" data-id="${esc(key)}" data-name="${esc(p.name)}" data-reopen="${esc(pid)}">${on ? 'desbloquear' : 'bloquear'}</button></div>`; })() : ''}
     ${me && (S().blocked || []).length ? `<h3>bloqueados</h3><ul class="pf__blocked">${S().blocked.map(k => { const n = k.startsWith('npc:') ? NPC.byId(k.slice(4))?.nick : k.slice(5); return `<li><span>${esc(n || k)}</span><button class="btn btn--glass btn--sm" data-act="toggle-block" data-id="${esc(k)}" data-name="${esc(n || k)}" data-reopen="me">desbloquear</button></li>`; }).join('')}</ul>` : ''}
-    ${me ? `<div class="pf__acts"><button class="btn btn--glass" data-act="edit-char">editar personagem</button><button class="btn btn--glass" data-act="toggle-nt">avisos na tela: ${ntOff('aviso') || ntOff('chat') ? 'desligados' : 'ligados'}</button>${Auth.account() ? '<button class="btn btn--glass" data-act="logout">sair da conta</button><button class="btn btn--danger btn--sm" data-act="wipe">apagar meus dados</button>' : ''}</div>${Auth.account() ? `<p class="muted small">Conta: ${esc(Auth.account().email)}</p>` : ''}` : ''}`;
+    ${me ? `<div class="pf__acts"><button class="btn btn--glass" data-act="edit-char">editar personagem</button><button class="btn btn--glass" data-act="toggle-nt">avisos na tela: ${ntOff('aviso') || ntOff('chat') ? 'desligados' : 'ligados'}</button>${Auth.account() ? '<button class="btn btn--glass" data-act="logout">sair da conta</button><button class="btn btn--danger btn--sm" data-act="wipe">apagar meus dados</button>' : ''}</div>${Auth.account() ? syncBox() : ''}` : ''}`;
   const dlg = $('#dlg-profile');
   if (!dlg.open) dlg.showModal();
 }
@@ -875,6 +897,8 @@ const ACTS = {
   },
   'spin-daily'() { spinDaily(); },
   logout() { Auth.logout(); },
+  async 'sync-now'() { const b = $('[data-act="sync-now"]'); if (b) { b.disabled = true; b.textContent = 'sincronizando...'; } const ok = await Auth.syncNow(); say(ok ? 'Tudo sincronizado com a nuvem.' : 'Não deu para sincronizar agora. Confira a internet: o jogo tenta de novo sozinho.', !ok); paintSync(); },
+  'link-phone'() { linkPhone(); },
   'st-kind'(id) { SUI.setKind(id); },
   'fe-buy'(id) { feiraBuy(id); },
   'fe-sell'() { feiraSell(); },
@@ -1496,7 +1520,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 116;
+const APP_VERSION = 117;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

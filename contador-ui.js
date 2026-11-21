@@ -167,7 +167,12 @@ export function inject(tab) {
   const groups = TAB_GROUP[tab], page = document.getElementById(`p-${tab}`); if (!groups || !page) return;
   let box = page.querySelector(':scope > .ct-box');
   if (!box) { box = document.createElement('div'); box.className = 'ct-box glass'; const h = page.querySelector(':scope > h2, :scope > .howto'); h ? h.after(box) : page.prepend(box); }
-  if (!CT.active(G.S)) { box.innerHTML = `<span class="ct-box__t">contador</span><span class="small muted">Quer ver exatamente quanto esta produção gasta por mês (impostos, luz, água, funcionários...)?</span><button class="btn btn--glass btn--sm" data-tab-go="equipe">contratar contador</button>`; return; }
+  if (!CT.active(G.S)) {   // convite curto, uma linha, e dá para esconder de vez (ocupava meia tela no celular em toda aba)
+    let off = false; try { off = localStorage.getItem('21world.ctUpsell') === 'off'; } catch {}
+    box.hidden = off; if (off) return;
+    box.classList.add('ct-box--ad');
+    box.innerHTML = `<span class="ct-box__t">📊 contador</span><span class="small muted">gastos desta área</span><button class="btn btn--glass btn--sm" data-tab-go="equipe">contratar</button><button class="ct-box__x" type="button" data-ct-hide aria-label="esconder este convite">×</button>`; return; }
+  box.hidden = false; box.classList.remove('ct-box--ad');
   const fc = CT.summarize(G.ctForecast?.() || []), gs = fc.groups.filter(g => groups.includes(g.key)), total = gs.reduce((t, g) => t + g.total, 0), types = {};
   for (const g of gs) for (const [k, v] of Object.entries(g.types)) types[k] = (types[k] || 0) + v;
   const m = G.S.month || 0, R = CT.results(G.S, m - 11, m).rows.filter(r => groups.includes(r.key)), luc = R.reduce((t, r) => t + r.lucro, 0);
@@ -192,3 +197,5 @@ document.addEventListener('click', e => {
   if (b.dataset.ct === 'cancel') { if (!confirm('Dispensar o contador?')) return; const err = CT.cancel(s); if (err) return say(err, true); say('Contador dispensado.'); }
   save(); G.render();
 });
+
+document.addEventListener('click', e => { if (!e.target.closest('[data-ct-hide]')) return; try { localStorage.setItem('21world.ctUpsell', 'off'); } catch {} for (const b of document.querySelectorAll('.ct-box--ad')) b.hidden = true; });

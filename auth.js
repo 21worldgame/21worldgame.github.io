@@ -46,9 +46,12 @@ function showGate() {
   fetch(`${SUPABASE.url}/auth/v1/settings`, { headers: { apikey: SUPABASE.anonKey } }).then(r => r.json())
     .then(st => show(['google', 'github'].filter(p => st?.external?.[p]))).catch(() => {});
   let had = false; try { had = !!localStorage.getItem('21world.hadAccount'); } catch {}
-  setMode(had ? 'in' : 'up');                // quem nunca entrou vê primeiro o cadastro
+  // app instalado (no iPhone ele não divide o login com o Safari) ou link do QR "conectar celular": abre em "entrar"
+  const qEmail = new URLSearchParams(location.search).get('entrar') || '', app = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  setMode(had || app || qEmail ? 'in' : 'up');   // quem nunca entrou neste aparelho vê primeiro o cadastro
+  if (qEmail) $('#au-form [name="email"]').value = qEmail.slice(0, 254);
   dlg().showModal();
-  $('#au-form [name="email"]').focus();
+  $(qEmail ? '#au-form [name="password"]' : '#au-form [name="email"]').focus();
 }
 
 async function submit(e) {
@@ -62,6 +65,8 @@ async function submit(e) {
   try {
     const c = await client();
     if (mode === 'up') {
+      const nm = cleanName(f.name), { data: same } = await c.from('public_profiles').select('user_id').ilike('name', nm.replace(/[%_\\]/g, m => '\\' + m)).limit(1);
+      if (same?.length) { setMode('in'); setErr(`Já existe uma conta com o nome "${nm}". Se é você jogando em outro aparelho, entre com o mesmo e-mail (ou o mesmo botão do Google) e tudo aparece aqui.`); return; }
       const { data, error } = await c.auth.signUp({ email: f.email.trim(), password: f.password,
         options: { data: { name: cleanName(f.name) }, emailRedirectTo: location.origin + location.pathname } });
       if (error) throw error;
@@ -186,7 +191,7 @@ const serverIso = () => new Date(G.now?.() ?? Date.now()).toISOString();   // ho
 function newerThanMe(d) { if ((Number(d?.appV) || 0) > (G.appV || 0)) { outdated = true; G.checkUpdate?.(); say('Saiu uma versão nova do jogo: atualizando para não perder nada do seu progresso.', true); return true; } return false; }
 function takeRemote(row, msg = true) {
   if (newerThanMe(row.data)) return;                              // não aplica com código velho: espera a atualização
-  adopt(row.data); base = row.updated_at; setBaseData(row.data); pushed = G.S.savedAt || 0; lastPush = pushed; saveMeta(); G.render();
+  adopt(row.data); base = row.updated_at; setBaseData(row.data); pushed = G.S.savedAt || 0; lastPush = pushed; saveMeta(); syncedAt = Date.now(); G.render();
   if (msg) say('Atualizado com o que você fez no outro aparelho.');
 }
 export async function push() {
@@ -205,7 +210,7 @@ export async function push() {
       if (!row) { base = ''; saveMeta(); return false; }              // a linha sumiu (conta zerada pelo admin): grava de novo no próximo save
       mergeRemote(row); return false;
     }
-    base = res.data[0].updated_at; setBaseData(snap); pushed = stamp; lastPush = stamp; saveMeta();
+    base = res.data[0].updated_at; setBaseData(snap); pushed = stamp; lastPush = stamp; saveMeta(); syncedAt = Date.now();
     try { bc?.send({ type: 'broadcast', event: 'saved', payload: { dev: DEV } })?.catch?.(() => {}); } catch {}   // avisa o outro aparelho na hora
     let row = profileRow(), r = await sb.from('public_profiles').upsert(row);
     if (r.error && /card/i.test(r.error.message || '')) { noCardUntil = Date.now() + 300000; row = profileRow(); r = await sb.from('public_profiles').upsert(row); }   // coluna card ainda não criada no servidor
@@ -239,6 +244,10 @@ async function checkRemote() {
   } catch {}
 }
 setInterval(checkRemote, 5000);
+// sincronização na tela (perfil): quando gravou por último, se há algo pendente, e o botão "sincronizar agora"
+let syncedAt = 0;
+export const syncInfo = () => ({ on: !!user, at: syncedAt, pending: !!user && dirty(), email: user?.email || '' });
+export async function syncNow() { if (!user) return false; await checkRemote(); const ok = await push().catch(() => false); return ok || !dirty(); }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkRemote(); });
 function scheduleSync() {
   if (!user) return;
