@@ -13,7 +13,12 @@ import { animalsValue } from './stable.js';
 export const CHIP = 10;           // 1 ficha = R$ 10
 export const HOUSE_FEE = 0.05;    // taxa do cassino sobre o pote
 export const MARKET_FEE = 0.01;   // taxa do mercado sobre vendas
-export const BANK_RATE = 0.018;   // juros do banco ao mês
+export const BANK_RATE = 0.035;   // juros do banco ao mês
+// agiota: quem pega com ele é quem o banco não atende. Paga o banco + 1 ponto + o risco dele (calote ao mês) com 10% de folga.
+// Com calote o cobrador ainda recupera RECOVER do saldo, então emprestar dá lucro esperado: rate - risk * (1 - RECOVER) > 0.
+export const RECOVER = 0.25;
+export const agiotaRate = risk => +(BANK_RATE + 0.01 + risk * 1.1).toFixed(3);
+export const lendEdge = b => b.rate - b.risk * (1 - RECOVER);   // lucro esperado ao mês por real emprestado
 export const KG_ARROBA = 15;
 export const RENT_PAY = 0.004;    // arrendamento pago ao mês, sobre o valor da terra
 export const RENT_RAISE = 0.08;      // reajuste do aluguel a cada 12 meses de contrato
@@ -203,9 +208,9 @@ export function refreshOffers(s, rng = Math.random) {
   const names = ['seu Antônio', 'dona Lurdes', 'Jair do posto', 'Marta da feira', 'Zé Carreteiro', 'Cida Leiteira'];
   const start = Math.floor(rng() * names.length);
   s.borrowers = Array.from({ length: 3 }, (_, i) => {
-    const risk = 0.02 + rng() * 0.13;
+    const risk = +(0.01 + rng() * 0.11).toFixed(3);
     return { id: id(s), name: names[(start + i) % names.length], amount: (2 + Math.floor(rng() * 19)) * 1000,
-      rate: +(0.015 + risk * 0.25).toFixed(3), months: 3 + Math.floor(rng() * 10), risk };
+      rate: agiotaRate(risk), months: 3 + Math.floor(rng() * 10), risk };
   });
 }
 
@@ -300,7 +305,7 @@ export function tick(s, rng = Math.random) {
   }
 
   for (const p of [...s.lent]) {
-    if (rng() < p.risk) { add(`${p.name} deu calote de R$ ${Math.round(p.bal)}`); s.lent.splice(s.lent.indexOf(p), 1); continue; }
+    if (rng() < p.risk) { const back = Math.round(p.bal * RECOVER); add(`${p.name} deu calote de R$ ${Math.round(p.bal - back)} (o cobrador recuperou ${Math.round(RECOVER * 100)}%)`, back); s.lent.splice(s.lent.indexOf(p), 1); continue; }
     p.bal *= 1 + p.rate;
     const pay = p.bal / Math.max(1, p.left);
     add(`${p.name} pagou a parcela`, pay); p.bal -= pay;

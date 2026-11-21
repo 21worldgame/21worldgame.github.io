@@ -14,7 +14,7 @@ export const WH_LEND = 0.005;       // seu galpão parado alugado ao parceiro: r
 export const TOOL_RENT = 0.01;      // máquina emprestada: ao mês sobre o preço da máquina
 export const TOOLS = ['trator', 'caminhao'];
 export const FRIEND_RATE = 0.012, FRIEND_RATE_LOW = 0.025;   // empréstimo do parceiro: abaixo do banco com muita confiança
-export const LEND_RATES = [0.015, 0.025, 0.04, 0.06, 0.08, 0.1];  // juros que você pode cobrar ao emprestar
+export const LEND_RATES = [0.015, 0.025, 0.04, 0.05, 0.06, 0.08, 0.1, 0.12, 0.15];  // juros que você pode cobrar ao emprestar
 // dois jeitos de emprestar: débito automático (a parcela sai sozinha da conta dele: calote 70% menor)
 // ou na confiança (ele paga por conta própria: mais risco, mas aceita juro 2 pontos maior)
 export const MODES = { auto: { label: 'débito automático', risk: 0.3, extra: 0 }, trust: { label: 'na confiança', risk: 1, extra: 0.02 } };
@@ -141,7 +141,8 @@ export function borrow(s, nick, amount) {
 // quem não é parceiro só pega se o juro for de agiota e paga pior.
 export const lendCap = (s, nick) => { const n = who(s, nick); return n ? r1000(Math.max(10000, Math.min(2e6, worthOf(n, s.month || 1) * 0.03))) : 0; };
 export const lendRisk = (s, nick, mode = 'auto') => { const f = friend(s, nick); return +((f ? 0.02 * (1 - f.conf / 130) : 0.07) * (MODES[mode]?.risk ?? 1)).toFixed(4); };
-export const lendMaxRate = (s, nick, mode = 'auto') => (isFriend(s, nick) ? 0.04 : 0.08) + (MODES[mode]?.extra || 0);
+export const AGIOTA_MIN = 0.05;   // sem parceria só a juro de agiota: acima do banco
+export const lendMaxRate = (s, nick, mode = 'auto') => (isFriend(s, nick) ? 0.04 + (MODES[mode]?.extra || 0) : Math.max(AGIOTA_MIN, L.agiotaRate(lendRisk(s, nick, mode)) + 0.02));
 export function lendTo(s, nick, amount, rate, months, mode = 'auto') {
   if (!MODES[mode]) return 'escolha débito automático ou na confiança.';
   amount = r1000(Number(amount) || 0); rate = Number(rate); months = Math.round(Number(months) || 0);
@@ -150,7 +151,7 @@ export function lendTo(s, nick, amount, rate, months, mode = 'auto') {
   if (months < 2 || months > 12) return 'prazo de 2 a 12 meses.';
   if (amount < 1000 || amount > lendCap(s, nick)) return `${nick} só precisa de até R$ ${lendCap(s, nick).toLocaleString('pt-BR')}.`;
   if (rate > lendMaxRate(s, nick, mode)) return `${nick} achou o juro alto demais: no máximo ${(lendMaxRate(s, nick, mode) * 100).toFixed(1).replace('.', ',')}% ao mês ${MODES[mode].label}${isFriend(s, nick) ? ' entre parceiros' : ''}.`;
-  if (!isFriend(s, nick) && rate < 0.04) return `${nick} não é seu parceiro: sem confiança, você só empresta a partir de 4% ao mês.`;
+  if (!isFriend(s, nick) && rate < AGIOTA_MIN) return `${nick} não é seu parceiro: sem confiança, você só empresta a partir de ${Math.round(AGIOTA_MIN * 100)}% ao mês.`;
   if (s.lent.some(p => p.nick === nick)) return `${nick} ainda está pagando o empréstimo anterior.`;
   if (amount > s.money) return 'dinheiro insuficiente.';
   s.money -= amount;
@@ -162,12 +163,13 @@ function worldBorrowers(s, rng) {
   const m = s.month || 1, out = [], r = seeded(m * 6151 + 3);
   for (const f of friends(s).filter(f => !f.npc.peer)) if (r() < 0.35) {
     const risk = (0.02 + r() * 0.08) * (1 - f.conf / 130);
-    out.push({ id: s.nextId++, name: f.nick, nick: f.nick, friend: true, amount: r1000(10000 + r() * Math.min(300000, 20000 + f.conf * 3000)), rate: +(0.025 + r() * 0.02).toFixed(3), months: 3 + Math.floor(r() * 6), risk: +risk.toFixed(3) });
+    out.push({ id: s.nextId++, name: f.nick, nick: f.nick, friend: true, amount: r1000(10000 + r() * Math.min(300000, 20000 + f.conf * 3000)), rate: +Math.max(0.025, L.agiotaRate(risk) * 0.75).toFixed(3),   // parceiro paga menos que o agiota
+      months: 3 + Math.floor(r() * 6), risk: +risk.toFixed(3) });
   }
   const online = [...NPC.onlineSet()].map(NPC.byId).filter(n => n && !isFriend(s, n.nick));
   for (let i = 0; i < 2 && online.length; i++) {
-    const n = online.splice(Math.floor(rng() * online.length), 1)[0], risk = 0.04 + rng() * 0.12;
-    out.push({ id: s.nextId++, name: n.nick, nick: n.nick, amount: r1000(5000 + rng() * 150000), rate: +(0.04 + risk * 0.35).toFixed(3), months: 3 + Math.floor(rng() * 6), risk: +risk.toFixed(3) });
+    const n = online.splice(Math.floor(rng() * online.length), 1)[0], risk = 0.02 + rng() * 0.1;
+    out.push({ id: s.nextId++, name: n.nick, nick: n.nick, amount: r1000(5000 + rng() * 150000), rate: L.agiotaRate(+risk.toFixed(3)), months: 3 + Math.floor(rng() * 6), risk: +risk.toFixed(3) });
   }
   return out;
 }
@@ -252,7 +254,7 @@ export function monthly(s, lines = [], rng = Math.random) {
   for (const c of s.cars || []) if (c.lentTo) { add(`${L.CARS[c.model]?.name || 'máquina'} emprestado para ${c.lentTo}`, L.CARS[c.model].price * TOOL_RENT * 0.8); bump(c.lentTo, 1); }
   for (const l of s.lands || []) if (l.leaseTo) bump(l.leaseTo, 1);
   s.borrowers = [...(s.borrowers || []), ...worldBorrowers(s, rng)];
-  if (a.auto.on) for (const b of [...s.borrowers].sort((x, y) => y.rate - x.rate)) {
+  if (a.auto.on) for (const b of [...s.borrowers].sort((x, y) => L.lendEdge(y) - L.lendEdge(x))) {   // o que dá mais lucro esperado, não só o juro maior
     if (b.risk > a.auto.risk || lentTotal(s) + b.amount > a.auto.budget || s.money - b.amount < 0) continue;
     if (lend(s, b)) out.push({ txt: `agiota automático: emprestou R$ ${b.amount.toLocaleString('pt-BR')} para ${b.name} a ${(b.rate * 100).toFixed(1)}% ao mês`, val: -b.amount });   // lend() já tirou o dinheiro
   }

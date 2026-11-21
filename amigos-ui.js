@@ -83,7 +83,7 @@ export function cashHTML(nick) {
     `<b>Débito automático:</b> a parcela sai sozinha da conta dele todo mês. É o jeito mais seguro: o risco de calote cai 70%.`,
     `<b>Na confiança:</b> ele paga por conta própria, sem garantia. Arrisca mais, mas ele topa um juro até 2 pontos maior.`,
     `As parcelas entram na sua carteira na virada do mês. Se ele der calote, você perde o que faltava receber.`,
-    `${f ? 'Como vocês são parceiros, ele aceita juro de amigo e quase não dá calote.' : 'Sem parceria, ele só pega a juro de agiota (a partir de 4% ao mês) e o risco é maior.'}`,
+    `${f ? 'Como vocês são parceiros, ele aceita juro de amigo e quase não dá calote.' : 'Sem parceria, ele só pega a juro de agiota (a partir de ${Math.round(AM.AGIOTA_MIN * 100)}% ao mês) e o risco é maior.'}`,
   ]);
   const amt = Math.min(cap, 50000), rate = f ? 0.025 : 0.06;
   const lend = `<form class="glass tr-col am-loan" data-loan="lend">

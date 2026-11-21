@@ -1414,3 +1414,11 @@ import * as CT from './contador.js';
   assert.deepEqual(CHt.npcThread(5001, ['a', 'b']), [], 'precisa de gente online');
   console.log('conversa entre jogadores do mundo ok');
 }
+// agiota: juro sempre acima do banco, cresce com o risco e dá lucro esperado; calote devolve 25% pelo cobrador
+{ const Lq = await import('./logic.js');
+  for (const r of [0.01, 0.05, 0.12]) { const b = { rate: Lq.agiotaRate(r), risk: r }; assert.ok(b.rate > Lq.BANK_RATE && Lq.lendEdge(b) > 0, 'agiota ' + r); }
+  assert.ok(Lq.agiotaRate(0.1) > Lq.agiotaRate(0.02));
+  const s = Lq.newState(() => 0.5); assert.ok(s.borrowers.every(b => b.rate > Lq.BANK_RATE && Lq.lendEdge(b) > 0), 'pedidos do banco');
+  s.lent = [{ id: 1, name: 'Zé', bal: 10000, rate: 0.1, left: 6, risk: 1 }]; const m0 = s.money; Lq.tick(s, () => 0.5);
+  assert.ok(!s.lent.length && s.log.some(e => /Zé deu calote/.test(e.txt) && e.val === 2500), 'cobrador recupera 25%');
+  console.log('agiota com lógica ok'); }

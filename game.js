@@ -582,7 +582,8 @@ function renderBanco() {
       <span class="bcard__avatar">${avatarSVG(look, { label: b.name })}</span>
       <div><h4>${esc(b.name)}</h4><p class="price">${brl(b.amount)}</p>
       <p class="muted small">${(b.rate * 100).toFixed(1)}% ao mês em ${b.months} meses</p>
-      <p class="small"><span class="tag ${b.risk > 0.09 ? 'tag--red' : b.risk > 0.05 ? 'tag--gold' : 'tag--green'}">risco ${Math.round(b.risk * 100)}%/mês</span></p></div>
+      <p class="small"><span class="tag ${b.risk > 0.07 ? 'tag--red' : b.risk > 0.035 ? 'tag--gold' : 'tag--green'}">risco ${(b.risk * 100).toFixed(1).replace('.', ',')}%/mês</span></p>
+      <p class="muted small">paga tudo em ${Math.round((1 - b.risk) ** b.months * 100)}% das vezes · lucro esperado ${brl(b.amount * L.lendEdge(b) * b.months)}</p></div>
       <button class="btn btn--glass" data-act="lend" data-id="${b.id}">emprestar</button></article>`;
   }).join('') : '<p class="empty glass">Ninguém pedindo empréstimo este mês.</p>';
   $('#lent').innerHTML = s.lent.length ? s.lent.map(p => `<tr>
@@ -1439,7 +1440,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 102;
+const APP_VERSION = 103;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;
