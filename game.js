@@ -207,14 +207,19 @@ function renderChar() {
   $('#char-perks').innerHTML = `<h3>suas vantagens</h3>${Object.keys(b).length ? `<ul>${Object.entries(b).map(([k, v]) => `<li><b class="${v > 0 === (k !== 'loan') ? 'good' : 'bad'}">${v > 0 ? '+' : ''}${Math.round(v * 100)}%</b> ${PK.EFFECTS[k]}</li>`).join('')}</ul>` : '<p class="muted small">Nenhuma ainda. Compre carros na loja ou acessórios aqui.</p>'}`;
   ACS.refresh(() => { if (currentTab === 'personagem') renderChar(); });
   const stockTag = o => { const n = ACS.leftOf(o.id); return n == null ? '' : `<small class="${n ? 'muted' : 'bad'}">${n ? `restam ${n} de ${ACS.MAX}` : 'esgotado: só de jogadores no Feirão'}</small>`; };
-  $('#wardrobe').innerHTML = Object.entries(CATALOG).map(([k, g]) => `
-    <fieldset class="opts"><legend>${k === 'acc' ? 'acessórios <small class="muted">use vários, um por lugar (cabeça, olhos, pescoço, pulso...)</small>' : g.label}</legend>
-      ${g.opts.map(o => {
-        const on = k === 'acc' ? (o.id === 'nenhum' ? !accsOf(a).length : accsOf(a).includes(o.id)) : String(a[k]) === String(o.id), locked = o.price && !S().owned.includes(`${k}:${o.id}`);
-        return `<button class="opt${o.swatch ? ' opt--sw' : ''}${on ? ' is-on' : ''}" aria-pressed="${on}" data-act="look" data-k="${k}" data-id="${o.id}"
-          ${o.swatch ? `style="--sw:${o.swatch}" aria-label="${g.label} ${o.id}"` : ''}>${o.swatch ? '' : esc(o.id)}${locked ? `<small>${brl(o.price)}</small>${k === 'acc' ? stockTag(o) : ''}` : ''}${k === 'acc' && PK.ACC_PERKS[o.id] ? `<small class="good">${esc(PK.label(PK.ACC_PERKS[o.id]))}</small>` : ''}</button>`;
-      }).join('')}
-    </fieldset>`).join('');
+  // guarda-roupa em seções (ícone, nome e a escolha atual); acessórios viram cartões com preço, vantagem e "seu"
+  const WD_ICON = { skin: '🎨', hair: '💇', hairColor: '🖌️', beard: '🧔', eyes: '👁️', outfit: '👕', cloth: '🧵', acc: '💎' };
+  $('#wardrobe').innerHTML = Object.entries(CATALOG).map(([k, g]) => {
+    const cur = k === 'acc' ? (accsOf(a).length ? `${accsOf(a).length} em uso` : 'nenhum') : g.opts[0]?.swatch ? '' : String(a[k] ?? '');
+    return `<fieldset class="opts wd-sec wd-sec--${k}"><legend class="wd-sec__h"><span class="wd-sec__ico" aria-hidden="true">${WD_ICON[k] || '✨'}</span><b>${k === 'acc' ? 'acessórios' : g.label}</b>${cur ? `<small class="wd-sec__cur">${esc(cur)}</small>` : ''}</legend>
+      ${k === 'acc' ? '<p class="wd-sec__tip muted small">Use vários ao mesmo tempo, um por lugar (cabeça, olhos, pescoço, pulso...). Cada um comprado dá uma vantagem para sempre.</p>' : ''}
+      <div class="wd-opts${k === 'acc' ? ' wd-opts--acc' : ''}">${g.opts.map(o => {
+        const on = k === 'acc' ? (o.id === 'nenhum' ? !accsOf(a).length : accsOf(a).includes(o.id)) : String(a[k]) === String(o.id), locked = o.price && !S().owned.includes(`${k}:${o.id}`), mine = o.price && !locked;
+        return `<button class="opt${o.swatch ? ' opt--sw' : ''}${k === 'acc' ? ' opt--acc' : ''}${on ? ' is-on' : ''}${locked ? ' is-locked' : ''}" aria-pressed="${on}" data-act="look" data-k="${k}" data-id="${o.id}"
+          ${o.swatch ? `style="--sw:${o.swatch}" aria-label="${g.label} ${o.id}"` : ''}>${o.swatch ? '' : `<span class="opt__n">${esc(o.id)}</span>`}${mine ? '<small class="opt__own">✓ seu</small>' : ''}${locked ? `<small class="opt__price">${brl(o.price)}</small>${k === 'acc' ? stockTag(o) : ''}` : ''}${k === 'acc' && PK.ACC_PERKS[o.id] ? `<small class="good opt__perk">${esc(PK.label(PK.ACC_PERKS[o.id]))}</small>` : ''}</button>`;
+      }).join('')}</div>
+    </fieldset>`;
+  }).join('');
 }
 
 // ---------- terras: satélite real (Esri World Imagery) ----------
@@ -1595,7 +1600,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 138;
+const APP_VERSION = 139;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
