@@ -633,6 +633,17 @@ function renderBanco() {
     <td>${l.missed ? '<span class="tag tag--red">atrasada</span>' : '<span class="tag tag--green">em dia</span>'}</td>
     <td class="acts"><button class="btn btn--glass" data-act="payoff" data-id="${l.id}">quitar</button></td></tr>`).join('')
     : '<tr><td colspan="5" class="empty">Nenhuma dívida.</td></tr>';
+  $('#borrowers').innerHTML = s.borrowers.length ? s.borrowers.map(b => {
+    const look = { skin: (b.id % 5) + 1, hair: ['curto', 'longo', 'coque', 'raspado', 'boné'][b.id % 5], hairColor: (b.id % 4) + 1, outfit: ['moletom', 'regata', 'jaqueta'][b.id % 3], cloth: (b.id % 6) + 1, acc: 'nenhum' };
+    return `<article class="glass bcard">
+      <span class="bcard__avatar">${avatarSVG(look, { label: b.name })}</span>
+      <div><h4>${esc(b.name)}</h4><p class="price">${brl(b.amount)}</p>
+      <p class="muted small">${(b.rate * 100).toFixed(1)}% ao mês em ${b.months} meses</p>
+      <p class="small"><span class="tag ${b.risk > 0.07 ? 'tag--red' : b.risk > 0.035 ? 'tag--gold' : 'tag--green'}">risco ${(b.risk * 100).toFixed(1).replace('.', ',')}%/mês</span></p>
+      <p class="muted small">paga tudo em ${Math.round((1 - b.risk) ** b.months * 100)}% das vezes · lucro esperado ${brl(b.amount * L.lendEdge(b) * b.months)}</p></div>
+      <button class="btn btn--glass" data-act="lend" data-id="${b.id}">emprestar</button></article>`;
+  }).join('') : '<p class="empty glass">Ninguém pedindo empréstimo este mês.</p>';
+  $('#lent').innerHTML = s.lent.length ? s.lent.map(p => `<tr>
     <td>${esc(p.name)}</td><td class="num">${brl(p.bal)}</td><td class="num">${(p.rate * 100).toFixed(1)}%</td><td class="num">${p.left}</td></tr>`).join('')
     : '<tr><td colspan="4" class="empty">Você ainda não emprestou para ninguém.</td></tr>';
   INVU.render();
@@ -1594,7 +1605,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 131;
+const APP_VERSION = 133;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
