@@ -2933,3 +2933,4 @@ details.herd-guide > summary { margin: 0; }
 .portal h2, .portal h3, .portal__brand { text-transform: none; }
 .portal__date, .portal__cols li { text-transform: none; }
 .pn h3::first-letter, .portal h2::first-letter { text-transform: uppercase; }
+.portal__grid > .pn--mini { min-height: 260px; }

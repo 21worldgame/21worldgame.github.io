@@ -1,4 +1,4 @@
-// Portal de notícias: a primeira tela do jogo. Manchetes do que chegou, do que vem aí,
+// Portal de notícias: a primeira tela do jogo. Manchetes do que vem aí,
 // tendências do campo calculadas com os preços do mundo (os mesmos de todos) e o que está acontecendo agora.
 import { G, esc } from './store.js';
 import { ANCHOR } from './logic.js';
@@ -17,15 +17,6 @@ const SOON = [
     lead: 'Mande sua safra para fora quando o dólar estiver a favor, ou traga máquinas e genética de outros países.' },
   { tag: 'ásia', img: IMG('china'), title: 'Xangai de olho na soja e na carne do 21 World',
     lead: 'Compradores chineses estudam contratos de longo prazo. A abertura do mercado pode mexer com o preço de tudo no campo.' },
-];
-// o que já chegou (as últimas atualizações do jogo)
-const DONE = [
-  { v: 86, title: 'Jogadores do mundo com personalidade no chat', txt: 'Uns educados, outros informais, uns gente boa, outros chatos. E cada um responde no seu tempo.', go: 'chat' },
-  { v: 83, title: 'Resenha nova, estilo WhatsApp', txt: 'Chat fixo na lateral com todo mundo online, conversa no privado e avisos que ficam até você fechar.', go: 'chat' },
-  { v: 81, title: 'Acessórios com estoque de 35', txt: 'Cada acessório tem 35 unidades para o jogo inteiro. Esgotou, só comprando de outro jogador.', go: 'personagem' },
-  { v: 80, title: 'Personagem de corpo inteiro', txt: 'Mãos, pés e 7 acessórios novos com vantagem em suínos, grãos, laranja, cana, ouro e empresas.', go: 'personagem' },
-  { v: 74, title: 'Mesas online com senha', txt: 'Crie sua mesa de 21, truco, sinuca ou pôquer aberta ou com senha. Todo mundo vê no salão.', go: 'mesa' },
-  { v: 74, title: 'Contador com lucro real', txt: 'Lucro de cada produção, frigorífico separado do gado e perguntas para o contador.', go: 'livro' },
 ];
 const NAMES = { soja: 'soja', milho: 'milho', cafe: 'café', arroba: 'arroba do boi', bezerro: 'bezerro', cana: 'cana', laranja: 'laranja', frango: 'frango', suino: 'suíno', pintinho: 'pintinho', leitao: 'leitão', racao: 'ração de frango', racaoSuino: 'ração de suíno' };
 
@@ -56,8 +47,8 @@ export function render() {
         <div><h4>em baixa</h4><ul>${down.map(chip).join('') || '<li class="muted">nada muito abaixo do normal</li>'}</ul></div></div>
       <button class="btn btn--gold btn--sm" type="button" data-tab-go="mercado">ver o mercado</button></div></section>
   <div class="portal__grid">
-    <section class="portal__box"><h2>Chegou no jogo</h2><ul class="portal__done">${DONE.map(d => `<li><button type="button" ${d.go === 'chat' ? 'data-chat-open' : `data-tab-go="${d.go}"`}><span class="pn__v">v${d.v}</span><b>${esc(d.title)}</b><span>${esc(d.txt)}</span></button></li>`).join('')}</ul></section>
     <section class="portal__box"><h2>Agora no mundo <small>TV 21</small></h2><ul class="portal__live-list">${live.map(n => `<li>${esc(headline(n))}</li>`).join('') || '<li class="muted">As notícias do mundo aparecem aqui assim que alguém faz um grande negócio.</li>'}</ul>
-      ${card(SOON[3], 'pn--mini')}</section>
+</section>
+    ${card(SOON[3], 'pn--mini')}
   </div>`;
 }
