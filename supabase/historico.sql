@@ -6,7 +6,7 @@
 
 create table if not exists public.save_history (
   id bigserial primary key,
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id uuid not null,   -- sem chave estrangeira: apagar a conta em Authentication > Users nunca trava por causa do histórico
   saved_at timestamptz not null default now(),
   why text not null default 'antes de mudar',
   money numeric,
@@ -24,7 +24,9 @@ declare
   old_lands int := jsonb_array_length(coalesce(old.data->'lands', '[]'::jsonb));
   why text := null;
 begin
-  if tg_op = 'DELETE' then why := 'save apagado ou reiniciado';
+  if tg_op = 'DELETE' then
+    if not exists (select 1 from auth.users u where u.id = old.user_id) then return old; end if;   -- a conta está sendo apagada: sem cópia
+    why := 'save apagado ou reiniciado';
   elsif old.data is distinct from new.data then
     if coalesce((new.data->>'money')::numeric, 0) < old_money * 0.7 and old_money > 100000 then why := 'dinheiro caiu muito';
     elsif jsonb_array_length(coalesce(new.data->'lands', '[]'::jsonb)) < old_lands then why := 'terra a menos';
