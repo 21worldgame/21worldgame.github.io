@@ -2975,3 +2975,23 @@ details.herd-guide > summary { margin: 0; }
   .mnav-quick button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; border-radius: 14px; border: 1px solid rgba(245,184,51,.35); background: rgba(245,184,51,.1); color: #ffd76a; font: 800 .8rem/1 var(--font-display); }
   .mnav-quick button[hidden] { display: none; }
 }
+
+/* Resenha: fileira de quem está online no topo da Geral */
+.rz__conv { display: flex; flex-direction: column; }
+.rz__conv[hidden] { display: none; }
+.rz__conv > .chat-list { flex: 1 1 auto; min-height: 0; }
+.rz__strip { flex: none; padding: 8px 0 6px; border-bottom: 1px solid var(--rz-line); background: var(--rz-panel); }
+.rz__strip[hidden] { display: none; }
+.rz__strip-t { display: block; padding: 0 12px 6px; color: #7d8799; font: 800 .6rem/1 var(--font-display); text-transform: uppercase; letter-spacing: .1em; }
+.rz__strip-row { display: flex; gap: 4px; overflow-x: auto; padding: 0 10px 2px; scrollbar-width: none; overscroll-behavior-x: contain; }
+.rz__strip-row::-webkit-scrollbar { display: none; }
+.rz__chip { all: unset; position: relative; flex: none; display: grid; justify-items: center; gap: 3px; width: 50px; cursor: pointer; border-radius: 10px; padding: 3px 0; }
+.rz__chip:hover, .rz__chip:focus-visible { background: rgba(255,255,255,.05); }
+.rz__chip .rz__av { width: 38px; height: 38px; }
+.rz__chip .rz__dot { position: absolute; top: 33px; left: 33px; width: 9px; height: 9px; box-shadow: 0 0 0 2px var(--rz-panel); }
+.rz__chip small { max-width: 48px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #aeb6c3; font-size: .6rem; }
+@media (min-width: 75rem) { .rz__chip { width: 42px; } .rz__chip .rz__av { width: 32px; height: 32px; } .rz__chip .rz__dot { top: 28px; left: 29px; width: 7px; height: 7px; } .rz__chip small { max-width: 40px; font-size: .56rem; } }
+.rz__conv > * { min-width: 0; flex-shrink: 0; }
+.rz__conv > .chat-list { flex-shrink: 1; }
+.rz .chat-lock { white-space: normal; overflow-wrap: anywhere; }
+.rz { grid-template-columns: minmax(0, 1fr); }

@@ -35,7 +35,7 @@ export function attach(l) {
   l.setOnChat((d, peer) => { if (d?.t === 'news') return NEWS.receive(d); if (d?.t === 'nhist' && Array.isArray(d.list)) return d.list.slice(-15).forEach(NEWS.receive); if (d?.t === 'hist' && Array.isArray(d.list)) d.list.slice(-30).forEach(m => add({ ...m, pv: false }, false)); else add(d, false, peer); });
   l.setOnJoin(id => { const pub = msgs.filter(m => !m.sys && !m.pv && !m.bot).slice(-20); if (pub.length) l.sendChat({ t: 'hist', list: pub }, id); const nh = NEWS.history(); if (nh.length) l.sendChat({ t: 'nhist', list: nh }, id); });
 }
-setInterval(() => { if (isOpen() && $('#rz-conv').hidden) drawPeople(); $('#chat-online').textContent = onlineLabel(); }, 3000);   // quem está online sempre em dia
+setInterval(() => { if (isOpen() && !$('#rz-conv').hidden) drawStrip(); if (isOpen() && $('#rz-conv').hidden) drawPeople(); $('#chat-online').textContent = onlineLabel(); }, 3000);   // quem está online sempre em dia
 async function refreshIdx() { try { idx = FE.econIndex(((await Auth.ranking?.()) || []).map(r => Number(r.worth))); } catch {} }
 
 // todo mundo online: pessoas conectadas e jogadores do mundo, tudo na mesma lista
@@ -96,7 +96,17 @@ function drawPeople() {
     || `<li class="rz__empty">Ninguém com esse nome online.</li>`;
   el.innerHTML = html;
 }
+// fileira de quem está online no topo da Geral (toque para abrir o privado); só redesenha se a lista mudar
+let stripKey = '';
+function drawStrip() {
+  const el = $('#rz-strip'); if (!el) return;
+  el.hidden = conv !== 'all'; if (el.hidden) return;
+  const list = people().sort((a, b) => (b.peer ? 1 : 0) - (a.peer ? 1 : 0) || b.level - a.level), key = list.map(p => p.id).join();
+  if (key === stripKey) return; stripKey = key;
+  el.innerHTML = `<span class="rz__strip-t">online agora · ${list.length + 1}</span><div class="rz__strip-row">${list.map(p => `<button type="button" class="rz__chip" data-conv="${esc(p.id)}" title="conversar com ${esc(p.name)}">${mini(p.look, p.name)}<i class="rz__dot"></i><small>${esc(p.name)}</small></button>`).join('')}</div>`;
+}
 function drawConv() {
+  drawStrip();
   const tv = conv === 'tv', p = !tv && conv !== 'all' && who(conv);
   $('#rz-title').textContent = tv ? 'TV 21' : conv === 'all' ? 'Geral' : p?.name || lastOf(conv)?.name || 'jogador';
   $('#rz-sub').textContent = tv ? 'notícias do mundo' : conv === 'all' ? onlineLabel() : typing.has(conv) ? 'digitando...' : p ? `online · nível ${p.level}` : 'saiu do salão';
