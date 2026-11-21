@@ -10,6 +10,7 @@ import * as NPC from './npcs.js';
 import * as Live from './live.js';
 import * as NEWS from './news-ui.js';
 import { avatarSVG } from './avatar.js';
+import * as BC from './bot-chat.js';
 
 let lobby = null, lastAt = 0, idx = 1, conv = 'all', q = '';
 const msgs = [], seen = new Set(), unread = new Map();   // unread: conversa -> quantas novas
@@ -91,14 +92,15 @@ function drawPeople() {
   const ranked = list.filter(p => !f || p.name.toLowerCase().includes(f)).map(p => ({ p, last: lastOf(p.id) }))
     .sort((a, b) => (b.last?.at || 0) - (a.last?.at || 0) || a.p.name.localeCompare(b.p.name));
   html += `<li class="rz__sec">online agora · ${ranked.length}</li>`;
-  html += ranked.map(({ p, last }) => row(p.id, mini(p.look, p.name), p.name, last ? esc(`${last.mine ? 'você: ' : ''}${last.text}`) : `nível ${p.level} · toque para conversar`, last?.at, unread.get(p.id) || 0, '<i class="rz__dot" aria-label="online"></i>')).join('')
+  html += ranked.map(({ p, last }) => row(p.id, mini(p.look, p.name), p.name, typing.has(p.id) ? '<i class="rz__typing">digitando...</i>' : last ? esc(`${last.mine ? 'você: ' : ''}${last.text}`) : `nível ${p.level} · toque para conversar`, last?.at, unread.get(p.id) || 0, '<i class="rz__dot" aria-label="online"></i>')).join('')
     || `<li class="rz__empty">Ninguém com esse nome online.</li>`;
   el.innerHTML = html;
 }
 function drawConv() {
   const tv = conv === 'tv', p = !tv && conv !== 'all' && who(conv);
   $('#rz-title').textContent = tv ? 'TV 21' : conv === 'all' ? 'Geral' : p?.name || lastOf(conv)?.name || 'jogador';
-  $('#rz-sub').textContent = tv ? 'notícias do mundo' : conv === 'all' ? onlineLabel() : p ? `online · nível ${p.level}` : 'saiu do salão';
+  $('#rz-sub').textContent = tv ? 'notícias do mundo' : conv === 'all' ? onlineLabel() : typing.has(conv) ? 'digitando...' : p ? `online · nível ${p.level}` : 'saiu do salão';
+  $('#rz-sub').classList.toggle('is-typing', typing.has(conv));
   const av = $('#rz-av');
   av.outerHTML = tv ? icon('<i class="tv__dot"></i>', 'rz-av') : conv === 'all' ? icon('#', 'rz-av')
     : `<button type="button" class="rz__av" id="rz-av" data-profile="${esc(conv)}" aria-label="ver perfil">${avatarSVG(p?.look || {}, { label: p?.name || '' })}</button>`;
@@ -152,19 +154,30 @@ function send(e) {
   const m = { id: Math.random().toString(36).slice(2, 12), name: myName(), level: G.S.level || 1, text: CH.clean(text), hi, pv, toName: target?.name || '', at: Date.now() };
   if (!bot) pv ? lobby.sendChat(m, conv) : lobby.sendChat(m);
   add(m, true, null, { conv, bot });
-  if (bot) botReply(conv, target);
+  if (bot) botReply(conv, target, m.text);
+  else if (!pv) { const b = people().find(x => x.id.startsWith('npc:') && CH.mentions(m.text, x.name)); if (b) botReply(`geral:${b.id}`, b, m.text, true); }   // chamou alguém do mundo com @ na Geral
   lastAt = Date.now();
   $('#chat-in').value = ''; $('#chat-hi').checked = false;
   if (CH.clean(text) !== text.trim().replace(/\s+/g, ' ')) say('Algumas palavras foram trocadas por *** (sem palavrão na Resenha).');
 }
-// jogador do mundo responde no privado (curto, como quem está ocupado jogando)
-const REPLY = ['opa, blz?', 'fala!', 'to numa mesa aqui, ja te respondo', 'se for negocio manda proposta pelo meu perfil', 'kkk boa', 'tranquilo', 'depois a gente fala, to no leilao', 'manda ai', 'oi! tudo certo?', 'agora nao consigo, mais tarde'];
-const lastBot = new Map();
-function botReply(c, p) {
-  if (Date.now() - (lastBot.get(c) || 0) < 45000) return;   // não responde tudo: parece gente ocupada
-  lastBot.set(c, Date.now());
-  const n = msgs.filter(m => m.conv === c).length, line = REPLY[(c.length * 7 + n * 3 + new Date().getMinutes()) % REPLY.length];
-  setTimeout(() => add({ id: Math.random().toString(36).slice(2, 12), name: p.name, level: p.level, text: line, pv: true, at: Date.now() }, false, c, { bot: true }), 2500 + Math.random() * 5000);
+// jogador do mundo responde no privado, cada um no seu jeito e no seu tempo (segundos, 1-2 min, até 10 min);
+// aparece "digitando..." antes. Mensagens seguidas enquanto ele não respondeu viram uma resposta só.
+const botSt = new Map();   // conversa -> { timer, text, talked, lastAt }
+const typing = new Set();
+function botReply(c, p, text, geral = false) {
+  const st = botSt.get(c) || {}; botSt.set(c, st);
+  st.text = text;
+  if (st.timer) return;
+  const r = BC.reply(BC.persona(p.name), text, { first: !st.talked, engaged: Date.now() - (st.lastAt || 0) < 300e3 });
+  if (r.skip) return;
+  const typeMs = Math.min(r.delay, 2500 + Math.random() * 4000);
+  st.timer = setTimeout(() => {
+    typing.add(c); draw();
+    st.timer = setTimeout(() => {
+      typing.delete(c); st.timer = null; st.talked = true; st.lastAt = Date.now();
+      r.texts.forEach((txt, i) => setTimeout(() => add({ id: Math.random().toString(36).slice(2, 12), name: p.name, level: p.level, text: geral ? `@${myName()} ${txt}` : txt, pv: !geral, at: Date.now() }, false, geral ? null : c, { bot: true }), i * (2000 + Math.random() * 4000)));
+    }, typeMs);
+  }, r.delay - typeMs);
 }
 
 // jogadores do mundo falando na Geral de tempos em tempos (mesma fala para todos, sem lotar)

@@ -1233,3 +1233,20 @@ import * as CT from './contador.js';
   s.botOfferDone = o.slot; assert.equal(BOx.offerFor(s, t), null, 'recusada não volta na mesma janela');
   const N2 = await import('./npcs.js'), old = N2.NPCS.find(n => n.gnick); assert.equal(N2.byNick(old.orig), old, 'nick antigo acha o bot');
   console.log('propostas dos bots ok'); }
+
+// jogadores do mundo no privado: personalidade fixa pelo nick, ritmo variado, nunca diz o que compensa
+{
+  const BC = await import('./bot-chat.js');
+  const nicks = Array.from({ length: 400 }, (_, i) => `bot${i}`), ps = nicks.map(BC.persona);
+  assert.deepEqual(BC.persona('Falcao777'), BC.persona('Falcao777'), 'mesmo nick, mesma personalidade');
+  for (const s of BC.STYLES) assert.ok(ps.some(p => p.style === s), `tem estilo ${s}`);
+  assert.ok(ps.some(p => p.speed[1] <= 45e3) && ps.some(p => p.speed[0] >= 300e3), 'uns respondem em segundos, outros em 5-10 min');
+  assert.equal(BC.intent('oi tudo bem'), 'oi'); assert.equal(BC.intent('quanto quer no cavalo?'), 'negocio'); assert.equal(BC.intent('vlw mano'), 'valeu');
+  let n = 0; for (const p of ps) for (const q of ['oi', 'compensa granja ou suino?', 'vende?', 'kkkk', 'blz']) { const r = BC.reply(p, q, { first: true }, Math.random); if (r.skip) continue; n++;
+    assert.ok(r.texts.length && r.delay >= 4e3 && r.delay <= 600e3, 'resposta com atraso de 4 s a 10 min');
+    for (const t of r.texts) assert.ok(!/compensa mais|melhor investimento|invista em/i.test(t), 'bot não diz o que compensa'); }
+  assert.ok(n > 1500, 'quase todos respondem');
+  assert.ok(BC.reply(BC.persona('x'), 'oi', { engaged: true }, () => 0.5).delay <= 60e3, 'conversa engatada responde rápido');
+  assert.notEqual(BC.styleLine(nicks.find(k => BC.persona(k).style === 'educado'), 'vc vai no leilao'), BC.styleLine(nicks.find(k => BC.persona(k).style === 'informal'), 'vc vai no leilao'), 'cada um escreve de um jeito');
+  console.log('conversa dos bots ok');
+}

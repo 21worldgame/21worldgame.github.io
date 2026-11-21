@@ -2796,3 +2796,66 @@ body.rz-open .nt--m { display: none; }
   .rz__railt { font-size: .66rem; }
 }
 @media (min-width: 100rem) { :root { --rz-w: 290px; } }
+
+/* ===== Resenha: visual sóbrio nas cores do jogo ===== */
+.rz { --rz-bg: #0c111b; --rz-panel: #0f1522; --rz-line: rgba(255,255,255,.06); --rz-them: #182131; --rz-me: #1d3049; --rz-green: #22c55e; --rz-acc: #f5b833; color: #e6e9ef; }
+.rz__conv { background: var(--rz-bg); }
+.rz__head, .rz__chead { background: var(--rz-panel); border-bottom: 1px solid var(--rz-line); }
+.rz__head h3 { font: 800 .95rem/1 var(--font-display); letter-spacing: .02em; text-transform: none; }
+.rz__on { display: inline-flex; align-items: center; gap: 5px; padding: 3px 7px; border-radius: 99px; background: rgba(34,197,94,.1); color: #4ade80; }
+.rz__on::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.rz__q { background: rgba(255,255,255,.04); border: 1px solid var(--rz-line); }
+.rz__q:focus { border-color: rgba(245,184,51,.5); outline: none; }
+.rz__row:hover, .rz__row:focus-visible { background: rgba(255,255,255,.035); }
+.rz__row:focus-visible { outline-color: var(--rz-acc); }
+.rz__sec { color: #7d8799; }
+.rz__n { background: var(--rz-acc); color: #111; }
+.rz__row.has-new .rz__l1 small { color: var(--rz-acc); }
+.rz__av { background: #1b2433; box-shadow: 0 0 0 1px var(--rz-line); }
+.rz .chat-list li { box-shadow: none; border: 1px solid var(--rz-line); }
+.rz .chat-list li.is-me { border-color: rgba(96,165,250,.18); }
+.rz .chat-list li .chat-name { color: var(--rz-acc); font-size: .92em; }
+.rz .chat-list li.is-sys, .rz .rz__day { background: rgba(255,255,255,.04); border: 0; }
+.chat-form { background: var(--rz-panel); border-top: 1px solid var(--rz-line); }
+.chat-form .input { background: rgba(255,255,255,.05); border: 1px solid var(--rz-line); }
+.chat-form .input:focus { border-color: rgba(245,184,51,.5); outline: none; }
+.rz__send { background: var(--rz-acc); color: #111; }
+.rz__send svg { stroke: #111; }
+.chat-lock { background: var(--rz-panel); border-top: 1px solid var(--rz-line); color: #8b93a3; }
+.rz__who small.is-typing, .rz__typing { color: #4ade80; font-style: normal; }
+.rz-badge { background: var(--hud-accent, #f5b833); color: #111; }
+
+/* minimizada: some a lateral e fica um botão horizontal "Resenha" no canto de baixo */
+@media (min-width: 75rem) {
+  body.rz-min { --rz-w: 0px; }
+  body.rz-min .rz { top: auto; bottom: 16px; right: 16px; width: auto; height: auto; border: 0; background: none; }
+  body.rz-min .rz__rail { all: unset; box-sizing: border-box; position: relative; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px 0 12px; border-radius: 99px; cursor: pointer;
+    background: #0f1522; color: #e6e9ef; border: 1px solid rgba(255,255,255,.1); box-shadow: 0 10px 30px rgba(0,0,0,.45); font: 700 .82rem/1 var(--font-display); }
+  body.rz-min .rz__rail:hover, body.rz-min .rz__rail:focus-visible { border-color: rgba(245,184,51,.6); background: #0f1522; }
+  .rz__rail svg { width: 18px; height: 18px; }
+  .rz__railt { writing-mode: horizontal-tb; rotate: none; letter-spacing: .02em; text-transform: none; font-size: .82rem; }
+  .rz__rail .rz-badge { position: static; }
+  body.rz-min .nt--right { bottom: 68px; }
+  body.rz-min:has(#bot-offer) .rz { bottom: 210px; }
+  body.rz-min:has(#bot-offer) .nt--right { bottom: 262px; }
+}
+
+/* avisos menores e discretos */
+.nt { width: min(280px, calc(100vw - 32px)); gap: 6px; }
+.nt__card { gap: 4px; padding: 8px 28px 8px 10px; border-radius: 10px; background: rgba(15,21,34,.97); border: 1px solid rgba(255,255,255,.08); border-left: 3px solid var(--hud-accent, #f5b833); box-shadow: 0 8px 24px rgba(0,0,0,.4); backdrop-filter: blur(8px); }
+.nt__card[data-tone="ok"][data-kind="aviso"] { border-left-color: #4ade80; }
+.nt__body { gap: 8px; align-items: center; }
+.nt__body p { font-size: .78rem; line-height: 1.3; color: #d7dce5; }
+.nt__ico { width: 18px; height: 18px; font-size: .65rem; }
+.nt__av { width: 30px; height: 30px; }
+.nt__msg b { font-size: .8rem; }
+.nt__msg small { font-size: .66rem; }
+.nt__msg p { -webkit-line-clamp: 2; }
+.nt__acts { gap: 2px; }
+.nt__acts button { padding: 3px 6px; font-size: .66rem; background: none; color: #7d8799; }
+.nt__acts button:hover { color: #e6e9ef; }
+.nt__acts .nt__go { background: none; color: var(--hud-accent, #f5b833); }
+.nt__x { top: 4px; right: 4px; width: 22px; height: 22px; font-size: .95rem; }
+.nt__card[data-kind="aviso"] .nt__acts { position: absolute; right: 26px; top: 6px; opacity: 0; transition: opacity .15s; }
+.nt__card[data-kind="aviso"]:hover .nt__acts, .nt__card[data-kind="aviso"]:focus-within .nt__acts { opacity: 1; }
+@media (hover: none) { .nt__card[data-kind="aviso"] .nt__acts { position: static; opacity: 1; } }

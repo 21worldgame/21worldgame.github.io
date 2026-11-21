@@ -1,5 +1,6 @@
 // Chat global (regras puras): filtro de palavrão, limites e taxa de destaque que acompanha a economia.
 import { turnOf } from './npcs.js';
+import { styleLine } from './bot-chat.js';
 export const MIN_LEVEL = 2;
 export const MAX_LEN = 200;
 export const GAP_MS = 4000;          // uma mensagem a cada 4 s
@@ -113,6 +114,6 @@ export function npcLine(slot, nicks) {
   const r = () => { a = (a + 0x6D2B79F5) >>> 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   if (!nicks.length || r() < 0.25) return null;
   const name = turnOf(slot, nicks, NPC_GAP), others = nicks.filter(n => n !== name);
-  const text = others.length && r() < 0.2 ? `@${pick(r, others)} ${pick(r, REPLIES)}` : casual(LINES[lineOf(slot)](r), r);
+  const text = styleLine(name, others.length && r() < 0.2 ? `@${pick(r, others)} ${pick(r, REPLIES)}` : casual(LINES[lineOf(slot)](r), r));   // cada um no seu jeito
   return { id: `npc${slot}`, name, text, at: slot * NPC_GAP + Math.floor(r() * 20000) };
 }
