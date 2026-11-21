@@ -627,7 +627,7 @@ function openProfile(pid, fetched) {
         <div class="pf__cars">${(p.cars || []).length ? p.cars.map(m => L.CARS[m] ? `<span class="pf__car"><img src="assets/${L.CARS[m].img}.webp" alt=""><small>${esc(L.CARS[m].name)}</small></span>` : '').join('') : '<p class="muted small">Sem carros ainda.</p>'}</div>
     <h3>conquistas ${p.ach?.length || 0} de ${P.ACHIEVEMENTS.length}</h3>
     <ul class="achs">${P.ACHIEVEMENTS.map(a => `<li class="${p.ach?.includes(a.id) ? 'is-got' : ''}"><span class="badge__medal" aria-hidden="true"></span>${esc(a.txt)}</li>`).join('')}</ul>
-    ${!me && TUI.online().some(x => x.pid === pid) ? `<div class="pf__acts"><button class="btn btn--gold" data-act="trade-invite" data-id="${esc(pid)}">propor troca</button></div>` : ''}
+    ${!me && TUI.online().some(x => x.pid === pid) ? `<div class="pf__acts"><button class="btn btn--gold" data-act="trade-invite" data-id="${esc(pid)}">negociar</button></div>` : ''}
     ${!me && String(pid).startsWith('npc:') ? `<div class="pf__acts"><button class="btn btn--gold" data-act="trade-bot" data-id="${esc(String(pid).slice(4))}">negociar (preço de mercado)</button></div>` : ''}
     ${me ? `<div class="pf__acts"><button class="btn btn--glass" data-act="edit-char">editar personagem</button>${Auth.account() ? '<button class="btn btn--glass" data-act="logout">sair da conta</button><button class="btn btn--danger btn--sm" data-act="wipe">apagar meus dados</button>' : ''}</div>${Auth.account() ? `<p class="muted small">Conta: ${esc(Auth.account().email)}</p>` : ''}` : ''}`;
   const dlg = $('#dlg-profile');
@@ -666,7 +666,7 @@ function renderInv() {
   renderFeira();
   const ppl = TUI.online();
   $('#inv-peers').innerHTML = ppl.length ? ppl.map(p => `<li><span class="who__av">${avatarSVG(p.look || {}, { label: p.name })}</span><span class="inv-peers__n"><span>${esc(p.name)}</span><small class="muted"> nível ${p.level}</small></span>
-    <span class="inv-peers__a"><button class="btn btn--gold btn--sm" data-act="trade-invite" data-id="${esc(p.pid)}">propor troca</button></span></li>`).join('') : '';
+    <span class="inv-peers__a"><button class="btn btn--gold btn--sm" data-act="trade-invite" data-id="${esc(p.pid)}">negociar</button><button class="btn btn--glass btn--sm" data-profile="${esc(p.pid)}">perfil</button></span></li>`).join('') : '';
   const npcOn = NPC.onlineNow(Live.now(), 10);
   if (!ppl.length && !npcOn.length) $('#inv-peers').innerHTML = '<li class="muted small">Ninguém online agora. Chame os amigos pelo link do jogo.</li>';
   $('#inv-peers').insertAdjacentHTML('beforeend', npcOn.map(n => `<li><span class="who__av">${avatarSVG(n.look, { label: n.nick })}</span><span class="inv-peers__n"><span>${esc(n.nick)}</span><small class="muted"> nível ${NPC.levelFor(NPC.worthAt(n, S().month))}</small></span>
@@ -1349,7 +1349,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 76;
+const APP_VERSION = 77;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;
