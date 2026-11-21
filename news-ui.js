@@ -15,14 +15,14 @@ function add(n, fresh = true) {
   if (!n || (n.id && seen.has(n.id))) return;
   seen.add(n.id); items.push(n); items.sort((a, b) => a.at - b.at); if (items.length > 40) items.shift();
   if (fresh && n.at > Date.now() - 120000) cur = items.indexOf(n);   // notícia nova entra no ar na hora
-  draw();
+  draw(); try { G.onTv?.(n); } catch {}   // portal de notícias acompanha a TV
 }
 // chegou pelo salão
 // um mesmo jogador aparece no máximo 1 vez a cada 3 min (quem negocia muito não toma conta da TV)
 export const NAME_GAP = 180000;
 const recentName = (name, at) => items.some(x => x.real && x.name === name && Math.abs(at - x.at) < NAME_GAP);
 export function receive(d) { const n = N.accept(d); if (n && !recentName(n.name, n.at)) add(n); }
-export const recent = (n = 6) => items.slice(-n).reverse();   // portal de notícias (home-ui.js): inclui o mundo todo
+export const big = (min = 1e6, n = 6) => items.filter(x => Math.abs(x.val || 0) >= min).slice(-n).reverse();   // portal: só os grandes negócios da TV
 export const history = () => items.filter(n => n.real).slice(-15).map(({ id, kind, name, what, val, at }) => ({ id, kind, name, what, val, at }));
 
 // linha do livro-caixa do próprio jogador (ver store.note): vira notícia para todos

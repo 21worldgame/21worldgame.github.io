@@ -1184,7 +1184,7 @@ tabs.forEach((t, i) => {
 const bootErrs = [];
 const safe = (what, fn) => { try { fn(); } catch (e) { console.error(what, e); bootErrs.push(`${what}: ${e?.message || e}`); } };
 // abrir o jogo cai no portal de notícias; recarregar a página mantém a aba onde estava
-safe('aba inicial', () => { let first = false; try { first = !sessionStorage.getItem('21world.opened'); sessionStorage.setItem('21world.opened', '1'); } catch {} show(first && !/[?&](mesa|truco|sinuca|poker)=/.test(location.search) ? 'inicio' : location.hash.slice(1)); });
+safe('aba inicial', () => { let first = false; try { first = !sessionStorage.getItem('21world.opened'); sessionStorage.setItem('21world.opened', '1'); } catch {} show(first && !location.hash && !/[?&](mesa|truco|sinuca|poker)=/.test(location.search) ? 'inicio' : location.hash.slice(1)); });   // atalho do app (#mesa, #ranking) abre direto
 // aplicativo instalável e cache dos arquivos (só no site publicado, em https)
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 window.__booted = true;   // a página sabe que o jogo abriu (ver o socorro da abertura no index.html)
@@ -1398,7 +1398,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 88;
+const APP_VERSION = 89;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;
@@ -1484,9 +1484,12 @@ document.addEventListener('click', e => { const g = e.target.closest('[data-tab-
 {
   const grid = document.getElementById('mnav-grid'), sheet = document.getElementById('mnav-sheet');
   const btn = t => `<button type="button" data-mnav="${t.dataset.tab}">${t.querySelector('svg')?.outerHTML || ''}<span>${[...t.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("").trim()}</span></button>`;
-  if (grid) grid.innerHTML = Object.entries(CATS).map(([c, ids]) => `<h4 class="mnav-cat">${CAT_NAME[c]}</h4>${ids.map(id => btn(document.getElementById(`t-${id}`))).join('')}`).join('');
-  const openSheet = on => { sheet.hidden = !on; document.querySelector('[data-mnav="menu"]')?.setAttribute('aria-expanded', String(on)); document.body.classList.toggle('mnav-open', on); };
+  // atalhos que no celular saem do topo (passe e instalar app) ficam no começo do menu
+  if (grid) grid.innerHTML = `<div class="mnav-quick"><button type="button" data-act="open-pass">passe de temporada</button><button type="button" data-proxy="#btn-install">instalar app</button></div>` + Object.entries(CATS).map(([c, ids]) => `<h4 class="mnav-cat">${CAT_NAME[c]}</h4>${ids.map(id => btn(document.getElementById(`t-${id}`))).join('')}`).join('');
+  const openSheet = on => { if (on) { const i = grid.querySelector('[data-proxy="#btn-install"]'); if (i) i.hidden = !!document.getElementById('btn-install')?.hidden; } sheet.hidden = !on; document.querySelector('[data-mnav="menu"]')?.setAttribute('aria-expanded', String(on)); document.body.classList.toggle('mnav-open', on); };
   document.addEventListener('click', e => {
+    const px = e.target.closest('[data-proxy]'); if (px) { openSheet(false); document.querySelector(px.dataset.proxy)?.click(); return; }
+    if (e.target.closest('.mnav-quick [data-act]')) { openSheet(false); return; }
     const b = e.target.closest('[data-mnav]'); if (!b) { if (!sheet.hidden && e.target === sheet) openSheet(false); return; }
     const v = b.dataset.mnav;
     if (v === 'menu') return openSheet(sheet.hidden);

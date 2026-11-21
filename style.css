@@ -2934,3 +2934,44 @@ details.herd-guide > summary { margin: 0; }
 .portal__date, .portal__cols li { text-transform: none; }
 .pn h3::first-letter, .portal h2::first-letter { text-transform: uppercase; }
 .portal__grid > .pn--mini { min-height: 260px; }
+.portal__live-list .pl { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 2px; }
+.pl p { margin: 0; font-size: .86rem; line-height: 1.35; }
+.pl__k { padding: 4px 7px; border-radius: 6px; font: 800 .6rem/1 var(--font-display); letter-spacing: .08em; background: rgba(255,255,255,.08); color: #cbd2dd; }
+.pl__k--compra { background: rgba(239,68,68,.16); color: #fca5a5; }
+.pl__k--venda { background: rgba(34,197,94,.14); color: #86efac; }
+.pl__k--premio { background: rgba(245,184,51,.16); color: #ffd76a; }
+.pl__k--troca, .pl__k--negocio { background: rgba(96,165,250,.14); color: #93c5fd; }
+.pl__m { display: grid; justify-items: end; gap: 2px; }
+.pl__m b { color: #ffd76a; font: 800 .9rem/1 var(--font-display); white-space: nowrap; }
+.pl__m small { color: var(--color-muted); font-size: .7rem; }
+.portal__box h2 small { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 40rem) { .portal__live-list .pl { grid-template-columns: minmax(0, 1fr) auto; } .pl__k { grid-column: 1 / -1; justify-self: start; } }
+
+/* ===== celular: barra de topo compacta de app (logo · dinheiro · fichas · missões · você) + faixa do mês ===== */
+@media (max-width: 40rem) {
+  .hud { padding-top: env(safe-area-inset-top); }
+  .hud__in { display: grid !important; grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "brand stats miss me" "clock clock clock clock"; align-items: center; gap: 6px 10px !important; padding-block: 8px 0 !important; }
+  .hud__in > * { order: 0 !important; margin: 0 !important; }
+  .brand { grid-area: brand; } .brand__word { display: none; } .brand__mark { width: 30px; height: 30px; }
+  .hud__in > .me { grid-area: me; padding: 0; border: 0; background: none; min-height: 0; }
+  .me__txt { display: none; }
+  .me__ring { width: 40px; height: 40px; }
+  .stats-hud { grid-area: stats; display: flex !important; gap: 14px !important; width: auto !important; min-width: 0; }
+  .stats-hud > div:nth-child(3) { display: none; }
+  .stats-hud dt { font-size: .56rem; letter-spacing: .06em; text-transform: uppercase; }
+  .stats-hud dd { font-size: .95rem !important; }
+  .stats-hud .chip-ico { width: 12px; height: 12px; }
+  .btn--missions { grid-area: miss; flex: none !important; width: 40px; height: 40px; min-height: 40px !important; padding: 0 !important; font-size: 0 !important; display: grid; place-items: center; border-radius: 12px; position: relative; }
+  .btn--missions svg { width: 20px; height: 20px; }
+  .btn--missions .pill { position: absolute; top: -4px; right: -4px; font-size: .62rem; }
+  .btn--pass, .tkmenu, #btn-install, .hdr-fs, .hdr-side, .hdr-chat { display: none !important; }
+  .worldclock { grid-area: clock; position: relative; display: flex !important; flex-direction: row !important; align-items: center; justify-content: space-between; gap: 8px; height: auto !important; min-width: 0 !important; margin: 0 -16px !important; padding: 5px 16px 7px !important; border: 0 !important; border-radius: 0 !important; background: rgba(255,255,255,.03) !important; box-shadow: none !important; }
+  .worldclock__t { display: none !important; }
+  .worldclock b { font-size: .72rem !important; }
+  .worldclock small { font-size: .66rem !important; opacity: .7; }
+  .worldclock__bar { position: absolute !important; left: 0; right: 0; bottom: 0; height: 2px !important; margin: 0 !important; border-radius: 0 !important; }
+  main.container { padding-top: 12px; }
+  .mnav-quick { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .mnav-quick button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; border-radius: 14px; border: 1px solid rgba(245,184,51,.35); background: rgba(245,184,51,.1); color: #ffd76a; font: 800 .8rem/1 var(--font-display); }
+  .mnav-quick button[hidden] { display: none; }
+}
