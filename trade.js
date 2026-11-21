@@ -3,7 +3,7 @@
 import { CARS, region } from './logic.js';
 import { KINDS as ANIMAL, value as animalValue } from './stable.js';
 import * as CD from './cards.js';
-import { POS as FPOS, value as fValue, salary as fSalary, club as fClub, adoptClub } from './futebol.js';
+import { POS as FPOS, value as fValue, salary as fSalary, club as fClub, adoptClub, contractLeft, lockedPlayer, lockMsg } from './futebol.js';
 import * as NG from './negocios.js';
 import * as GR from './granja.js';
 import { CATALOG, accsOf } from './avatar.js';
@@ -45,6 +45,7 @@ export function canGive(s, items) {
     if (i.kind === 'aviario' && (!(s.granja?.houses || []).some(h => h.id === i.data?.id) || GR.lotOf(s, i.data.id))) return 'esse galpão da granja não está livre.';
     if (i.kind === 'empresa' && !(s.biz?.[i.cat] || []).some(b => b.id === i.data?.id)) return 'essa empresa não é mais sua.';
     if (i.kind === 'club' && s.fut?.club !== i.data?.club) return 'esse clube não é mais seu.';
+    if ((i.kind === 'club' && contractLeft(s) > 0) || (i.kind === 'player' && lockedPlayer(s, (s.fut?.squad || []).find(p => p.id === i.data?.id)))) return lockMsg(s);
     if (i.kind === 'land' && !(s.lands || []).some(l => l.id === i.data?.id && l.own)) return 'essa terra não é mais sua.';
     if (i.kind === 'land' && i.data.crop) return 'terra com lavoura plantada não pode ser trocada.';
     if (i.kind === 'card' && !(s.cards || []).some(c => c.id === i.data?.id)) return 'essa carta não é mais sua.';

@@ -133,6 +133,13 @@ export const standings = lg => lg.teams.map(t => ({ ...t, ...lg.table[t.id] }))
   .sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf || a.name.localeCompare(b.name));
 const teamStr = (f, id) => (id === 'user' ? strength(f.squad, f.formation, f.style, f.morale || 0, f.xi) : { att: f.league.teams.find(t => t.id === id).rating, def: f.league.teams.find(t => t.id === id).rating });
 
+// contrato: quem assume um clube fica com ele (e com o elenco que veio junto) por 12 meses do mundo antes de vender
+export const CONTRACT = 12;
+export const contractLeft = s => (s.fut?.since == null ? 0 : Math.max(0, s.fut.since + CONTRACT - (s.month || 1)));
+export const lockedPlayer = (s, p) => !!p?.ct && contractLeft(s) > 0;
+export const lockMsg = s => `contrato de ${CONTRACT} meses com o clube: faltam ${contractLeft(s)} ${contractLeft(s) === 1 ? 'mês' : 'meses'} para vender o clube ou o elenco que veio com ele.`;
+const signed = squad => squad.map(p => ({ ...p, ct: true }));
+
 // assumir o comando de um clube real
 export function takeClub(s, name, rng = Math.random) {
   if (s.fut?.club) return 'você já comanda um clube.';
@@ -142,7 +149,7 @@ export function takeClub(s, name, rng = Math.random) {
   if (s.money < cost) return 'dinheiro insuficiente para assumir esse clube.';
   s.money -= cost;
   const div = divOf(name);
-  s.fut = { club: c.n, colors: c.c, div, season: 1, formation: '4-4-2', style: 'equilibrado', squad: [...genSquad(c.r - 3, rng), ...(s.freeAgents || [])], market: [], offers: [], history: [], earned: 0, trophies: 0, stadium: 1, morale: 0 };
+  s.fut = { club: c.n, colors: c.c, div, season: 1, formation: '4-4-2', style: 'equilibrado', squad: [...signed(genSquad(c.r - 3, rng)), ...(s.freeAgents || [])], market: [], offers: [], history: [], earned: 0, trophies: 0, stadium: 1, morale: 0, since: s.month || 1 };
   s.freeAgents = [];
   s.fut.league = newLeague(div, c.n, rng);
   s.money += SPONSOR[div]; s.fut.earned += SPONSOR[div];
@@ -155,7 +162,7 @@ export function adoptClub(s, d, rng = Math.random) {
   if (s.fut?.club) return 'você já comanda um clube.';
   const c = club(d.club); if (!c) return 'clube inválido.';
   const div = divOf(c.n);
-  s.fut = { club: c.n, colors: c.c, div, season: 1, formation: '4-4-2', style: 'equilibrado', squad: [...(d.squad || []), ...(s.freeAgents || [])], market: [], offers: [], history: [], earned: 0, trophies: d.trophies || 0, stadium: d.stadium || 1, morale: 0 };
+  s.fut = { club: c.n, colors: c.c, div, season: 1, formation: '4-4-2', style: 'equilibrado', squad: [...signed(d.squad || []), ...(s.freeAgents || [])], market: [], offers: [], history: [], earned: 0, trophies: d.trophies || 0, stadium: d.stadium || 1, morale: 0, since: s.month || 1 };
   s.freeAgents = []; s.fut.league = newLeague(div, c.n, rng); refreshMarket(s.fut, rng);
   return null;
 }
@@ -182,6 +189,7 @@ export function sell(s, id, price) {
   const f = s.fut, p = f?.squad.find(x => x.id === id);
   if (!p) return 0;
   if (f.squad.length <= 14) return -1;
+  if (lockedPlayer(s, p)) return -2;
   const v = Math.round(price ?? value(p) * 0.8);
   s.money += v; f.squad.splice(f.squad.indexOf(p), 1);
   f.offers = (f.offers || []).filter(o => o.pid !== id);
@@ -198,10 +206,11 @@ export function upgradeStadium(s) {
   return null;
 }
 // clubes-bot fazem propostas pelos seus jogadores (aceite ou recuse até 2 rodadas)
-function botOffers(f, rng) {
+function botOffers(s, rng) {
+  const f = s.fut;
   f.offers = (f.offers || []).filter(o => o.until > f.league.round && f.squad.some(p => p.id === o.pid));
   if (f.offers.length >= 3 || rng() > 0.3) return;
-  const p = [...f.squad].sort((a, b) => b.ovr - a.ovr)[Math.floor(rng() * 6)];
+  const p = f.squad.filter(x => !lockedPlayer(s, x)).sort((a, b) => b.ovr - a.ovr)[Math.floor(rng() * 6)];
   if (!p || f.offers.some(o => o.pid === p.id)) return;
   const buyer = pick(CLUBS[Math.max(0, f.div - (rng() < 0.4 ? 1 : 0))].filter(c => c.n !== f.club), rng);
   f.offers.push({ id: `o${Date.now().toString(36)}${pid++}`, pid: p.id, name: p.name, club: buyer.n, amount: Math.round(value(p) * (0.75 + rng() * (OFFER_MAX - 0.75)) / 1000) * 1000, until: f.league.round + 2 });
@@ -212,7 +221,7 @@ export function answerOffer(s, oid, yes) {
   f.offers = f.offers.filter(x => x !== o);
   if (!yes) return { ok: true };
   const v = sell(s, o.pid, o.amount);
-  return v < 0 ? { err: 'o elenco precisa de pelo menos 14 jogadores.' } : { ok: true, amount: v, offer: o };
+  return v === -2 ? { err: lockMsg(s) } : v < 0 ? { err: 'o elenco precisa de pelo menos 14 jogadores.' } : { ok: true, amount: v, offer: o };
 }
 
 // quem marcou: atacantes e meias têm mais chance
@@ -259,7 +268,7 @@ export function playRound(s, rng = Math.random, prizeMult = 1) {
   for (const p of f.squad) { if (p.inj) p.inj--; else if (rng() < 0.02) p.inj = 1 + Math.floor(rng() * 3); }
   lg.round++;
   lg.results = results;
-  botOffers(f, rng);
+  botOffers(s, rng);
   return { mine, games: results, cash, lines, done: lg.round >= lg.fixtures.length };
 }
 

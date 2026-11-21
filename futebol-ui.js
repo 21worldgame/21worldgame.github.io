@@ -95,7 +95,7 @@ function renderSquad() {
   $('#ft-squad').innerHTML = [...c.squad].sort((a, b) => order.indexOf(a.pos) - order.indexOf(b.pos) || b.ovr - a.ovr).map(p => `<tr>
     <td><span class="posb posb--${p.pos}">${p.pos}</span></td><td>${esc(p.name)}${p.trait ? ` <span class="muted small">${esc(p.trait)}</span>` : ''}${p.inj ? ' <span class="tag tag--red">lesionado</span>' : ''}${p.sus ? ' <span class="tag tag--red">suspenso</span>' : ''}</td><td class="num">${p.age}</td>
     <td class="num"><strong>${p.ovr}</strong></td><td class="num">${p.pot}</td><td class="num">${brl(p.sal)}</td><td class="num">${brl(FT.value(p))}</td>
-    <td class="acts"><button class="btn btn--glass btn--sm" data-act="ft-sell" data-id="${p.id}">vender ${brl(Math.round(FT.value(p) * 0.8))}</button></td></tr>`).join('');
+    <td class="acts">${FT.lockedPlayer(G.S, p) ? `<span class="tag" title="${esc(FT.lockMsg(G.S))}">contrato: ${FT.contractLeft(G.S)} m</span>` : `<button class="btn btn--glass btn--sm" data-act="ft-sell" data-id="${p.id}">vender ${brl(Math.round(FT.value(p) * 0.8))}</button>`}</td></tr>`).join('');
 }
 function renderTable() {
   const lg = f().league, st = FT.standings(lg), z = FT.zone(lg), n = st.length;
@@ -124,7 +124,7 @@ export function take(name) {
   note(`assumiu o ${name}`, -FT.clubPrice(name));
   note(`patrocínio da temporada`, FT.SPONSOR[G.S.fut.div]);
   award('ftFound'); confetti(80); sfx.play('stack', 0.7);
-  say(`Você é o novo presidente do ${name}! O patrocínio de ${brl(FT.SPONSOR[G.S.fut.div])} já entrou.`);
+  say(`Você é o novo presidente do ${name}! O patrocínio de ${brl(FT.SPONSOR[G.S.fut.div])} já entrou. Contrato de ${FT.CONTRACT} meses: o clube e o elenco só podem ser vendidos depois disso.`);
   view = 'jogo';
 }
 export function buy(id, price) {
@@ -142,6 +142,7 @@ export function sell(id) {
   const p = f().squad.find(x => x.id === id);
   if (!confirm(`Vender ${p.name} por ${brl(Math.round(FT.value(p) * 0.8))}? Propostas de clubes costumam pagar mais.`)) return;
   const v = FT.sell(G.S, id);
+  if (v === -2) return say(FT.lockMsg(G.S)[0].toUpperCase() + FT.lockMsg(G.S).slice(1), true);
   if (v < 0) return say('O clube precisa de pelo menos 14 jogadores. Para vender todos, venda o clube inteiro no inventário.', true);
   note(`venda de ${p.name}`, v); say(`${p.name} vendido.`);
 }

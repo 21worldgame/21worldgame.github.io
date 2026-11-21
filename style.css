@@ -1487,10 +1487,10 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .tk-btn { gap: 7px; }
 .tk-btn__dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; box-shadow: 0 0 0 0 currentColor; }
 .tk-btn__dot.is-up { background: #2ee66b; animation: lpPulse 1.6s infinite; } .tk-btn__dot.is-down { background: #ff5a6a; animation: lpPulse 1.6s infinite; }
-.tkpanel { position: absolute; right: 0; top: calc(100% + 8px); z-index: 60; width: 290px; padding: 12px; border-radius: 14px; background: rgba(10,14,28,.97); border: 1px solid rgba(125,211,252,.3); box-shadow: 0 18px 40px rgba(0,0,0,.6); }
+.tkpanel { position: fixed; left: 50%; transform: translateX(-50%); top: var(--tk-top, 80px); max-height: calc(100dvh - var(--tk-top, 80px) - 12px); overflow-y: auto; overscroll-behavior: contain; z-index: 60; width: min(600px, calc(100vw - 24px)); padding: 12px; border-radius: 14px; background: rgba(10,14,28,.97); border: 1px solid rgba(125,211,252,.3); box-shadow: 0 18px 40px rgba(0,0,0,.6); }
 .tkpanel h4 { margin: 0 0 8px; font-size: .9rem; display: flex; justify-content: space-between; align-items: center; }
 .tkpanel h4 small { font-size: .65rem; color: #2ee66b; text-transform: uppercase; letter-spacing: .08em; }
-.tkpanel ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.tkpanel ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2px 8px; }
 .tkpanel .tk { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "n p" "s c"; column-gap: 10px; padding: 7px 8px; border-radius: 9px; cursor: pointer; }
 .tkpanel .tk:hover { background: rgba(125,211,252,.1); }
 .tkpanel .tk b { grid-area: n; color: #ffd76a; font-size: .85rem; } .tkpanel .tk--farm b { color: #a7f3c0; }
@@ -1498,7 +1498,7 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .tkpanel .tk__p { grid-area: p; justify-self: end; font-style: normal; font-weight: 700; font-variant-numeric: tabular-nums; }
 .tkpanel .tk__c { grid-area: c; justify-self: end; font-style: normal; font-size: .75rem; font-weight: 700; }
 .tkpanel p { margin: 8px 0 0; }
-@media (max-width: 40rem) { .tkmenu { order: 4; } .tkpanel { position: fixed; left: 12px; right: 12px; top: 120px; width: auto; } }
+@media (max-width: 40rem) { .tkmenu { order: 4; } }
 /* sem marrom: caixas de tutorial e de vantagens no mesmo azul-noite da feira */
 .howto { border-color: rgba(125,211,252,.35); background: linear-gradient(90deg, rgba(56,189,248,.12), rgba(139,92,246,.08)); }
 .howto__t::before { background: linear-gradient(135deg, #38bdf8, #8b5cf6); color: #fff; }
@@ -3003,3 +3003,17 @@ details.herd-guide > summary { margin: 0; }
 .portal__livedot::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 4px; border-radius: 50%; background: #ef4444; vertical-align: middle; }
 @media (max-width: 64rem) { .portal__cols--3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .portal__cols--3 > div:last-child { grid-column: 1 / -1; } }
 @media (max-width: 40rem) { .portal__cols--3 { grid-template-columns: minmax(0, 1fr); } }
+
+/* amigos e parcerias (aba banco) */
+.am h4 { margin: 16px 0 8px; }
+.am__row { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.am__card { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 12px; border-radius: 14px; }
+.am__card > div { flex: 1 1 140px; display: grid; gap: 2px; min-width: 0; }
+.am__card small { font-size: .75rem; }
+.am__av { width: 44px; height: 44px; flex: none; border-radius: 50%; overflow: hidden; }
+.am__av svg { width: 100%; height: 100%; }
+.am__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.am__list li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.am__auto { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 14px; padding: 12px; border-radius: 14px; }
+.am__auto p { flex-basis: 100%; margin: 0; }
+.am__card > div > .tag { justify-self: start; }

@@ -16,13 +16,13 @@ export const HOUSE_RATE = { car: CAR_BUYBACK, land: 0.95, card: CD.SELL, player:
 export const NPC_MAX = 1.05;            // comprador da casa paga até 5% acima do preço de venda na hora
 export const MAX_LISTINGS = 8;
 
-// valor do clube inteiro: a vaga + parte do elenco + o estádio. Nunca passa de 90% do que custou menos o patrocínio da 1ª temporada,
-// então comprar e revender na hora sempre dá prejuízo (o elenco inicial já vem incluso no preço da compra).
+// valor do clube inteiro: 45% do preço do clube (um pouco menos da metade, com o elenco junto) + metade do que foi gasto no estádio.
+// Antes contava o elenco à parte e nas divisões de baixo o elenco valia até 3x o clube: comprar e vender jogadores dava lucro.
+export const CLUB_RESALE = 0.45;
 export function clubValue(f) {
   if (!f?.club) return 0;
-  const price = FT.clubPrice(f.club), squad = (f.squad || []).reduce((t, p) => t + FT.value(p), 0) * 0.3;
   let stadium = 0; for (let l = 1; l < (f.stadium || 1); l++) stadium += FT.TICKET[f.div] * 8 * l * 0.5;
-  const base = Math.min(price * 0.5 + squad, price - (FT.SPONSOR[FT.divOf(f.club)] || 0)) * 0.9;
+  const price = FT.clubPrice(f.club), base = Math.min(price * CLUB_RESALE, (price - (FT.SPONSOR[FT.divOf(f.club)] || 0)) * 0.9);   // e nunca acima do preço menos o patrocínio que veio junto
   return Math.round(Math.max(0, base) + stadium);
 }
 // tudo que dá para vender: o inventário de trocas + o clube inteiro
@@ -53,6 +53,7 @@ export function housePrice(s, it) {
 export function blocked(s, it) {
   if (it.kind === 'land' && it.data.crop) return 'terra com lavoura plantada: espere a colheita.';
   if (it.kind === 'aviario' && GR.lotOf(s, it.id)) return 'venda o lote de frangos antes.';
+  if ((it.kind === 'club' && FT.contractLeft(s) > 0) || (it.kind === 'player' && FT.lockedPlayer(s, it.data))) return FT.lockMsg(s);
   if (it.kind === 'player' && (s.fut?.squad?.length || 0) <= 14) return 'o clube precisa de pelo menos 14 jogadores. Para vender todos, venda o clube inteiro.';
   if (it.kind === 'galpao' && NG.tons(s) > NG.capacity(s) - NG.WAREHOUSES[it.data.type].cap) return 'o estoque não cabe sem esse galpão: venda parte antes.';
   return null;

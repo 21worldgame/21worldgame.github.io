@@ -22,6 +22,7 @@ export const RENT_INPUTS = 1.2;      // plantar em terra arrendada custa 20% mai
 export const RENT_CREDIT = 0.5;     // metade do aluguel já pago abate o preço se o arrendatário comprar
 export const RENT_CREDIT_CAP = 0.4; // o abatimento nunca passa de 40% do valor da terra
 export const RENT_GET = 0.0035;   // arrendamento recebido (o arrendatário NPC negocia um pouco abaixo)
+export const RENT_FRIEND = 0.0042;   // amigo arrenda sua terra parada pagando 20% mais que o arrendatário de fora
 
 const SUITS = ['♠', '♥', '♦', '♣'];
 const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
@@ -116,7 +117,7 @@ export const CROPS = {
   cafe: { label: 'café', cost: 12000, months: 8, yield: 30, good: 'cafe' },
 };
 export const hasVehicle = (s, type) => (s.cars || []).some(c => CARS[c.model]?.type === type);
-export const rentNow = l => Math.round(l.value * RENT_PAY * (1 + RENT_RAISE * Math.floor((l.age || 0) / 12)));
+export const rentNow = l => Math.round(l.value * (l.rate ?? RENT_PAY) * (1 + RENT_RAISE * Math.floor((l.age || 0) / 12)));
 export const rentCredit = l => Math.min((l.paid || 0) * RENT_CREDIT, l.value * RENT_CREDIT_CAP);
 export const buyRentedPrice = l => Math.round(l.value - rentCredit(l));
 export const plantCost = (s, crop, ha, rented = false) => Math.round(CROPS[crop].cost * ha * (hasVehicle(s, 'trator') ? 0.85 : 1) * PK.mult(s, 'plant') * (rented ? RENT_INPUTS : 1));
@@ -131,6 +132,7 @@ export function buyRented(s, land) {
 }
 export function plant(s, land, crop) {
   if (land.crop || land.leasedOut || land.orchard || land.cane) return 'esta terra já está ocupada.';
+  const busy = pastureBusy(s, land); if (busy) return busy;
   if (!land.own && !hasVehicle(s, 'trator')) return 'terra arrendada só aceita lavoura de quem tem trator (a máquina e os insumos ficam por sua conta).';
   const cost = plantCost(s, crop, land.ha, !land.own);
   if (cost > s.money) return 'dinheiro insuficiente para o plantio.';
@@ -209,6 +211,13 @@ export function refreshOffers(s, rng = Math.random) {
 // lotação do pasto: cabeças por hectare conforme aptidão e água; terra plantada não é pasto
 export const landCap = l => Math.floor(l.ha * (l.cap ?? 1));
 export const capacity = s => s.lands.filter(l => !l.leasedOut && !l.crop && !l.orchard && !l.cane).reduce((a, l) => a + landCap(l), 0);
+// terra é pasto OU lavoura: plantar (ou arrendar) a terra onde o gado está pastando é proibido. Antes o jogo deixava e o gado ia
+// calado para o hotel de gado; parecia que dava para tirar o lucro do boi e o da safra da mesma terra.
+export function pastureBusy(s, land) {
+  if (land.crop || land.leasedOut || land.orchard || land.cane) return null;
+  const n = heads(s), rest = capacity(s) - landCap(land), out = Math.min(landCap(land), n - Math.max(0, rest));
+  return out > 0 ? `essa terra é o pasto de ${out} bois seus. Terra é pasto ou lavoura, não os dois: venda esses bois ou consiga outro pasto antes.` : null;
+}
 export const carsValue = s => (s.cars || []).reduce((a, c) => a + c.value, 0);
 export const heads = s => s.herd.reduce((a, h) => a + (h?.heads || 0), 0);
 export const BOITEL_COST = 95, BOITEL_GAIN = 22;   // R$ por cabeça por mês e kg por mês no confinamento
@@ -254,9 +263,9 @@ export function tick(s, rng = Math.random) {
   if (over) add(`confinamento terceirizado (boitel) de ${over} cabeças`, -over * BOITEL_COST);
 
   for (const l of s.lands) {
-    if (l.own && l.leasedOut) add(`arrendamento recebido, ${l.region}`, l.value * RENT_GET);
+    if (l.own && l.leasedOut) add(`arrendamento recebido${l.leaseTo ? ` de ${l.leaseTo}` : ''}, ${l.region}`, l.value * (l.leaseTo ? RENT_FRIEND : RENT_GET));
     if (l.own) add(`manutenção e ITR, ${l.region}`, -l.value * 0.001);
-    if (!l.own) { const r = rentNow(l); l.age = (l.age || 0) + 1; l.paid = (l.paid || 0) + r; add(`arrendamento pago, ${l.region}`, -r); }
+    if (!l.own) { const r = rentNow(l); l.age = (l.age || 0) + 1; l.paid = (l.paid || 0) + r; add(`arrendamento pago${l.friend ? ` a ${l.friend}` : ''}, ${l.region}`, -r); }
   }
 
   // lavoura: cresce e colhe; a safra varia ±25% com o clima
@@ -276,15 +285,16 @@ export function tick(s, rng = Math.random) {
   for (const loan of [...s.loans]) {
     loan.bal *= 1 + loan.rate;
     const due = loan.bal / Math.max(1, loan.left);
-    if (s.money >= due) { add('parcela do banco', -due); loan.bal -= due; loan.left--; loan.missed = 0; }
+    const who = loan.from ? `do empréstimo de ${loan.from}` : 'do banco';
+    if (s.money >= due) { add(`parcela ${who}`, -due); loan.bal -= due; loan.left--; loan.missed = 0; }
     else if (++loan.missed >= 2) {
       const land = s.lands.filter(l => l.own).sort((a, b) => b.value - a.value)[0];
       if (land) {
         s.lands.splice(s.lands.indexOf(land), 1);
-        add(`banco tomou a terra em ${land.region} (${land.ha} ha)`);
+        add(`${loan.from || 'banco'} tomou a terra em ${land.region} (${land.ha} ha)`);
         loan.bal = Math.max(0, loan.bal - land.value); loan.missed = 0;
       } else add('parcela atrasada, sem garantia para executar');
-    } else add('parcela do banco atrasada');
+    } else add(`parcela ${who} atrasada`);
     if (loan.bal < 1) s.loans.splice(s.loans.indexOf(loan), 1);
   }
 

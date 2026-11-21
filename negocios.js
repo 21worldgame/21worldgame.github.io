@@ -286,7 +286,8 @@ export const value = s => { const b = s.biz; if (!b) return 0; return CAT_KEYS.r
 
 // ---------- armazenagem ----------
 export const tons = s => Object.entries(s.stock || {}).reduce((t, [k, q]) => t + (UNIT_KG[k] ? (q || 0) * UNIT_KG[k] / 1000 : 0), 0);
-export const capacity = s => FREE_TONS + (s.biz?.legacy || 0) + (s.biz?.wh || []).reduce((t, w) => t + WAREHOUSES[w.type].cap, 0);
+// galpão emprestado a amigo (lentTo) não guarda o seu estoque; galpão alugado de amigo (whRent) guarda
+export const capacity = s => FREE_TONS + (s.biz?.legacy || 0) + [...(s.biz?.wh || []).filter(w => !w.lentTo), ...(s.biz?.whRent || [])].reduce((t, w) => t + (WAREHOUSES[w.type]?.cap || 0), 0);
 export function buyWh(s, type) {
   ensure(s); const W = WAREHOUSES[type]; if (!W) return 'galpão inválido.';
   const p = whPrice(type, s.month); if (s.money < p) return 'dinheiro insuficiente para o galpão.';

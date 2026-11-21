@@ -139,7 +139,9 @@ function buildTicker() {
   const el = $('#ticker'); if (!el) return;
   el.innerHTML = `<h4>valores do dia <small>ao vivo</small></h4><ul>${tickerItems()}</ul><p class="muted small">Clique para operar ou vender.</p>`;
   const btn = $('#tk-btn'), close = () => { el.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
-  btn.addEventListener('click', e => { e.stopPropagation(); el.hidden = !el.hidden; btn.setAttribute('aria-expanded', String(!el.hidden)); updateTicker(); });
+  const place = () => el.style.setProperty('--tk-top', `${(b => b > innerHeight * 0.5 ? 12 : Math.max(8, b))(Math.round(btn.getBoundingClientRect().bottom + 8))}px`);   // logo abaixo do botão, onde quer que o topo esteja
+  addEventListener('resize', () => { if (!el.hidden) place(); });
+  btn.addEventListener('click', e => { e.stopPropagation(); place(); el.hidden = !el.hidden; btn.setAttribute('aria-expanded', String(!el.hidden)); updateTicker(); });
   document.addEventListener('click', e => { if (!el.hidden && !e.target.closest('.tkmenu')) close(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
   el.addEventListener('click', e => { const k = e.target.closest('[data-tk]')?.dataset.tk; if (!k) return; close(); if (MK.ASSETS[k]) { G.goto?.('trader'); pickAsset(k); } else G.goto?.('mercado'); });

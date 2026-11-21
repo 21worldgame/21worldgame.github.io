@@ -54,6 +54,8 @@ import * as SUI from './stable-ui.js';
 import * as FUI from './futebol-ui.js';
 import * as TUI from './trade-ui.js';
 import * as TD from './trade.js';
+import * as AM from './amigos.js';
+import * as AMU from './amigos-ui.js';
 
 const S = () => G.S;
 
@@ -349,8 +351,9 @@ function flyToLot(id) {
 // frigorífico de jogador escolhido em cada lote (a tela redesenha sem perder a escolha)
 const abpPick = {};
 document.addEventListener('change', e => { const t = e.target.closest?.('.abp__sel'); if (t) abpPick[t.id.slice(4)] = t.value; });
-function renderGado() {
-  const s = S(), n = L.heads(s), cap = L.capacity(s), ab = AB.ensure(s);
+// o frigorífico mora na aba negócios (antes ficava no fim da aba gado)
+function renderAbate() {
+  const s = S(), ab = AB.ensure(s);
   $('#abate-box').innerHTML = ab.owned
     ? `<img src="assets/farm-frigorifico.webp" alt="" loading="lazy"><div><h3>seu frigorífico</h3>
       <p class="small">Abatidos este mês: <b>${ab.used} de ${AB.OWN.cap}</b> · paga ${Math.round(AB.OWN.premium * 100)}% a mais na arroba + couro ${brl(AB.OWN.hide)}/cabeça · custo fixo ${brl(AB.OWN.fixed)}/mês</p>
@@ -363,6 +366,9 @@ function renderGado() {
     : `<img src="assets/farm-frigorifico.webp" alt="" loading="lazy"><div><h3>frigorífico próprio</h3>
       <p class="small">Sem frigorífico, o abate é em terceiros: ${Math.round(AB.THIRD.premium * 100)}% a mais que vender vivo, menos ${brl(AB.THIRD.cost)} por cabeça. Com o seu: ${Math.round(AB.OWN.premium * 100)}% a mais + couro, até ${AB.OWN.cap} bois por mês, dá para comprar boi gordo pronto para abater e ainda terceirizar o abate para outros jogadores, cobrando taxa por cabeça.</p>
       <button class="btn btn--gold" data-act="ab-build">construir frigorífico (${brl(AB.OWN.price)})</button></div>`;
+}
+function renderGado() {
+  const s = S(), n = L.heads(s), cap = L.capacity(s); AB.ensure(s);
   const avg = n ? s.herd.reduce((a, h) => a + h.heads * h.kg, 0) / n : 0;
   $('#herd-stats').innerHTML = [
     ['cabeças', int(n)], ['pasto livre', `${int(Math.max(0, cap - n))} de ${int(cap)}`], ['peso médio', n ? `${int(avg)} kg` : '—'], ['valor do rebanho', brl(L.herdValue(s))],
@@ -582,6 +588,7 @@ function renderBanco() {
   $('#lent').innerHTML = s.lent.length ? s.lent.map(p => `<tr>
     <td>${esc(p.name)}</td><td class="num">${brl(p.bal)}</td><td class="num">${(p.rate * 100).toFixed(1)}%</td><td class="num">${p.left}</td></tr>`).join('')
     : '<tr><td colspan="4" class="empty">Você ainda não emprestou para ninguém.</td></tr>';
+  AMU.render();
 }
 
 function renderLivro() {
@@ -770,7 +777,7 @@ document.addEventListener('submit', e => { if (e.target.id === 'tr-chat-form') {
 
 // desempenho: cada aba só é desenhada quando está aberta (ou quando o usuário entra nela)
 const PANELS = { inicio: () => HOME.render(), personagem: () => renderChar(), terras: () => renderTerras(), gado: () => renderGado(), mercado: () => renderMercado(),
-  carros: () => renderLoja('carros'), suinos: () => SUU.render(), negocios: () => NGU.render(), banco: () => renderBanco(), livro: () => renderLivro(), equipe: () => SFU.render(), haras: () => { SUI.render(); LEU.render(); }, futebol: () => FUI.render(), inventario: () => renderInv(), ranking: () => RKUI.render(), laranja: () => renderPomar(), cana: () => renderCana(), cartas: () => renderCartas(), granja: () => renderGranja(), loja: () => renderLoja(), mesa: () => C.renderLobby() };
+  carros: () => renderLoja('carros'), suinos: () => SUU.render(), negocios: () => { NGU.render(); renderAbate(); }, banco: () => renderBanco(), livro: () => renderLivro(), equipe: () => SFU.render(), haras: () => { SUI.render(); LEU.render(); }, futebol: () => FUI.render(), inventario: () => renderInv(), ranking: () => RKUI.render(), laranja: () => renderPomar(), cana: () => renderCana(), cartas: () => renderCartas(), granja: () => renderGranja(), loja: () => renderLoja(), mesa: () => C.renderLobby() };
 let currentTab = 'mesa';
 // cada parte da tela desenha separada: se uma der erro, as outras continuam (a tela nunca fica travada)
 let uiErrAt = 0;
@@ -828,8 +835,8 @@ const ACTS = {
   'gr-house'(id) { const q = Number($(`#gr-q-${id}`)?.value), v = !!$(`#gr-v-${id}`)?.checked, r = GR.house(S(), id, q, v); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true); note(`granja: compra de ${int(r.birds)} pintinhos (pago 1 vez)`, -r.cost); say(`${int(r.birds)} pintinhos alojados por ${brl(r.cost)}. A ração é cobrada em cada fechamento do mês. Venda no 2º mês, com ~2,8 kg.`); },
   'gr-sell'(id) { const l = GR.ensure(S()).lots.find(x => x.id === id); if (l && l.age < 2 && !confirm('Ainda não chegou no ponto (2º mês). Vender mesmo assim?')) return; const r = GR.sellLot(S(), id); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true); note(`granja: venda de ${int(r.lot.birds)} frangos${r.profit != null ? ` (${r.profit >= 0 ? 'lucro' : 'prejuízo'} do lote ${brl(Math.abs(r.profit))})` : ''}`, r.amount); confetti(50); sfx.play('stack', 0.6); say(`Lote vendido ao frigorífico por ${brl(r.amount)}.${r.profit != null ? ` Gasto total do lote ${brl(r.cost)}: ${r.profit >= 0 ? 'lucro' : 'prejuízo'} de ${brl(Math.abs(r.profit))}.` : ''}`); },
   'gr-sellhouse'(id) { if (!confirm('Vender este galpão?')) return; const r = GR.sellHouse(S(), id); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true); note('granja: venda de galpão', r.amount); say(`Galpão vendido por ${brl(r.amount)}.`); },
-  'pm-plant'(id) { const l = find(S().lands, id); if (!confirm(`Plantar pomar de laranja em ${l.ha} ha por ${brl(l.ha * PM.ORANGE.plant)}? A primeira colheita vem em ${PM.ORANGE.grow} meses e depois a cada ${PM.ORANGE.cycle}.`)) return; const err = PM.plant(S(), l); if (err) return say(err[0].toUpperCase() + err.slice(1), true); note(`pomar de laranja, ${l.ha} ha`, -l.ha * PM.ORANGE.plant); award('plant'); say('Mudas plantadas. Mantenha o defensivo ligado para segurar a praga.'); },
-  'cn-plant'(id) { const l = find(S().lands, id), lg = CN.logistics(S(), l); if (!confirm(`Plantar cana em ${l.ha} ha por ${brl(l.ha * CN.CANE.plant)}? Primeiro corte em ${CN.CANE.first} meses, depois a cada ${CN.CANE.cycle}. Usina a ${lg.km} km.`)) return; const err = CN.plant(S(), l); if (err) return say(err[0].toUpperCase() + err.slice(1), true); note(`plantio de cana, ${l.ha} ha`, -l.ha * CN.CANE.plant); award('plant'); say('Cana plantada. Deixe os tratos culturais ligados para segurar a broca.'); },
+  'pm-plant'(id) { const l = find(S().lands, id), busy = L.pastureBusy(S(), l); if (busy) return say(busy[0].toUpperCase() + busy.slice(1), true); if (!confirm(`Plantar pomar de laranja em ${l.ha} ha por ${brl(l.ha * PM.ORANGE.plant)}? A primeira colheita vem em ${PM.ORANGE.grow} meses e depois a cada ${PM.ORANGE.cycle}.`)) return; const err = PM.plant(S(), l); if (err) return say(err[0].toUpperCase() + err.slice(1), true); note(`pomar de laranja, ${l.ha} ha`, -l.ha * PM.ORANGE.plant); award('plant'); say('Mudas plantadas. Mantenha o defensivo ligado para segurar a praga.'); },
+  'cn-plant'(id) { const l = find(S().lands, id), lg = CN.logistics(S(), l), busy = L.pastureBusy(S(), l); if (busy) return say(busy[0].toUpperCase() + busy.slice(1), true); if (!confirm(`Plantar cana em ${l.ha} ha por ${brl(l.ha * CN.CANE.plant)}? Primeiro corte em ${CN.CANE.first} meses, depois a cada ${CN.CANE.cycle}. Usina a ${lg.km} km.`)) return; const err = CN.plant(S(), l); if (err) return say(err[0].toUpperCase() + err.slice(1), true); note(`plantio de cana, ${l.ha} ha`, -l.ha * CN.CANE.plant); award('plant'); say('Cana plantada. Deixe os tratos culturais ligados para segurar a broca.'); },
   'cn-care'(id) { const on = CN.toggleCare(find(S().lands, id)); say(on ? 'Tratos culturais ligados.' : 'Tratos desligados: a broca e o mato vão tomar a cana.', !on); },
   'cn-uproot'(id) { if (!confirm('Arrancar o canavial? Depois você pode plantar de novo (reforma).')) return; CN.uproot(find(S().lands, id)); say('Canavial arrancado. A terra está livre para replantar.'); },
   'cn-buyharv'() { if (!confirm(`Comprar colhedora por ${brl(CN.HARVESTER.price)}? O corte cai de ${brl(CN.LOGI.cutThird)} para ${brl(CN.LOGI.cutOwn)} por tonelada, com custo fixo de ${brl(CN.HARVESTER.upkeep)}/mês.`)) return; const err = CN.buyHarvester(S()); if (err) return say(err[0].toUpperCase() + err.slice(1), true); note('compra de colhedora de cana', -CN.HARVESTER.price); confetti(40); say('Colhedora na fazenda!'); },
@@ -964,7 +971,7 @@ const ACTS = {
     note(`compra de ${l.ha} ha, ${l.region} (abatendo aluguel)`, -price); award('land'); confetti(60); say('Agora a terra é sua: sem aluguel, com todas as vantagens.');
   },
   'return-land'(idv) { const l = find(S().lands, idv); S().lands.splice(S().lands.indexOf(l), 1); say('Terra devolvida ao dono.'); },
-  lease(idv) { const l = find(S().lands, idv); l.leasedOut = !l.leasedOut; say(l.leasedOut ? 'Contrato de arrendamento assinado.' : 'Terra de volta para o seu uso.'); },
+  lease(idv) { const l = find(S().lands, idv), busy = !l.leasedOut && L.pastureBusy(S(), l); if (busy) return say(busy[0].toUpperCase() + busy.slice(1), true); l.leasedOut = !l.leasedOut; delete l.leaseTo; say(l.leasedOut ? 'Contrato de arrendamento assinado.' : 'Terra de volta para o seu uso.'); },
   'sell-land'(idv) {
     const l = find(S().lands, idv);
     const v = Math.round(l.value * 0.95 + (PM.orchardValue(S(), l) + CN.caneValue(S(), l)) * 0.9);
@@ -1324,6 +1331,7 @@ function worldMonths0() {
     for (const l of MI.monthly(s)) { N(l); if (l.big) { confetti(220); say(l.txt); } }
     for (const l of NG.enforce(s)) { N(l); say(l.txt[0].toUpperCase() + l.txt.slice(1) + '. Compre galpões na loja.', true); }
     for (const l of AB.monthly(s)) N(l);
+    for (const l of AM.monthly(s, lines)) N(l);
     for (const l of CT.monthly(s, L.netWorth(s))) N(l);
     closes.push({ m: s.month, rec });
     harvests += lines.filter(l => l.txt.startsWith('colheita')).length;
@@ -1346,7 +1354,7 @@ G.ctForecast = () => {
     const s = structuredClone(s0), rng = () => 0.5;
     rec.push(...L.tick(s, rng));
     for (const m of [ST, GR, PM, CN, SU, NG]) rec.push(...m.monthly(s, rng));
-    rec.push(...MI.monthly(s, rng), ...NG.enforce(s), ...AB.monthly(s), ...CT.monthly(s, L.netWorth(s)));
+    rec.push(...MI.monthly(s, rng), ...NG.enforce(s), ...AB.monthly(s), ...AM.monthly(s, rec, rng), ...CT.monthly(s, L.netWorth(s)));
     const spent = -rec.filter(l => l.val < 0).reduce((t, l) => t + l.val, 0), earned = rec.filter(l => l.val > 0).reduce((t, l) => t + l.val, 0);
     rec.push(...L.eliteBills(s, spent, earned));
   } catch (e) { console.error('previsão do contador', e); }
@@ -1398,7 +1406,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 93;
+const APP_VERSION = 94;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;
