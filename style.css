@@ -3445,3 +3445,8 @@ dialog:not([open]) { display: none !important; }
 .glass p, .glass li, .hcard p, .scard__body h4, .shopcard__body h4, .grcard p, .tile strong { overflow-wrap: anywhere; }
 /* topo do celular: dinheiro e fichas lado a lado numa linha só */
 @media (max-width: 40rem) { .stats-hud { flex-wrap: nowrap !important; } .stats-hud > div { min-width: 0; } .stats-hud dd { white-space: nowrap; } }
+/* ficha dos anúncios do Feirão (área, região, água, vantagem, preço por unidade...) */
+.scard__facts { list-style: none; margin: 4px 0 6px; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.035); display: grid; gap: 3px; font-size: .78rem; }
+.scard__facts li { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.scard__facts li span { color: var(--color-muted); flex: none; }
+.scard__facts li b { text-align: right; font-weight: 600; overflow-wrap: anywhere; min-width: 0; }
