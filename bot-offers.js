@@ -1,11 +1,11 @@
 // Propostas dos bots: de tempos em tempos um jogador online do mundo procura VOCÊ para negociar o que você tem
-// (sacas, caixas de laranja, um lote de boi pronto) ou para te vender bezerros. Uma proposta por janela de 25 min,
-// nem toda janela tem proposta, e some quando a janela acaba. Aceitar, negociar (contraproposta) ou recusar.
+// (sacas, caixas de laranja, um lote de boi pronto) ou para te vender bezerros. Janela de 1 h, só ~1 em 3 tem proposta
+// (em média uma a cada ~3 h; a de bezerro é a mais rara), e some quando a janela acaba. Aceitar, negociar ou recusar.
 import * as NPC from './npcs.js';
 import { arrobas, cattleFee } from './logic.js';
 import { newDeal } from './bots.js';
 
-export const WIN = 25 * 60000;
+export const WIN = 60 * 60000;
 const h = n => { const x = Math.sin(n * 12.9898 + 4.1) * 43758.5453; return x - Math.floor(x); };
 const GOOD = { soja: ['sacas de soja', 'saca'], milho: ['sacas de milho', 'saca'], cafe: ['sacas de café', 'saca'], laranja: ['caixas de laranja', 'caixa'] };
 const LINES = {
@@ -16,7 +16,7 @@ const LINES = {
 // a proposta da janela atual (ou null): igual enquanto a janela durar, muda com o que você tem
 export function offerFor(s, now = Date.now()) {
   const slot = Math.floor(now / WIN), seed = slot * 7 + (s.nextId || 0) % 5;
-  if (s.botOfferDone === slot || h(seed) > 0.55) return null;
+  if (s.botOfferDone === slot || h(seed) > 0.33) return null;
   const on = NPC.onlineNow(now, 12).filter(b => !(s.blocked || []).includes(`npc:${b.id}`)); if (!on.length) return null;   // bloqueado não manda proposta
   const bot = on[Math.floor(h(seed + 1) * on.length)], p = s.prices || {}, r = h(seed + 2), line = a => a[Math.floor(h(seed + 3) * a.length)];
   const opts = [];
@@ -29,7 +29,7 @@ export function offerFor(s, now = Date.now()) {
     const total = Math.round(lot.heads * arrobas(lot.kg) * p.arroba * (1 - cattleFee(s)) * (1.01 + r * 0.05));
     return { kind: 'herd', lot: lot.id, heads: lot.heads, total, txt: line(LINES.herd).replace('{n}', lot.heads).replace('{t}', `R$ ${Math.round(total).toLocaleString('pt-BR')}`) };
   });
-  if (p.bezerro && (s.money || 0) > p.bezerro * 20) opts.push(() => {
+  if (p.bezerro && (s.money || 0) > p.bezerro * 20 && (!opts.length || h(seed + 5) < 0.35)) opts.push(() => {   // venda de bezerro: só às vezes
     const n = 10 + Math.floor(r * 4) * 10, unit = Math.round(p.bezerro * (0.92 + r * 0.07));
     return n * unit < s.money ? { kind: 'calves', heads: n, unit, total: n * unit, txt: line(LINES.calves).replace('{n}', n).replace('{p}', `R$ ${unit.toLocaleString('pt-BR')}`) } : null;
   });
