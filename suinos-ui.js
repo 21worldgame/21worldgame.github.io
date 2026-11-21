@@ -10,7 +10,7 @@ export function render() {
   el.innerHTML = st.barns.length ? st.barns.map(b => {
     const B = SU.BARNS[b.type], l = SU.lotOf(s, b.id);
     const lot = l ? `<div class="sn2-lot"><b>${int(l.pigs)} suínos · ${l.age} ${l.age === 1 ? 'mês' : 'meses'} · ~${SU.kgAt(l.age)} kg</b>
-        <span class="bar"><i style="transform:scaleX(${Math.min(1, l.age / 4).toFixed(2)})"></i></span>
+        <span class="bar"><i style="transform:scaleX(${Math.min(1, (l.age + (l.age < 4 ? G.monthFrac?.() || 0 : 0)) / 4).toFixed(3)})"></i></span>${G.eta?.(4 - l.age, 'ponto de venda') || ''}
         <span class="small">${l.age < 4 ? `ponto de venda em ${4 - l.age} ${4 - l.age === 1 ? 'mês' : 'meses'} (~${SU.kgAt(4)} kg)` : '<b class="good">no ponto de venda!</b> Depois daqui a engorda cai e a ração pesa mais.'} ${l.vac ? '· vacinado' : '<b class="bad">· sem vacina</b>'}</span>
         <span class="small">vale hoje <b class="good">${brl(SU.lotValue(s, l))}</b> (pago ${brl(l.cost)} nos leitões)</span>
         <button class="btn btn--gold btn--sm" data-su="sell" data-id="${b.id}">vender o lote (${brl(SU.lotValue(s, l))})</button></div>`

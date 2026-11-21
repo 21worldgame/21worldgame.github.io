@@ -228,20 +228,31 @@ function satThumb(l) {
 }
 const KIND_COLOR = { offer: '--print-gold', own: '--money', rent: '--violet' };
 
+// ---------- quanto falta (todos os processos): dias do mundo (30 por mês) + tempo real, contando o que resta do mês atual ----------
+const realTxt = ms => { const m = Math.max(1, Math.round(ms / 60000)); return m < 60 ? `${m} min` : m < 2880 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} dias`; };
+const monthFrac = () => { try { return W.progress(Live.world(), Live.now()); } catch { return 0; } };   // quanto do mês atual já passou (barra anda sozinha)
+function eta(monthsLeft, done = '') {
+  if (!(monthsLeft > 0)) return done ? `<span class="eta is-done">✅ ${done}</span>` : '';
+  let ms = 0; try { const w = Live.world(); ms = (monthsLeft - 1) * w.monthMs + W.msLeft(w, Live.now()); } catch { return ''; }
+  return `<span class="eta" data-until="${Math.round(Live.now() + ms)}">⏳ ${etaTxt(ms)}</span>`;
+}
+function etaTxt(ms) { let mm = 600000; try { mm = Live.world().monthMs; } catch {} const d = Math.max(1, Math.ceil(ms / mm * 30)); return `faltam ${d} ${d === 1 ? 'dia' : 'dias'} · ~${realTxt(ms)}`; }
+G.eta = eta; G.monthFrac = monthFrac;
+setInterval(() => { for (const el of document.querySelectorAll('.eta[data-until]')) { const ms = Number(el.dataset.until) - Live.now(); el.textContent = ms > 0 ? `⏳ ${etaTxt(ms)}` : '✅ pronto na virada do mês'; } }, 5000);
 function orchardBox(l) {
-  const o = l.orchard, pr = Math.min(1, o.age / PM.ORANGE.grow), nh = PM.nextHarvest(o);
+  const o = l.orchard, pr = Math.min(1, (o.age + monthFrac()) / PM.ORANGE.grow), nh = PM.nextHarvest(o);
   return `<div class="orchard${o.pest >= 3 ? ' is-sick' : ''}"><img src="assets/farm-laranja.webp" alt="" loading="lazy">
     <div><b>pomar de laranja · ${l.ha} ha</b> <span class="small muted">${o.age < PM.ORANGE.grow ? `em formação (${o.age} de ${PM.ORANGE.grow} meses)` : `produzindo · ${o.harvests} colheitas`}</span>
-    ${o.age < PM.ORANGE.grow ? `<span class="bar"><i style="transform:scaleX(${pr})"></i></span>` : ''}
+    ${o.age < PM.ORANGE.grow ? `<span class="bar"><i style="transform:scaleX(${pr})"></i></span>` : ''}${eta(nh)}
     <span class="small">próxima colheita em ${nh} ${nh === 1 ? 'mês' : 'meses'}: ~${int(PM.expectedWith(S(), l))} caixas${PM.coverage(S(), 'plataforma') ? ' (com plataforma)' : ''} · saúde ${Math.round(o.health * 100)}% · praga ${PM.PEST_LABEL[Math.min(6, o.pest)]}</span>
     <div class="row"><button class="btn btn--sm ${o.spray ? 'btn--gold' : 'btn--glass'}" data-act="pm-spray" data-id="${l.id}" aria-pressed="${o.spray}">${o.spray ? 'defensivo ligado' : 'defensivo desligado'} (${brl(PM.sprayCost(S(), l))}/mês${PM.coverage(S(), 'pulv') ? `, era ${brl(l.ha * PM.ORANGE.spray)}` : ''})</button>
       <button class="btn btn--glass btn--sm" data-act="pm-uproot" data-id="${l.id}">arrancar pomar</button></div></div></div>`;
 }
 function caneBox(l) {
-  const c = l.cane, nc = CN.nextCut(c), lg = CN.logistics(S(), l), first = c.cuts === 0, pr = first ? Math.min(1, c.age / CN.CANE.first) : 1 - nc / CN.CANE.cycle;
+  const c = l.cane, nc = CN.nextCut(c), lg = CN.logistics(S(), l), first = c.cuts === 0, pr = first ? Math.min(1, (c.age + monthFrac()) / CN.CANE.first) : Math.min(1, 1 - (nc - monthFrac()) / CN.CANE.cycle);
   return `<div class="orchard cane${c.pest >= 3 ? ' is-sick' : ''}"><img src="assets/farm-cana.webp" alt="" loading="lazy">
     <div><b>canavial · ${l.ha} ha</b> <span class="small muted">${first ? `cana-planta (${c.age} de ${CN.CANE.first} meses)` : `soca · ${c.cuts} ${c.cuts === 1 ? 'corte' : 'cortes'}`}${c.cuts >= CN.CANE.reform ? ' · hora de reformar' : ''}</span>
-    <span class="bar"><i style="transform:scaleX(${Math.max(0, pr).toFixed(2)})"></i></span>
+    <span class="bar"><i style="transform:scaleX(${Math.max(0, pr).toFixed(2)})"></i></span>${eta(nc)}
     <span class="small">próximo corte em ${nc} ${nc === 1 ? 'mês' : 'meses'}: ~${int(CN.expectedTons(l))} t · vigor ${Math.round(c.health * 100)}% · broca ${CN.PEST_LABEL[Math.min(6, c.pest)]}</span>
     <span class="small muted">usina a ${lg.km} km · logística ${brl(lg.total)}/t (corte ${brl(lg.cut)}${lg.own ? ' com colhedora própria' : ''}, carregamento ${brl(lg.load)}, frete ${brl(lg.freight)}${lg.truck ? ' com seu caminhão' : ''})</span>
     <div class="row"><button class="btn btn--sm ${c.care ? 'btn--gold' : 'btn--glass'}" data-act="cn-care" data-id="${l.id}" aria-pressed="${c.care}">${c.care ? 'tratos ligados' : 'tratos desligados'} (${brl(l.ha * CN.CANE.care)}/mês)</button>
@@ -279,8 +290,8 @@ function landCard(l, kind) {
     crop = orchardBox(l);
   } else if (kind !== 'offer' && !l.leasedOut) {
     if (l.crop) {
-      const c = L.CROPS[l.crop.type], k = 1 - l.crop.left / c.months;
-      crop = `<div class="crop"><span class="small">${c.label} plantada, colhe em ${l.crop.left} ${l.crop.left === 1 ? 'mês' : 'meses'}</span><span class="bar"><i style="transform:scaleX(${k})"></i></span></div>`;
+      const c = L.CROPS[l.crop.type], k = Math.min(1, (c.months - l.crop.left + monthFrac()) / c.months);
+      crop = `<div class="crop"><span class="small">${c.label} plantada, colhe em ${l.crop.left} ${l.crop.left === 1 ? 'mês' : 'meses'}</span><span class="bar"><i style="transform:scaleX(${k.toFixed(3)})"></i></span>${eta(l.crop.left)}</div>`;
     } else {
       crop = `<div class="crop row"><label class="visually-hidden" for="crop-${l.id}">lavoura</label>
         ${kind === 'rent' && !L.hasVehicle(s, 'trator') ? '<span class="small muted">Terra arrendada: só pasto. Para plantar aqui você precisa de um trator (loja 21).</span>' : `<select class="input input--crop" id="crop-${l.id}">${Object.entries(L.CROPS).map(([k, c]) => `<option value="${k}">${c.label}: ${brl(L.plantCost(s, k, l.ha, kind === 'rent'))}</option>`).join('')}</select>
@@ -426,7 +437,7 @@ function renderGado() {
       <div class="hcard__top"><h4>lote ${i + 1}</h4><span class="tag ${k >= 1 ? 'tag--green' : 'tag--dark'}">${k >= 1 ? 'pronto para abate' : `${int(h.kg)} kg`}</span></div>
       <p class="price">${brl(val)}</p>
       <p class="muted small">${h.heads} cabeças, ${L.arrobas(h.kg).toFixed(1)} @ cada</p>
-      <div class="bar" role="img" aria-label="${Math.round(k * 100)}% do peso de abate"><i style="transform:scaleX(${k})"></i></div>
+      <div class="bar" role="img" aria-label="${Math.round(k * 100)}% do peso de abate"><i style="transform:scaleX(${k})"></i></div>${eta(k >= 1 ? 0 : Math.ceil((450 - h.kg) / (L.capacity(s) >= L.heads(s) ? 18 : 22)), 'pronto para abate')}
       <div class="herd-acts"><button class="btn btn--glass btn--sm" data-act="sell-herd" data-id="${h.id}">revender vivo ${brl(h.heads * AB.perHead(s, h.kg, 'vivo', L.cattleFee(s)) * PK.mult(s, 'cattle'))}</button>
         <button class="btn btn--gold btn--sm" data-act="ab-kill" data-id="${h.id}">abater ${brl(h.heads * (AB.capLeft(s) >= h.heads ? AB.perHead(s, h.kg, 'proprio') : AB.perHead(s, h.kg, 'terceiros')))}</button>
         ${(() => { const ps = FN.options(h.heads); if (!ps.length) return ''; const pay = p => brl(h.heads * AB.perHead(s, h.kg, 'jogador', p.fee));
@@ -494,12 +505,12 @@ function renderGranja() {
         <label class="check small"><input type="checkbox" id="gr-v-${hs.id}" checked><span>vacinar (R$ ${GR.VACCINE.toFixed(2).replace('.', ',')}/ave)</span></label></div>
       <p class="small">custo do alojamento: <b>${brl(GR.housingCost(s, H.cap, true))}</b> para ${int(H.cap)} pintinhos (pago 1 vez). Depois, em cada fechamento do mês, vêm a ração e a energia.</p>
       <div class="row"><button class="btn btn--gold" data-act="gr-house" data-id="${hs.id}">alojar pintinhos</button><button class="btn btn--glass btn--sm" data-act="gr-sellhouse" data-id="${hs.id}">vender galpão ${brl(Math.round(hs.value * GR.HOUSE_RESALE))}</button></div></div></article>`;
-    const [stage, img] = grStage(l.age), kg = GR.kgAt(l.age), k = Math.min(1, l.age / 2);
+    const [stage, img] = grStage(l.age), kg = GR.kgAt(l.age), k = Math.min(1, (l.age + (l.age < 2 ? monthFrac() : 0)) / 2);
     return `<article class="glass grcard${l.age >= 3 ? ' is-late' : l.age === 2 ? ' is-ready' : ''}"><img class="grcard__img" src="assets/${img}.webp" alt="" loading="lazy">
       <div class="grcard__body"><div class="hcard__top"><h4>${H.label}</h4><span class="tag ${l.age === 2 ? 'tag--green' : l.age >= 3 ? 'tag--red' : 'tag--dark'}">${stage}</span></div>
       <p class="price">${brl(GR.lotValue(s, l))}</p>${l.cost != null ? `<p class="small">gasto no lote até agora: <b>${brl(l.cost)}</b> · se vender hoje: <b class="${GR.lotValue(s, l) - l.cost >= 0 ? 'good' : 'bad'}">${brl(GR.lotValue(s, l) - l.cost)}</b></p>` : ''}
       <p class="small muted">${int(l.birds)} aves de ${int(l.start)} alojadas · ${kg.toString().replace('.', ',')} kg cada · ${l.age} ${l.age === 1 ? 'mês' : 'meses'}${l.vac ? ' · vacinado' : ' · sem vacina'}${l.events.length ? ` · ${l.events.join(', ')}` : ''}</p>
-      <div class="bar" role="img" aria-label="${Math.round(k * 100)}% do peso de abate"><i style="transform:scaleX(${k})"></i></div>
+      <div class="bar" role="img" aria-label="${Math.round(k * 100)}% do peso de abate"><i style="transform:scaleX(${k.toFixed(3)})"></i></div>${eta(2 - l.age, l.age === 2 ? 'ponto de venda' : '')}
       <p class="small">${l.age < 1 ? 'Pintinhos recém-chegados: ainda sem peso de venda.' : l.age === 1 ? 'Ainda dá para engordar mais um mês: o melhor preço por ave é no 2º mês.' : l.age === 2 ? 'Ponto certo de venda!' : 'Passou do ponto: come muito ração e quase não ganha peso. Venda logo.'}</p>
       <button class="btn ${l.age >= 2 ? 'btn--gold' : 'btn--glass'}" data-act="gr-sell" data-id="${l.id}" ${l.age < 1 ? 'disabled' : ''}>vender lote ao frigorífico</button></div></article>`;
   }).join('') : '<p class="empty glass">Nenhum galpão ainda. Construa o primeiro abaixo.</p>';
@@ -1589,7 +1600,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 129;
+const APP_VERSION = 130;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
