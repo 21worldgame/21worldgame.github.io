@@ -206,8 +206,9 @@ export function refreshOffers(s, rng = Math.random) {
     for (let i = 0; i < 25 && !far(reg); i++) reg = REGIONS[Math.floor(rng() * REGIONS.length)];
     used.push(reg);
     const ha = rng() < 0.2 ? 100 + Math.floor(rng() * 19) * 50 : 5 + Math.floor(rng() * 16) * 5;   // 1 em 5 é fazenda grande (100 a 1.000 ha)
-    const [water, wf] = WATER[Math.floor(rng() * WATER.length)];
+    let [water, wf] = WATER[Math.floor(rng() * WATER.length)];
     const improv = IMPROV.filter(() => rng() < 0.35);
+    if (water === 'sem água' && improv.some(([n]) => n === 'casa sede' || n === 'curral')) [water, wf] = WATER[2];   // casa sede e curral têm água: no mínimo um poço artesiano
     const bonus = improv.reduce((a, [, b]) => a + b, 0) + (wf < 1 ? -0.12 : 0);
     return { id: id(s), region: reg.name, uf: reg.uf, use: reg.use, ha, water, improv: improv.map(([n]) => n), ...placeLot(reg, rng),
       cap: +(CAP_BY_USE[reg.use] * wf).toFixed(2), value: Math.round(walk(reg.perHa, rng, 0.15) * T.landPremium * ha * (1 + bonus) * (REGION_K[reg.name] || 1)) };

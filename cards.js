@@ -152,6 +152,14 @@ export function progress(s, id) {
   const S = SETS[id], have = new Set((s.cards || []).filter(c => setOf(c) === id).map(keyOf));
   return { have: S.cards.filter(c => have.has(c.key)).length, total: S.cards.length, keys: have, done: !!s.colls?.[id] };
 }
+// já tenho essa carta? (mesma coleção e mesma figura, qualquer raridade): selo na hora de comprar, sem ir conferir em outra página
+export function ownInfo(s, c) { const set = setOf(c), key = keyOf(c), n = (s.cards || []).filter(x => setOf(x) === set && keyOf(x) === key).length; return { n, done: !!s.colls?.[set], need: !n && !s.colls?.[set], set: SETS[set]?.name || '' }; }
+export function ownBadge(s, c) {
+  const o = ownInfo(s, c);
+  return o.n ? `<span class="own-b own-b--rep" title="Você já tem esta carta${o.n > 1 ? ` (${o.n} iguais)` : ''}: esta seria repetida">✅ já tem${o.n > 1 ? ` ×${o.n}` : ''} · repetida</span>`
+    : o.need ? `<span class="own-b own-b--new" title="Você ainda não tem: conta para completar a coleção ${o.set}">✨ nova · falta na coleção</span>`
+    : `<span class="own-b" title="A coleção ${o.set} já está completa">coleção já completa</span>`;
+}
 // marca as coleções que ficaram completas agora (cada uma vale uma vez só, para sempre); devolve as novas
 export function claim(s) {
   ensure(s); const fresh = [];

@@ -66,6 +66,7 @@ const S = () => G.S;
 for (const l of [...G.S.lands, ...G.S.offers]) {
   const r = L.region(l.region);
   l.uf ??= r.uf; l.use ??= r.use; l.water ??= 'rio'; l.improv ??= [];
+  if (l.water === 'sem água' && l.improv.some(n => n === 'casa sede' || n === 'curral')) { l.water = 'poço artesiano'; if (l.cap) l.cap = +(l.cap / 0.5 * 0.9).toFixed(2); }   // casa sede sem água não existe: ganha o poço
   if (l.lat == null) { let k = l.id * 9301 + 49297; Object.assign(l, L.placeLot(r, () => ((k = (k * 9301 + 49297) % 233280) / 233280))); }
 }
 
@@ -332,10 +333,22 @@ function initMap() {
 const LOT_ICON = { offer: '💰', own: '⭐', rent: '📜', pasto: '🐂', lavoura: '🌾', 'café': '☕', sede: '🏡' };
 function lotPin(LF, lat, lon, icon, cls, tip, pop) {
   const m = LF.marker([lat, lon], { icon: LF.divIcon({ className: '', html: `<span class="lpin ${cls}">${icon}</span>`, iconSize: [30, 30], iconAnchor: [15, 15] }) });
-  m.bindTooltip(tip, { direction: 'top', offset: [0, -14] });
+  m.bindTooltip(tip, tip.includes('atip') ? { direction: 'auto', offset: [14, 0], className: 'atip-wrap', opacity: 1 } : { direction: 'top', offset: [0, -14] });   // com foto: lado que couber
   if (pop) m.bindPopup(pop);
   return m;
 }
+// passar o mouse num lote: foto de satélite do lugar com a área inteira desenhada no tamanho real + comparação de tamanho
+const sizeTxt = ha => { const f = Math.round(ha / 0.714), side = Math.sqrt(ha / 100); return `${int(ha)} ha · ${f >= 1 ? `${int(f)} ${f === 1 ? 'campo' : 'campos'} de futebol` : 'menos de um campo de futebol'} · ~${side >= 1 ? `${side.toFixed(1).replace('.', ',')} km` : `${Math.round(side * 1000)} m`} de lado`; };
+function areaTip(l, head) {
+  if (!Number.isFinite(l.lat) || !(l.ha > 0)) return head;
+  const t = satThumb(l);
+  return `<div class="atip"><div class="atip__img" style="background-image:url('${t.url}')"><i style="width:${t.w}%;height:${t.h}%"></i></div><div class="atip__txt">${head}<br><span class="atip__size">${sizeTxt(l.ha)}</span></div></div>`;
+}
+// realça o lote no mapa enquanto o mouse está em cima (some ao sair)
+let hoverArea = null;
+function hoverOn(LF, l, color) { hoverOff(); if (!Number.isFinite(l.lat) || !(l.ha > 0)) return; hoverArea = LF.rectangle(lotBounds(l), { color: color || '#facc15', weight: 3, dashArray: '6 4', fillOpacity: 0.3, interactive: false }).addTo(lmap); }
+function hoverOff() { if (hoverArea) { hoverArea.remove(); hoverArea = null; } }
+function withArea(LF, m, l, color) { m.on('mouseover', () => hoverOn(LF, l, color)); m.on('mouseout', hoverOff); return m; }
 let playerLands = [], playerLandsAt = 0;
 function drawLots() {
   const LF = window.L;
@@ -345,10 +358,10 @@ function drawLots() {
   // fazendas dos concorrentes (não estão à venda)
   for (const r of RV.rivalLands()) {
     const icon = r.sede ? LOT_ICON.sede : LOT_ICON[r.use] || '🐂';
-    lots.addLayer(lotPin(LF, r.lat, r.lon, icon, 'lpin--npc', `<strong>Dono: ${esc(r.owner)}</strong><br>${r.ha} ha de ${esc(r.use)}, perto de ${esc(r.city)}`));
+    lots.addLayer(withArea(LF, lotPin(LF, r.lat, r.lon, icon, 'lpin--npc', areaTip(r, `<strong>Dono: ${esc(r.owner)}</strong><br>${esc(r.use)}, perto de ${esc(r.city)}`)), r, '#94a3b8'));
   }
   // terras de outros jogadores de verdade (buscadas na nuvem a cada 60 s)
-  for (const r of playerLands) lots.addLayer(lotPin(LF, r.lat, r.lon, r.use === 'pasto' ? LOT_ICON.pasto : LOT_ICON[r.use] || '🌾', 'lpin--player', `<strong>Dono: ${esc(r.owner)}</strong><br>${r.ha} ha de ${esc(r.use)}${r.city ? `, perto de ${esc(r.city)}` : ''}`));
+  for (const r of playerLands) lots.addLayer(withArea(LF, lotPin(LF, r.lat, r.lon, r.use === 'pasto' ? LOT_ICON.pasto : LOT_ICON[r.use] || '🌾', 'lpin--player', areaTip(r, `<strong>Dono: ${esc(r.owner)}</strong><br>${r.ha} ha de ${esc(r.use)}${r.city ? `, perto de ${esc(r.city)}` : ''}`)), r, '#38bdf8'));
   if (Date.now() - playerLandsAt > 60000) { playerLandsAt = Date.now(); Auth.mapLands?.().then(rows => { if (JSON.stringify(rows) !== JSON.stringify(playerLands)) { playerLands = rows; drawLots(); } }).catch(() => {}); }
   const me = esc(S().avatar?.name || 'você');
   const all = [...S().offers.map(l => [l, 'offer']), ...S().lands.map(l => [l, l.own ? 'own' : 'rent'])];
@@ -356,8 +369,9 @@ function drawLots() {
     const color = css.getPropertyValue(KIND_COLOR[kind]).trim();
     const pop = `<strong>${esc(l.region)}</strong><br>${l.ha} ha, ${kind === 'offer' ? brl(l.value) : kind === 'own' ? 'sua' : 'arrendada'}<br><button class="btn btn--gold btn--sm" data-act="show-card" data-id="${l.id}">ver ficha</button>`;
     const tip = kind === 'offer' ? `<strong>À venda: ${brl(l.value)}</strong><br>${l.ha} ha de ${esc(l.use)}, ${esc(l.region)}` : `<strong>Dono: ${kind === 'own' ? me + ' (você)' : 'arrendada por você'}</strong><br>${l.ha} ha, ${esc(l.region)}`;
-    const rect = LF.rectangle(lotBounds(l), { color, weight: 2, fillOpacity: 0.18 }).bindPopup(pop);
-    const pin = lotPin(LF, l.lat, l.lon, LOT_ICON[kind], `lpin--${kind}`, tip, pop);
+    const rect = LF.rectangle(lotBounds(l), { color, weight: 2, fillOpacity: 0.18 }).bindPopup(pop).bindTooltip(areaTip(l, tip), { sticky: true, direction: 'auto', className: 'atip-wrap', opacity: 1 });
+    rect.on('mouseover', () => rect.setStyle({ weight: 4, fillOpacity: 0.38 })); rect.on('mouseout', () => rect.setStyle({ weight: 2, fillOpacity: 0.18 }));
+    const pin = withArea(LF, lotPin(LF, l.lat, l.lon, LOT_ICON[kind], `lpin--${kind}`, areaTip(l, tip), pop), l, color);
     pin.on('click', () => lmap.flyToBounds(lotBounds(l), { padding: [80, 80], maxZoom: 16, duration: 1.6 }));
     rect.on('click', () => lmap.flyToBounds(lotBounds(l), { padding: [80, 80], maxZoom: 16, duration: 1.6 }));
     lots.addLayer(rect).addLayer(pin);
@@ -670,25 +684,13 @@ function profileExtra(p, me) {
   return invHTML(p) + trophies + emblems + priv + (p.biz || p.landList ? `<h3>tudo o que tem</h3><div class="pf__stats">${tiles}</div>${biz ? `<div class="pf__bizs">${biz}</div>` : ''}${lands}` : '') + ads;
 }
 const agoTxt = at => { const m = Math.max(1, Math.round((Live.now() - at) / 60000)); return m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.round(m / 60)} h` : m < 2880 ? 'ontem' : `há ${Math.round(m / 1440)} dias`; };
-// proposta de outro jogador para você: espera na central de avisos (sino), sem pular na tela nem tocar som
 let boShown = null;
-function botOffer() {
-  const s = S(), o = BO.offerFor(s, Live.now()), slot = $('#nc-offer'); if (!slot) return;
-  if (!o) { if (slot.childElementCount) { slot.innerHTML = ''; G.ncBadge?.(); } boShown = null; return; }
-  if (slot.childElementCount && boShown === `${o.slot}`) return;
-  boShown = `${o.slot}`;
-  const n = NPC.byId(o.botId);
-  slot.innerHTML = `<div class="bo glass"><span class="bo__av">${avatarSVG(n?.look || {}, { label: o.bot })}</span><div class="bo__body"><b>${esc(o.bot)} <small class="muted">nível ${NPC.levelFor(NPC.worthAt(n, s.month))} · online</small></b>
-    <p>“${esc(o.txt)}”</p><p class="small">total: <b class="${o.kind === 'calves' ? 'bad' : 'good'}">${brl(o.total)}</b></p>
-    <div class="bo__acts"><button class="btn btn--gold btn--sm" data-act="bo-yes">aceitar</button><button class="btn btn--glass btn--sm" data-act="bo-deal">negociar</button><button class="btn btn--glass btn--sm" data-act="bo-no">recusar</button><button class="btn btn--sm bo__block" data-act="bo-block" title="não receber mais propostas nem mensagens dessa pessoa">bloquear</button></div></div></div>`;
-  G.ncBadge?.();
-}
 function boClose(o, done) { S().botOfferDone = o.slot; const slot = $('#nc-offer'); if (slot) slot.innerHTML = ''; boShown = null; G.ncBadge?.(); if (done) { save(); render(); } }
 function boSettle(o, total) {
   const r = BO.settle(S(), o, total); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true);
   note(r.txt, r.val); say(`Negócio fechado com ${o.bot}: ${brl(Math.abs(r.val))}.`); confetti(25); boClose(o, true);
 }
-setInterval(() => { try { if (Live.worldReady) botOffer(); } catch (e) { console.error('proposta', e); } }, 5000);
+// propostas automáticas de outros jogadores ("tenho 20 bezerros...") desligadas a pedido: não aparecem mais em lugar nenhum
 
 function openProfile(pid, fetched) {
   if (!pid) return;
@@ -1538,7 +1540,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 119;
+const APP_VERSION = 120;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

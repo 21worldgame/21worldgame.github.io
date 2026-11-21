@@ -3348,3 +3348,17 @@ button, .btn, [role="button"], .tab, .subtab { -webkit-touch-callout: none; -web
   .rkpill__mv { font-size: .62rem; }
 }
 @media (prefers-reduced-motion: reduce) { .rkpill.is-moved::after { animation: none; } }
+/* mapa: dica com o tamanho real do lote (satélite + área desenhada) */
+.leaflet-tooltip.atip-wrap { padding: 0; border: 0; border-radius: 12px; overflow: hidden; background: #0b1020; color: #e5e7eb; box-shadow: 0 14px 34px rgba(0,0,0,.6); }
+.leaflet-tooltip.atip-wrap::before { display: none; }
+.atip { width: 260px; }
+.atip__img { position: relative; height: 150px; background: #1e293b center / cover no-repeat; }
+.atip__img i { position: absolute; left: 50%; top: 50%; translate: -50% -50%; border: 2px solid #facc15; background: rgba(250,204,21,.18); box-shadow: 0 0 0 9999px rgba(0,0,0,.25), 0 0 14px rgba(250,204,21,.6); animation: atipPulse 1.6s ease-in-out infinite; }
+@keyframes atipPulse { 50% { background: rgba(250,204,21,.32); } }
+.atip__txt { padding: 8px 10px 10px; font-size: .78rem; line-height: 1.35; white-space: normal; }
+.atip__size { color: #fde68a; font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { .atip__img i { animation: none; } }
+/* selo "já tem / nova" nas cartas à venda */
+.own-b { position: absolute; right: 8px; top: 8px; max-width: calc(50% - 90px); min-width: 96px; text-align: center; white-space: normal; line-height: 1.2; z-index: 3; padding: 3px 9px; border-radius: 999px; font-size: .7rem; font-weight: 800; background: rgba(15,23,42,.85); color: #cbd5e1; border: 1px solid rgba(255,255,255,.18); backdrop-filter: blur(4px); }
+.own-b--rep { color: #fde68a; border-color: rgba(250,204,21,.5); }
+.own-b--new { color: #86efac; border-color: rgba(74,222,128,.55); box-shadow: 0 0 12px rgba(74,222,128,.35); }
