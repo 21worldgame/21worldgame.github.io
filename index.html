@@ -868,21 +868,32 @@
     <div class="row"><button class="btn btn--gold" data-act="trade-yes">negociar</button><button class="btn btn--glass" data-act="trade-no">recusar</button></div>
   </dialog>
   <dialog class="dlg dlg--trade" id="dlg-trade" aria-labelledby="tr-who">
-    <h2 id="tr-who">troca</h2>
-    <div class="tr-cols">
-      <div class="glass tr-col"><h3>você oferece</h3><ul class="tr-list" id="tr-mine"></ul>
-        <div class="row"><label class="visually-hidden" for="tr-pick">item</label><select class="input" id="tr-pick"></select><button class="btn btn--glass btn--sm" data-act="trade-add">pôr na troca</button></div>
-        <div class="row"><label class="field"><span>fichas</span><input class="input input--s" id="tr-chips" type="number" min="1" step="10"></label><button class="btn btn--glass btn--sm" data-act="trade-chips">pôr fichas</button>
-          <label class="field"><span>dinheiro</span><input class="input input--s" id="tr-money" type="number" min="1" step="1000"></label><button class="btn btn--glass btn--sm" data-act="trade-money">pôr dinheiro</button></div></div>
-      <div class="glass tr-col tr-col--them"><h3>você recebe</h3><ul class="tr-list" id="tr-theirs"></ul>
-        <div class="row" id="tr-bot" hidden><label class="visually-hidden" for="tr-botpick">o que comprar</label><select class="input" id="tr-botpick"></select><button class="btn btn--glass btn--sm" data-act="trade-botadd">pedir</button></div>
-        <p class="muted small" id="tr-bal" hidden></p></div>
+    <div class="tr-top"><h2 id="tr-who">negociação</h2><button class="btn btn--glass btn--sm" type="button" data-act="trade-cancel">fechar</button></div>
+    <div class="tr-duel"><div class="tr-side" id="tr-me"></div><span class="tr-vs" aria-hidden="true">⇄</span><div class="tr-side tr-side--them" id="tr-them"></div></div>
+    <div class="tr-tabs" id="tr-tabs" role="group" aria-label="tipo de negociação">
+      <button type="button" data-trtab="troca"><b>1</b><span>troca<small>comprar, vender, trocar</small></span></button>
+      <button type="button" data-trtab="parceria"><b>2</b><span>parceria<small>alugar terra, galpão, máquina</small></span></button>
+      <button type="button" data-trtab="dinheiro"><b>3</b><span>dinheiro<small>emprestar e pedir</small></span></button>
     </div>
-    <section class="glass tr-partner" id="tr-partner" hidden aria-label="parceria"></section>
-    <p class="tr-state" id="tr-state"></p>
-    <div class="tr-chatbox" id="tr-chatbox"><ul class="tr-chat" id="tr-chat" aria-live="polite"></ul>
-      <form class="row" id="tr-chat-form"><label class="visually-hidden" for="tr-msg">mensagem</label><input class="input" id="tr-msg" maxlength="140" placeholder="negocie aqui" autocomplete="off"><button class="btn btn--glass btn--sm" type="submit">enviar</button></form></div>
-    <div class="row tr-acts"><button class="btn btn--glass" data-act="trade-lock">estou pronto</button><button class="btn btn--gold" data-act="trade-confirm" disabled>confirmar troca</button><button class="btn btn--danger" data-act="trade-cancel">cancelar</button></div>
+    <section class="tr-pane" data-pane="troca">
+      <ol class="tr-steps" id="tr-steps"></ol>
+      <div class="tr-cols">
+        <div class="glass tr-col"><h3>você dá</h3><ul class="tr-list" id="tr-mine"></ul>
+          <label class="tr-lbl" for="tr-pick">um item seu</label>
+          <div class="row"><select class="input" id="tr-pick"></select><button class="btn btn--glass btn--sm" data-act="trade-add">pôr na troca</button></div>
+          <div class="tr-amts"><label class="field"><span>dinheiro (R$)</span><span class="row"><input class="input input--s" id="tr-money" type="number" min="1" step="1000" inputmode="numeric"><button class="btn btn--glass btn--sm" data-act="trade-money">pôr</button></span></label>
+            <label class="field"><span>fichas</span><span class="row"><input class="input input--s" id="tr-chips" type="number" min="1" step="10" inputmode="numeric"><button class="btn btn--glass btn--sm" data-act="trade-chips">pôr</button></span></label></div></div>
+        <div class="glass tr-col tr-col--them"><h3>você recebe</h3><ul class="tr-list" id="tr-theirs"></ul>
+          <div id="tr-bot" hidden><label class="tr-lbl" for="tr-botpick">o que ele está vendendo</label><div class="row"><select class="input" id="tr-botpick"></select><button class="btn btn--glass btn--sm" data-act="trade-botadd">quero este</button></div></div></div>
+      </div>
+      <p class="tr-bal" id="tr-bal" hidden></p>
+      <p class="tr-state" id="tr-state"></p>
+      <div class="tr-chatbox" id="tr-chatbox"><ul class="tr-chat" id="tr-chat" aria-live="polite"></ul>
+        <form class="row" id="tr-chat-form"><label class="visually-hidden" for="tr-msg">mensagem</label><input class="input" id="tr-msg" maxlength="140" placeholder="combine aqui com o outro jogador" autocomplete="off"><button class="btn btn--glass btn--sm" type="submit">enviar</button></form></div>
+      <div class="row tr-acts"><button class="btn btn--glass" data-act="trade-lock">estou pronto</button><button class="btn btn--gold" data-act="trade-confirm" disabled>confirmar troca</button><button class="btn btn--danger" data-act="trade-cancel">cancelar</button></div>
+    </section>
+    <section class="tr-pane" data-pane="parceria" hidden><div id="tr-partner"></div></section>
+    <section class="tr-pane" data-pane="dinheiro" hidden><div id="tr-cash"></div></section>
   </dialog>
 
   <!-- mini-jogo de treino -->

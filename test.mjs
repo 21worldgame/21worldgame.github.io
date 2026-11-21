@@ -1122,6 +1122,17 @@ console.log('mina ok');
   // calote derruba a confiança; desmarcar devolve tudo
   const c0 = s.amigos.list[nick].conf; AM.monthly(s, [{ txt: `${nick} deu calote de R$ 1` }]); assert.ok(!AM.isFriend(s, nick) || s.amigos.list[nick].conf < c0);
   AM.setPartner(s, nick, false); assert.ok(!s.cars.some(c => c.lentTo) && Lq.hasVehicle(s, 'trator'));
+  // parcelas e as duas formas de emprestar
+  const sc = AM.schedule(10000, 0.02, 6); assert.ok(sc.total > 10000 && sc.first > 10000 / 6 && sc.profit === sc.total - 10000);
+  assert.ok(AM.lendRisk(s, nick, 'auto') < AM.lendRisk(s, nick, 'trust') && AM.lendMaxRate(s, nick, 'trust') > AM.lendMaxRate(s, nick, 'auto'));
+  // celular e computador mexendo nas parcerias ao mesmo tempo: o merge mantém os dois lados
+  { const SM = await import('./sync-merge.js'), base = Lq.newState(() => 0.5); base.money = 1e6; base.month = 7; AM.ensure(base);
+    const cel = structuredClone(base), pc = structuredClone(base), a1 = NPq.NPCS[30].nick, a2 = NPq.NPCS[31].nick;
+    AM.setPartner(cel, a1, true); assert.equal(AM.lendTo(cel, a1, 10000, 0.025, 6), null);
+    AM.setPartner(pc, a2, true); pc.cars.push({ id: 4242, model: 'deere', value: 600000 }); assert.equal(AM.lendTool(pc, 4242, a2), null);
+    const mg = SM.merge3(base, cel, pc);
+    assert.ok(mg.amigos.list[a1] && mg.amigos.list[a2], 'parceiros dos dois aparelhos'); assert.ok(mg.lent.some(p => p.nick === a1), 'empréstimo feito no celular');
+    assert.equal(mg.cars.find(c => c.id === 4242)?.lentTo, a2, 'trator emprestado no computador'); assert.equal(mg.money, 1e6 - 10000); }
   console.log('amigos, parcerias e agiota ok'); }
 { const FTq = await import('./futebol.js'); let r = 1; const rng = () => (r = (r * 16807) % 2147483647) / 2147483647;
   for (let i = 0; i < 300; i++) { const f = { market: [{ id: 'x', price: 100000 }] }, d = FTq.dealFor(f, 'x', rng); assert.ok(d.limit >= 95000, 'piso de compra'); }

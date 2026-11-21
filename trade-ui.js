@@ -7,6 +7,7 @@ import { G, $, esc, brl, int, say, save, note, award, confetti, profileOf } from
 import * as sfx from './sfx.js';
 import * as AMU from './amigos-ui.js';
 document.addEventListener('am:changed', () => render());   // parceria mexeu (empréstimo, aluguel): redesenha a janela
+document.addEventListener('click', e => { const b = e.target.closest('[data-trtab]'); if (b && ss) { ss.tab = b.dataset.trtab; render(); } });
 
 let lobby = null, ss = null;           // ss = sessão de troca aberta
 const myName = () => profileOf().name;
@@ -91,21 +92,36 @@ function openWindow() { ss.open = true; render(); const d = $('#dlg-trade'); if 
 
 function render() {
   if (!ss) return;
-  $('#tr-who').textContent = ss.bot ? `negociando com ${ss.name} (preço de mercado)` : `negociando com ${ss.name}`;
-  const list = (items, mine) => items.length ? items.map((it, k) => `<li><span>${esc(TD.describe(it))}</span>${mine ? `<button class="btn btn--glass btn--sm" data-act="trade-remove" data-id="${k}">tirar</button>` : ''}</li>`).join('') : '<li class="muted small">nada ainda</li>';
+  $('#tr-who').textContent = `negociação com ${ss.name}`;
+  // topo: os dois lados, cada um com o que tem
+  $('#tr-me').innerHTML = AMU.sideMe();
+  $('#tr-them').innerHTML = ss.bot ? AMU.sideBot(ss.name) : AMU.sidePeer(lobby?.peers.get(ss.peer)?.profile || { name: ss.name });
+  // abas: com jogador de verdade só existe a troca (parceria e empréstimo são com jogadores do mundo)
+  if (!ss.bot) ss.tab = 'troca';
+  ss.tab ||= 'troca';
+  for (const b of document.querySelectorAll('#tr-tabs [data-trtab]')) { b.hidden = !ss.bot && b.dataset.trtab !== 'troca'; b.classList.toggle('is-on', b.dataset.trtab === ss.tab); b.setAttribute('aria-pressed', String(b.dataset.trtab === ss.tab)); }
+  $('#tr-tabs').hidden = !ss.bot;
+  for (const p of document.querySelectorAll('#dlg-trade [data-pane]')) { p.hidden = p.dataset.pane !== ss.tab; p.dataset.nick = ss.bot ? ss.name : ''; }
+  if (ss.tab === 'parceria') { $('#tr-partner').dataset.nick = ss.name; $('#tr-partner').innerHTML = AMU.rentHTML(ss.name); }
+  if (ss.tab === 'dinheiro') { $('#tr-cash').dataset.nick = ss.name; $('#tr-cash').innerHTML = AMU.cashHTML(ss.name); }
+  $('#tr-steps').innerHTML = (ss.bot
+    ? ['Em <b>você recebe</b>, escolha o que quer comprar dele (ele vende pelo preço de mercado).', 'Em <b>você dá</b>, ponha dinheiro ou itens seus que cubram o preço. Ele paga seus itens pelo valor de venda na hora; o que sobrar volta em dinheiro.', 'Clique <b>estou pronto</b> e depois <b>confirmar troca</b>.']
+    : ['Em <b>você dá</b>, monte o que vai entregar (itens, dinheiro ou fichas).', `${esc(ss.name)} monta o lado dele; aparece em <b>você recebe</b>. Combinem pelo chat.`, 'Os dois clicam <b>estou pronto</b> e depois <b>confirmar troca</b>. Se alguém mexer, os dois confirmam de novo.']).map(x => `<li>${x}</li>`).join('');
+  const val = it => ss.bot ? ` <small class="muted">vale ${brl(botValue(it))}</small>` : '';
+  const list = (items, mine) => items.length ? items.map((it, k) => `<li><span>${esc(TD.describe(it))}${mine ? val(it) : ''}</span>${mine ? `<button class="btn btn--glass btn--sm" data-act="trade-remove" data-id="${k}">tirar</button>` : ''}</li>`).join('') : `<li class="muted small">${mine ? 'nada ainda: escolha abaixo' : 'nada ainda'}</li>`;
   $('#tr-mine').innerHTML = list(ss.mine, true);
   $('#tr-bot').hidden = $('#tr-bal').hidden = !ss.bot; $('#tr-chatbox').hidden = !!ss.bot;
-  const pt = $('#tr-partner'); pt.hidden = !ss.bot; pt.dataset.nick = ss.bot ? ss.name : ''; if (ss.bot) pt.innerHTML = AMU.partnerHTML(ss.name);
   if (ss.bot) {
     const t = botTotals(); ss.picks = ss.picks.filter(id => t.ls.some(l => l.id === id)); ss.theirs = t.picked.flatMap(l => l.items);
     $('#tr-theirs').innerHTML = t.picked.length ? t.picked.map(l => `<li><span>${esc(l.label)}: <b>${brl(l.price)}</b></span><button class="btn btn--glass btn--sm" data-act="trade-botdrop" data-id="${esc(l.id)}">tirar</button></li>`).join('') : '<li class="muted small">escolha abaixo o que quer comprar</li>';
     $('#tr-botpick').innerHTML = t.ls.filter(l => !ss.picks.includes(l.id)).map(l => `<option value="${esc(l.id)}">${esc(l.label)}, ${brl(l.price)}</option>`).join('') || '<option value="">sem anúncios agora</option>';
     const falta = t.asked - t.offered;
-    $('#tr-bal').innerHTML = `${esc(ss.name)} vende pelo <b>preço de mercado</b> e paga pelos seus itens o valor da casa. Pede <b>${brl(t.asked)}</b>; a sua oferta vale <b>${brl(t.offered)}</b>. ${!t.picked.length ? '' : falta > 0 ? `Falta <b>${brl(falta)}</b>: ponha mais itens ou dinheiro.` : falta < 0 ? `Sobra ${brl(-falta)}, que volta para você em dinheiro.` : ''}`;
+    $('#tr-bal').innerHTML = !t.picked.length ? `Escolha em <b>você recebe</b> o que quer comprar de ${esc(ss.name)}.`
+      : `<span>ele pede <b>${brl(t.asked)}</b></span><span>você oferece <b>${brl(t.offered)}</b></span><span class="${falta > 0 ? 'bad' : 'good'}">${falta > 0 ? `faltam <b>${brl(falta)}</b>: ponha mais dinheiro ou itens` : falta < 0 ? `sobram ${brl(-falta)}, que voltam para você em dinheiro` : 'valor certinho'}</span>`;
   } else $('#tr-theirs').innerHTML = list(ss.theirs, false);
   const taken = new Set(ss.mine.map(offerKey));
-  $('#tr-pick').innerHTML = SH.items(G.S).filter(i => !taken.has(i.key)).map(i => `<option value="${esc(i.key)}">${esc(i.label)}</option>`).join('') || '<option value="">seu inventário está vazio</option>';
-  $('#tr-state').innerHTML = `você: <b class="${ss.lock.me ? 'good' : ''}">${ss.ok.me ? 'confirmou' : ss.lock.me ? 'pronto' : 'montando'}</b>, ${esc(ss.name)}: <b class="${ss.lock.them ? 'good' : ''}">${ss.ok.them ? 'confirmou' : ss.lock.them ? 'pronto' : 'montando'}</b>`;
+  $('#tr-pick').innerHTML = SH.items(G.S).filter(i => !taken.has(i.key)).map(i => `<option value="${esc(i.key)}">${esc(i.label)}${ss.bot ? ` · vale ${brl(SH.housePrice(G.S, i))}` : ''}</option>`).join('') || '<option value="">seu inventário está vazio</option>';
+  $('#tr-state').innerHTML = `<span>você: <b class="${ss.lock.me ? 'good' : ''}">${ss.ok.me ? 'confirmou' : ss.lock.me ? 'pronto' : 'montando a oferta'}</b></span><span>${esc(ss.name)}: <b class="${ss.lock.them ? 'good' : ''}">${ss.bot ? 'aceita pelo preço de mercado' : ss.ok.them ? 'confirmou' : ss.lock.them ? 'pronto' : 'montando a oferta'}</b></span>`;
   $('[data-act="trade-lock"]').textContent = ss.lock.me ? 'mexer de novo' : 'estou pronto';
   $('[data-act="trade-confirm"]').disabled = !(ss.lock.me && ss.lock.them) || ss.ok.me || (ss.bot && !botOk());
   $('#tr-chat').innerHTML = ss.chat.slice(-30).map(c => `<li class="${c.me ? 'is-me' : ''}">${esc(c.text)}</li>`).join('');

@@ -14,7 +14,16 @@ export const WH_LEND = 0.005;       // seu galpão parado alugado ao parceiro: r
 export const TOOL_RENT = 0.01;      // máquina emprestada: ao mês sobre o preço da máquina
 export const TOOLS = ['trator', 'caminhao'];
 export const FRIEND_RATE = 0.012, FRIEND_RATE_LOW = 0.025;   // empréstimo do parceiro: abaixo do banco com muita confiança
-export const LEND_RATES = [0.015, 0.025, 0.04, 0.06, 0.08];  // juros que você pode cobrar ao emprestar
+export const LEND_RATES = [0.015, 0.025, 0.04, 0.06, 0.08, 0.1];  // juros que você pode cobrar ao emprestar
+// dois jeitos de emprestar: débito automático (a parcela sai sozinha da conta dele: calote 70% menor)
+// ou na confiança (ele paga por conta própria: mais risco, mas aceita juro 2 pontos maior)
+export const MODES = { auto: { label: 'débito automático', risk: 0.3, extra: 0 }, trust: { label: 'na confiança', risk: 1, extra: 0.02 } };
+// parcelas como o mês do jogo cobra (juros sobre o saldo e parcela = saldo / meses que faltam)
+export function schedule(amount, rate, months) {
+  let bal = amount, total = 0, first = 0;
+  for (let left = months; left > 0; left--) { bal *= 1 + rate; const pay = bal / left; if (!first) first = pay; total += pay; bal -= pay; }
+  return { first: Math.round(first), total: Math.round(total), profit: Math.round(total - amount) };
+}
 function seeded(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const r1000 = v => Math.round(v / 1000) * 1000;
 
@@ -121,20 +130,21 @@ export function borrow(s, nick, amount) {
 // você empresta para quem está negociando com você. Parceiro aceita juros de amigo e quase não dá calote;
 // quem não é parceiro só pega se o juro for de agiota e paga pior.
 export const lendCap = (s, nick) => { const n = NPC.byNick(nick); return n ? r1000(Math.max(10000, Math.min(2e6, NPC.worthAt(n, s.month || 1) * 0.03))) : 0; };
-export const lendRisk = (s, nick) => { const f = friend(s, nick); return +(f ? 0.02 * (1 - f.conf / 130) : 0.07).toFixed(3); };
-export const lendMaxRate = (s, nick) => (isFriend(s, nick) ? 0.04 : 0.08);
-export function lendTo(s, nick, amount, rate, months) {
+export const lendRisk = (s, nick, mode = 'auto') => { const f = friend(s, nick); return +((f ? 0.02 * (1 - f.conf / 130) : 0.07) * (MODES[mode]?.risk ?? 1)).toFixed(4); };
+export const lendMaxRate = (s, nick, mode = 'auto') => (isFriend(s, nick) ? 0.04 : 0.08) + (MODES[mode]?.extra || 0);
+export function lendTo(s, nick, amount, rate, months, mode = 'auto') {
+  if (!MODES[mode]) return 'escolha débito automático ou na confiança.';
   amount = r1000(Number(amount) || 0); rate = Number(rate); months = Math.round(Number(months) || 0);
   if (!NPC.byNick(nick)) return 'esse jogador não está no mundo.';
   if (!LEND_RATES.includes(rate)) return 'escolha uma taxa da lista.';
   if (months < 2 || months > 12) return 'prazo de 2 a 12 meses.';
   if (amount < 1000 || amount > lendCap(s, nick)) return `${nick} só precisa de até R$ ${lendCap(s, nick).toLocaleString('pt-BR')}.`;
-  if (rate > lendMaxRate(s, nick)) return `${nick} achou o juro alto demais: no máximo ${(lendMaxRate(s, nick) * 100).toFixed(1).replace('.', ',')}% ao mês${isFriend(s, nick) ? ' para parceiro' : ''}.`;
+  if (rate > lendMaxRate(s, nick, mode)) return `${nick} achou o juro alto demais: no máximo ${(lendMaxRate(s, nick, mode) * 100).toFixed(1).replace('.', ',')}% ao mês ${MODES[mode].label}${isFriend(s, nick) ? ' entre parceiros' : ''}.`;
   if (!isFriend(s, nick) && rate < 0.04) return `${nick} não é seu parceiro: sem confiança, você só empresta a partir de 4% ao mês.`;
   if (s.lent.some(p => p.nick === nick)) return `${nick} ainda está pagando o empréstimo anterior.`;
   if (amount > s.money) return 'dinheiro insuficiente.';
   s.money -= amount;
-  s.lent.push({ id: s.nextId++, name: nick, nick, bal: amount, rate, left: months, risk: lendRisk(s, nick) });
+  s.lent.push({ id: s.nextId++, name: nick, nick, bal: amount, rate, left: months, risk: lendRisk(s, nick, mode), mode });
   return null;
 }
 // pedidos de empréstimo dos jogadores do mundo (agiotagem): parceiro paga menos juros mas quase não dá calote
