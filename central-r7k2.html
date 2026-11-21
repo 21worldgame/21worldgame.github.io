@@ -40,6 +40,7 @@
         <button data-tab="owners">donos únicos</button>
         <button data-tab="news">avisos</button>
         <button data-tab="passwords">senhas <span class="ad-badge" id="ad-pw-badge" hidden></span></button>
+        <button data-tab="terras">terras</button>
         <button data-tab="log">registro</button>
       </nav>
       <p class="muted small" id="ad-who"></p>
@@ -150,6 +151,13 @@
           <button class="btn btn--gold" type="submit">publicar</button>
         </form>
         <div class="ad-tablewrap"><table><thead><tr><th>aviso</th><th>tipo</th><th>até</th><th></th></tr></thead><tbody id="ad-anns"></tbody></table></div>
+      </section>
+
+      <section data-panel="terras" hidden>
+        <h2>terras que sumiram dos saves</h2>
+        <p class="muted small">O servidor anota toda terra própria que sai de um save e procura o motivo no livro-caixa do jogador. "Sem explicação" é suspeita de perda: confira e devolva com um clique (o jogador recebe na próxima vez que abrir o jogo). Precisa do supabase/terras.sql rodado uma vez.</p>
+        <label class="check"><input type="checkbox" id="ad-lands-only" checked> <span>mostrar só as sem explicação</span></label>
+        <div class="ad-tablewrap"><table><thead><tr><th>quando</th><th>jogador</th><th>terra</th><th>motivo</th><th class="num">dinheiro antes → depois</th><th>mês</th><th></th></tr></thead><tbody id="ad-lands"></tbody></table></div>
       </section>
 
       <section data-panel="log" hidden>

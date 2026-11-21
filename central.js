@@ -2,6 +2,7 @@
 import { SUPABASE } from './supabase-config.js';
 import * as W from './world.js';
 import { LISTS as BIZ, CAT_KEYS } from './negocios.js';
+import { GROUPS, groupOf } from './contador.js';
 
 const LIB = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/+esm';
 const $ = s => document.querySelector(s);
@@ -101,7 +102,7 @@ for (const id of ['#ad-logout', '#ad-logout2']) $(id).addEventListener('click', 
 function show(tab) {
   document.querySelectorAll('.ad-nav button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === tab));
   document.querySelectorAll('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== tab; });
-  ({ overview: loadOverview, players: loadUsers, economy: loadConfig, news: loadAnns, log: loadLog, passwords: loadPw })[tab]?.();
+  ({ overview: loadOverview, players: loadUsers, economy: loadConfig, news: loadAnns, log: loadLog, passwords: loadPw, terras: loadLands })[tab]?.();
 }
 document.querySelector('.ad-nav').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) show(b.dataset.tab); });
 
@@ -176,6 +177,7 @@ async function openPlayer(id) {
       ${(grants || []).map(g => `<tr><td>${when(g.created_at)}</td><td>${esc(g.kind)}</td><td class="num">${int(g.amount)}</td><td>${esc(g.note || '')}</td>
         <td>${g.applied_at ? `aplicada ${when(g.applied_at)}` : `pendente <button class="btn btn--glass btn--sm" data-cancel="${g.id}">cancelar</button>`}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nenhuma ordem ainda.</td></tr>'}
     </tbody></table></div>
+    ${ledger(s)}
     <details><summary>ver o save completo</summary><pre class="ad-json">${esc(JSON.stringify(s, null, 1).slice(0, 60000))}</pre></details>`;
   const d = $('#ad-player'); if (!d.open) d.showModal();
 
@@ -310,6 +312,55 @@ $('#ad-ann').addEventListener('submit', async e => {
   const { error } = await sb.from('announcements').insert({ text: f.text.trim(), kind: f.kind, ends_at: hours ? new Date(Date.now() + hours * 36e5).toISOString() : null });
   if (error) return fail(error, 'publicar');
   await log('announcement', null, { text: f.text, kind: f.kind, hours }); e.target.reset(); toast('Aviso publicado.'); loadAnns();
+});
+
+// ---------- terras que sumiram (supabase/terras.sql) ----------
+let lands = [];
+async function loadLands() {
+  if (!users.length) await loadUsers('');
+  const { data, error } = await sb.from('land_audit').select('id, user_id, at, land, reason, money_before, money_after, month_before, month_after, dev, restored_at').order('at', { ascending: false }).limit(300);
+  if (error) { $('#ad-lands').innerHTML = `<tr><td colspan="7" class="muted">${/land_audit/.test(error.message) ? 'Rode o supabase/terras.sql no SQL Editor do Supabase para ligar a auditoria.' : esc(error.message)}</td></tr>`; return; }
+  lands = data || []; drawLands();
+}
+function drawLands() {
+  const only = $('#ad-lands-only').checked, name = id => users.find(u => u.user_id === id)?.name || id.slice(0, 8);
+  const rows = lands.filter(r => !only || !r.reason);
+  $('#ad-lands').innerHTML = rows.map(r => `<tr><td>${when(r.at)}</td><td><a href="#" data-user="${esc(r.user_id)}">${esc(name(r.user_id))}</a></td>
+    <td>${int(r.land?.ha)} ha · ${esc(r.land?.region || '?')}${r.land?.use ? ` · ${esc(r.land.use)}` : ''}<br><small class="muted">valor ${brl(r.land?.value)}</small></td>
+    <td>${r.reason ? `<span class="tag tag--green">${esc(r.reason)}</span>` : '<span class="tag tag--red">sem explicação</span>'}</td>
+    <td class="num">${brl(r.money_before)} → ${brl(r.money_after)}</td><td>${r.month_before ?? '—'} → ${r.month_after ?? '—'}</td>
+    <td>${r.restored_at ? `<small class="muted">devolvida ${when(r.restored_at)}</small>` : `<button class="btn btn--gold btn--sm" data-restore="${r.id}">devolver</button>`}</td></tr>`).join('')
+    || `<tr><td colspan="7" class="muted">${only ? 'Nenhuma terra sumiu sem explicação.' : 'Nada registrado ainda.'}</td></tr>`;
+}
+$('#ad-lands-only')?.addEventListener('change', drawLands);
+document.addEventListener('click', async e => {
+  const u = e.target.closest('#ad-lands [data-user]'); if (u) { e.preventDefault(); return openPlayer(u.dataset.user); }
+  const b = e.target.closest('[data-restore]'); if (!b) return;
+  const r = lands.find(x => String(x.id) === b.dataset.restore); if (!r || !confirm(`Devolver ${r.land?.ha} ha em ${r.land?.region} para este jogador?`)) return;
+  b.disabled = true;
+  const { error } = await sb.from('admin_grants').insert({ user_id: r.user_id, kind: 'land', amount: 0, item: r.land, note: 'terra que sumiu na sincronização' });
+  if (error) { b.disabled = false; return fail(error, 'devolver a terra'); }
+  await sb.from('land_audit').update({ restored_at: new Date().toISOString() }).eq('id', r.id);
+  await log('restore_land', r.user_id, { land: r.land }); toast('Terra devolvida. O jogador recebe na próxima vez que abrir o jogo.'); loadLands();
+});
+
+// ---------- livro-caixa do jogador por categoria (ficha do jogador) ----------
+function ledger(s) {
+  const log = Array.isArray(s.log) ? s.log : [], by = {}, g = e => groupOf(String(e.txt || ''));
+  for (const e of log) { const k = g(e); (by[k] ??= { n: 0, in: 0, out: 0 }).n++; if (e.val > 0) by[k].in += e.val; else by[k].out += e.val || 0; }
+  const name = k => GROUPS.find(x => x[0] === k)?.[1] || k;
+  const chips = Object.entries(by).sort((a, b) => b[1].n - a[1].n).map(([k, v]) => `<button type="button" class="btn btn--glass btn--sm" data-ledger="${esc(k)}">${esc(name(k))} <small>(${v.n})</small></button>`).join(' ');
+  const rows = log.map(e => `<tr data-g="${esc(g(e))}"><td>${e.m ?? '—'}</td><td>${esc(name(g(e)))}</td><td>${esc(e.txt)}</td><td class="num ${e.val < 0 ? 'neg' : ''}">${e.val ? brl(e.val) : ''}</td></tr>`).join('');
+  const sum = Object.entries(by).map(([k, v]) => `<tr><td>${esc(name(k))}</td><td class="num">${v.n}</td><td class="num">${brl(v.in)}</td><td class="num">${brl(v.out)}</td><td class="num">${brl(v.in + v.out)}</td></tr>`).join('');
+  return `<h3>livro-caixa por categoria <small class="muted">(últimos ${log.length} lançamentos do save)</small></h3>
+    <div class="ad-tablewrap"><table><thead><tr><th>categoria</th><th class="num">lançamentos</th><th class="num">entrou</th><th class="num">saiu</th><th class="num">saldo</th></tr></thead><tbody>${sum || '<tr><td colspan="5" class="muted">Sem lançamentos.</td></tr>'}</tbody></table></div>
+    <div class="row" id="ap-ledger-f"><button type="button" class="btn btn--gold btn--sm" data-ledger="">todas</button> ${chips}</div>
+    <div class="ad-tablewrap ad-ledger"><table><thead><tr><th>mês</th><th>categoria</th><th>lançamento</th><th class="num">valor</th></tr></thead><tbody id="ap-ledger">${rows}</tbody></table></div>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-ledger]'); if (!b) return;
+  for (const x of document.querySelectorAll('#ap-ledger-f [data-ledger]')) x.className = `btn btn--sm ${x === b ? 'btn--gold' : 'btn--glass'}`;
+  for (const tr of document.querySelectorAll('#ap-ledger tr')) tr.hidden = !!b.dataset.ledger && tr.dataset.g !== b.dataset.ledger;
 });
 
 // ---------- registro ----------

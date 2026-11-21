@@ -125,8 +125,9 @@ async function applyGrants(sb) {
   const me = Auth.account().id;
   const { data: pend, error } = await sb.from('admin_grants').select('id').eq('user_id', me).is('applied_at', null).limit(50);
   if (error || !pend?.length) return;
-  const { data: rows, error: e2 } = await sb.from('admin_grants').update({ applied_at: new Date().toISOString() })
-    .in('id', pend.map(r => r.id)).is('applied_at', null).select('id, kind, amount, note');
+  const mark = cols => sb.from('admin_grants').update({ applied_at: new Date().toISOString() }).in('id', pend.map(r => r.id)).is('applied_at', null).select(cols);
+  let { data: rows, error: e2 } = await mark('id, kind, amount, note, item');
+  if (e2 && /item/i.test(e2.message || '')) ({ data: rows, error: e2 } = await mark('id, kind, amount, note'));   // coluna item ainda não criada (supabase/terras.sql)
   if (e2 || !rows?.length) return;
   for (const g of rows) {
     const amt = Number(g.amount) || 0, why = g.note ? `: ${g.note}` : '';
@@ -134,6 +135,10 @@ async function applyGrants(sb) {
     if (g.kind === 'chips') { G.S.chips = Math.max(0, G.S.chips + amt); note(`fichas do administrador${why}`); badge('Administrador', `${amt >= 0 ? '+' : ''}${int(amt)} fichas${why}.`, 'mission'); }
     if (g.kind === 'xp') { P.addXp(G.S, amt).forEach(levelUp); badge('Administrador', `+${int(amt)} XP${why}.`, 'mission'); }
     if (g.kind === 'message') badge('Mensagem do administrador', g.note || '', 'mission');
+    if (g.kind === 'land' && g.item?.id != null && !(G.S.lands || []).some(l => String(l.id) === String(g.item.id))) {
+      G.S.lands.push({ ...g.item, own: true }); note(`terra devolvida pelo administrador: ${g.item.ha} ha, ${g.item.region}`);
+      badge('Administrador', `Sua terra de ${int(g.item.ha)} ha em ${g.item.region} foi devolvida${why}.`, 'mission');
+    }
     if (g.kind === 'reset') {
       const name = G.S.avatar?.name;
       G.S = blankState(name && name !== 'você' ? name : '');

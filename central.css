@@ -73,3 +73,5 @@ code { font-family: ui-monospace, monospace; color: var(--hud-accent-2); }
 
 .ad-badge { display: inline-block; min-width: 18px; padding: 0 6px; margin-left: 6px; border-radius: 9px; background: #e5484d; color: #fff; font-size: .72rem; text-align: center; }
 tr.is-done { opacity: .55; }
+
+.ad-ledger { max-height: 26rem; overflow: auto; } .neg { color: var(--color-error); }

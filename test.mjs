@@ -1250,3 +1250,25 @@ import * as CT from './contador.js';
   assert.notEqual(BC.styleLine(nicks.find(k => BC.persona(k).style === 'educado'), 'vc vai no leilao'), BC.styleLine(nicks.find(k => BC.persona(k).style === 'informal'), 'vc vai no leilao'), 'cada um escreve de um jeito');
   console.log('conversa dos bots ok');
 }
+
+// celular e computador gravando juntos: nada do que um aparelho fez some (era assim que sumiam terras)
+{
+  const { merge3 } = await import('./sync-merge.js');
+  const base = { month: 10, money: 1000, chips: 50, savedAt: 1, lands: [{ id: 1, ha: 50, own: true }], cars: [], log: [{ m: 10, txt: 'a', val: 0 }], prices: { soja: 130 }, stock: { soja: 10 } };
+  const cell = JSON.parse(JSON.stringify(base)); cell.money -= 300; cell.lands.push({ id: 2, ha: 80, own: true }); cell.log.unshift({ m: 10, txt: 'compra de 80 ha', val: -300 }); cell.savedAt = 5;
+  const pc = JSON.parse(JSON.stringify(base)); pc.money += 200; pc.chips += 7; pc.cars.push({ id: 'c1', model: 'hilux' }); pc.log.unshift({ m: 10, txt: 'venda de bois', val: 200 }); pc.stock.soja = 4; pc.savedAt = 4;
+  const m = merge3(base, cell, pc);
+  assert.deepEqual(m.lands.map(l => l.id), [1, 2], 'terra comprada no celular continua');
+  assert.equal(m.money, 900, 'dinheiro soma as duas mudanças (−300 e +200)');
+  assert.equal(m.chips, 57); assert.equal(m.cars.length, 1, 'carro comprado no PC continua'); assert.equal(m.stock.soja, 4);
+  assert.equal(m.log.length, 3, 'livro-caixa tem os lançamentos dos dois'); assert.equal(m.savedAt, 5);
+  const sold = JSON.parse(JSON.stringify(base)); sold.lands = []; sold.money += 5000;
+  const m2 = merge3(base, sold, pc); assert.equal(m2.lands.length, 0, 'terra vendida num aparelho não volta'); assert.equal(m2.money, 6200);
+  const ed = JSON.parse(JSON.stringify(base)); ed.lands[0].crop = 'soja';
+  const ed2 = JSON.parse(JSON.stringify(base)); ed2.lands[0].leasedOut = true;
+  const m3 = merge3(base, ed, ed2); assert.equal(m3.lands[0].crop, 'soja'); assert.equal(m3.lands[0].leasedOut, true, 'mudanças na mesma terra juntam');
+  const t1 = { ...JSON.parse(JSON.stringify(cell)), month: 11 }, t2 = { ...JSON.parse(JSON.stringify(pc)), month: 11 };
+  assert.equal(merge3(base, t1, t2), null, 'os dois viraram o mês: fica a nuvem');
+  const t3 = { ...JSON.parse(JSON.stringify(pc)), month: 11 }; assert.equal(merge3(base, cell, t3).month, 11, 'só a nuvem virou o mês: vale o mês novo');
+  console.log('sincronização sem perder nada ok');
+}
