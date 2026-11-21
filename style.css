@@ -3364,7 +3364,7 @@ button, .btn, [role="button"], .tab, .subtab { -webkit-touch-callout: none; -web
 .own-b--new { color: #86efac; border-color: rgba(74,222,128,.55); box-shadow: 0 0 12px rgba(74,222,128,.35); }
 /* troca rápida de fichas: tocar nas fichas do topo */
 .chipx-ico { display: inline-grid; place-items: center; width: 18px; height: 18px; margin-left: 4px; border-radius: 6px; font-size: .72rem; font-weight: 800; color: #1a1200; background: linear-gradient(160deg, #fde68a, #f59e0b); box-shadow: 0 0 10px rgba(250,204,21,.45); }
-.dlg--chipx { width: min(400px, calc(100vw - 24px)); display: grid; gap: 12px; }
+.dlg--chipx { width: min(400px, calc(100vw - 24px)); gap: 12px; }   /* display só quando aberto: fechado o diálogo tem que sumir */
 .dlg--chipx[open] { display: grid; }
 .cx-dir { width: 100%; } .cx-dir .segbtn { flex: 1; }
 .cx-bal { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,.04); }
@@ -3376,3 +3376,12 @@ button, .btn, [role="button"], .tab, .subtab { -webkit-touch-callout: none; -web
 /* botão "trocar fichas" no menu (some do topo no celular: lá fica no menu de baixo) */
 .hdr-chipx { gap: 6px; } .hud__in > .hdr-chipx { order: 6 !important; }
 @media (max-width: 40rem) { .hdr-chipx { display: none !important; } }
+/* futebol: cor por posição (bolinha do campo e etiqueta) · goleiro mostarda, defesa azul, meio verde, ataque vermelho */
+.ply--GOL { --pc: #d4a017; } .ply--ZAG, .ply--LAT { --pc: #2563eb; } .ply--VOL, .ply--MEI { --pc: #16a34a; } .ply--ATA { --pc: #dc2626; }
+.ply[class*="ply--"] b { background: var(--pc); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); box-shadow: 0 0 0 2px var(--c1, #fff), 0 3px 0 var(--shade); }
+.ply--GOL b { color: #1a1200; text-shadow: none; }
+.ply.is-empty b { opacity: .45; }
+.posb--GOL { background: #d4a017 !important; color: #1a1200 !important; } .posb--ZAG, .posb--LAT { background: #2563eb !important; color: #fff !important; }
+.posb--VOL, .posb--MEI { background: #16a34a !important; color: #fff !important; } .posb--ATA { background: #dc2626 !important; color: #fff !important; }
+/* linha de botões cabe com "trocar fichas": em tela média, "menu na lateral" vira só ícone */
+@media (min-width: 40.01rem) and (max-width: 90rem) { .hdr-side { font-size: 0 !important; padding-inline: 11px !important; } .hdr-side::before { content: "☰"; font-size: 1rem; } }

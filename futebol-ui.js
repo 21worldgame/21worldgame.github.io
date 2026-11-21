@@ -64,7 +64,7 @@ function renderNext() {
 
 function pitch(c) {
   const l = FT.lineup(c.squad, c.formation, c.xi), col = c.colors || colorsOf(c.club) || ['#c8102e', '#fff'];
-  const row = (sec, y) => l[sec].map((p, i) => `<button class="ply${p?.off ? ' is-off' : ''}${c.xi?.[sec + i] ? ' is-fixed' : ''}" type="button" data-act="ft-slot" data-id="${sec}${i}" style="left:${((i + 1) / (l[sec].length + 1)) * 100}%;top:${y}%;--c1:${col[0]};--c2:${col[1]}" title="trocar">
+  const row = (sec, y) => l[sec].map((p, i) => `<button class="ply ply--${p ? p.pos : { gk: 'GOL', def: 'ZAG', mid: 'MEI', att: 'ATA' }[sec]}${p ? '' : ' is-empty'}${p?.off ? ' is-off' : ''}${c.xi?.[sec + i] ? ' is-fixed' : ''}" type="button" data-act="ft-slot" data-id="${sec}${i}" style="left:${((i + 1) / (l[sec].length + 1)) * 100}%;top:${y}%;--c1:${col[0]};--c2:${col[1]}" title="trocar">
     <b>${p ? Math.round(p.ovr) : '?'}</b><small>${p ? esc(p.name.split(' ')[0]) : 'vazio'}</small></button>`).join('');
   return `<div class="pitch">${row('att', 16)}${row('mid', 44)}${row('def', 70)}${row('gk', 90)}</div>
     <p class="muted small ft-pitch-tip">Toque num jogador para trocar. Fora da posição ele rende 85%. ${c.xi && Object.keys(c.xi).length ? '<button class="btn btn--glass btn--sm" data-act="ft-auto">escalação automática</button>' : ''}</p>`;
