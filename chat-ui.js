@@ -15,7 +15,14 @@ let lobby = null, lastAt = 0, idx = 1, conv = 'all', q = '';
 const msgs = [], seen = new Set(), unread = new Map();   // unread: conversa -> quantas novas
 const docked = matchMedia('(min-width: 75rem)');
 const box = () => $('#chat-box');
-const isOpen = () => docked.matches || document.body.classList.contains('rz-open');
+const isOpen = () => (docked.matches && !document.body.classList.contains('rz-min')) || document.body.classList.contains('rz-open');
+// computador: minimizar deixa só uma faixa fina com o ícone e o número de mensagens novas (lembra da escolha)
+function setMin(on) {
+  document.body.classList.toggle('rz-min', on);
+  try { on ? localStorage.setItem('21world.rzMin', '1') : localStorage.removeItem('21world.rzMin'); } catch {}
+  if (!on) { $('#rz-conv').hidden ? drawPeople() : openConv(conv, false); }
+}
+try { if (localStorage.getItem('21world.rzMin')) document.body.classList.add('rz-min'); } catch {}
 const viewing = c => isOpen() && !$('#rz-conv').hidden && conv === c;
 const myName = () => profileOf().name;
 const time = at => new Date(at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -178,6 +185,7 @@ setTimeout(() => npcTalk(true), 1500); setInterval(npcTalk, 5000);
 document.addEventListener('click', e => {
   if (e.target.closest('[data-chat-open]')) return setOpen(!document.body.classList.contains('rz-open') || docked.matches);
   if (!e.target.closest('#chat-box')) return;
+  if (e.target.closest('[data-rz-min]')) return setMin(!document.body.classList.contains('rz-min'));
   if (e.target.closest('[data-rz-close]')) return setOpen(false);
   if (e.target.closest('#rz-back')) return home();
   const c = e.target.closest('[data-conv]'); if (c) return openConv(c.dataset.conv);

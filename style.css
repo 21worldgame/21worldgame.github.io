@@ -2736,9 +2736,25 @@ body.rz-open .nt--m { display: none; }
 
 /* cabeçalho com a Resenha aberta na lateral: a área útil é menor que a tela, então usa os layouts das telas menores */
 @media (min-width: 75rem) and (max-width: 110rem) {
-  .hud__in { flex-wrap: wrap; row-gap: 8px; gap: 8px 10px; }
-  .stats-hud { flex: 1 1 auto; min-width: 50%; }
-  .stats-hud > div { min-width: max-content; }
-  .hud__in > .btn, .tkmenu, .worldclock { order: 5; }
-  .worldclock { margin-left: auto; }
+  body:not(.rz-min) .hud__in { flex-wrap: wrap; row-gap: 8px; gap: 8px 10px; }
+  body:not(.rz-min) .stats-hud { flex: 1 1 auto; min-width: 50%; }
+  body:not(.rz-min) .stats-hud > div { min-width: max-content; }
+  body:not(.rz-min) :is(.hud__in > .btn, .tkmenu, .worldclock) { order: 5; }
+  body:not(.rz-min) .worldclock { margin-left: auto; }
 }
+
+/* Resenha minimizada (só computador): faixa fina na lateral com ícone e mensagens novas */
+.rz__min, .rz__rail { display: none; }
+@media (min-width: 75rem) {
+  .rz__min { display: grid; place-items: center; width: 38px; height: 38px; border: 0; border-radius: 50%; background: none; color: #aebac1; font: 700 1.3rem/1 var(--font-display); cursor: pointer; flex: none; }
+  .rz__min:hover { background: rgba(255,255,255,.08); color: #fff; }
+  body.rz-min { --rz-w: 64px; }
+  body.rz-min .rz__home, body.rz-min .rz__conv { display: none; }
+  body.rz-min .rz__rail { all: unset; box-sizing: border-box; position: relative; display: grid; align-content: start; justify-items: center; gap: 8px; width: 100%; height: 100%; padding-top: 18px; cursor: pointer; color: #aebac1; }
+  body.rz-min .rz__rail:hover, body.rz-min .rz__rail:focus-visible { background: #202c33; color: #fff; }
+  .rz__rail svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
+  .rz__rail .rz-badge { top: 10px; right: 10px; }
+  .rz__railt { writing-mode: vertical-rl; rotate: 180deg; font: 700 .78rem/1 var(--font-display); letter-spacing: .12em; text-transform: uppercase; }
+  body, .rz { transition: padding-right .2s, width .2s; }
+}
+@media (min-width: 75rem) and (prefers-reduced-motion: reduce) { body, .rz { transition: none; } }
