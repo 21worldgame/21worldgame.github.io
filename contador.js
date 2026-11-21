@@ -4,6 +4,7 @@
 // Linhas que juntam vários gastos ("energia, água e mão de obra") são separadas pela composição oficial abaixo (SPLIT):
 // a soma das partes é sempre igual ao valor cobrado.
 import { LISTS, WAREHOUSES } from './negocios.js';
+import * as KB from './contador-kb.js';
 
 // ---------- honorário ----------
 export const FEE = { rate: 0.0012, min: 2500, rise: 0.02 };    // 0,12% do patrimônio por mês (mínimo R$ 2.500); mensal sobe 2% a cada mês
@@ -211,6 +212,9 @@ export function answer(s, q0, ctx) {
 
   if (ADVICE.test(q))
     return ['Isso eu não posso dizer: onde investir, o que comprar ou vender e quando é escolha sua, faz parte do jogo.', 'O que eu posso fazer é mostrar os seus números: quanto cada produção deu de lucro ou prejuízo, o que está caro e quanto vai ser cobrado. Pergunte, por exemplo, "por que tive prejuízo?" ou "qual meu lucro real?".'];
+  // "como funciona...", "o que é...", "quanto custa...": regra do jogo, da base de conhecimento (contador-kb.js)
+  const rule = KB.lookup(q);
+  if (rule && KB.HOWTO.test(q) && !/(^| )(meu|minha|meus|minhas|eu tenho|tive|gastei|ganhei)( |$|\?)/.test(q)) return rule;
   if (/patrimonio/.test(q) && /abaix|cai|caind|diminu|baix|menor|perd|desc[ae]|reduz|encolh|logica/.test(q)) {
     const D = ctx.drops || {}, net = fc.total - fc.income;
     const out = ['O patrimônio é tudo o que você tem pelo valor de hoje (dinheiro, fichas, terras, gado, estoque, carros, galpões, empresas...) menos o que você deve ao banco. Ele muda todo mês por estes motivos:'];
@@ -295,5 +299,6 @@ export function answer(s, q0, ctx) {
       ...rN.rows.filter(x => x.in || x.out).map(x => `  – ${x.label}: ${x.lucro >= 0 ? '+' : '−'}${brl(Math.abs(x.lucro))}`), ...Object.keys(HELD).map(heldLine).filter(Boolean),
       rN.bem ? `• bens no período: ${rN.bem < 0 ? `investiu ${brl(-rN.bem)}` : `vendeu ${brl(rN.bem)}`} (virou patrimônio, não é prejuízo).` : ''].filter(Boolean);
   }
+  if (rule) return rule;   // não era sobre os números dele: responde a regra do assunto
   return ['Eu sou o seu contador. Posso responder com os seus números, por exemplo:', ...QUICK.map(x => `• ${x}`), 'Também entendo períodos ("nos últimos 3 meses") e cada produção ("por que o gado deu prejuízo?"). Só não digo onde investir nem o que comprar: essa escolha é sua.'];
 }

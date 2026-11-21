@@ -99,5 +99,5 @@ export function styleLine(nick, t) {
   if (style === 'educado') return (t[0].toUpperCase() + t.slice(1)).replace(/\bvc\b/g, 'você').replace(/\bqm\b/g, 'quem').replace(/\bpq\b/g, 'porque').replace(/\bq\b/g, 'que').replace(/\s*(kkk+|rs)\s*/gi, ' ').trim().replace(/([^.!?…\p{Extended_Pictographic}])$/u, '$1.');
   if (style === 'chato') return (x % 3 ? t : `${t}. ${['aff', 'pff', 'enfim'][x % 3]}`).replace(/[!]+/g, '').replace(/\s*\p{Extended_Pictographic}/gu, '');
   if (style === 'amigo') return x % 2 ? `${t} ${['😄', '🙌', '🤝', '😁', '🔥'][x % 5]}` : `${t}!!`;
-  return t.toLowerCase().replace(/\bvoce\b/g, 'vc').replace(/\bque\b/g, 'q').replace(/\bnao\b/g, 'n');
+  return t.replace(/(@\S+)|[^@]+/g, (m, at) => (at ? m : m.toLowerCase())).replace(/\bvoce\b/g, 'vc').replace(/\bque\b/g, 'q').replace(/\bnao\b/g, 'n');
 }

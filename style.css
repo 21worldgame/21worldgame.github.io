@@ -2995,3 +2995,11 @@ details.herd-guide > summary { margin: 0; }
 .rz__conv > .chat-list { flex-shrink: 1; }
 .rz .chat-lock { white-space: normal; overflow-wrap: anywhere; }
 .rz { grid-template-columns: minmax(0, 1fr); }
+
+.portal__cols--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.portal__trend-in { max-width: 860px; }
+.portal__cols li small { font-weight: 500; margin-left: 4px; }
+.portal__livedot { color: #fca5a5; font-size: .6rem; letter-spacing: .08em; }
+.portal__livedot::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 4px; border-radius: 50%; background: #ef4444; vertical-align: middle; }
+@media (max-width: 64rem) { .portal__cols--3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .portal__cols--3 > div:last-child { grid-column: 1 / -1; } }
+@media (max-width: 40rem) { .portal__cols--3 { grid-template-columns: minmax(0, 1fr); } }

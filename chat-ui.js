@@ -203,7 +203,15 @@ function npcTalk(first = false) {
     add({ ...l, level: n ? NPC.levelFor(NPC.worthAt(n, G.S?.month || 1)) : 5 }, false);
   }
 }
-setTimeout(() => npcTalk(true), 1500); setInterval(npcTalk, 5000);
+// conversas entre eles: as falas de cada conversa entram na hora marcada (iguais em todos os aparelhos)
+function npcThreads() {
+  const now = Live.now(), cur = Math.floor(now / CH.THREAD_GAP);
+  for (let sl = cur - 2; sl <= cur; sl++) {
+    const nicks = [...NPC.onlineSet(sl * CH.THREAD_GAP)].sort().map(id => NPC.byId(id)?.nick).filter(Boolean);
+    for (const l of CH.npcThread(sl, nicks)) if (l.at <= now && now - l.at < 1800000) { const n = NPC.byNick(l.name); add({ ...l, level: n ? NPC.levelFor(NPC.worthAt(n, G.S?.month || 1)) : 5 }, false); }
+  }
+}
+setTimeout(() => { npcTalk(true); npcThreads(); }, 1500); setInterval(() => { npcTalk(); npcThreads(); }, 5000);
 
 document.addEventListener('click', e => {
   if (e.target.closest('[data-chat-open]')) return setOpen(!document.body.classList.contains('rz-open') || docked.matches);

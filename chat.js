@@ -108,6 +108,50 @@ function casual(t, r) {
 // frase da vez: percorre a lista toda em ordem embaralhada antes de repetir (passo primo com o tamanho da lista)
 const gcd = (a, b) => (b ? gcd(b, a % b) : a);
 const STEP = (() => { let k = 11; while (gcd(k, LINES.length) !== 1) k++; return k; })();
+// ---------- conversas entre os jogadores do mundo ----------
+// De tempos em tempos (janelas de 7 min, nem toda janela tem) dois ou três deles conversam na Geral, com 1 a 4 minutos
+// entre uma fala e outra, como gente que está jogando e responde quando dá. A semente é o horário: todos veem igual.
+// Só assuntos que não dá para conferir (nada de "criei a mesa agora" ou preço exato).
+export const THREAD_GAP = 420000;
+const THREADS = [
+  [['A', 'alguem vende bezerro? preciso de uns 20'], ['B', '@A tenho uns 15 aqui, chama no pv'], ['A', '@B fechou, te chamo']],
+  [['A', 'qm ta jogando truco hoje?'], ['B', '@A mais tarde eu jogo'], ['A', '@B bora']],
+  [['A', 'meu lote de frango ta quase no ponto'], ['B', '@A quantos galpao vc tem?'], ['A', '@B dois por enquanto, to juntando pro climatizado']],
+  [['A', 'o greening ta acabando com meu pomar'], ['B', '@A pulveriza todo mes que segura'], ['A', '@B vou fazer isso, vlw']],
+  [['A', 'alguem ai tem time na serie B?'], ['B', '@A eu, quase subindo'], ['C', '@B boa, sobe ai'], ['B', '@C tomara']],
+  [['A', 'boa noite povo'], ['B', '@A boa noite']],
+  [['A', 'o leilao de cavalo ta caro demais hoje'], ['B', '@A puro-sangue sempre sai caro'], ['A', '@B vou de quarto de milha entao']],
+  [['A', 'perdi 3 maos seguidas no 21 kkk'], ['B', '@A normal, amanha vira'], ['A', '@B espero']],
+  [['A', 'como faz pra arrendar terra?'], ['B', '@A vai em terras, la tem as ofertas de arrendamento'], ['A', '@B achei, vlw']],
+  [['A', 'meu estadio ja ta nivel 3'], ['B', '@A a bilheteria deve ta boa'], ['A', '@B ta pagando o salario do elenco pelo menos']],
+  [['A', 'qm ganhou a ultima corrida de galgo?'], ['B', '@A o meu chegou em segundo'], ['A', '@B quase hein']],
+  [['A', 'to juntando pro frigorifico proprio'], ['B', '@A 5 mi ne? caro'], ['A', '@B caro mas o couro ajuda']],
+  [['A', 'com quantos kg vcs vendem o boi?'], ['B', '@A uns 450 ja ta gordo'], ['C', '@A eu espero passar de 480']],
+  [['A', 'alguem mais achou o imposto dos rico pesado?'], ['B', '@A pesado demais'], ['A', '@B to pensando em segurar as compras']],
+  [['A', 'a cana ta demorando pra dar o primeiro corte'], ['B', '@A sao 10 meses mesmo, paciencia'], ['A', '@B ta bom']],
+  [['A', 'peguei uma carta diamante no pacote 🔥'], ['B', '@A sorte grande'], ['C', '@A vende?'], ['A', '@C por enquanto nao']],
+  [['A', 'sinuca hj alguem?'], ['B', '@A depois do jantar eu topo']],
+  [['A', 'a soja ta boa de preco hoje?'], ['B', '@A olha no mercado que mostra o normal do lado'], ['A', '@B vi, ta perto do normal']],
+  [['A', 'contratei o contador, ajuda demais'], ['B', '@A eu ainda nao, ele cobra quanto?'], ['A', '@B depende do patrimonio']],
+  [['A', 'alguem ja foi rebaixado?'], ['B', '@A eu ano passado kkk'], ['A', '@B doeu ne']],
+  [['A', 'meu suino ta saindo com que peso?'], ['C', '@A uns 120 kg o meu']],
+  [['A', 'acabei de subir de nivel'], ['B', '@A parabens'], ['C', '@A boa!!']],
+  [['A', 'qm ta no aviator agora?'], ['B', '@A eu, saindo no 2x sempre kkk']],
+  [['A', 'o dolar subiu de novo na bolsa'], ['B', '@A vi, ta louco hoje']],
+];
+export function npcThread(slot, nicks) {
+  let a = (slot * 2246822519 + 99) >>> 0;
+  const r = () => { a = (a + 0x6D2B79F5) >>> 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  if (nicks.length < 3 || r() < 0.45) return [];
+  const th = THREADS[Math.floor(r() * THREADS.length)], pool = [...nicks], who = {};
+  for (const role of ['A', 'B', 'C']) who[role] = pool.splice(Math.floor(r() * pool.length), 1)[0];
+  let at = slot * THREAD_GAP + Math.floor(r() * 60000);
+  return th.map(([role, text], i) => {
+    if (i) at += 60000 + Math.floor(r() * 180000);   // 1 a 4 min entre as falas
+    const msg = text.replace(/@([ABC])\b/g, (_, x) => `@${who[x]}`);
+    return { id: `nt${slot}-${i}`, name: who[role], text: styleLine(who[role], msg), at };
+  });
+}
 export const lineOf = slot => ((slot * STEP) % LINES.length + LINES.length) % LINES.length;
 export function npcLine(slot, nicks) {
   let a = (slot * 2654435761) >>> 0;

@@ -3,6 +3,8 @@
 import { G, esc } from './store.js';
 import { ANCHOR } from './logic.js';
 import * as W from './world.js';
+import * as MK from './market.js';
+import * as Live from './live.js';
 import * as NEWS from './news-ui.js';
 import { headline, KINDS, short } from './news.js';
 
@@ -36,11 +38,22 @@ const liveHTML = () => NEWS.big().map(n => `<li class="pl"><span class="pl__k pl
 G.onTv = () => { const ul = document.getElementById('portal-live'); if (ul && !document.getElementById('p-inicio')?.hidden) ul.innerHTML = liveHTML(); };
 setInterval(() => G.onTv(), 60000);   // atualiza o "há X min"
 
+// quadro de tendências: campo (preço do mês x normal) + bolsa do negociante (última hora, ao vivo)
+function trendHTML() {
+  const tr = trends(G.S?.prices), up = tr.filter(t => t.pct > 2).slice(0, 4), down = tr.filter(t => t.pct < -2).slice(-4).reverse();
+  const chip = t => `<li><span>${esc(t.name)}</span><b class="${t.pct >= 0 ? 'good' : 'bad'}">${t.pct > 0 ? '+' : ''}${t.pct}%</b></li>`;
+  const now = Live.now(), bolsa = Object.entries(MK.ASSETS).map(([k, a]) => { const c = Math.round(MK.change(k, now, 60) * 1000) / 10;
+    return `<li><span>${esc(a.name)} <small class="muted">${MK.fmt(k, MK.price(k, now))} ${esc(a.unit)}</small></span><b class="${c >= 0 ? 'good' : 'bad'}">${c > 0 ? '+' : ''}${String(c).replace('.', ',')}%</b></li>`; }).join('');
+  return `<div class="portal__cols portal__cols--3"><div><h4>em alta no campo</h4><ul>${up.map(chip).join('') || '<li class="muted">nada muito acima do normal</li>'}</ul></div>
+    <div><h4>em baixa no campo</h4><ul>${down.map(chip).join('') || '<li class="muted">nada muito abaixo do normal</li>'}</ul></div>
+    <div><h4>bolsa do negociante <small class="portal__livedot">ao vivo</small></h4><ul>${bolsa}</ul></div></div>`;
+}
+// enquanto o portal está aberto: bolsa a cada 5 s e o campo assim que o mês do mundo vira
+setInterval(() => { const el = document.getElementById('portal-trend'); if (el && !document.getElementById('p-inicio')?.hidden) el.innerHTML = trendHTML(); }, 5000);
+
 export function render() {
   const el = document.getElementById('p-inicio'); if (!el || !G.S) return;
   const s = G.S, m = s.month || 1, year = W.yearOf(m), tr = trends(s.prices);
-  const up = tr.filter(t => t.pct > 2).slice(0, 4), down = tr.filter(t => t.pct < -2).slice(-4).reverse();
-  const chip = t => `<li><span>${esc(t.name)}</span><b class="${t.pct >= 0 ? 'good' : 'bad'}">${t.pct > 0 ? '+' : ''}${t.pct}%</b></li>`;
   el.innerHTML = `
   <header class="portal__mast"><div><span class="portal__brand">21 World <b>Notícias</b></span><span class="portal__date">${esc(W.monthName(m))}, ano ${year} · edição de hoje</span></div>
     <span class="portal__live"><i></i> ao vivo</span></header>
@@ -48,10 +61,9 @@ export function render() {
   <section class="portal__trend" style="--bg:url(${IMG('safra')})">
     <div class="portal__trend-in"><span class="pn__tag">mercado · ano ${year}</span>
       <h2>O que está em alta no campo este ano</h2>
-      <p>Preço de hoje comparado ao preço normal de cada produto. Atualiza todo mês do mundo, igual para todos os jogadores.</p>
-      <div class="portal__cols"><div><h4>em alta</h4><ul>${up.map(chip).join('') || '<li class="muted">nada muito acima do normal</li>'}</ul></div>
-        <div><h4>em baixa</h4><ul>${down.map(chip).join('') || '<li class="muted">nada muito abaixo do normal</li>'}</ul></div></div>
-      <button class="btn btn--gold btn--sm" type="button" data-tab-go="mercado">ver o mercado</button></div></section>
+      <p>Campo: preço do mês comparado ao normal. Bolsa do negociante: variação da última hora, ao vivo. Tudo igual para todos os jogadores.</p>
+      <div id="portal-trend">${trendHTML()}</div>
+      <div class="row"><button class="btn btn--gold btn--sm" type="button" data-tab-go="mercado">ver o mercado</button> <button class="btn btn--glass btn--sm" type="button" data-tab-go="trader">abrir a bolsa</button></div></div></section>
   <div class="portal__grid">
     <section class="portal__box"><h2>Grandes negócios <small><i class="tv__dot"></i> ao vivo na TV 21</small></h2><ul class="portal__live-list" id="portal-live">${liveHTML()}</ul></section>
     ${card(SOON[3], 'pn--mini')}

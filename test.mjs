@@ -1305,3 +1305,38 @@ import * as CT from './contador.js';
   assert.ok(CTq.QUICK.some(x => /patrimônio cai/.test(x)));
   console.log('contador explica o patrimônio ok');
 }
+
+// contador conhece as regras do jogo inteiro (sem dizer onde investir)
+{
+  const CTk = await import('./contador.js'), KBm = await import('./contador-kb.js');
+  const ctx = { brl: v => `R$ ${Math.round(v)}`, forecast: { total: 0, income: 0, groups: [] }, prices: {}, base: {}, held: {}, worth: { total: 1, parts: [], debt: 0 }, loans: [], drops: {} };
+  const ask = q => CTk.answer({ month: 10, log: [] }, q, ctx).join(' ');
+  assert.match(ask('como funciona o futebol?'), /20 times|Série A/);
+  assert.match(ask('quanto é o patrocínio da série B?'), /R\$ 500 mil/);
+  assert.match(ask('como funciona o estádio?'), /nível 1 ao 5/);
+  assert.match(ask('como funciona a granja?'), /galpão vazio não paga/);
+  assert.match(ask('o que acontece se eu não pagar o banco?'), /banco toma/);
+  assert.match(ask('quanto dura um mês do mundo?'), /10 minutos/);
+  assert.match(ask('como funciona o arrendamento?'), /0,4%/);
+  assert.match(ask('qual time compensa mais comprar?'), /não posso dizer/);
+  for (const e of KBm.KB) for (const l of e.a) assert.ok(!/compensa|vale a pena|melhor investimento|recomendo|você deve (comprar|investir)/i.test(l), `base não aconselha: ${l}`);
+  assert.ok(KBm.KB.length >= 40, 'base grande');
+  console.log('contador conhece o jogo ok');
+}
+
+// jogadores do mundo conversando entre si na Geral: devagar, igual para todos, cada um no seu jeito
+{
+  const CHt = await import('./chat.js');
+  const nicks = ['Falcao777', 'Rosa.MT', 'TropeiroGO', 'BoiBravo', 'LunaAgro'];
+  let n = 0;
+  for (let sl = 5000; sl < 5200; sl++) {
+    const th = CHt.npcThread(sl, nicks);
+    assert.deepEqual(th, CHt.npcThread(sl, nicks), 'mesma conversa em todos os aparelhos');
+    if (!th.length) continue; n++;
+    for (let i = 1; i < th.length; i++) { assert.ok(th[i].at - th[i - 1].at >= 60000 && th[i].at - th[i - 1].at <= 240000, 'resposta entre 1 e 4 min'); assert.notEqual(th[i].name, th[i - 1].name, 'quem responde é outro'); }
+    for (const l of th) { assert.ok(!/@[ABC]\b/.test(l.text), 'menção vira o nick'); assert.ok(nicks.includes(l.name)); }
+  }
+  assert.ok(n > 60 && n < 160, `nem toda janela tem conversa (${n} de 200)`);
+  assert.deepEqual(CHt.npcThread(5001, ['a', 'b']), [], 'precisa de gente online');
+  console.log('conversa entre jogadores do mundo ok');
+}
