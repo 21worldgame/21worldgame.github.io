@@ -702,10 +702,12 @@ function renderInv() {
   const ppl = TUI.online();
   $('#inv-peers').innerHTML = ppl.length ? ppl.map(p => `<li><span class="who__av">${avatarSVG(p.look || {}, { label: p.name })}</span><span class="inv-peers__n"><span>${esc(p.name)}</span><small class="muted"> nível ${p.level}</small></span>
     <span class="inv-peers__a"><button class="btn btn--gold btn--sm" data-act="trade-invite" data-id="${esc(p.pid)}">negociar</button><button class="btn btn--glass btn--sm" data-profile="${esc(p.pid)}">perfil</button></span></li>`).join('') : '';
-  const npcOn = NPC.onlineNow(Live.now(), 10);
+  // parceiros primeiro (mesmo fora do ar), depois quem está online; a caixinha "parceiro" libera as parcerias na negociação
+  const on = NPC.onlineNow(Live.now(), 10), onIds = new Set(on.map(n => n.id)), partners = AM.friends(S());
+  const npcOn = [...partners.map(f => f.npc), ...on.filter(n => !AM.isFriend(S(), n.nick))];
   if (!ppl.length && !npcOn.length) $('#inv-peers').innerHTML = '<li class="muted small">Ninguém online agora. Chame os amigos pelo link do jogo.</li>';
-  $('#inv-peers').insertAdjacentHTML('beforeend', npcOn.map(n => `<li><span class="who__av">${avatarSVG(n.look, { label: n.nick })}</span><span class="inv-peers__n"><span>${esc(n.nick)}</span><small class="muted"> nível ${NPC.levelFor(NPC.worthAt(n, S().month))}</small></span>
-    <span class="inv-peers__a"><button class="btn btn--gold btn--sm" data-act="trade-bot" data-id="${n.id}">negociar</button><button class="btn btn--glass btn--sm" data-profile="npc:${n.id}">perfil</button></span></li>`).join(''));
+  $('#inv-peers').insertAdjacentHTML('beforeend', npcOn.map(n => { const f = AM.friend(S(), n.nick); return `<li class="${f ? 'is-partner' : ''}"><span class="who__av">${avatarSVG(n.look, { label: n.nick })}</span><span class="inv-peers__n"><span>${esc(n.nick)}</span><small class="muted"> nível ${NPC.levelFor(NPC.worthAt(n, S().month))}${onIds.has(n.id) ? '' : ' · fora do ar'}</small>${f ? AMU.confTag(f.conf) : ''}</span>
+    <span class="inv-peers__a">${AMU.partnerBox(S(), n.nick)}<button class="btn btn--gold btn--sm" data-act="trade-bot" data-id="${n.id}">negociar</button><button class="btn btn--glass btn--sm" data-profile="npc:${n.id}">perfil</button></span></li>`; }).join(''));
 }
 // visual estável por nome de bot
 const NPC_LOOK = n => NPC.byNick(n)?.look || NPC_LOOK_HASH(n);
@@ -1406,7 +1408,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 94;
+const APP_VERSION = 95;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;

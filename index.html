@@ -447,7 +447,7 @@
           <p class="muted small">Negociantes vendem seminovos, sacas e acessórios e às vezes querem comprar o que é seu. O preço acompanha a economia dos jogadores: quanto mais rico o ranking, mais caro. Negocie: oferta baixa demais faz o negociante desistir. As bancas mudam todo mês do jogo.</p>
           <div id="fe-list"></div><div id="fe-want"></div></section>
         <div class="inv-side"><section class="pix glass" id="pix" aria-label="Pix 21"></section>
-        <aside class="glass inv-online"><h3>jogadores online</h3><details class="howto howto--mini"><summary class="howto__t">como funciona a troca</summary><p class="muted small">Negocie carros, animais, terras, jogadores de futebol, sacas, fichas e dinheiro. Os dois montam a oferta, ficam "prontos" e confirmam. Se alguém mexer na oferta, os dois precisam confirmar de novo.</p></details><ul class="inv-peers" id="inv-peers"></ul></aside></div>
+        <aside class="glass inv-online"><h3>jogadores online</h3><details class="howto howto--mini"><summary class="howto__t">como funciona a troca</summary><p class="muted small">Negocie carros, animais, terras, jogadores de futebol, sacas, fichas e dinheiro. Os dois montam a oferta, ficam "prontos" e confirmam. Se alguém mexer na oferta, os dois precisam confirmar de novo.</p><p class="muted small">Marque <b>parceiro</b> num jogador do mundo e, em "negociar", aparece o que ele tem para você (terra, espaço de galpão, trator, caminhão, dinheiro) e o que você pode passar a ele. Parceiros ficam na lista mesmo fora do ar.</p></details><ul class="inv-peers" id="inv-peers"></ul></aside></div>
       </div>
     </section>
 
@@ -693,7 +693,7 @@
         <thead><tr><th>quem</th><th class="num">saldo</th><th class="num">juros/mês</th><th class="num">parcelas</th></tr></thead>
         <tbody id="lent"></tbody>
       </table></div>
-      <h3>amigos e parcerias</h3>
+      <h3>agiota automático</h3>
       <div id="amigos" class="am"></div>
     </section>
 
@@ -878,6 +878,7 @@
         <div class="row" id="tr-bot" hidden><label class="visually-hidden" for="tr-botpick">o que comprar</label><select class="input" id="tr-botpick"></select><button class="btn btn--glass btn--sm" data-act="trade-botadd">pedir</button></div>
         <p class="muted small" id="tr-bal" hidden></p></div>
     </div>
+    <section class="glass tr-partner" id="tr-partner" hidden aria-label="parceria"></section>
     <p class="tr-state" id="tr-state"></p>
     <div class="tr-chatbox" id="tr-chatbox"><ul class="tr-chat" id="tr-chat" aria-live="polite"></ul>
       <form class="row" id="tr-chat-form"><label class="visually-hidden" for="tr-msg">mensagem</label><input class="input" id="tr-msg" maxlength="140" placeholder="negocie aqui" autocomplete="off"><button class="btn btn--glass btn--sm" type="submit">enviar</button></form></div>

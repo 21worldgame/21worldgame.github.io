@@ -3004,16 +3004,21 @@ details.herd-guide > summary { margin: 0; }
 @media (max-width: 64rem) { .portal__cols--3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .portal__cols--3 > div:last-child { grid-column: 1 / -1; } }
 @media (max-width: 40rem) { .portal__cols--3 { grid-template-columns: minmax(0, 1fr); } }
 
-/* amigos e parcerias (aba banco) */
-.am h4 { margin: 16px 0 8px; }
-.am__row { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
-.am__card { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 12px; border-radius: 14px; }
-.am__card > div { flex: 1 1 140px; display: grid; gap: 2px; min-width: 0; }
-.am__card small { font-size: .75rem; }
-.am__av { width: 44px; height: 44px; flex: none; border-radius: 50%; overflow: hidden; }
-.am__av svg { width: 100%; height: 100%; }
-.am__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.am__list li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+/* parcerias: caixinha na lista de jogadores, bloco na janela de negociação, agiota automático no banco */
+.am-chk { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; cursor: pointer; white-space: nowrap; }
+.am-chk input { width: 18px; height: 18px; accent-color: #ffd76a; }
+.inv-peers li.is-partner { background: rgba(255,215,106,.06); border-radius: 10px; }
+.inv-peers__n .tag { margin-left: 6px; }
+.tr-partner { margin-top: 12px; padding: 12px; border-radius: 14px; }
+.am-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.am-head h3 { margin: 0; font-size: 1rem; }
+.am-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 4px 18px; }
+.am-cols h4 { margin: 12px 0 6px; font-size: .85rem; }
+.am-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.am-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; padding: 7px 9px; border-radius: 10px; background: rgba(255,255,255,.03); font-size: .85rem; }
+.am-list li > span { flex: 1 1 180px; min-width: 0; }
+.am-form > span { flex-basis: 100% !important; }
+.am-form small { flex-basis: 100%; }
+.am-form .input--s { width: auto; min-width: 0; flex: 1 1 90px; }
 .am__auto { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 14px; padding: 12px; border-radius: 14px; }
 .am__auto p { flex-basis: 100%; margin: 0; }
-.am__card > div > .tag { justify-self: start; }

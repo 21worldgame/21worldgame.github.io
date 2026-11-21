@@ -5,6 +5,8 @@ import * as NPC from './npcs.js';
 import { CHIP } from './logic.js';
 import { G, $, esc, brl, int, say, save, note, award, confetti, profileOf } from './store.js';
 import * as sfx from './sfx.js';
+import * as AMU from './amigos-ui.js';
+document.addEventListener('am:changed', () => render());   // parceria mexeu (empréstimo, aluguel): redesenha a janela
 
 let lobby = null, ss = null;           // ss = sessão de troca aberta
 const myName = () => profileOf().name;
@@ -93,6 +95,7 @@ function render() {
   const list = (items, mine) => items.length ? items.map((it, k) => `<li><span>${esc(TD.describe(it))}</span>${mine ? `<button class="btn btn--glass btn--sm" data-act="trade-remove" data-id="${k}">tirar</button>` : ''}</li>`).join('') : '<li class="muted small">nada ainda</li>';
   $('#tr-mine').innerHTML = list(ss.mine, true);
   $('#tr-bot').hidden = $('#tr-bal').hidden = !ss.bot; $('#tr-chatbox').hidden = !!ss.bot;
+  const pt = $('#tr-partner'); pt.hidden = !ss.bot; pt.dataset.nick = ss.bot ? ss.name : ''; if (ss.bot) pt.innerHTML = AMU.partnerHTML(ss.name);
   if (ss.bot) {
     const t = botTotals(); ss.picks = ss.picks.filter(id => t.ls.some(l => l.id === id)); ss.theirs = t.picked.flatMap(l => l.items);
     $('#tr-theirs').innerHTML = t.picked.length ? t.picked.map(l => `<li><span>${esc(l.label)}: <b>${brl(l.price)}</b></span><button class="btn btn--glass btn--sm" data-act="trade-botdrop" data-id="${esc(l.id)}">tirar</button></li>`).join('') : '<li class="muted small">escolha abaixo o que quer comprar</li>';

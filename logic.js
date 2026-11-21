@@ -116,7 +116,8 @@ export const CROPS = {
   milho: { label: 'milho', cost: 3500, months: 5, yield: 110, good: 'milho' },
   cafe: { label: 'café', cost: 12000, months: 8, yield: 30, good: 'cafe' },
 };
-export const hasVehicle = (s, type) => (s.cars || []).some(c => CARS[c.model]?.type === type);
+// máquina emprestada a parceiro (lentTo) não trabalha para você; a que você pegou emprestada (amigos.tools) trabalha
+export const hasVehicle = (s, type) => (s.cars || []).some(c => !c.lentTo && CARS[c.model]?.type === type) || (s.amigos?.tools || []).some(t => t.type === type);
 export const rentNow = l => Math.round(l.value * (l.rate ?? RENT_PAY) * (1 + RENT_RAISE * Math.floor((l.age || 0) / 12)));
 export const rentCredit = l => Math.min((l.paid || 0) * RENT_CREDIT, l.value * RENT_CREDIT_CAP);
 export const buyRentedPrice = l => Math.round(l.value - rentCredit(l));

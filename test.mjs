@@ -1093,23 +1093,35 @@ console.log('mina ok');
 { const FTq = await import('./futebol.js'), SHq = await import('./shop.js'), Lq = await import('./logic.js');
   for (const c of FTq.CLUBS.flat()) { const s = Lq.newState(() => 0.5), m = s.money = 1e10; FTq.takeClub(s, c.n); const net = s.money - m + SHq.clubValue(s.fut); assert.ok(net < 0, `${c.n}: comprar e revender não pode dar lucro (${net})`); }
   console.log('clube: comprar e revender dá prejuízo ok'); }
-{ const AM = await import('./amigos.js'), Lq = await import('./logic.js'), NGq = await import('./negocios.js');
+{ const AM = await import('./amigos.js'), Lq = await import('./logic.js'), NGq = await import('./negocios.js'), NPq = await import('./npcs.js');
   // terra é pasto ou lavoura: não planta onde o gado está pastando
   const s = Lq.newState(() => 0.5); s.money = 1e8; s.lands = [{ id: 900, region: 'x', ha: 100, cap: 1.2, value: 1e6, own: true }]; s.herd = [{ id: 1, heads: 120, kg: 180 }];
   assert.ok(Lq.plant(s, s.lands[0], 'soja'), 'pasto com boi não aceita lavoura'); s.herd = [];
-  // amizade: aceitar pedido, parceria de terra sai mais barata, galpão alugado conta no armazém
-  const n = AM.requests(s)[0]; assert.equal(AM.accept(s, n.nick), null); assert.ok(AM.isFriend(s, n.nick));
-  let off = []; for (let m = 1; m < 40 && !(off.some(o => o.kind === 'land') && off.some(o => o.kind === 'wh')); m++) { s.month = m; off = AM.offers(s); }
-  const ol = off.find(o => o.kind === 'land'), ow = off.find(o => o.kind === 'wh'); assert.ok(ol && ow && ol.rate < Lq.RENT_PAY);
-  const cap0 = NGq.capacity(s); assert.equal(AM.take(s, ol.id), null); assert.equal(AM.take(s, ow.id), null); assert.ok(AM.take(s, ol.id), 'não pega duas vezes');
-  assert.ok(Lq.rentNow(s.lands.at(-1)) < s.lands.at(-1).value * Lq.RENT_PAY); assert.ok(NGq.capacity(s) > cap0);
+  // caixinha parceiro: sem ela não há parceria nem empréstimo barato
+  const nick = NPq.NPCS[3].nick;
+  assert.ok(AM.lendTo(s, nick, 10000, 0.025, 6), 'sem parceria não empresta a juro de amigo');
+  assert.equal(AM.offersFrom(s, nick).length, 0);
+  assert.equal(AM.setPartner(s, nick, true), null); assert.ok(AM.isFriend(s, nick));
+  for (let i = 0; i < 9; i++) AM.setPartner(s, NPq.NPCS[10 + i].nick, true); assert.equal(AM.friends(s).length, AM.MAX, 'máximo de parceiros');
+  // o parceiro oferece terra mais barata, espaço de galpão e máquina
+  let off = []; for (let m = 1; m < 60 && !['land', 'wh', 'tool'].every(k => off.some(o => o.kind === k)); m++) { s.month = m; off = AM.offersFrom(s, nick); }
+  const ol = off.find(o => o.kind === 'land'), ow = off.find(o => o.kind === 'wh'), ot = off.find(o => o.kind === 'tool');
+  assert.ok(ol && ow && ot && ol.rate < Lq.RENT_PAY);
+  const cap0 = NGq.capacity(s), had = Lq.hasVehicle(s, ot.type);
+  for (const o of [ol, ow, ot]) assert.equal(AM.take(s, o.id), null); assert.ok(AM.take(s, ol.id), 'não pega duas vezes');
+  assert.ok(Lq.rentNow(s.lands.at(-1)) < s.lands.at(-1).value * Lq.RENT_PAY); assert.ok(NGq.capacity(s) > cap0); assert.ok(!had && Lq.hasVehicle(s, ot.type), 'máquina emprestada trabalha para você');
+  // você empresta trator: a vantagem sai de você e o aluguel entra
+  s.amigos.tools = []; s.cars.push({ id: 950, model: 'deere', value: 600000 }); assert.equal(AM.lendTool(s, 950, nick), null); assert.ok(!Lq.hasVehicle(s, 'trator'));
+  // empréstimo ao parceiro escolhido na negociação
+  const m0 = s.money; assert.equal(AM.lendTo(s, nick, 10000, 0.025, 6), null); assert.equal(s.money, m0 - 10000); assert.ok(s.lent.some(p => p.nick === nick));
+  assert.ok(AM.lendTo(s, nick, 10000, 0.08, 6), 'parceiro não aceita juro de agiota'); assert.ok(AM.lendTo(s, nick, 10000, 0.025, 6), 'um empréstimo por vez');
   // agiota automático empresta dentro do limite e do risco
   AM.setAuto(s, true, 1e6, 0.16); s.borrowers = []; const out = AM.monthly(s, [], () => 0.1);
-  assert.ok(AM.lentTotal(s) > 0 && AM.lentTotal(s) <= 1e6 && s.lent.every(p => p.risk <= 0.16), 'agiota automático');
-  assert.ok(out.some(l => /galpão alugado de/.test(l.txt) && l.val < 0), 'aluguel do galpão do amigo sai todo mês');
-  // calote de amigo derruba a confiança; amigo empresta sem garantia
-  const c0 = s.amigos.list[n.nick].conf; AM.monthly(s, [{ txt: `${n.nick} deu calote de R$ 1` }]); assert.ok(s.amigos.list[n.nick]?.conf < c0 || !AM.isFriend(s, n.nick));
-  if (AM.isFriend(s, n.nick)) { const f = AM.friends(s)[0]; assert.equal(AM.borrow(s, f.nick, 1000), null); assert.ok(AM.borrow(s, f.nick, 1000), 'um empréstimo por amigo'); }
+  assert.ok(AM.lentTotal(s) <= 1e6 && s.lent.every(p => p.risk <= 0.16), 'agiota automático');
+  assert.ok(out.some(l => /galpão alugado de/.test(l.txt) && l.val < 0) && out.some(l => /emprestado para/.test(l.txt) && l.val > 0), 'aluguéis do mês');
+  // calote derruba a confiança; desmarcar devolve tudo
+  const c0 = s.amigos.list[nick].conf; AM.monthly(s, [{ txt: `${nick} deu calote de R$ 1` }]); assert.ok(!AM.isFriend(s, nick) || s.amigos.list[nick].conf < c0);
+  AM.setPartner(s, nick, false); assert.ok(!s.cars.some(c => c.lentTo) && Lq.hasVehicle(s, 'trator'));
   console.log('amigos, parcerias e agiota ok'); }
 { const FTq = await import('./futebol.js'); let r = 1; const rng = () => (r = (r * 16807) % 2147483647) / 2147483647;
   for (let i = 0; i < 300; i++) { const f = { market: [{ id: 'x', price: 100000 }] }, d = FTq.dealFor(f, 'x', rng); assert.ok(d.limit >= 95000, 'piso de compra'); }
