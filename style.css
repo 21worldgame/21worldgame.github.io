@@ -2758,3 +2758,41 @@ body.rz-open .nt--m { display: none; }
   body, .rz { transition: padding-right .2s, width .2s; }
 }
 @media (min-width: 75rem) and (prefers-reduced-motion: reduce) { body, .rz { transition: none; } }
+
+/* Resenha compacta no computador: ocupa pouco da tela */
+@media (min-width: 75rem) {
+  :root { --rz-w: 260px; }
+  .rz__head, .rz__chead { min-height: 46px; padding: 4px 6px 4px 10px; gap: 6px; }
+  .rz__head h3 { font-size: .95rem; }
+  .rz__on { font-size: .66rem; }
+  .rz__x, .rz__back, .rz__min { width: 30px; height: 30px; }
+  .rz__back { font-size: 1.6rem; }
+  .rz__q { min-height: 32px; margin: 6px 8px; width: calc(100% - 16px); font-size: .8rem; }
+  .rz__row { grid-template-columns: 32px minmax(0, 1fr); gap: 8px; padding: 5px 10px; }
+  .rz__av { width: 32px; height: 32px; }
+  .rz__chead .rz__av { width: 30px; height: 30px; }
+  .rz__av--ico { font-size: .9rem; }
+  .rz__txt { gap: 1px; padding-block: 2px; }
+  .rz__l1 b { font-size: .82rem; }
+  .rz__l1 small, .rz__l2 > span { font-size: .7rem; }
+  .rz__who b { font-size: .85rem; }
+  .rz__who small { font-size: .66rem; }
+  .rz__sec { padding: 10px 10px 4px; font-size: .62rem; }
+  .rz__n { min-width: 16px; height: 16px; font-size: .6rem; }
+  .rz__dot { width: 7px; height: 7px; }
+  .rz .chat-list { padding: 8px; gap: 3px; font-size: .78rem; }
+  .rz .chat-list li { max-width: 92%; padding: 4px 7px 14px; }
+  .rz .chat-list li time { font-size: .58rem; bottom: 2px; }
+  .chat-form { gap: 6px; padding: 6px 8px; }
+  .chat-form .input { min-height: 34px; font-size: .82rem; padding-inline: 12px; }
+  .rz__send { width: 34px; height: 34px; }
+  .rz__send svg { width: 17px; height: 17px; }
+  .chat-hi { font-size: .68rem; }
+  .chat-lock { padding: 8px 10px; font-size: .72rem; }
+  body.rz-min { --rz-w: 44px; }
+  body.rz-min .rz__rail { padding-top: 12px; }
+  .rz__rail svg { width: 22px; height: 22px; }
+  .rz__rail .rz-badge { top: 4px; right: 3px; }
+  .rz__railt { font-size: .66rem; }
+}
+@media (min-width: 100rem) { :root { --rz-w: 290px; } }
