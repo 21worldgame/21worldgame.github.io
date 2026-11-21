@@ -3007,8 +3007,15 @@ details.herd-guide > summary { margin: 0; }
 /* parcerias: caixinha na lista de jogadores, bloco na janela de negociação, agiota automático no banco */
 .am-chk { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; cursor: pointer; white-space: nowrap; }
 .am-chk input { width: 18px; height: 18px; accent-color: #ffd76a; }
-.inv-peers li.is-partner { background: rgba(255,215,106,.06); border-radius: 10px; }
-.inv-peers__n .tag { margin-left: 6px; }
+/* jogadores do inventário: cada um num cartão — nome em cima, ações (parceiro, negociar, perfil) numa linha embaixo */
+.inv-peers { gap: 8px; }
+.inv-peers li:not(.muted) { grid-template-columns: 32px minmax(0, 1fr); grid-template-areas: "av n" "a a"; gap: 6px 10px; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.05); }
+.inv-peers li > .who__av { grid-area: av; }
+.inv-peers li > .inv-peers__n { grid-area: n; }
+.inv-peers li > .inv-peers__a { grid-area: a; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
+.inv-peers__a .am-chk { margin-right: auto; }
+.inv-peers li.is-partner { background: rgba(255,215,106,.07); border-color: rgba(255,215,106,.25); }
+.inv-peers__n .tag { justify-self: start; margin-top: 3px; font-size: .68rem; }
 .tr-partner { margin-top: 12px; padding: 12px; border-radius: 14px; }
 .am-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .am-head h3 { margin: 0; font-size: 1rem; }
