@@ -72,6 +72,7 @@ export const GROUPS = [
   ['cana', 'cana', /canavial|corte de cana|colhedora/],
   ['laranja', 'laranja', /^pomar|colheita de laranja/],
   ['mina', 'mina de ouro', /mina de ouro|mineradora|garimpo|ouro/i],
+  ['invest', 'investimentos no banco', /investimento|^rendimento/],
   ['jogos', 'cassino e apostas', /^(truco|sinuca|pôquer|roleta|aviator|trader|aposta|corrida|resgate de|fichas)/],
   ['futebol', 'futebol', /futebol|temporada|estádio|patrocínio|contratação de|^assumiu o|venda de .* ao /],
   ['compras', 'compras, vendas e Pix', /^(loja|feira|Feirão|compra:|venda:|troca com|Pix|pagamento|leilão)/],
@@ -150,7 +151,7 @@ export const npcFee = worth => feeFor(worth);
 // ---------- resultado (lucro real): tudo que entra e sai do dinheiro, por produção e por mês ----------
 // Cada lançamento do livro-caixa passa por track(): entra (venda, receita), sai (custo do dia a dia) ou bem (comprar/vender
 // galpão, terra, carro, empresa: é troca de dinheiro por patrimônio, não é lucro nem prejuízo da produção).
-export const INV = /galpão|barracão|construção|colhedora|compra da marca|venda de negócio|^assumiu|^(compra|venda) de \d+ ha|^empréstimo do banco|^compra da |^venda da |^venda do (?!lote)|^compra: |^venda: |^compra de [^:]+: |^leilão: arrematou|^contratação de|^venda de (?!\d)/;
+export const INV = /^investimento: |^resgate de investimento|galpão|barracão|construção|colhedora|compra da marca|venda de negócio|^assumiu|^(compra|venda) de \d+ ha|^empréstimo do banco|^compra da |^venda da |^venda do (?!lote)|^compra: |^venda: |^compra de [^:]+: |^leilão: arrematou|^contratação de|^venda de (?!\d)/;
 export const kindOf = (txt, val) => (INV.test(txt) ? 'bem' : val > 0 ? 'in' : 'out');
 export function track(s, txt, val) {
   val = Math.round(Number(val) || 0); if (!val) return;

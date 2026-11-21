@@ -17,7 +17,7 @@ export const short = v => { v = Math.abs(Math.round(v)); const f = (x, u) => `R$
 
 const tidy = t => String(t || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim();
 // linha do livro-caixa do jogador → notícia (ou null se não vale notícia)
-const SKIP = /fichas|empréstimo|quitação|destaque no chat|reembolso|parcela|aposta|imposto|pedágio/i;
+const SKIP = /fichas|empréstimo|quitação|destaque no chat|reembolso|parcela|aposta|imposto|pedágio|investimento|rendimento/i;
 export function fromNote(name, txt, val) {
   txt = tidy(txt);
   if (!txt || SKIP.test(txt)) return null;

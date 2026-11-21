@@ -18,6 +18,8 @@ import * as SF from './staff.js';
 import { botsFor as BOTS } from './botpool.js';
 import * as NG from './negocios.js';
 import * as EC from './econ.js';
+import * as INV from './invest.js';
+import * as INVU from './invest-ui.js';
 import * as SH from './shop.js';
 import * as NGU from './negocios-ui.js';
 import * as SU from './suinos.js';
@@ -643,6 +645,7 @@ function renderBanco() {
   $('#lent').innerHTML = s.lent.length ? s.lent.map(p => `<tr>
     <td>${esc(p.name)}</td><td class="num">${brl(p.bal)}</td><td class="num">${(p.rate * 100).toFixed(1)}%</td><td class="num">${p.left}</td></tr>`).join('')
     : '<tr><td colspan="4" class="empty">Você ainda não emprestou para ninguém.</td></tr>';
+  INVU.render();
 }
 
 function renderLivro() {
@@ -1520,6 +1523,7 @@ function worldMonths0() {
     for (const l of CN.monthly(s)) N(l);
     for (const l of SU.monthly(s)) N(l);
     for (const l of NG.monthly(s)) N(l);
+    for (const l of INV.monthly(s)) N(l);   // investimentos do banco: rende e paga o que venceu
     for (const l of MI.monthly(s)) { N(l); if (l.big) { confetti(220); say(l.txt); } }
     for (const l of NG.enforce(s)) { N(l); say(l.txt[0].toUpperCase() + l.txt.slice(1) + '. Compre galpões na loja.', true); }
     for (const l of AB.monthly(s)) N(l);
@@ -1529,7 +1533,7 @@ function worldMonths0() {
     harvests += lines.filter(l => l.txt.startsWith('colheita')).length;
     award('month');
   }
-  { const mo = s.log.slice(0, Math.max(0, s.log.length - logBefore)), spent = -mo.filter(l => l.val < 0).reduce((t, l) => t + l.val, 0), earned = mo.filter(l => l.val > 0).reduce((t, l) => t + l.val, 0); for (const l of L.eliteBills(s, spent, earned, livingOf(mo))) { note(l.txt, l.val); closes.at(-1)?.rec.push(l); } }   // os mais ricos pagam mais
+  { const mo = s.log.slice(0, Math.max(0, s.log.length - logBefore)), spent = -mo.filter(l => l.val < 0).reduce((t, l) => t + l.val, 0), earned = mo.filter(l => l.val > 0 && !INV.NOT_PROFIT.test(l.txt)).reduce((t, l) => t + l.val, 0); for (const l of L.eliteBills(s, spent, earned, livingOf(mo))) { note(l.txt, l.val); closes.at(-1)?.rec.push(l); } }   // os mais ricos pagam mais
   for (const c of closes) CT.record(s, c.m, c.rec);
   eliteCheck();
   if (harvests) award('harvest', harvests);
@@ -1547,9 +1551,9 @@ G.ctForecast = () => {
   try {
     const s = structuredClone(s0), rng = () => 0.5;
     rec.push(...L.tick(s, rng));
-    for (const m of [ST, GR, PM, CN, SU, NG]) rec.push(...m.monthly(s, rng));
+    for (const m of [ST, GR, PM, CN, SU, NG, INV]) rec.push(...m.monthly(s, rng));
     rec.push(...MI.monthly(s, rng), ...NG.enforce(s), ...AB.monthly(s), ...AM.monthly(s, rec, rng), ...CT.monthly(s, L.netWorth(s)));
-    const spent = -rec.filter(l => l.val < 0).reduce((t, l) => t + l.val, 0), earned = rec.filter(l => l.val > 0).reduce((t, l) => t + l.val, 0);
+    const spent = -rec.filter(l => l.val < 0).reduce((t, l) => t + l.val, 0), earned = rec.filter(l => l.val > 0 && !INV.NOT_PROFIT.test(l.txt)).reduce((t, l) => t + l.val, 0);
     rec.push(...L.eliteBills(s, spent, earned, livingOf(rec)));
   } catch (e) { console.error('previsão do contador', e); }
   fcCache = { at: Date.now(), month: s0.month, v: rec }; return rec;
@@ -1600,7 +1604,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 130;
+const APP_VERSION = 131;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

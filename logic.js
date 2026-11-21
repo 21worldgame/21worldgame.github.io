@@ -4,6 +4,7 @@ import { value as suinosValue, PRICES as SU_PRICES } from './suinos.js';
 import { value as bizValue } from './negocios.js';
 import { value as minaValue } from './mina.js';
 import * as PK from './perks.js';
+import { total as investTotal } from './invest.js';
 import { granjaValue, PRICES as GR_PRICES } from './granja.js';
 import { orchardValue } from './pomar.js';
 import { caneValue } from './cana.js';
@@ -268,7 +269,7 @@ export function netWorth(s) {
   return Math.round(part(() => s.money) + part(() => s.chips * CHIP) + own.reduce((a, l) => a + num(l.value), 0) + part(() => herdValue(s))
     + Object.entries(s.stock || {}).reduce((a, [k, q]) => a + num(q * (s.prices?.[k] ?? 0)), 0) + (s.lent || []).reduce((a, l) => a + num(l?.bal), 0)
     + part(() => carsValue(s)) + part(() => animalsValue(s)) + (s.cards || []).reduce((a, c) => a + part(() => cardValue(c)), 0) + part(() => granjaValue(s))
-    + own.reduce((a, l) => a + part(() => orchardValue(s, l) + caneValue(s, l)), 0) + num(s.caneHarvester?.value) + part(() => plantValue(s)) + part(() => suinosValue(s)) + part(() => bizValue(s)) + part(() => minaValue(s)) - part(() => debt(s)));
+    + own.reduce((a, l) => a + part(() => orchardValue(s, l) + caneValue(s, l)), 0) + num(s.caneHarvester?.value) + part(() => plantValue(s)) + part(() => suinosValue(s)) + part(() => bizValue(s)) + part(() => minaValue(s)) + part(() => investTotal(s)) - part(() => debt(s)));   // investimentos no banco contam no patrimônio
 }
 
 // troféus de patrimônio: o de 10 mi é o selo de entrada; ficam para sempre, mesmo se a fortuna cair

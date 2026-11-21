@@ -12,6 +12,7 @@ import * as NG from './negocios.js';
 import * as PK from './perks.js';
 import { netWorth, TROPHIES } from './logic.js';
 import { brl } from './store.js';
+import * as INVU from './invest-ui.js';
 
 const IMG = n => `assets/news/news-${n}.webp`;
 // o que vem aí (sem data marcada)
@@ -68,6 +69,7 @@ function slides(s) {
   const m = s.month || 1, st = EC.state(m), [ic, lv] = EC.LEVELS[st.level], ev = st.events.find(e => e.phase !== 'fim'), out = [];
   if (ev) { const hd = EC.headline(ev); out.push({ img: IMG('safra'), tag: `${hd.icon} ${hd.level}`, title: hd.title, lead: hd.lead, act: ['ver relatório do mercado', 'data-econ-open'] }); }
   else { const lo = EC.GOODS.map(g => [g, st.pressure[g]]).sort((a, b) => a[1] - b[1])[0]; out.push({ img: `assets/${CROP_IMG[lo[0]]}.webp`, tag: `${ic} ${lv}`, title: `Mercado estável: ${EC.LABEL[lo[0]]} com pouca oferta`, lead: `Pouca gente produzindo ${EC.LABEL[lo[0]]} neste ciclo. Quem chega antes costuma vender melhor (não é garantia).`, act: ['ver relatório do mercado', 'data-econ-open'] }); }
+  if (INVU.launching()) out.unshift({ img: 'assets/biz/caixa.webp', tag: '🏦 novidade no Banco 21', title: 'Agora dá para investir o seu dinheiro', lead: 'Poupança, CDB, LCA Agro, Tesouro 21 e Previdência. Quanto mais tempo o dinheiro fica, mais rende. Os prazos são longos: é para quem pensa no futuro.', act: ['ver investimentos', 'data-tab-go="banco"'] });
   const nx = nextMark(s), w = netWorth(s);
   out.push({ img: 'assets/photo-vegas.webp', tag: 'sua fortuna', title: `Patrimônio de ${brl(w)}`, lead: nx ? `Próximo marco: ${nx.label}. Faltam ${brl(Math.max(0, nx.t - w))}.` : 'Você já tem todos os troféus de patrimônio. Uma lenda.', bar: nx?.pct, act: ['ver meu perfil', 'data-profile="me"'] });
   let deal = null; for (const [c, S] of Object.entries(NG.SECTORS)) for (const b of Object.keys(S.brands)) if (NG.dealOf(c, b, m)) deal = [c, b];

@@ -1485,3 +1485,16 @@ import * as CT from './contador.js';
   assert.ok(late.rate > hi.rate, 'atraso no histórico pesa');
   assert.ok(huge.limit <= huge.ceiling && huge.limit < 50e6, 'empréstimo de valor gigante barrado');
   console.log('banco com capacidade limitada ok'); }
+// investimentos no banco: rendem pouco (abaixo da terra), prazo longo, teto, sair antes custa, aplicado conta no patrimônio
+{ const IV = await import('./invest.js'), Lq = await import('./logic.js');
+  const s = Lq.newState(() => 0.5); s.money = 10e6; const w0 = Lq.netWorth(s);
+  assert.equal(IV.apply(s, 'cdb', 1e6, w0), null); assert.equal(s.money, 9e6);
+  assert.ok(Math.abs(Lq.netWorth(s) - w0) < 1, 'aplicar não muda o patrimônio');
+  assert.ok(IV.apply(s, 'tesouro', 5e6, w0), 'teto de 25% do patrimônio');
+  for (const [k, P] of Object.entries(IV.PRODUCTS)) assert.ok(P.rate < 0.006 / 3, `${k} rende bem menos que terra`);
+  let lines = []; for (let m = 0; m < 60; m++) lines.push(...IV.monthly(s));
+  assert.equal(s.money, 9e6 + 1e6 * 1.06, 'CDB paga +6% em 60 meses (juros simples)');
+  assert.ok(lines.some(l => IV.NOT_PROFIT.test(l.txt) && l.val === 1e6), 'devolução do aplicado não conta como lucro');
+  IV.apply(s, 'previdencia', 1e6, Lq.netWorth(s)); for (let m = 0; m < 10; m++) IV.monthly(s);
+  const r = IV.withdraw(s, s.invest[0].id); assert.equal(r.value, 900000, 'previdência: sair antes perde rendimento e 10%');
+  console.log('investimentos no banco ok'); }
