@@ -83,5 +83,30 @@
   "author": "Holiday Point",
   "license": "CC BY 2.0",
   "page": "https://commons.wikimedia.org/wiki/File:Monte_Carlo_Gaming_Floor,_Las_Vegas.jpg"
+ },
+ "news/news-leilao": {
+  "author": "Carlos Ebert",
+  "license": "CC BY 2.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Nelore_cattle_Brasil.jpg"
+ },
+ "news/news-china": {
+  "author": "Lloyd Tudor",
+  "license": "CC BY-SA 4.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Pudong_skyline_at_dusk.jpg"
+ },
+ "news/news-eua": {
+  "author": "Christian David",
+  "license": "CC BY-SA 4.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Brooklyn_Bridge_and_the_Lower_Manhattan_skyline_from_Pebble_Beach,_New_York.jpg"
+ },
+ "news/news-export": {
+  "author": "Trougnouf",
+  "license": "CC BY 4.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Container_ship_being_towed_in_the_Scheldt_towards_the_Port_of_Antwerp,_seen_from_Doel,_Belgium_(DSCF3880).jpg"
+ },
+ "news/news-safra": {
+  "author": "USDAgov",
+  "license": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Mike_Starkey_Soybean_Harvest_(52490323187).jpg"
  }
 }

@@ -79,6 +79,7 @@
     <symbol id="i-orange" viewBox="0 0 24 24"><circle cx="12" cy="14" r="7"/><path d="M12 7c0-2 1-3.5 3-4M12 7c-2-2.5-5-2-6-1 2 .5 4 1.5 6 1"/></symbol>
     <symbol id="i-cane" viewBox="0 0 24 24"><path d="M8 21V3M8 8h-3M8 14h3M14 21V5M14 10h3M14 16h-3M19 21V9"/></symbol>
     <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
+    <symbol id="i-news" viewBox="0 0 24 24"><rect x="3" y="4" width="15" height="16" rx="2"/><path d="M18 8h3v10a2 2 0 0 1-2 2M7 8h7M7 12h7M7 16h4"/></symbol>
     <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/></symbol>
     <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/></symbol>
   </svg>
@@ -106,7 +107,15 @@
       <div class="worldclock glass" id="worldclock" role="button" tabindex="0" title="Tempo de mundo: o mês passa sozinho, igual para todos. Clique para ver os impostos dos mais ricos"><span class="worldclock__t">mundo</span><b id="wc-m">1</b><span class="worldclock__bar" aria-hidden="true"><i id="wc-bar"></i></span><small id="wc-left">--:--</small></div>
     </div>
     <nav class="container" aria-label="áreas do jogo">
+      <div class="cats" id="cats">
+        <button type="button" data-cat="inicio"><svg><use href="#i-news"/></svg>início</button>
+        <button type="button" data-cat="jogos"><svg><use href="#i-cards"/></svg>jogos</button>
+        <button type="button" data-cat="fazenda"><svg><use href="#i-herd"/></svg>fazenda</button>
+        <button type="button" data-cat="negocios"><svg><use href="#i-chart"/></svg>negócios</button>
+        <button type="button" data-cat="voce"><svg><use href="#i-user"/></svg>você</button>
+      </div>
       <div class="tabs" role="tablist">
+        <button role="tab" id="t-inicio" data-tab="inicio" aria-controls="p-inicio" aria-selected="false" tabindex="-1"><svg><use href="#i-news"/></svg>notícias</button>
         <button role="tab" id="t-mesa" data-tab="mesa" aria-controls="p-mesa" aria-selected="true"><svg><use href="#i-cards"/></svg>salão de jogos</button>
         <button role="tab" id="t-ranking" data-tab="ranking" aria-controls="p-ranking" aria-selected="false" tabindex="-1"><svg><use href="#i-trophy"/></svg>ranking</button>
         <button role="tab" id="t-corridas" data-tab="corridas" aria-controls="p-corridas" aria-selected="false" tabindex="-1"><svg><use href="#i-flag"/></svg>corridas</button>
@@ -137,6 +146,7 @@
     <noscript><p class="empty">O 21 World roda no navegador e precisa de JavaScript ligado.</p></noscript>
 
     <!-- CASSINO: salão de mesas e a mesa -->
+    <section id="p-inicio" role="tabpanel" aria-labelledby="t-inicio" class="panel portal" hidden></section>
     <section id="p-mesa" role="tabpanel" aria-labelledby="t-mesa" class="panel">
       <div class="subtabs" role="group" aria-label="jogos do cassino">
         <button class="subtab is-on" data-sub="21">vinte e um</button><button class="subtab" data-sub="roleta">roleta</button><button class="subtab" data-sub="aviator">aviator</button><button class="subtab subtab--hot" data-sub="truco">truco</button><button class="subtab subtab--hot" data-sub="sinuca">sinuca</button><button class="subtab subtab--hot" data-sub="poker">pôquer</button>
@@ -437,7 +447,7 @@
           <p class="muted small">Negociantes vendem seminovos, sacas e acessórios e às vezes querem comprar o que é seu. O preço acompanha a economia dos jogadores: quanto mais rico o ranking, mais caro. Negocie: oferta baixa demais faz o negociante desistir. As bancas mudam todo mês do jogo.</p>
           <div id="fe-list"></div><div id="fe-want"></div></section>
         <div class="inv-side"><section class="pix glass" id="pix" aria-label="Pix 21"></section>
-        <aside class="glass inv-online"><h3>jogadores online</h3><p class="muted small">Negocie carros, animais, terras, jogadores de futebol, sacas, fichas e dinheiro. Os dois montam a oferta, ficam "prontos" e confirmam. Se alguém mexer na oferta, os dois precisam confirmar de novo.</p><ul class="inv-peers" id="inv-peers"></ul></aside></div>
+        <aside class="glass inv-online"><h3>jogadores online</h3><details class="howto howto--mini"><summary class="howto__t">como funciona a troca</summary><p class="muted small">Negocie carros, animais, terras, jogadores de futebol, sacas, fichas e dinheiro. Os dois montam a oferta, ficam "prontos" e confirmam. Se alguém mexer na oferta, os dois precisam confirmar de novo.</p></details><ul class="inv-peers" id="inv-peers"></ul></aside></div>
       </div>
     </section>
 
@@ -588,9 +598,9 @@
           <input class="input input--s" name="calves" type="number" min="1" value="10" inputmode="numeric"></label>
         <button class="btn btn--gold" data-act="buy-calves">dar o lance</button>
       </div>
-      <div class="glass herd-guide">
-        <h3>como funciona o gado, passo a passo</h3>
-        <p class="small herd-guide__now" id="herd-now"></p>
+      <p class="small herd-guide__now" id="herd-now"></p>
+      <details class="glass herd-guide howto">
+        <summary class="howto__t">como funciona o gado, passo a passo</summary>
         <ol class="small">
           <li><b>Tenha pasto.</b> Na aba de terras, compre ou arrende uma terra de <b>pasto</b>. Cada hectare comporta mais ou menos 1 boi.</li>
           <li><b>Compre bezerros</b> aqui em cima, em "dar o lance". Eles entram no pasto sozinhos, você não precisa colocar.</li>
@@ -598,7 +608,7 @@
           <li><b>Venda.</b> Quando o lote estiver "pronto para abate", clique em abater, ou em revender vivo.</li>
         </ol>
         <p class="muted small">Sem terra, também dá: o boi vai para um "hotel de gado" (confinamento) e você paga uma diária por cabeça. Dá menos lucro. Arroba é a unidade de peso do preço do boi (15 kg de carne).</p>
-      </div>
+      </details>
       <div class="cards" id="herd"></div>
       <div class="glass abate-box" id="abate-box"></div>
     </section>
@@ -798,10 +808,10 @@
   <!-- partida ao vivo -->
   <!-- navegação do celular: atalhos fixos embaixo + menu em grade com todas as áreas -->
   <nav class="mnav" id="mnav" aria-label="atalhos">
+    <button type="button" data-mnav="inicio"><svg><use href="#i-news"/></svg>início</button>
     <button type="button" data-mnav="mesa"><svg><use href="#i-cards"/></svg>jogos</button>
     <button type="button" data-chat-open><svg><use href="#i-chat"/></svg>resenha<span class="rz-badge" hidden></span></button>
     <button type="button" data-mnav="inventario"><svg><use href="#i-bag"/></svg>inventário</button>
-    <button type="button" data-mnav="loja"><svg><use href="#i-shop"/></svg>loja</button>
     <button type="button" data-mnav="menu" aria-expanded="false" aria-controls="mnav-sheet"><span class="mnav__dots" aria-hidden="true"></span>menu</button>
   </nav>
   <div class="mnav-sheet" id="mnav-sheet" hidden><div class="mnav-sheet__in"><div class="mnav-sheet__head"><b>todas as áreas</b><button type="button" class="btn btn--glass btn--sm" data-mnav="close">fechar</button></div><div class="mnav-grid" id="mnav-grid"></div></div></div>

@@ -4,6 +4,11 @@ Arquivos de terceiros usados no 21 World. As licenças CC BY e CC BY-SA exigem e
 
 ## Fotos (Wikimedia Commons)
 
+- news/news-leilao: Carlos Ebert, CC BY 2.0, https://commons.wikimedia.org/wiki/File:Nelore_cattle_Brasil.jpg
+- news/news-china: Lloyd Tudor, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Pudong_skyline_at_dusk.jpg
+- news/news-eua: Christian David, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Brooklyn_Bridge_and_the_Lower_Manhattan_skyline_from_Pebble_Beach,_New_York.jpg
+- news/news-export: Trougnouf, CC BY 4.0, https://commons.wikimedia.org/wiki/File:Container_ship_being_towed_in_the_Scheldt_towards_the_Port_of_Antwerp,_seen_from_Doel,_Belgium_(DSCF3880).jpg
+- news/news-safra: USDAgov, Public domain, https://commons.wikimedia.org/wiki/File:Mike_Starkey_Soybean_Harvest_(52490323187).jpg
 - car-onix: NaBUru38, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Chevrolet_Onix_Mk2_RS_2020_in_Maldonado_-_front.jpg
 - car-sw4: Autosdeprimera, CC BY 3.0, https://commons.wikimedia.org/wiki/File:2021_Toyota_Fortuner_4.0_SRV_4x4_(Colombia)_front_view.png
 - car-g63: Chanokchon, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:2019_Mercedes-AMG_G_63.jpg

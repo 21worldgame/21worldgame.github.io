@@ -22,6 +22,7 @@ function add(n, fresh = true) {
 export const NAME_GAP = 180000;
 const recentName = (name, at) => items.some(x => x.real && x.name === name && Math.abs(at - x.at) < NAME_GAP);
 export function receive(d) { const n = N.accept(d); if (n && !recentName(n.name, n.at)) add(n); }
+export const recent = (n = 6) => items.slice(-n).reverse();   // portal de notícias (home-ui.js): inclui o mundo todo
 export const history = () => items.filter(n => n.real).slice(-15).map(({ id, kind, name, what, val, at }) => ({ id, kind, name, what, val, at }));
 
 // linha do livro-caixa do próprio jogador (ver store.note): vira notícia para todos
