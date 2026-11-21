@@ -7,6 +7,11 @@ import * as MK from './market.js';
 import * as Live from './live.js';
 import * as NEWS from './news-ui.js';
 import { headline, KINDS, short } from './news.js';
+import * as EC from './econ.js';
+import * as NG from './negocios.js';
+import * as PK from './perks.js';
+import { netWorth, TROPHIES } from './logic.js';
+import { brl } from './store.js';
 
 const IMG = n => `assets/news/news-${n}.webp`;
 // o que vem aí (sem data marcada)
@@ -51,13 +56,62 @@ function trendHTML() {
 // enquanto o portal está aberto: bolsa a cada 5 s e o campo assim que o mês do mundo vira
 setInterval(() => { const el = document.getElementById('portal-trend'); if (el && !document.getElementById('p-inicio')?.hidden) el.innerHTML = trendHTML(); }, 5000);
 
+// ---------- painel do jogador (topo da página inicial): carrossel, indicadores, oportunidades e destaques, tudo com dados do mundo ----------
+const CROP_IMG = { soja: 'farm-soja', milho: 'farm-colheita', cafe: 'farm-cafe', laranja: 'farm-laranja', cana: 'farm-cana', arroba: 'farm-pasto' };
+const plMonth = s => { let net = 0; for (const [m, M] of Object.entries(s.pl || {})) if (Number(m) > (s.month || 0) - 12) for (const R of Object.values(M)) net += (R.in || 0) - (R.out || 0); return net; };
+function nextMark(s) {
+  const w = netWorth(s), got = s.trophies || [], t = TROPHIES.find(x => !got.includes(x) && x > w) ?? TROPHIES.find(x => !got.includes(x));
+  if (!t) return null; const pr = PK.PRESTIGE.find(p => p.min === t), prev = [...TROPHIES].reverse().find(x => x <= w) || 0;
+  return { t, label: pr ? `${pr.icon} ${pr.title}` : `troféu de ${short(t)}`, pct: Math.max(0.02, Math.min(1, (w - prev) / Math.max(1, t - prev))) };
+}
+function slides(s) {
+  const m = s.month || 1, st = EC.state(m), [ic, lv] = EC.LEVELS[st.level], ev = st.events.find(e => e.phase !== 'fim'), out = [];
+  if (ev) { const hd = EC.headline(ev); out.push({ img: IMG('safra'), tag: `${hd.icon} ${hd.level}`, title: hd.title, lead: hd.lead, act: ['ver relatório do mercado', 'data-econ-open'] }); }
+  else { const lo = EC.GOODS.map(g => [g, st.pressure[g]]).sort((a, b) => a[1] - b[1])[0]; out.push({ img: `assets/${CROP_IMG[lo[0]]}.webp`, tag: `${ic} ${lv}`, title: `Mercado estável: ${EC.LABEL[lo[0]]} com pouca oferta`, lead: `Pouca gente produzindo ${EC.LABEL[lo[0]]} neste ciclo. Quem chega antes costuma vender melhor (não é garantia).`, act: ['ver relatório do mercado', 'data-econ-open'] }); }
+  const nx = nextMark(s), w = netWorth(s);
+  out.push({ img: 'assets/photo-vegas.webp', tag: 'sua fortuna', title: `Patrimônio de ${brl(w)}`, lead: nx ? `Próximo marco: ${nx.label}. Faltam ${brl(Math.max(0, nx.t - w))}.` : 'Você já tem todos os troféus de patrimônio. Uma lenda.', bar: nx?.pct, act: ['ver meu perfil', 'data-profile="me"'] });
+  let deal = null; for (const [c, S] of Object.entries(NG.SECTORS)) for (const b of Object.keys(S.brands)) if (NG.dealOf(c, b, m)) deal = [c, b];
+  if (deal) { const C = NG.SECTORS[deal[0]].brands[deal[1]]; out.push({ img: `assets/biz/${deal[1]}.webp`, tag: '🔥 oportunidade de aquisição', title: `${C.name} em dificuldades: ${brl(NG.priceOf(deal[0], deal[1], m))}`, lead: `${Math.round(NG.DEAL.off * 100)}% abaixo do preço até o mês ${NG.dealOf(deal[0], deal[1], m).until}. Reputação baixa para recuperar: investimento de médio prazo.`, act: ['ver empresas à venda', 'data-tab-go="negocios"'] }); }
+  const ri = G.regInfo?.() || {}, reg = Object.entries(ri).filter(([, v]) => v.tag === 'pouco explorada' || v.tag === 'em falta').sort((a, b) => a[1].risk - b[1].risk)[0];
+  if (reg) out.push({ img: `assets/${CROP_IMG[reg[1].good] || 'farm-pasto'}.webp`, tag: '🧭 nova fronteira', title: `Terras em ${reg[0]}`, lead: `${reg[1].tag === 'pouco explorada' ? 'Região pouco explorada, terra mais barata' : `${EC.LABEL[reg[1].good]} em falta no país`}. Diversificar para longe da concorrência pode valer a pena.`, act: ['ver terras', 'data-tab-go="terras"'] });
+  out.push({ img: SOON[0].img, tag: SOON[0].tag, title: SOON[0].title, lead: SOON[0].lead });
+  return out;
+}
+function panelHTML(s) {
+  const st = EC.state(s.month || 1), [ic, lv] = EC.LEVELS[st.level], w = netWorth(s), net = plMonth(s), nx = nextMark(s), sl = slides(s);
+  const rows = G.rankRows?.(500) || [], pos = rows.findIndex(r => r.pid === 'me'), top = rows.slice(0, 3), club = rows.filter(r => r.worth >= 100e6).length;
+  const tips = [...EC.tips(s.month || 1)];
+  const kpi = (k, v, sub, cls = '', count) => `<div class="hk glass ${cls}"><span class="hk__k">${k}</span><b class="hk__v"${count != null ? ` data-count="${Math.round(count)}"` : ''}>${v}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
+  return `<section class="hero" aria-roledescription="carrossel" aria-label="destaques">
+      ${sl.map((x, i) => `<article class="hero__s${i === 0 ? ' is-on' : ''}" style="--img:url(${x.img})" aria-hidden="${i ? 'true' : 'false'}"><div class="hero__in"><span class="hero__tag">${esc(x.tag)}</span><h2>${esc(x.title)}</h2><p>${esc(x.lead)}</p>
+        ${x.bar != null ? `<span class="hero__bar"><i style="width:${Math.round(x.bar * 100)}%"></i></span>` : ''}${x.act ? `<button class="btn btn--gold" type="button" ${x.act[1]}>${esc(x.act[0])}</button>` : ''}</div></article>`).join('')}
+      <button class="hero__nav hero__nav--p" type="button" data-hero="-1" aria-label="anterior">‹</button><button class="hero__nav hero__nav--n" type="button" data-hero="1" aria-label="próximo">›</button>
+      <div class="hero__dots">${sl.map((_, i) => `<button type="button" class="${i === 0 ? 'is-on' : ''}" data-hero-go="${i}" aria-label="destaque ${i + 1}"></button>`).join('')}</div></section>
+    <div class="hkpis">${kpi('patrimônio', brl(w), PK.prestigeTop(s.trophies)?.title || '', '', w)}${kpi('últimos 12 meses', `${net >= 0 ? '+' : ''}${brl(net)}`, 'entradas menos saídas', net >= 0 ? 'is-up' : 'is-down')}
+      ${kpi('mercado', `${ic} ${lv}`, st.events.length ? `${st.events.length} evento(s) no radar` : 'sem crise à vista', `is-l${st.level}`)}${kpi('ranking', pos >= 0 ? `${pos + 1}º` : '—', `de ${rows.length} jogadores`)}
+      ${nx ? `<div class="hk glass"><span class="hk__k">próximo marco</span><b class="hk__v">${esc(nx.label)}</b><span class="hero__bar"><i style="width:${Math.round(nx.pct * 100)}%"></i></span></div>` : ''}</div>
+    <div class="hgrid"><section class="glass hbox"><h3>oportunidades e recomendações</h3><ul class="hlist">${tips.map(t => `<li>${esc(t)}</li>`).join('') || '<li class="muted">Mercado equilibrado: nenhum sinal forte agora.</li>'}</ul><button class="btn btn--glass btn--sm" type="button" data-econ-open>relatório do mercado</button></section>
+      <section class="glass hbox"><h3>destaques do mundo</h3><ol class="htop">${top.map((r, i) => `<li><button type="button" data-profile="${esc(r.pid || '')}"><span>${['🥇', '🥈', '🥉'][i]}</span><b>${esc(r.name)}</b><small>${short(r.worth)}</small></button></li>`).join('')}</ol>
+        <p class="small muted">💎 Clube dos 100 milhões: <b>${club}</b> ${club === 1 ? 'membro' : 'membros'}</p><button class="btn btn--glass btn--sm" type="button" data-tab-go="ranking">ver ranking</button></section></div>`;
+}
+// carrossel: troca a cada 7 s, pausa com o mouse em cima; números contam até o valor
+let heroT = 0, heroI = 0;
+function heroGo(i) { const ss = [...document.querySelectorAll('.hero__s')], ds = [...document.querySelectorAll('.hero__dots button')]; if (!ss.length) return; heroI = (i + ss.length) % ss.length; ss.forEach((x, k) => { x.classList.toggle('is-on', k === heroI); x.setAttribute('aria-hidden', String(k !== heroI)); }); ds.forEach((x, k) => x.classList.toggle('is-on', k === heroI)); }
+function heroStart() { clearInterval(heroT); if (matchMedia('(prefers-reduced-motion: reduce)').matches) return; heroT = setInterval(() => { if (!document.querySelector('.hero:hover') && !document.getElementById('p-inicio')?.hidden) heroGo(heroI + 1); }, 7000); }
+document.addEventListener('click', e => { const b = e.target.closest('[data-hero]'); if (b) { heroGo(heroI + Number(b.dataset.hero)); heroStart(); } const d = e.target.closest('[data-hero-go]'); if (d) { heroGo(Number(d.dataset.heroGo)); heroStart(); } });
+function countUp() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  for (const el of document.querySelectorAll('#p-inicio [data-count]')) { const to = Number(el.dataset.count), t0 = performance.now(), fin = el.textContent;
+    const f = t => { const k = Math.min(1, (t - t0) / 900), e = 1 - (1 - k) ** 3; el.textContent = brl(to * e); if (k < 1) requestAnimationFrame(f); else el.textContent = fin; }; requestAnimationFrame(f); }
+}
 export function render() {
   const el = document.getElementById('p-inicio'); if (!el || !G.S) return;
   const s = G.S, m = s.month || 1, year = W.yearOf(m), tr = trends(s.prices);
   el.innerHTML = `
   <header class="portal__mast"><div><span class="portal__brand">21 World <b>Notícias</b></span><span class="portal__date">${esc(W.monthName(m))}, ano ${year} · edição de hoje</span></div>
     <span class="portal__live"><i></i> ao vivo</span></header>
-  <div class="portal__top">${card(SOON[0], 'pn--hero')}<div class="portal__side">${card(SOON[1])}${card(SOON[2])}</div></div>
+  ${panelHTML(s)}
+  <div class="portal__top">${card(SOON[1], 'pn--hero')}<div class="portal__side">${card(SOON[2])}${card(SOON[3])}</div></div>
   <section class="portal__trend" style="--bg:url(${IMG('safra')})">
     <div class="portal__trend-in"><span class="pn__tag">mercado · ano ${year}</span>
       <h2>O que está em alta no campo este ano</h2>
@@ -66,6 +120,7 @@ export function render() {
       <div class="row"><button class="btn btn--gold btn--sm" type="button" data-tab-go="mercado">ver o mercado</button> <button class="btn btn--glass btn--sm" type="button" data-tab-go="trader">abrir a bolsa</button></div></div></section>
   <div class="portal__grid">
     <section class="portal__box"><h2>Grandes negócios <small><i class="tv__dot"></i> ao vivo na TV 21</small></h2><ul class="portal__live-list" id="portal-live">${liveHTML()}</ul></section>
-    ${card(SOON[3], 'pn--mini')}
+    ${card(SOON[0], 'pn--mini')}
   </div>`;
+  heroI = 0; heroStart(); countUp();
 }

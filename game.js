@@ -247,6 +247,7 @@ function caneBox(l) {
       <button class="btn btn--glass btn--sm" data-act="cn-uproot" data-id="${l.id}">${c.cuts >= CN.CANE.reform ? 'reformar canavial' : 'arrancar canavial'}</button></div></div></div>`;
 }
 let REG_COUNTS = {}, REG_INFO = {};   // economia por região (econ.js): preenchido pelo econSync
+G.regInfo = () => REG_INFO; G.rankRows = n => C.rankingRows(n);   // página inicial (home-ui)
 function landCard(l, kind) {
   const s = S();
   const badge = { offer: ['à venda', 'gold'], own: [l.leasedOut ? 'arrendada a terceiros' : 'sua', l.leasedOut ? 'violet' : 'green'], rent: ['arrendada de terceiros', 'violet'] }[kind];
@@ -1495,7 +1496,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 113;
+const APP_VERSION = 114;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
