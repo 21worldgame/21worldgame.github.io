@@ -1,3 +1,4 @@
+import { mult } from './perks.js';
 // Mina de ouro (regras puras): UMA só no jogo inteiro (o servidor guarda quem é o dono). Cara de comprar, cara de manter.
 // Só o dono contrata equipes. Primeiro vem a prospecção (meses procurando um veio, mais equipes = mais chance por mês);
 // achado o veio, cada equipe extrai alguns kg por mês, vendidos pelo preço do ouro. Acabou o veio, volta a procurar.
@@ -29,7 +30,7 @@ export function monthly(s, rng = Math.random) {
     } else out.push({ txt: `${MINE.name}: ${m.crews ? 'prospecção continua, nada ainda' : 'parada: sem equipes não se procura ouro'}`, val: 0 });
   } else {
     const kg = Math.min(m.vein, Math.round(m.crews * KG_PER_CREW * (0.8 + rng() * 0.4) * 10) / 10);
-    if (kg > 0) { m.vein = Math.round((m.vein - kg) * 10) / 10; m.mined += kg; add(`${MINE.name}: ${kg} kg de ouro vendidos`, kg * s.prices.ouro); }
+    if (kg > 0) { m.vein = Math.round((m.vein - kg) * 10) / 10; m.mined += kg; add(`${MINE.name}: ${kg} kg de ouro vendidos`, kg * s.prices.ouro * mult(s, 'ouro')); }
     else out.push({ txt: `${MINE.name}: veio parado (sem equipes)`, val: 0 });
     if (m.vein <= 0) { m.phase = 'prospeccao'; m.vein = 0; out.push({ txt: `${MINE.name}: o veio acabou, voltando a procurar ouro`, val: 0 }); }
   }

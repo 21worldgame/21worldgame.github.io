@@ -13,7 +13,9 @@ export const CATALOG = {
   cloth: { label: 'cor da roupa', opts: [1, 2, 3, 4, 5, 6].map(n => ({ id: n, swatch: `var(--cloth-${n})` })) },
   acc: {
     label: 'acessório',
-    opts: [{ id: 'nenhum' }, { id: 'brinco', price: 1200 }, { id: 'óculos escuros', price: 2500 }, { id: 'fone gamer', price: 4000 }, { id: 'boné de marca', price: 6000 }, { id: 'chapéu de peão', price: 9000 }, { id: 'chapéu de granjeiro', price: 35000 }, { id: 'pulseira de prata', price: 15000 }, { id: 'corrente de ouro', price: 25000 }, { id: 'relógio de luxo', price: 60000 }, { id: 'grillz de ouro', price: 90000 }, { id: 'anel de diamante', price: 150000 }],
+    opts: [{ id: 'nenhum' }, { id: 'brinco', price: 1200 }, { id: 'óculos escuros', price: 2500 }, { id: 'fone gamer', price: 4000 }, { id: 'boné de marca', price: 6000 }, { id: 'chapéu de peão', price: 9000 }, { id: 'chapéu de granjeiro', price: 35000 }, { id: 'pulseira de prata', price: 15000 }, { id: 'corrente de ouro', price: 25000 }, { id: 'relógio de luxo', price: 60000 }, { id: 'grillz de ouro', price: 90000 }, { id: 'anel de diamante', price: 150000 },
+      { id: 'tênis de grife', price: 8000 }, { id: 'bota de borracha', price: 30000 }, { id: 'luvas de colheita', price: 30000 }, { id: 'chapéu de palha', price: 40000 },
+      { id: 'cinto de fivela', price: 50000 }, { id: 'gravata de seda', price: 120000 }, { id: 'capacete de mineiro', price: 400000 }],
   },
 };
 
@@ -29,7 +31,8 @@ export const NPC_LOOKS = {
 
 // vários acessórios ao mesmo tempo, um por lugar do corpo (dois chapéus ou dois relógios não)
 export const SLOT = { brinco: 'orelha', 'óculos escuros': 'olhos', 'fone gamer': 'cabeça', 'boné de marca': 'cabeça', 'chapéu de peão': 'cabeça', 'chapéu de granjeiro': 'cabeça',
-  'pulseira de prata': 'pulso', 'relógio de luxo': 'pulso', 'corrente de ouro': 'pescoço', 'grillz de ouro': 'boca', 'anel de diamante': 'mão', gravata: 'pescoço' };
+  'pulseira de prata': 'pulso', 'relógio de luxo': 'pulso', 'corrente de ouro': 'pescoço', 'grillz de ouro': 'boca', 'anel de diamante': 'mão', gravata: 'peito', 'gravata de seda': 'peito',
+  'tênis de grife': 'pés', 'bota de borracha': 'pés', 'luvas de colheita': 'luvas', 'chapéu de palha': 'cabeça', 'cinto de fivela': 'cintura', 'capacete de mineiro': 'cabeça' };
 // save antigo guarda um texto ('brinco' ou 'nenhum'); o novo guarda a lista
 export const accsOf = a => [].concat(a?.acc ?? []).filter(x => typeof x === 'string' && x && x !== 'nenhum').slice(0, 12);
 export function toggleAcc(a, id) {
@@ -41,7 +44,8 @@ export function toggleAcc(a, id) {
 const INK = 'var(--ink-line)', SH = 'var(--shade)', HI = 'var(--hi)';
 let uid = 0;
 
-export function avatarSVG(raw, { label = '' } = {}) {
+// full: corpo inteiro (braços, cintura, pernas e pés); sem full, só o busto (fotos redondas)
+export function avatarSVG(raw, { label = '', full = false } = {}) {
   const a = { ...DEFAULT, ...raw };
   if (a.outfit === 'jaqueta' && !CATALOG.outfit.opts.some(o => o.id === a.outfit)) a.outfit = 'camiseta';
   const id = `av${++uid}`;
@@ -81,7 +85,9 @@ export function avatarSVG(raw, { label = '' } = {}) {
       <path d="M80 145 L97 186 L86 200 L60 160 Z M120 145 L103 186 L114 200 L140 160 Z" fill="var(--suit)"/>${glow('M80 145 L97 186 L90 190 L70 156 Z', 0.1)}${line('M80 145 L97 186 M120 145 L103 186 M60 160 L80 145 M140 160 L120 145', 1.6)}`,
   };
   const accs = accsOf(a);
-  const tie = accs.includes('gravata')
+  const tie = accs.includes('gravata de seda')
+    ? `<path d="M96 151 L104 151 L108 186 L100 196 L92 186 Z" fill="#b3122e"/>${shade('M100 151 L104 151 L108 186 L100 196 Z', 0.25)}${line('M96 151 L104 151 L108 186 L100 196 L92 186 Z', 1.2)}`
+    : accs.includes('gravata')
     ? `<path d="M90 150 L100 156 L110 150 L110 162 L100 156 L90 162 Z" fill="${INK}"/>`
     : a.outfit === 'terno' ? `<path d="M97 154 L103 154 L106 182 L100 190 L94 182 Z" fill="${cloth}"/>${line('M97 154 L103 154 L106 182 L100 190 L94 182 Z', 1.2)}` : '';
 
@@ -147,9 +153,41 @@ export function avatarSVG(raw, { label = '' } = {}) {
       <path d="M72 50 C70 26 82 14 100 16 C118 14 130 26 128 50 Q100 57 72 50 Z" fill="#e8c878"/><path d="M72 44 Q100 51 128 44 L128 50 Q100 57 72 50 Z" fill="#b5462f"/>
       ${glow('M80 26 C88 18 94 17 100 18 C92 24 86 31 83 42 Z', 0.22)}${line('M42 50 Q100 65 158 50 M72 50 C70 26 82 14 100 16 C118 14 130 26 128 50', 1.6)}`,
     'grillz de ouro': `<path d="M91 105.4 Q100 109.5 109 105.4 L108 108 Q100 111 92 108 Z" fill="url(#${id}-gold)" stroke="var(--gold-lo)" stroke-width=".6"/>`,
-    'pulseira de prata': '', 'relógio de luxo': '', 'anel de diamante': '',
+    'chapéu de palha': `<ellipse cx="100" cy="50" rx="60" ry="11" fill="#e6c77a"/>${shade('M40 50 Q100 68 160 50 Q100 61 40 50 Z', 0.28)}
+      <path d="M72 50 C72 28 84 18 100 18 C116 18 128 28 128 50 Q100 57 72 50 Z" fill="#efd58f"/><path d="M72 45 Q100 52 128 45 L128 50 Q100 57 72 50 Z" fill="#7a5a2a"/>
+      <path d="M50 50 L150 50 M80 30 L120 30 M76 40 L124 40" stroke="#c9a85a" stroke-width="1" opacity=".7"/>${line('M40 50 Q100 65 160 50 M72 50 C72 28 84 18 100 18 C116 18 128 28 128 50', 1.6)}`,
+    'capacete de mineiro': `<path d="M64 58 C62 26 82 12 100 12 C118 12 138 26 136 58 Z" fill="#f2c230"/>${shade('M118 16 C134 26 138 42 136 58 L122 58 C124 42 122 28 118 16 Z', 0.25)}
+      <path d="M58 58 L142 58 L142 64 L58 64 Z" fill="#d9a915"/><path d="M100 14 L100 56" stroke="#d9a915" stroke-width="5"/><rect x="88" y="30" width="24" height="16" rx="4" fill="#2b2b2b"/><circle cx="100" cy="38" r="6" fill="#fff6c2"/>
+      ${glow('M95 34 a5 5 0 0 1 8 0', 0.6)}${line('M64 58 C62 26 82 12 100 12 C118 12 138 26 136 58 M58 58 L142 58 L142 64 L58 64 Z', 2)}`,
   };
   const acc = accs.map(k => ACC[k] || '').join('');
 
-  return `<svg viewBox="0 0 200 200" role="img" aria-label="${label || 'personagem'}">${defs}${backHair}${neck}${outfits[a.outfit] || outfits.camiseta}${tie}${ears}${head}${beard}${eye(86, false)}${eye(114, true)}${brows}${nose}${mouth}${top}${acc}</svg>`;
+  // corpo inteiro: braços (atrás do tronco), cintura, pernas e pés, com os acessórios de pulso, mão, cintura e pés
+  let body = '', limbs = '';
+  if (full) {
+    const sleeve = a.outfit === 'regata' ? skin : a.outfit === 'terno' || a.outfit === 'colete' ? 'var(--suit)' : cloth;
+    const lower = a.outfit === 'terno' || a.outfit === 'colete' ? 'var(--suit)' : a.outfit === 'regata' ? cloth : cloth;
+    const pants = a.outfit === 'terno' ? 'var(--suit)' : '#2f3d63';
+    const arm = 'M22 182 C8 218 6 258 12 292 L34 292 C32 260 36 228 44 200 Z', armR = 'M178 182 C192 218 194 258 188 292 L166 292 C168 260 164 228 156 200 Z';
+    const short = a.outfit === 'camiseta' || a.outfit === 'regata';
+    const gloves = accs.includes('luvas de colheita'), hand = gloves ? '#8a5a2b' : skin;
+    limbs = `<path d="${arm}" fill="${short ? skin : sleeve}"/><path d="${armR}" fill="${short ? skin : sleeve}"/>
+      ${a.outfit === 'camiseta' ? `<path d="M22 182 C14 202 12 214 12 222 L38 226 C38 214 40 206 44 200 Z" fill="${cloth}"/><path d="M178 182 C186 202 188 214 188 222 L162 226 C162 214 160 206 156 200 Z" fill="${cloth}"/>` : ''}
+      ${shade('M178 182 C192 218 194 258 188 292 L178 292 C182 258 180 220 170 192 Z', 0.25)}${line(`${arm} ${armR}`, 1.8)}`;
+    const wear = {
+      'pulseira de prata': `<rect x="11" y="276" width="24" height="6" rx="3" fill="#cfd6df" stroke="#8b96a3" stroke-width="1"/>`,
+      'relógio de luxo': `<rect x="165" y="274" width="24" height="9" rx="3" fill="url(#${id}-gold)" stroke="var(--gold-lo)" stroke-width="1"/><circle cx="177" cy="278.5" r="4" fill="#10243f" stroke="var(--gold-hi)" stroke-width="1"/>`,
+      'anel de diamante': `<circle cx="179" cy="306" r="3.4" fill="none" stroke="url(#${id}-gold)" stroke-width="2"/><path d="M176 300 L179 296 L182 300 L179 303 Z" fill="#dff6ff" stroke="#7dd3fc" stroke-width=".8"/>`,
+      'cinto de fivela': `<rect x="42" y="250" width="116" height="10" fill="#4a2e17"/><rect x="88" y="247" width="24" height="16" rx="3" fill="url(#${id}-gold)" stroke="var(--gold-lo)" stroke-width="1.2"/><rect x="94" y="252" width="12" height="6" rx="1" fill="#4a2e17"/>`,
+    };
+    const shoe = accs.includes('bota de borracha') ? { c: '#1f3a2a', top: 340 } : accs.includes('tênis de grife') ? { c: '#f4f4f5', top: 372, sole: '#e11d48' } : { c: '#3a2618', top: 374 };
+    body = `<path d="M18 200 L182 200 C178 226 166 246 158 262 L42 262 C34 246 22 226 18 200 Z" fill="${lower}"/>${shade('M150 200 L182 200 C178 226 166 246 158 262 L144 262 C152 240 154 220 150 200 Z', 0.22)}${line('M18 200 C22 226 34 246 42 262 M182 200 C178 226 166 246 158 262', 1.8)}
+      <path d="M42 260 L98 260 L96 382 L56 382 Z" fill="${pants}"/><path d="M102 260 L158 260 L144 382 L104 382 Z" fill="${pants}"/>${shade('M128 260 L158 260 L144 382 L128 382 Z', 0.22)}${line('M42 260 L56 382 M98 262 L96 382 M102 262 L104 382 M158 260 L144 382 M42 260 L158 260', 1.8)}
+      <path d="M54 ${shoe.top} L98 ${shoe.top} L100 398 L42 398 Q42 384 54 ${shoe.top} Z" fill="${shoe.c}"/><path d="M102 ${shoe.top} L146 ${shoe.top} Q158 384 158 398 L100 398 Z" fill="${shoe.c}"/>
+      ${shoe.sole ? `<path d="M42 394 L100 394 L100 398 L42 398 Z M100 394 L158 394 L158 398 L100 398 Z" fill="${shoe.sole}"/>` : ''}${line(`M54 ${shoe.top} L98 ${shoe.top} L100 398 L42 398 Q42 384 54 ${shoe.top} Z M102 ${shoe.top} L146 ${shoe.top} Q158 384 158 398 L100 398 Z`, 1.8)}
+      <circle cx="23" cy="300" r="11" fill="${hand}"/><circle cx="177" cy="300" r="11" fill="${hand}"/>${line('M12 300 a11 11 0 1 0 22 0 a11 11 0 1 0 -22 0 M166 300 a11 11 0 1 0 22 0 a11 11 0 1 0 -22 0', 1.6)}
+      ${accs.map(k => wear[k] || '').join('')}`;
+  }
+
+  return `<svg viewBox="0 0 200 ${full ? 404 : 200}" role="img" aria-label="${label || 'personagem'}"${full ? ' class="is-full"' : ''}>${defs}${limbs}${body}${backHair}${neck}${outfits[a.outfit] || outfits.camiseta}${tie}${ears}${head}${beard}${eye(86, false)}${eye(114, true)}${brows}${nose}${mouth}${top}${acc}</svg>`;
 }

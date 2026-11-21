@@ -3,6 +3,7 @@
 export const EFFECTS = {
   xp: 'XP ganho', daily: 'roleta do dia',
   loan: 'juros do banco', race: 'prêmios das provas', ticket: 'bilheteria do clube', cattle: 'preço de venda do gado', frango: 'preço de venda do frango', plant: 'custo do plantio',
+  suino: 'preço de venda do suíno', grain: 'venda de soja, milho e café', laranja: 'venda da laranja', cana: 'preço da cana na usina', ouro: 'venda do ouro da mina', biz: 'faturamento das empresas',
 };
 // carros (chave = modelo em logic.CARS); trator e caminhão já têm vantagem própria em logic.js
 export const CAR_PERKS = {
@@ -27,6 +28,13 @@ export const ACC_PERKS = {
   'corrente de ouro': { daily: 0.15, ticket: 0.05 },
   'anel de diamante': { race: 0.12 },
   'grillz de ouro': { xp: 0.06, daily: 0.1 },
+  'tênis de grife': { xp: 0.03, daily: 0.03 },
+  'bota de borracha': { suino: 0.08 },
+  'luvas de colheita': { laranja: 0.08 },
+  'chapéu de palha': { grain: 0.06 },
+  'cinto de fivela': { cana: 0.06, cattle: 0.02 },
+  'gravata de seda': { biz: 0.05, loan: -0.05 },
+  'capacete de mineiro': { ouro: 0.05 },
 };
 
 // terras próprias: cada tipo de lote dá uma vantagem, com teto

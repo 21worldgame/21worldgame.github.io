@@ -1,3 +1,4 @@
+import { mult } from './perks.js';
 // Suinocultura (regras puras): compra o barracão, aloja leitões de ~23 kg, eles engordam ~24 kg/mês comendo ração
 // (conversão ~2,4–2,7 kg de ração por kg ganho) e são vendidos por kg vivo. Ponto de venda: ~4º mês (~115–120 kg).
 // Números de referência: Embrapa/FAEP (GPD ~790 g/dia, CA ~2,4) e Cepea (suíno vivo R$ 7,5–9,5/kg em 2025).
@@ -33,7 +34,7 @@ export function house(s, barnId, n, vac = true) {
 export const lotValue = (s, l) => Math.round(l.pigs * kgAt(l.age) * (s.prices.suino || PRICES.suino) * (1 - FEE));
 export function sellLot(s, barnId) {
   const l = lotOf(s, barnId); if (!l) return 0;
-  const v = lotValue(s, l); s.money += v; s.suinos.lots = s.suinos.lots.filter(x => x !== l); return v;
+  const v = Math.round(lotValue(s, l) * mult(s, 'suino')); s.money += v; s.suinos.lots = s.suinos.lots.filter(x => x !== l); return v;
 }
 export function sellBarn(s, barnId) {
   if (lotOf(s, barnId)) return { err: 'venda o lote antes de vender o barracão.' };

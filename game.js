@@ -183,7 +183,7 @@ async function spinDaily() {
 // ---------- personagem ----------
 function renderChar() {
   const a = S().avatar;
-  $('#char-preview').innerHTML = avatarSVG(a, { label: 'seu personagem' });
+  $('#char-preview').innerHTML = avatarSVG(a, { label: 'seu personagem', full: true });
   $('#char-name-show').textContent = a.name || 'você';
   if (document.activeElement !== $('#char-name')) $('#char-name').value = a.name || '';
   const locked = nameLocked();
@@ -418,7 +418,7 @@ function renderPomar() {
   const p = s.prices.laranja, pv = s.prev?.laranja ?? p, ch = pv ? (p / pv - 1) * 100 : 0, stock = s.stock.laranja || 0;
   $('#pm-sell').innerHTML = `<div><span class="muted small">no armazém</span><strong>${int(stock)} caixas</strong></div>
     <div><span class="muted small">preço da caixa (40,8 kg)</span><strong>${brl(p)} <small class="${ch >= 0 ? 'good' : 'bad'}">${ch >= 0 ? '▲' : '▼'} ${Math.abs(ch).toFixed(1)}%</small></strong></div>
-    <button class="btn btn--gold" data-act="pm-sellall" ${stock ? '' : 'disabled'}>vender tudo por ${brl(stock * p * (1 - L.MARKET_FEE))}</button>`;
+    <button class="btn btn--gold" data-act="pm-sellall" ${stock ? '' : 'disabled'}>vender tudo por ${brl(stock * p * (1 - L.MARKET_FEE) * PK.mult(s, 'laranja'))}</button>`;
   $('#pm-list').innerHTML = orch.length ? orch.map(l => `<article class="glass pm-card"><p class="small muted">${esc(l.region)} · perto de ${esc(L.region(l.region).city)}</p>${orchardBox(l)}</article>`).join('')
     : '<p class="empty glass">Nenhum pomar ainda. Plante numa das suas terras abaixo.</p>';
   $('#pm-free').innerHTML = free.length ? free.map(l => `<article class="glass pm-freecard"><div><b>${esc(l.region)}</b><span class="small muted">${l.ha} ha · ${esc(l.use)}</span></div>
@@ -645,7 +645,7 @@ export function itemMedia(i) {
   if (i.kind === 'good') return `<img src="assets/${GOOD_IMG[i.good] || 'farm-colheita'}.webp" alt="" loading="lazy">`;
   if (i.kind === 'card') return `<span class="icard__cardart" style="background-image:url(assets/cards/${d.champ}.webp)"></span>`;
   if (i.kind === 'player' || i.kind === 'squad' || i.kind === 'club') return '<img src="assets/photo-stadium.webp" alt="" loading="lazy">';
-  if (i.kind === 'acc') return `<div class="fcard__acc">${avatarSVG({ ...S().avatar, acc: i.acc }, { label: i.acc })}</div>`;
+  if (i.kind === 'acc') return `<div class="fcard__acc">${avatarSVG({ ...S().avatar, acc: i.acc }, { label: i.acc, full: true })}</div>`;
   if (i.kind === 'galpao') return `<img src="assets/wh-${d.type}.webp" alt="" loading="lazy">`;
   if (i.kind === 'empresa') return `<img src="assets/biz/${d.brand}.webp" alt="" loading="lazy">`;
   if (i.kind === 'aviario') return `<img src="assets/${GR.HOUSES[d.type]?.img || 'granja-galpao'}.webp" alt="" loading="lazy">`;
@@ -697,7 +697,7 @@ function renderFeira() {
   const dealTag = it => { const d = Math.round((it.ask / it.value - 1) * 100); return d <= -3 ? `<span class="fcard__deal is-good">${-d}% abaixo da referência</span>` : d >= 3 ? `<span class="fcard__deal is-high">${d}% acima da referência</span>` : '<span class="fcard__deal">preço de referência</span>'; };
   const media = it => it.kind === 'car' ? `<img src="assets/${L.CARS[it.model].img}.webp" alt="" loading="lazy">`
     : it.kind === 'good' ? `<img src="assets/${IMG[it.good] || 'farm-soja'}.webp" alt="" loading="lazy">`
-    : `<div class="fcard__acc">${avatarSVG({ ...S().avatar, acc: it.acc, hair: S().avatar.hair }, { label: it.acc })}</div>`;
+    : `<div class="fcard__acc">${avatarSVG({ ...S().avatar, acc: it.acc, hair: S().avatar.hair }, { label: it.acc, full: true })}</div>`;
   const card = it => `<article class="fcard fcard--${it.kind}">
     <div class="fcard__media">${media(it)}<span class="fcard__kind">${{ car: 'seminovo', good: `${it.qty} sacas`, acc: 'usado' }[it.kind]}</span>${dealTag(it)}</div>
     <div class="fcard__body">
@@ -805,7 +805,7 @@ const ACTS = {
   'cn-uproot'(id) { if (!confirm('Arrancar o canavial? Depois você pode plantar de novo (reforma).')) return; CN.uproot(find(S().lands, id)); say('Canavial arrancado. A terra está livre para replantar.'); },
   'cn-buyharv'() { if (!confirm(`Comprar colhedora por ${brl(CN.HARVESTER.price)}? O corte cai de ${brl(CN.LOGI.cutThird)} para ${brl(CN.LOGI.cutOwn)} por tonelada, com custo fixo de ${brl(CN.HARVESTER.upkeep)}/mês.`)) return; const err = CN.buyHarvester(S()); if (err) return say(err[0].toUpperCase() + err.slice(1), true); note('compra de colhedora de cana', -CN.HARVESTER.price); confetti(40); say('Colhedora na fazenda!'); },
   'cn-sellharv'() { if (!confirm('Vender a colhedora?')) return; const v = CN.sellHarvester(S()); note('venda da colhedora', v); say(`Colhedora vendida por ${brl(v)}.`); },
-  'pm-sellall'() { const s = S(), n = s.stock.laranja || 0; if (!n) return; const v = n * s.prices.laranja * (1 - L.MARKET_FEE); s.stock.laranja = 0; s.money += v; note(`venda de ${int(n)} caixas de laranja`, v); confetti(30); say(`Laranja vendida por ${brl(v)}.`); },
+  'pm-sellall'() { const s = S(), n = s.stock.laranja || 0; if (!n) return; const v = n * s.prices.laranja * (1 - L.MARKET_FEE) * PK.mult(s, 'laranja'); s.stock.laranja = 0; s.money += v; note(`venda de ${int(n)} caixas de laranja`, v); confetti(30); say(`Laranja vendida por ${brl(v)}.`); },
   'pm-spray'(id) { const l = find(S().lands, id), on = PM.toggleSpray(l); say(on ? 'Defensivo ligado: a praga cai e a colheita fica cheia.' : 'Defensivo desligado: a praga vai subir e a colheita cai.', !on); },
   'pm-uproot'(id) { if (!confirm('Arrancar o pomar? Você perde as árvores.')) return; PM.uproot(find(S().lands, id)); say('Pomar arrancado. A terra está livre.'); },
   'ab-kill'(id) { const h = find(S().herd, id); if (!h) return; const r = AB.slaughter(S(), h.id); if (r.err) return say(r.err, true); note(`abate de ${r.heads} bois${r.own ? ` (${r.own} no seu frigorífico)` : ' (frigorífico de terceiros)'}`, r.amount); confetti(30); say(`Lote abatido: ${brl(r.amount)}.`); },
@@ -955,7 +955,7 @@ const ACTS = {
   'sell-good'(k) {
     const n = Math.min(qty(`q-${k}`), S().stock[k]);
     if (!n) return say(`Você não tem ${GOODS[k]} no armazém.`, true);
-    const v = n * S().prices[k] * (1 - L.MARKET_FEE);
+    const v = n * S().prices[k] * (1 - L.MARKET_FEE) * (k === 'laranja' ? PK.mult(S(), 'laranja') : ['soja', 'milho', 'cafe'].includes(k) ? PK.mult(S(), 'grain') : 1);
     S().stock[k] -= n; S().money += v; note(`venda de ${n} sacas de ${GOODS[k]}`, v); say(`Vendido por ${brl(v)}.`);
   },
   'buy-car'(id) {
@@ -1349,7 +1349,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 79;
+const APP_VERSION = 80;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;

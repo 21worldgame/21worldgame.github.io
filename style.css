@@ -1310,6 +1310,8 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .fcard__media::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.25), transparent 35%, rgba(8,10,20,.85)); pointer-events: none; }
 .fcard__acc { height: 100%; display: grid; place-items: center; background: radial-gradient(circle at 50% 35%, rgba(245,184,51,.28), transparent 65%), #0a0d18; }
 .fcard__acc svg { height: 108%; margin-top: 14%; }
+.fcard__acc svg.is-full { height: 100%; margin-top: 0; }
+.stage__avatar svg.is-full { display: block; width: 100%; height: auto; max-height: min(520px, 70vh); }
 .fcard__kind { position: absolute; left: 10px; top: 10px; z-index: 1; padding: 3px 10px; border-radius: 99px; font-size: .7rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; background: rgba(0,0,0,.6); border: 1px solid rgba(255,255,255,.18); backdrop-filter: blur(4px); }
 .fcard__deal { position: absolute; right: 10px; bottom: 10px; z-index: 1; padding: 3px 9px; border-radius: 8px; font-size: .7rem; font-weight: 700; background: rgba(255,255,255,.16); backdrop-filter: blur(4px); }
 .fcard__deal.is-good { background: rgba(46,230,107,.9); color: #04230f; }

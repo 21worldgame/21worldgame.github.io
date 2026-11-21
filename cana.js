@@ -4,6 +4,7 @@
 // Tratos culturais todo mês (adubação, herbicida e controle da broca); sem eles a broca derruba a produção.
 // Na seca (julho a outubro) pode pegar fogo: a cana queimada é vendida com desconto.
 import { ownsUsina } from './negocios.js';
+import { mult } from './perks.js';
 export const CANE = {
   plant: 11000,       // R$ por hectare (mudas, preparo do solo, plantio)
   first: 10,          // meses até o primeiro corte (cana-planta)
@@ -74,7 +75,7 @@ export function monthly(s, rng = Math.random) {
     const due = c.cuts === 0 ? c.age === CANE.first : c.age > CANE.first && (c.age - CANE.first) % CANE.cycle === 0;
     if (due || burnt && c.age >= CANE.first - 2 && nextCut(c) <= 2) {
       const tons = Math.round(expectedTons(l) * (0.9 + rng() * 0.2) * (burnt ? 0.75 : 1));
-      const mine = ownsUsina(s, 'cana'), price = (s.prices.cana || CANE.price) * (burnt ? 0.85 : 1) * (mine ? 1.12 : 1);
+      const mine = ownsUsina(s, 'cana'), price = (s.prices.cana || CANE.price) * (burnt ? 0.85 : 1) * (mine ? 1.12 : 1) * mult(s, 'cana');
       const lg = logistics(s, l), net = Math.round(tons * (price - lg.total + (mine ? lg.freight / 2 : 0)));
       c.cuts++; if (!due) c.age = c.cuts === 1 ? CANE.first : CANE.first + (c.cuts - 1) * CANE.cycle;   // corte antecipado pelo fogo
       add(`corte de cana: ${tons} t para ${mine ? 'a SUA usina (+12% e frete pela metade)' : `a usina a ${lg.km} km`}, ${l.region}${burnt ? ' (cana queimada, com desconto)' : ''} · logística R$ ${lg.total.toFixed(2).replace('.', ',')}/t`, net);

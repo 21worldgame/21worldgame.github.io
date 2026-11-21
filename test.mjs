@@ -1217,3 +1217,8 @@ import * as CT from './contador.js';
   const svg = AV.avatarSVG(a); assert.ok(svg.includes('stroke-dasharray="3 1.4"') && svg.includes('cx="100" cy="34" r="7"'), 'desenha os dois');
   AV.toggleAcc(a, 'nenhum'); assert.deepEqual(AV.accsOf(a), []); assert.deepEqual(AV.accsOf({ acc: 'nenhum' }), []);
   console.log('vários acessórios ok'); }
+// acessórios novos: cada área tem a sua vantagem e todos estão à venda no guarda-roupa
+{ const AV = await import('./avatar.js'), PKx = await import('./perks.js');
+  for (const k of ['suino', 'grain', 'laranja', 'cana', 'ouro', 'biz']) assert.ok(Object.entries(PKx.ACC_PERKS).some(([id, p]) => p[k] > 0 && AV.CATALOG.acc.opts.some(o => o.id === id && o.price)), 'sem acessório para ' + k);
+  const s = { owned: ['acc:bota de borracha', 'acc:chapéu de palha'] }; assert.equal(PKx.mult(s, 'suino'), 1.08); assert.equal(PKx.mult(s, 'grain'), 1.06);
+  assert.ok(AV.avatarSVG({ acc: ['bota de borracha'] }, { full: true }).includes('viewBox="0 0 200 404"')); console.log('acessórios de todas as áreas ok'); }
