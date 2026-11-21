@@ -3363,8 +3363,6 @@ button, .btn, [role="button"], .tab, .subtab { -webkit-touch-callout: none; -web
 .own-b--rep { color: #fde68a; border-color: rgba(250,204,21,.5); }
 .own-b--new { color: #86efac; border-color: rgba(74,222,128,.55); box-shadow: 0 0 12px rgba(74,222,128,.35); }
 /* troca rápida de fichas: tocar nas fichas do topo */
-.chipx-open { cursor: pointer; border-radius: 10px; padding: 2px 6px; margin: -2px -6px; transition: background .2s, box-shadow .2s; }
-.chipx-open:hover, .chipx-open:focus-visible { background: rgba(250,204,21,.1); box-shadow: inset 0 0 0 1px rgba(250,204,21,.35); outline: none; }
 .chipx-ico { display: inline-grid; place-items: center; width: 18px; height: 18px; margin-left: 4px; border-radius: 6px; font-size: .72rem; font-weight: 800; color: #1a1200; background: linear-gradient(160deg, #fde68a, #f59e0b); box-shadow: 0 0 10px rgba(250,204,21,.45); }
 .dlg--chipx { width: min(400px, calc(100vw - 24px)); display: grid; gap: 12px; }
 .dlg--chipx[open] { display: grid; }
@@ -3375,3 +3373,6 @@ button, .btn, [role="button"], .tab, .subtab { -webkit-touch-callout: none; -web
 .cx-out { margin: 0; min-height: 1.4em; font-size: 1rem; }
 .cx-acts { display: flex; gap: 8px; justify-content: flex-end; }
 @media (max-width: 40rem) { .chipx-ico { width: 15px; height: 15px; font-size: .6rem; } }
+/* botão "trocar fichas" no menu (some do topo no celular: lá fica no menu de baixo) */
+.hdr-chipx { gap: 6px; } .hud__in > .hdr-chipx { order: 6 !important; }
+@media (max-width: 40rem) { .hdr-chipx { display: none !important; } }

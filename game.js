@@ -904,7 +904,6 @@ document.addEventListener('click', e => {
   const p = e.target.closest('[data-cx-pct]'); if (p) { const s = S(), max = cxDir === 'out' ? s.chips : Math.floor(s.money / L.CHIP); $('#cx-n').value = Math.floor(max * Number(p.dataset.cxPct)) || ''; cxPaint(); }
   if (e.target.closest('[data-cx-close]')) $('#dlg-chipx').close();
 });
-document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest?.('.chipx-open')) { e.preventDefault(); e.target.closest('.chipx-open').click(); } });
 const qty = name => Math.max(0, Math.floor(Number(document.querySelector(`[name="${name}"]`)?.value) || 0));
 
 const ACTS = {
@@ -1575,7 +1574,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 121;
+const APP_VERSION = 122;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
@@ -1662,7 +1661,7 @@ document.addEventListener('click', e => { const g = e.target.closest('[data-tab-
   const grid = document.getElementById('mnav-grid'), sheet = document.getElementById('mnav-sheet');
   const btn = t => `<button type="button" data-mnav="${t.dataset.tab}">${t.querySelector('svg')?.outerHTML || ''}<span>${[...t.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("").trim()}</span></button>`;
   // atalhos que no celular saem do topo (passe e instalar app) ficam no começo do menu
-  if (grid) grid.innerHTML = `<div class="mnav-quick"><button type="button" data-act="open-pass">passe de temporada</button><button type="button" data-proxy="#btn-install">instalar app</button></div>` + Object.entries(CATS).map(([c, ids]) => `<h4 class="mnav-cat">${CAT_NAME[c]}</h4>${ids.map(id => btn(document.getElementById(`t-${id}`))).join('')}`).join('');
+  if (grid) grid.innerHTML = `<div class="mnav-quick"><button type="button" data-act="open-chipx">⇄ trocar fichas</button><button type="button" data-act="open-pass">passe de temporada</button><button type="button" data-proxy="#btn-install">instalar app</button></div>` + Object.entries(CATS).map(([c, ids]) => `<h4 class="mnav-cat">${CAT_NAME[c]}</h4>${ids.map(id => btn(document.getElementById(`t-${id}`))).join('')}`).join('');
   const openSheet = on => { if (on) { const i = grid.querySelector('[data-proxy="#btn-install"]'); if (i) i.hidden = !!document.getElementById('btn-install')?.hidden; } sheet.hidden = !on; document.querySelector('[data-mnav="menu"]')?.setAttribute('aria-expanded', String(on)); document.body.classList.toggle('mnav-open', on); };
   document.addEventListener('click', e => {
     const px = e.target.closest('[data-proxy]'); if (px) { openSheet(false); document.querySelector(px.dataset.proxy)?.click(); return; }
