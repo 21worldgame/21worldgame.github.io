@@ -165,27 +165,43 @@ export function avatarSVG(raw, { label = '', full = false } = {}) {
   // corpo inteiro: braços (atrás do tronco), cintura, pernas e pés, com os acessórios de pulso, mão, cintura e pés
   let body = '', limbs = '';
   if (full) {
-    const sleeve = a.outfit === 'regata' ? skin : a.outfit === 'terno' || a.outfit === 'colete' ? 'var(--suit)' : cloth;
-    const lower = a.outfit === 'terno' || a.outfit === 'colete' ? 'var(--suit)' : a.outfit === 'regata' ? cloth : cloth;
+    const suit = a.outfit === 'terno' || a.outfit === 'colete';
+    const sleeve = a.outfit === 'regata' ? skin : suit ? 'var(--suit)' : cloth;
+    const lower = suit ? 'var(--suit)' : cloth;
     const pants = a.outfit === 'terno' ? 'var(--suit)' : '#2f3d63';
-    const arm = 'M22 182 C8 218 6 258 12 292 L34 292 C32 260 36 228 44 200 Z', armR = 'M178 182 C192 218 194 258 188 292 L166 292 C168 260 164 228 156 200 Z';
     const short = a.outfit === 'camiseta' || a.outfit === 'regata';
-    const gloves = accs.includes('luvas de colheita'), hand = gloves ? '#8a5a2b' : skin;
-    limbs = `<path d="${arm}" fill="${short ? skin : sleeve}"/><path d="${armR}" fill="${short ? skin : sleeve}"/>
-      ${a.outfit === 'camiseta' ? `<path d="M22 182 C14 202 12 214 12 222 L38 226 C38 214 40 206 44 200 Z" fill="${cloth}"/><path d="M178 182 C186 202 188 214 188 222 L162 226 C162 214 160 206 156 200 Z" fill="${cloth}"/>` : ''}
-      ${shade('M178 182 C192 218 194 258 188 292 L178 292 C182 258 180 220 170 192 Z', 0.25)}${line(`${arm} ${armR}`, 1.8)}`;
+    const gloves = accs.includes('luvas de colheita'), hand = gloves ? '#9a6a35' : skin;
+    const mirror = g => `${g}<g transform="translate(200 0) scale(-1 1)">${g}</g>`;   // lado direito = espelho do esquerdo
+    // braço: ombro escondido atrás do tronco, cotovelo e punho; manga curta ou comprida conforme a roupa
+    const armD = 'M24 184 C12 214 9 248 12 286 L33 287 C33 258 37 228 45 202 Z';
+    const arm = `<path d="${armD}" fill="${short ? skin : sleeve}"/>${shade('M24 184 C15 206 12 226 12 246 L20 246 C20 226 23 206 30 190 Z', 0.22)}
+      ${short ? '' : `${line('M12 278 Q22 282 33 279', 1.4)}${line('M15 236 Q22 240 30 236', 1, 'opacity=".45"')}`}
+      ${a.outfit === 'camiseta' ? `<path d="M24 184 C16 202 13 214 13 224 L39 227 C39 214 41 206 45 200 Z" fill="${cloth}"/>${line('M13 224 L39 227', 1.4)}` : ''}${line(armD, 1.8)}`;
+    // mão: palma com polegar para dentro, dedos marcados e sombra embaixo
+    const handD = 'M13 286 C9 296 10 310 17 316 C22 320 30 319 33 312 C35 306 35 298 34 287 Z';
+    const handG = `<path d="${handD}" fill="${hand}"/><path d="M33 293 C40 292 43 299 39 305 C37 308 34 307 33 304 Z" fill="${hand}"/>${shade('M13 300 C13 310 18 317 25 318 C20 312 18 306 18 298 Z', 0.25)}
+      ${line(handD, 1.6)}${line('M33 293 C40 292 43 299 39 305 C37 308 34 307 33 304', 1.4)}${line('M19 309 L19 316 M24 310 L24 318 M29 309 L29 316', 1, 'opacity=".5"')}
+      ${gloves ? `<path d="M12 286 L34 286 L34 292 L12 292 Z" fill="#7a5228"/>${line('M12 292 L34 292', 1.2)}` : glow('M16 292 C15 298 16 304 19 307 C18 300 18 296 20 292 Z', 0.25)}`;
+    limbs = mirror(arm);
+    // calçado: bico arredondado, sola, cadarço; bota tem cano alto, tênis tem sola colorida e faixa
+    const boot = accs.includes('bota de borracha'), sneaker = accs.includes('tênis de grife');
+    const shoeC = boot ? '#1f3a2a' : sneaker ? '#f4f4f5' : '#4a2e1b', top = boot ? 338 : 372;
+    const shoeD = `M54 ${top} L97 ${top} L98 388 C99 394 97 399 90 399 L44 399 C36 399 35 392 39 386 C42 381 47 378 54 376 Z`;
+    const shoe = `<path d="${shoeD}" fill="${shoeC}"/>${shade(`M40 392 L98 392 L98 399 L44 399 C38 399 37 395 40 392 Z`, sneaker ? 0 : 0.35)}
+      ${sneaker ? '<path d="M38 392 L99 392 L99 399 L44 399 C37 399 36 395 38 392 Z" fill="#e11d48"/><path d="M50 384 Q68 380 92 386" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/>' : ''}
+      ${boot ? `<path d="M54 ${top} L97 ${top} L97 ${top + 8} L54 ${top + 8} Z" fill="#163020"/>${line(`M54 ${top + 8} L97 ${top + 8}`, 1.2)}` : line('M64 378 L80 378 M63 382 L81 382', 1.4, 'opacity=".6"')}
+      ${glow('M46 384 C50 380 56 378 62 378 C56 382 50 386 46 390 Z', sneaker ? 0.5 : 0.18)}${line(shoeD, 1.8)}`;
+    // perna: calça com vinco do joelho e barra
+    const legD = 'M42 260 L98 260 L97 378 L54 378 Z';
+    const leg = `<path d="${legD}" fill="${pants}"/>${shade('M42 260 L60 260 L64 378 L54 378 Z', 0.18)}${line('M58 318 Q70 322 84 318', 1, 'opacity=".4"')}${boot ? '' : line('M54 372 L97 372', 1.2, 'opacity=".5"')}${line(legD, 1.8)}`;
     const wear = {
-      'pulseira de prata': `<rect x="11" y="276" width="24" height="6" rx="3" fill="#cfd6df" stroke="#8b96a3" stroke-width="1"/>`,
-      'relógio de luxo': `<rect x="165" y="274" width="24" height="9" rx="3" fill="url(#${id}-gold)" stroke="var(--gold-lo)" stroke-width="1"/><circle cx="177" cy="278.5" r="4" fill="#10243f" stroke="var(--gold-hi)" stroke-width="1"/>`,
-      'anel de diamante': `<circle cx="179" cy="306" r="3.4" fill="none" stroke="url(#${id}-gold)" stroke-width="2"/><path d="M176 300 L179 296 L182 300 L179 303 Z" fill="#dff6ff" stroke="#7dd3fc" stroke-width=".8"/>`,
+      'pulseira de prata': `<rect x="11" y="275" width="24" height="6" rx="3" fill="#cfd6df" stroke="#8b96a3" stroke-width="1"/>`,
+      'relógio de luxo': `<rect x="165" y="273" width="24" height="9" rx="3" fill="url(#${id}-gold)" stroke="var(--gold-lo)" stroke-width="1"/><circle cx="177" cy="277.5" r="4" fill="#10243f" stroke="var(--gold-hi)" stroke-width="1"/>`,
+      'anel de diamante': `<circle cx="176" cy="311" r="3" fill="none" stroke="url(#${id}-gold)" stroke-width="2"/><path d="M173 306 L176 302 L179 306 L176 309 Z" fill="#dff6ff" stroke="#7dd3fc" stroke-width=".8"/>`,
       'cinto de fivela': `<rect x="42" y="250" width="116" height="10" fill="#4a2e17"/><rect x="88" y="247" width="24" height="16" rx="3" fill="url(#${id}-gold)" stroke="var(--gold-lo)" stroke-width="1.2"/><rect x="94" y="252" width="12" height="6" rx="1" fill="#4a2e17"/>`,
     };
-    const shoe = accs.includes('bota de borracha') ? { c: '#1f3a2a', top: 340 } : accs.includes('tênis de grife') ? { c: '#f4f4f5', top: 372, sole: '#e11d48' } : { c: '#3a2618', top: 374 };
     body = `<path d="M18 200 L182 200 C178 226 166 246 158 262 L42 262 C34 246 22 226 18 200 Z" fill="${lower}"/>${shade('M150 200 L182 200 C178 226 166 246 158 262 L144 262 C152 240 154 220 150 200 Z', 0.22)}${line('M18 200 C22 226 34 246 42 262 M182 200 C178 226 166 246 158 262', 1.8)}
-      <path d="M42 260 L98 260 L96 382 L56 382 Z" fill="${pants}"/><path d="M102 260 L158 260 L144 382 L104 382 Z" fill="${pants}"/>${shade('M128 260 L158 260 L144 382 L128 382 Z', 0.22)}${line('M42 260 L56 382 M98 262 L96 382 M102 262 L104 382 M158 260 L144 382 M42 260 L158 260', 1.8)}
-      <path d="M54 ${shoe.top} L98 ${shoe.top} L100 398 L42 398 Q42 384 54 ${shoe.top} Z" fill="${shoe.c}"/><path d="M102 ${shoe.top} L146 ${shoe.top} Q158 384 158 398 L100 398 Z" fill="${shoe.c}"/>
-      ${shoe.sole ? `<path d="M42 394 L100 394 L100 398 L42 398 Z M100 394 L158 394 L158 398 L100 398 Z" fill="${shoe.sole}"/>` : ''}${line(`M54 ${shoe.top} L98 ${shoe.top} L100 398 L42 398 Q42 384 54 ${shoe.top} Z M102 ${shoe.top} L146 ${shoe.top} Q158 384 158 398 L100 398 Z`, 1.8)}
-      <circle cx="23" cy="300" r="11" fill="${hand}"/><circle cx="177" cy="300" r="11" fill="${hand}"/>${line('M12 300 a11 11 0 1 0 22 0 a11 11 0 1 0 -22 0 M166 300 a11 11 0 1 0 22 0 a11 11 0 1 0 -22 0', 1.6)}
+      ${mirror(leg)}${line('M100 262 L100 300', 1.2, 'opacity=".5"')}${mirror(shoe)}${mirror(handG)}
       ${accs.map(k => wear[k] || '').join('')}`;
   }
 

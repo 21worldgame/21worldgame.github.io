@@ -45,6 +45,7 @@ import './news-ui.js';
 import * as SHUI from './shop-ui.js';
 import * as RKUI from './ranking-ui.js';
 import { openDeal } from './deal-ui.js';
+import * as BO from './bot-offers.js';
 import * as Live from './live.js';
 G.now = Live.now;   // hora do servidor para a sincronização (auth.js)
 import * as ST from './stable.js';
@@ -605,6 +606,28 @@ function profileExtra(p, me) {
   const ads = (p.listings || []).length ? `<h3>à venda agora <small class="muted">no Feirão 21</small></h3><ul class="pf__ads">${p.listings.map(l => `<li><span>${esc(l.label)}</span><b>${brl(l.price)}</b></li>`).join('')}</ul><div class="pf__acts"><button class="btn btn--gold btn--sm" data-loja-go="feirao" data-act="close-profile">ver no Feirão</button></div>` : '';
   return trophies + priv + (p.biz || p.landList ? `<h3>tudo o que tem</h3><div class="pf__stats">${tiles}</div>${biz ? `<div class="pf__bizs">${biz}</div>` : ''}${lands}` : '') + ads;
 }
+const agoTxt = at => { const m = Math.max(1, Math.round((Live.now() - at) / 60000)); return m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.round(m / 60)} h` : m < 2880 ? 'ontem' : `há ${Math.round(m / 1440)} dias`; };
+// proposta de um bot para você: card no canto da tela, some quando a janela acaba
+let boShown = null;
+function botOffer() {
+  const s = S(), o = BO.offerFor(s, Live.now()), el = $('#bot-offer');
+  if (!o) { if (el) el.remove(); boShown = null; return; }
+  if (el && boShown === `${o.slot}`) return;
+  boShown = `${o.slot}`;
+  const n = NPC.byId(o.botId), box = el || document.body.appendChild(Object.assign(document.createElement('aside'), { id: 'bot-offer', className: 'bo glass' }));
+  box.setAttribute('aria-live', 'polite');
+  box.innerHTML = `<span class="bo__av">${avatarSVG(n?.look || {}, { label: o.bot })}</span><div class="bo__body"><b>${esc(o.bot)} <small class="muted">nível ${NPC.levelFor(NPC.worthAt(n, s.month))} · online</small></b>
+    <p>“${esc(o.txt)}”</p><p class="small">total: <b class="${o.kind === 'calves' ? 'bad' : 'good'}">${brl(o.total)}</b></p>
+    <div class="bo__acts"><button class="btn btn--gold btn--sm" data-act="bo-yes">aceitar</button><button class="btn btn--glass btn--sm" data-act="bo-deal">negociar</button><button class="btn btn--glass btn--sm" data-act="bo-no">recusar</button></div></div>`;
+  sfx.play('chip', 0.3);
+}
+function boClose(o, done) { S().botOfferDone = o.slot; $('#bot-offer')?.remove(); boShown = null; if (done) { save(); render(); } }
+function boSettle(o, total) {
+  const r = BO.settle(S(), o, total); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true);
+  note(r.txt, r.val); say(`Negócio fechado com ${o.bot}: ${brl(Math.abs(r.val))}.`); confetti(25); boClose(o, true);
+}
+setInterval(() => { try { if (Live.worldReady) botOffer(); } catch (e) { console.error('proposta', e); } }, 5000);
+
 function openProfile(pid, fetched) {
   if (!pid) return;
   let p = fetched || C.findProfile(pid);
@@ -617,7 +640,7 @@ function openProfile(pid, fetched) {
   const xp = me ? `<div class="pf__xp"><span class="small">nível ${p.level}, ${S().xp} de ${P.xpNeed(S().level)} XP</span><span class="bar"><i style="transform:scaleX(${S().xp / P.xpNeed(S().level)})"></i></span></div>` : '';
   $('#pf').innerHTML = `
     <div class="pf__head">
-      <span class="pf__avatar">${avatarSVG(p.look, { label: p.name })}</span>
+      <span class="pf__avatar is-full">${avatarSVG(p.look, { label: p.name, full: true })}</span>
       <div><h2 id="pf-name">${esc(p.name)}</h2><p><span class="tag tag--gold">nível ${p.level}</span> <span class="tag tag--dark">${esc(p.rank)}</span></p>
       <p class="big">${brl(p.worth)}</p><p class="muted small">patrimônio</p>${xp}${p.bio ? `<p class="pf__bio">“${esc(p.bio)}”</p>` : ''}</div>
     </div>
@@ -626,12 +649,13 @@ function openProfile(pid, fetched) {
         ['terras', p.lands == null ? '—' : `${p.lands} (${int(p.ha || 0)} ha)`], ['gado', p.heads == null ? '—' : `${int(p.heads)} cabeças`], ['canil e haras', p.animals ? `${p.animals.length} animais` : '—']].map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${v}</strong></div>`).join('')}
     </div>
     ${profileExtra(p, me)}
+    ${p.deals?.length ? `<h3>últimos negócios</h3><ul class="pf__deals">${p.deals.map(d => `<li><span>${esc(d.txt)}<small class="muted">${agoTxt(d.at)}</small></span><b class="${d.val >= 0 ? 'good' : 'bad'}">${d.val >= 0 ? '+' : '−'}${brl(Math.abs(d.val))}</b></li>`).join('')}</ul>` : ''}
     <h3>garagem</h3>
         <div class="pf__cars">${(p.cars || []).length ? p.cars.map(m => L.CARS[m] ? `<span class="pf__car"><img src="assets/${L.CARS[m].img}.webp" alt=""><small>${esc(L.CARS[m].name)}</small></span>` : '').join('') : '<p class="muted small">Sem carros ainda.</p>'}</div>
     <h3>conquistas ${p.ach?.length || 0} de ${P.ACHIEVEMENTS.length}</h3>
     <ul class="achs">${P.ACHIEVEMENTS.map(a => `<li class="${p.ach?.includes(a.id) ? 'is-got' : ''}"><span class="badge__medal" aria-hidden="true"></span>${esc(a.txt)}</li>`).join('')}</ul>
     ${!me && TUI.online().some(x => x.pid === pid) ? `<div class="pf__acts"><button class="btn btn--gold" data-act="trade-invite" data-id="${esc(pid)}">negociar</button></div>` : ''}
-    ${!me && String(pid).startsWith('npc:') ? `<div class="pf__acts"><button class="btn btn--gold" data-act="trade-bot" data-id="${esc(String(pid).slice(4))}">negociar (preço de mercado)</button></div>` : ''}
+    ${!me && String(pid).startsWith('npc:') ? `<div class="pf__acts"><button class="btn btn--gold" data-act="trade-bot" data-id="${esc(String(pid).slice(4))}">negociar</button></div>` : ''}
     ${me ? `<div class="pf__acts"><button class="btn btn--glass" data-act="edit-char">editar personagem</button>${Auth.account() ? '<button class="btn btn--glass" data-act="logout">sair da conta</button><button class="btn btn--danger btn--sm" data-act="wipe">apagar meus dados</button>' : ''}</div>${Auth.account() ? `<p class="muted small">Conta: ${esc(Auth.account().email)}</p>` : ''}` : ''}`;
   const dlg = $('#dlg-profile');
   if (!dlg.open) dlg.showModal();
@@ -827,6 +851,12 @@ const ACTS = {
   'shop-cat'(id) { SHUI.setCat(id); },
   'shop-npc'(id) { SHUI.buyNpc(id); },
   'shop-offer-yes'(id) { SHUI.acceptOffer(id); },
+  'bo-yes'() { const o = BO.offerFor(S(), Live.now()); if (!o) return say('A proposta expirou.', true); boSettle(o, o.total); },
+  'bo-no'() { const o = BO.offerFor(S(), Live.now()); if (o) boClose(o); },
+  'bo-deal'() {
+    const o = BO.offerFor(S(), Live.now()); if (!o) return say('A proposta expirou.', true);
+    openDeal({ title: `negócio com ${o.bot}`, sub: o.txt, who: o.bot, deal: BO.dealFor(o), onDone: price => { if (price) boSettle(o, price); else boClose(o, true); } });
+  },
   'shop-offer-no'(id) { SHUI.rejectOffer(id); },
   'ft-take'(id) { FUI.take(id); },
   'ft-slot'(id) { FUI.openSlot(id); },

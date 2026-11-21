@@ -59,27 +59,92 @@ for (let k = 0; EXTRA.length < 140 && k < 2000; k++) {
   EXTRA.push({ id: `n${i}`, i, nick, base: Math.round(15000 + w * w * 420000), g: 0.015 + r0(k + 1700) * 0.02, bio: BIOS[Math.floor(r0(k + 2100) * BIOS.length)],
     look: { name: nick, skin: 1 + Math.floor(r0(k + 2500) * 5), hair: HAIR[Math.floor(r0(k + 2900) * 6)], hairColor: 1 + Math.floor(r0(k + 3300) * 5), beard: ['nenhuma', 'por fazer', 'cavanhaque', 'bigode', 'cheia'][Math.floor(r0(k + 3700) * 5)], eyes: 1 + (i % 4), outfit: OUT[Math.floor(r0(k + 4100) * 6)], cloth: 1 + Math.floor(r0(k + 4500) * 6), acc: ACC[Math.floor(r0(k + 4900) * ACC.length)] } });
 }
+// Nicks de gamer (estilo CS, Valorant, LoL): cada bot troca o nick UMA vez, numa data só dele, espalhada em 60 dias
+// (uns 2 por dia, ninguém percebe). Uns 30% nunca trocam. O nick antigo continua valendo para achar o jogador (byNick).
+const GN = ['kaique', 'biel', 'guizin', 'pedrin', 'lukinhas', 'thzin', 'jvzin', 'vitin', 'nandin', 'rafinha', 'teteu', 'juninho', 'dudu', 'manu', 'bia', 'duda', 'lari', 'mari', 'gabi', 'caio', 'enzo', 'davi', 'leozin', 'theo', 'gui', 'mth', 'tuts', 'dani', 'kaua', 'vini', 'brenin', 'igor', 'xandy', 'netin', 'mel'];
+const GC = ['sniper', 'clutch', 'ace', 'flick', 'smurf', 'tilt', 'rush', 'eco', 'awp', 'deagle', 'vandal', 'phantom', 'spray', 'entry', 'lurker', 'jungle', 'mid', 'adc', 'gank', 'carry', 'headshot', 'onetap', 'noscope', 'tryhard', 'frag', 'peek', 'defuse', 'baron', 'drake', 'ward', 'ult', 'combo', 'retake', 'ninja', 'rato'];
+const GS = ['zin', 'zera', 'BR', 'gg', 'tv', 'fps', '777', '01', '_br', '2k', 'zz', 'xd'];
+const cap1 = w => w[0].toUpperCase() + w.slice(1);
+export function gamerNick(k) {
+  const r = j => r0(k * 17 + j), p = a => a[Math.floor(r(a.length) * a.length)], nm = p(GN), co = GC[Math.floor(r(3) * GC.length)], su = GS[Math.floor(r(5) * GS.length)];
+  const forms = [`${nm}${['', '_', '.'][Math.floor(r(7) * 3)]}${co}`, `${co}${su}`, `xX${co}Xx`, `${nm}${su}`, `${['its', 'not', 'im', 'o'][Math.floor(r(9) * 4)]}${cap1(co)}`, `${co}.${nm}`, `${cap1(nm)}${cap1(co)}`, `${nm}${Math.floor(r(11) * 90 + 10)}`];
+  const n = forms[Math.floor(r(13) * forms.length)];
+  return r(15) < 0.3 ? n.toLowerCase() : n.slice(0, 16);
+}
+export const RENAME_START = Date.UTC(2026, 10, 21, 12), RENAME_DAYS = 60;
+for (const n of [...BASE, ...EXTRA]) {
+  n.orig = n.nick;
+  if (r0(n.i * 13 + 5) < 0.7) {
+    let g = '', k = n.i * 31;
+    do g = gamerNick(k++); while (used.has(g.toLowerCase()));
+    used.add(g.toLowerCase()); n.gnick = g; n.renameAt = RENAME_START + Math.floor(r0(n.i * 13 + 6) * RENAME_DAYS * 864e5);
+  }
+  delete n.nick;
+  Object.defineProperty(n, 'nick', { enumerable: true, get() { return this.gnick && Date.now() >= this.renameAt ? this.gnick : this.orig; } });
+}
 export const NPCS = [...BASE, ...EXTRA];
 // folga: jogadores fora do jogo até a hora indicada (UTC). 12:20 de Brasília = 15:20 UTC. Apague a linha para voltarem antes.
 export const AWAY = { 'ReiDoGado': Date.UTC(2026, 10, 21, 15, 20), 'A Boiadeira': Date.UTC(2026, 10, 21, 15, 20) };
-export const isAway = (n, now = Date.now()) => (AWAY[n?.nick ?? n] || 0) > now;
+export const isAway = (n, now = Date.now()) => (AWAY[typeof n === 'string' ? byNick(n)?.orig ?? n : n?.orig ?? n?.nick] || 0) > now;
 export const byId = id => NPCS.find(n => n.id === id);
-export const byNick = nick => NPCS.find(n => n.nick === nick);
+export const byNick = nick => NPCS.find(n => n.nick === nick) || NPCS.find(n => n.orig === nick || n.gnick === nick);   // nick antigo ainda acha o jogador
 export const nicks = (from, n) => Array.from({ length: n }, (_, k) => NPCS[(from + k * 7) % NPCS.length].nick);
+
+// ---------- vida de cada bot ----------
+// Vontade de jogar (0 a 1): ondas lentas de vários dias, diferentes para cada um (fase "viciado" e fase "sumido").
+// Online: quem tem mais vontade e está perto do seu horário preferido. Patrimônio: sobe aos poucos enquanto ele joga e
+// desce devagar quando some (custos correndo). É a integral da vontade, então nunca dá salto.
+const DAY = 864e5, TAU = Math.PI * 2;
+const per = n => [4 + hash(n.i * 7 + 1) * 8, 1.7 + hash(n.i * 7 + 2) * 2];
+export function drive(n, t = Date.now()) {
+  const d = t / DAY, [p1, p2] = per(n);
+  return Math.min(1, Math.max(0, 0.5 + 0.38 * Math.sin(TAU * d / p1 + n.i * 1.3) + 0.14 * Math.sin(TAU * d / p2 + n.i * 0.7)));
+}
+export function form(n, t = Date.now()) {
+  const d = t / DAY, [p1, p2] = per(n);
+  return 1 - 0.13 * Math.cos(TAU * d / p1 + n.i * 1.3) - 0.04 * Math.cos(TAU * d / p2 + n.i * 0.7);
+}
+const peakOf = n => (hash(n.i * 7 + 3) < 0.3 ? 22 + hash(n.i * 7 + 4) * 5 : 11 + hash(n.i * 7 + 4) * 11) % 24;   // 30% corujas
+function hourFit(n, t) { const h = ((t / 36e5 - 3) % 24 + 24) % 24, x = Math.abs(h - peakOf(n)), dist = Math.min(x, 24 - x); return Math.max(0, 1 - dist / 7); }
+export const propensity = (n, t) => hourFit(n, t) * 0.55 + drive(n, t) * 0.6 + hash(n.i * 97 + Math.floor(t / 1200000)) * 0.3;
+const byPropensity = t => [...NPCS].filter(n => !isAway(n, t)).sort((a, b) => propensity(b, t) - propensity(a, t));
 
 export const NPC_LATE = 1.004, NPC_LATE_CAP = 6;
 // o reforço não entra de uma vez: começa no mês 440 do mundo (19/11/2026) e chega ao total em ~1 mês real (4320 meses de 10 min)
 export const NPC_RAMP_START = 440;   // força final e dias da rampa: painel admin (tune.js)
 // fortuna no mês do mundo (pode ser fracionário: anda devagar entre um mês e outro)
-export function worthAt(n, month) {
+export function worthAt(n, month, t = Date.now()) {
   const m = Math.min(48, Math.max(0, month - 1));   // arrancada nos primeiros 48 meses (~8 h de jogo)
   const late = Math.min(NPC_LATE_CAP, NPC_LATE ** Math.max(0, month - 49)), NPC_RAMP = T.npcRampDays * 144;   // depois seguem crescendo devagar, até 6x
   const wave = 1 + 0.07 * Math.sin(month * 0.7 + n.i * 2.1) + 0.03 * Math.sin(month * 2.3 + n.i);
   const boost = 1 + (T.npcBoost - 1) * Math.min(1, m / 48);   // mundo novo continua alcançável
   const r = Math.min(1, Math.max(0, (month - NPC_RAMP_START) / NPC_RAMP));   // 0 em 19/11/2026, 1 daqui a um mês
-  return Math.round(n.base * (1 + n.g * 0.55) ** m * (1 + (boost * late - 1) * r) * wave);
+  return Math.round(n.base * (1 + n.g * 0.55) ** m * (1 + (boost * late - 1) * r) * wave * form(n, t));
 }
 export const levelFor = worth => Math.max(1, Math.min(60, Math.round(Math.log10(Math.max(10, worth)) * 7 - 28)));
+
+// negócios do bot: a cada janela de 3 h em que ele estava com vontade de jogar, fecha um negócio do tamanho da fortuna dele
+const DEAL_MS = 3 * 36e5;
+const DEAL_KINDS = [
+  (v, r) => { const q = Math.max(10, Math.round(v * 0.03 / 2600 / 10) * 10); return { txt: `comprou ${q} bezerros`, val: -q * Math.round(2450 + r * 300) }; },
+  (v, r) => { const q = Math.max(10, Math.round(v * 0.04 / 4700 / 10) * 10); return { txt: `vendeu ${q} bois gordos`, val: q * Math.round(4400 + r * 700) }; },
+  (v, r) => { const q = Math.max(100, Math.round(v * 0.02 / 130 / 100) * 100), p = Math.round(118 + r * 26); return { txt: `vendeu ${q} sacas de soja a R$ ${p}`, val: q * p }; },
+  (v, r) => { const q = Math.max(100, Math.round(v * 0.015 / 60 / 100) * 100), p = Math.round(52 + r * 14); return { txt: `comprou ${q} sacas de milho a R$ ${p}`, val: -q * p }; },
+  (v, r) => { const q = Math.max(20, Math.round(v * 0.01 / 1400 / 10) * 10), p = Math.round(1250 + r * 300); return { txt: `vendeu ${q} sacas de café a R$ ${p}`, val: q * p }; },
+  (v, r) => { const ha = Math.max(20, Math.round(v * 0.06 / 18000 / 10) * 10); return { txt: `comprou ${ha} ha de terra`, val: -ha * Math.round(15000 + r * 9000) }; },
+  (v, r) => { const q = Math.max(500, Math.round(v * 0.004 / 6.2 / 500) * 500); return { txt: `vendeu ${q} kg de frango`, val: Math.round(q * (5.6 + r * 1.2)) }; },
+  (v, r) => { const q = Math.max(50, Math.round(v * 0.005 / 38 / 50) * 50); return { txt: `vendeu ${q} caixas de laranja`, val: q * Math.round(34 + r * 9) }; },
+];
+export function deals(n, worth, now = Date.now(), max = 6) {
+  const out = [], s0 = Math.floor(now / DEAL_MS);
+  for (let k = 0; k < 40 && out.length < max; k++) {
+    const sl = s0 - k, t = sl * DEAL_MS + hash(n.i * 131 + sl) * DEAL_MS;
+    if (t > now || hash(n.i * 37 + sl) > 0.15 + drive(n, t) * 0.6) continue;
+    const d = DEAL_KINDS[Math.floor(hash(n.i * 53 + sl) * DEAL_KINDS.length)](worth, hash(n.i * 71 + sl));
+    out.push({ ...d, at: t });
+  }
+  return out;
+}
 
 // perfil completo (para a janela de perfil)
 export function profile(n, month) {
@@ -90,7 +155,7 @@ export function profile(n, month) {
     stats: { hands, wins: Math.round(hands * (0.38 + r(3) * 0.08)), best: Math.round(200 + r(4) * worth / 200), races: Math.round(r(5) * 60), raceWins: Math.round(r(6) * 14) },
     lands: Math.floor(worth / 250000), ha: Math.floor(worth / 250000) * (30 + Math.floor(r(7) * 70)), heads: Math.floor(worth / 60000) * 10,
     cars, animals: Array.from({ length: Math.floor(r(8) * 3) }, (_, k) => ({ kind: k % 2 ? 'horse' : 'dog', name: '', rating: 50 + Math.floor(r(9 + k) * 30), wins: Math.floor(r(12 + k) * 8) })),
-    achCount: Math.min(20, 2 + Math.floor(lv / 2)),
+    achCount: Math.min(20, 2 + Math.floor(lv / 2)), deals: deals(n, worth),
   };
 }
 
@@ -105,12 +170,11 @@ export function onlineCount(now = Date.now()) {
 }
 // quem está online agora (rodízio a cada 20 min; sempre os mesmos para todos os aparelhos)
 export function onlineSet(now = Date.now()) {
-  const slot = Math.floor(now / 1200000);
-  return new Set([...NPCS].filter(n => !isAway(n, now)).sort((a, b) => hash(a.i * 97 + slot) - hash(b.i * 97 + slot)).slice(0, Math.min(NPCS.length, onlineCount(now))).map(n => n.id));
+  return new Set(byPropensity(now).slice(0, Math.min(NPCS.length, onlineCount(now))).map(n => n.id));
 }
 export function onlineNow(now = Date.now(), max = 12) {
-  const slot = Math.floor(now / 1200000), want = Math.min(NPCS.length, Math.max(4, Math.round(onlineCount(now) / 5)));
-  return [...NPCS].filter(n => !isAway(n, now)).sort((a, b) => hash(a.i * 97 + slot) - hash(b.i * 97 + slot)).slice(0, Math.min(max, want));
+  const want = Math.min(NPCS.length, Math.max(4, Math.round(onlineCount(now) / 5)));
+  return byPropensity(now).slice(0, Math.min(max, want));
 }
 
 // vez de quem fala na TV 21 / Resenha: ordem embaralhada fixa (igual em todo aparelho), um por janela e sem repetir

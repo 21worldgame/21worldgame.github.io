@@ -8,14 +8,22 @@ export const levelFor = npcLevel;
 // month pode ser fracionário (mês + progresso), para os números andarem de verdade
 // caçadores do topo: os 3 maiores concorrentes do mundo perseguem o líder real (leader = maior patrimônio de jogador).
 // O 1º caçador fica em média ~4% acima do líder, com uma onda lenta: o jogador só segura o 1º lugar nos vales da onda.
-export const HUNT = [1.04, 0.99, 0.94, 0.88, 0.83, 0.77, 0.72, 0.66, 0.6, 0.55], HUNT_WAVE = 0.06;
+export const HUNT = [1.04, 0.99, 0.94, 0.88, 0.83, 0.77, 0.72, 0.66, 0.6, 0.55], HUNT_WAVE = 0.01;
+// ciclo da disputa pelo 1º lugar (tempo real): o jogador que passa fica na frente um bom tempo (~30 h), depois os bots
+// sobem aos poucos (~9 h), ficam na frente (~16 h) e recuam (~5 h). Igual para todo mundo, sem saltos.
+export const HUNT_CYCLE = 60 * 36e5, HUNT_LOW = 0.9;
+const ss = x => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+export function huntLevel(t = Date.now(), top = T.huntLead) {
+  const u = (t % HUNT_CYCLE) / HUNT_CYCLE;
+  return HUNT_LOW + (top - HUNT_LOW) * (ss((u - 0.5) / 0.15) - ss((u - 0.92) / 0.08));
+}
 export const NEAR = [1.03, 1.09, 1.17];   // vizinhos: sempre tem alguém logo acima de você
 export const hunted = new Map();   // id do npc -> fortuna de caçador (para o perfil mostrar o mesmo número do ranking)
-export function rivals(month, leader = 0, me = 0) {
-  const rows = NPCS.map(n => { const worth = npcWorth(n, month); return { away: isAway(n), pid: `npc:${n.id}`, id: n.id, name: n.nick, worth, look: n.look }; });
+export function rivals(month, leader = 0, me = 0, t = Date.now()) {
+  const rows = NPCS.map(n => { const worth = npcWorth(n, month, t); return { away: isAway(n), pid: `npc:${n.id}`, id: n.id, name: n.nick, worth, look: n.look }; });
   hunted.clear();
   if (leader > 0 && T.hunt) [...rows].filter(r => !r.away).sort((a, b) => b.worth - a.worth).slice(0, HUNT.length).forEach((r, k) => {
-    const chase = Math.round(leader * HUNT[k] * (T.huntLead / HUNT[0]) * (1 + HUNT_WAVE * Math.sin(month * 0.9 + k * 2.1)));
+    const chase = Math.round(leader * (HUNT[k] / HUNT[0]) * huntLevel(t) * (1 + HUNT_WAVE * Math.sin(month * 0.9 + k * 2.1)));
     if (chase > r.worth) { r.worth = chase; hunted.set(r.id, chase); }
   });
   if (T.near && me > 0 && me < leader) {   // quem não é o líder sempre tem 3 concorrentes logo acima (os seguintes depois dos caçadores)

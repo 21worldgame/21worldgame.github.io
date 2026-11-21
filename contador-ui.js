@@ -7,6 +7,8 @@ import * as Live from './live.js';
 import { G, $, esc, brl, say, save, note } from './store.js';
 import * as GR from './granja.js';
 import * as SU from './suinos.js';
+import { avatarSVG } from './avatar.js';
+import { STAFF } from './staff.js';
 
 // contador registra TUDO que entra e sai (para o lucro real), contratado ou não; na 1ª vez aproveita o livro-caixa
 G.track = (s, txt, val) => { CT.backfill(s); CT.track(s, txt, val); };
@@ -74,7 +76,8 @@ function profit(s) {
     <tfoot><tr class="ct-mt__tot"><td>total</td><td class="num">${money(a.lucro)}</td><td class="num">${money(b.lucro)}</td><td class="num">${money(c.lucro)}</td></tr></tfoot></table></div>
     ${c.bem ? `<p class="small muted">Bens nos 12 meses (galpões, terras, carros, empresas): ${c.bem < 0 ? `investiu ${brl(-c.bem)}` : `vendeu ${brl(c.bem)}`}. Não entra no lucro porque virou patrimônio (ou saiu dele).</p>` : ''}</section>`;
 }
-let chat = [];
+let chat = [], view = 'resumo';
+const VIEWS = [['resumo', 'resumo'], ['lucro', 'lucro real'], ['gastos', 'gastos'], ['historico', 'histórico'], ['conversa', 'conversa']];
 // o que ainda não foi vendido (não entra no lucro até vender) e de onde vem o patrimônio
 function held(s) {
   const p = s.prices || {}, st = s.stock || {};
@@ -87,17 +90,33 @@ function worthParts(s) {
   return { total, debt, parts: [...parts, ['o resto (carros, empresas, animais, cartas, indústrias...)', total + debt - parts.reduce((t, [, v]) => t + v, 0)]] };
 }
 const ctx = () => ({ brl, forecast: CT.summarize(G.ctForecast?.() || []), prices: G.S.prices || {}, base: L.ANCHOR, held: held(G.S), worth: worthParts(G.S), loans: G.S.loans || [] });
+const ACC_LOOK = () => STAFF.find(x => x.id === 'contador')?.look || {};
+const face = () => `<span class="ct-ai__av">${avatarSVG(ACC_LOOK(), { label: 'contador' })}</span>`;
+// resposta: 1ª linha em destaque, "•" vira lista, "–" vira sublista
+function fmtAnswer(a) {
+  const out = []; let ul = null;
+  a.forEach((l, i) => {
+    const sub = /^\s+[–-] /.test(l), bul = /^• /.test(l);
+    if (bul || sub) { if (!ul) { ul = []; out.push(ul); } ul.push(`<li class="${sub ? 'is-sub' : ''}">${esc(l.replace(/^\s*[•–-] /, ''))}</li>`); return; }
+    ul = null; out.push(`<p${i === 0 ? ' class="ct-ai__lead"' : ''}>${esc(l)}</p>`);
+  });
+  return out.map(x => (Array.isArray(x) ? `<ul>${x.join('')}</ul>` : x)).join('');
+}
+let typing = false;
 function assistant() {
-  return `<section class="ct-sec ct-ai glass"><div class="ct-sec__h"><h3>pergunte ao contador</h3><span class="small muted">responde com os seus números</span></div>
-    <div class="ct-ai__log" id="ct-log" aria-live="polite">${chat.map(c => `<p class="ct-ai__q">${esc(c.q)}</p><div class="ct-ai__a">${c.a.map(l => `<p>${esc(l)}</p>`).join('')}</div>`).join('') || '<p class="muted small">Ex.: "qual meu lucro real?", "com a granja vazia eu pago alguma coisa?", "o que o frigorífico gasta?"</p>'}</div>
-    <div class="ct-ai__chips">${CT.QUICK.map(q => `<button type="button" class="ct-chip" data-ct="ask" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>
-    <form class="row ct-ai__form" data-ct-form><input class="input" name="q" maxlength="160" autocomplete="off" placeholder="digite sua pergunta" aria-label="pergunta ao contador"><button class="btn btn--gold">perguntar</button></form></section>`;
+  const msgs = chat.filter(c => c.a).map(c => `<div class="ct-msg ct-msg--me"><p>${esc(c.q)}</p></div><div class="ct-msg ct-msg--bot">${face()}<div class="ct-msg__b">${fmtAnswer(c.a)}</div></div>`).join('');
+  const hello = `<div class="ct-msg ct-msg--bot">${face()}<div class="ct-msg__b"><p class="ct-ai__lead">Olá! Sou o seu contador.</p><p>Pergunte sobre lucro, prejuízo, gastos, preços, dívidas ou quanto tempo o seu dinheiro aguenta. Só não digo onde investir: essa escolha é sua.</p></div></div>`;
+  return `<section class="ct-ai glass"><header class="ct-ai__top">${face()}<div><b>${esc(STAFF.find(x => x.id === 'contador')?.name || 'contador')}</b><small><i class="ct-dot"></i>online · responde com os seus números</small></div></header>
+    <div class="ct-ai__log" id="ct-log" aria-live="polite">${hello}${msgs}${typing && chat.at(-1) && !chat.at(-1).a ? `<div class="ct-msg ct-msg--me"><p>${esc(chat.at(-1).q)}</p></div>` : ''}${typing ? `<div class="ct-msg ct-msg--bot">${face()}<div class="ct-msg__b ct-typing" aria-label="digitando"><i></i><i></i><i></i></div></div>` : ''}</div>
+    <div class="ct-ai__chips" role="list">${CT.QUICK.map(q => `<button type="button" class="ct-chip" role="listitem" data-ct="ask" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>
+    <form class="ct-ai__form" data-ct-form><input class="input" name="q" maxlength="160" autocomplete="off" placeholder="pergunte ao contador…" aria-label="pergunta ao contador"><button class="btn btn--gold" aria-label="enviar">enviar</button></form></section>`;
 }
 function ask(q) {
-  q = String(q || '').trim(); if (!q) return;
-  chat = [...chat, { q, a: CT.answer(G.S, q, ctx()) }].slice(-6);
-  render(); const log = $('#ct-log'); if (log) log.scrollTop = log.scrollHeight;
+  q = String(q || '').trim(); if (!q || typing) return;
+  chat = [...chat, { q, a: null }].slice(-8); typing = true; view = 'conversa'; render(); scrollLog();
+  setTimeout(() => { chat[chat.length - 1].a = CT.answer(G.S, q, ctx()); typing = false; render(); scrollLog(); $('[data-ct-form] input')?.focus({ preventScroll: true }); }, 450);
 }
+const scrollLog = () => { const log = $('#ct-log'); if (log) log.scrollTop = log.scrollHeight; };
 document.addEventListener('submit', e => { const f = e.target.closest('[data-ct-form]'); if (!f) return; e.preventDefault(); ask(f.q.value); });
 const when = s => { try { const w = Live.world(), t = Live.now(); return W.fmt(W.msLeft(w, t)); } catch { return '…'; } };
 
@@ -114,19 +133,30 @@ export function render() {
     return;
   }
   const a = s.acct, fc = CT.summarize(G.ctForecast?.() || []), closes = s.closes || [];
-  const head = `<div class="ct-head glass"><div><h3>relatório do contador</h3><p class="small">${a.plan === 'mensal' ? `plano mensal · próximo honorário ${brl(CT.nextMensal(s, worth))} (sobe ${Math.round(CT.FEE.rise * 100)}% a cada mês)` : `plano ${CT.PLANS[a.plan].label} pago (${brl(a.paid)}) · ${CT.monthsLeft(s)} ${CT.monthsLeft(s) === 1 ? 'mês restante' : 'meses restantes'}`}</p></div>
+  const head = `<div class="ct-head glass"><span class="ct-head__av">${avatarSVG(ACC_LOOK(), { label: 'contador' })}</span><div class="ct-head__t"><h3>relatório do contador</h3><p class="small">${a.plan === 'mensal' ? `plano mensal · próximo honorário ${brl(CT.nextMensal(s, worth))} (sobe ${Math.round(CT.FEE.rise * 100)}% a cada mês)` : `plano ${CT.PLANS[a.plan].label} pago (${brl(a.paid)}) · ${CT.monthsLeft(s)} ${CT.monthsLeft(s) === 1 ? 'mês restante' : 'meses restantes'}`}</p></div>
     <button class="btn btn--glass btn--sm" data-eq="fire" data-id="contador">demitir</button></div>`;
   const last = closes[0], ls = last && CT.summarize(last.lines);
   const hist = CT.history(s);
-  el.innerHTML = head + kpis(hist, fc) + assistant() + profit(s) + `<section class="ct-sec"><div class="ct-sec__h"><h3>previsão do próximo fechamento <small class="muted">em ${when(s)}</small></h3><span class="ct-total bad">${brl(fc.total)}</span></div>
+  const tabs = `<nav class="ct-tabs" role="tablist" aria-label="relatório do contador">${VIEWS.map(([k, l]) => `<button type="button" role="tab" class="ct-tab${view === k ? ' is-on' : ''}" aria-selected="${view === k}" data-ct="view" data-id="${k}">${l}</button>`).join('')}</nav>`;
+  const m = s.month || 0, r1 = CT.results(s, m, m), r12 = CT.results(s, m - 11, m);
+  const top3 = r12.rows.filter(x => x.in || x.out).sort((a, b) => Math.abs(b.lucro) - Math.abs(a.lucro)).slice(0, 4);
+  const resumo = kpis(hist, fc) + `<div class="ct-cards">
+      <article class="ct-card glass"><h4>lucro real</h4><p class="ct-card__big ${r1.lucro >= 0 ? 'good' : 'bad'}">${r1.lucro >= 0 ? '' : '−'}${brl(Math.abs(r1.lucro))}</p><p class="small muted">este mês · 12 meses: ${money(r12.lucro)}</p>
+        ${top3.length ? `<ul class="ct-mini">${top3.map(x => `<li><span>${esc(x.label)}</span>${money(x.lucro)}</li>`).join('')}</ul>` : ''}<button class="btn btn--glass btn--sm" data-ct="view" data-id="lucro">ver por produção</button></article>
+      <article class="ct-card glass"><h4>próximo fechamento <small class="muted">em ${when(s)}</small></h4><p class="ct-card__big bad">${brl(fc.total)}</p><p class="small muted">${fc.income ? `entram ${brl(fc.income)} · saldo ${brl(fc.income - fc.total)}` : 'saídas previstas'}</p>
+        <ul class="ct-types">${typeRows(Object.fromEntries(Object.entries(fc.types).sort((a, b) => b[1] - a[1]).slice(0, 4)), fc.total)}</ul><button class="btn btn--glass btn--sm" data-ct="view" data-id="gastos">ver todos os gastos</button></article>
+      <article class="ct-card ct-card--chat glass"><h4>pergunte ao contador</h4><p class="small muted">Ele responde com os seus números: lucro, prejuízo, gastos, preços, dívidas e quanto o dinheiro aguenta.</p>
+        <div class="ct-ai__chips">${CT.QUICK.slice(0, 4).map(q => `<button type="button" class="ct-chip" data-ct="ask" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div></article></div>`;
+  const gastos = `<section class="ct-sec"><div class="ct-sec__h"><h3>previsão do próximo fechamento <small class="muted">em ${when(s)}</small></h3><span class="ct-total bad">${brl(fc.total)}</span></div>
       <p class="small muted">Contas fixas (funcionários, luz, água, aluguel, seguro, impostos, parcelas) são exatas; ração, frete e o que depende de preço do mercado podem variar um pouco.</p>
       <div class="ct-sum glass"><h4>por tipo de gasto</h4><ul class="ct-types">${typeRows(fc.types, fc.total)}</ul></div>
       <div class="ct-grid">${fc.groups.map(groupCard).join('') || '<p class="muted">Nenhum gasto previsto.</p>'}</div></section>
     <section class="ct-sec"><div class="ct-sec__h"><h3>último fechamento cobrado ${last ? `<small class="muted">${W.dateLabel(last.month)} · ${stamp(last.at)} · <span class="good">cobrado 1 vez</span></small>` : ''}</h3>${ls ? `<span class="ct-total bad">${brl(ls.total)}</span>` : ''}</div>
       ${ls ? closeBody(ls)
-        : '<p class="muted">O primeiro fechamento com o contador aparece aqui quando o mês virar.</p>'}</section>
-    ${hist.length ? monthly(hist) : ''}
-    ${archive(s, hist)}`;
+        : '<p class="muted">O primeiro fechamento com o contador aparece aqui quando o mês virar.</p>'}</section>`;
+  const historico = hist.length ? monthly(hist) + archive(s, hist) : '<p class="empty glass">O histórico começa no primeiro fechamento com o contador.</p>';
+  const body = { resumo, lucro: profit(s), gastos, historico, conversa: assistant() }[view] || resumo;
+  el.innerHTML = head + tabs + `<div class="ct-view ct-view--${view}" role="tabpanel">${body}</div>`;
 }
 
 // resumo do contador no topo das abas de produção
@@ -146,6 +176,7 @@ export function inject(tab) {
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-ct]'); if (!b) return;
   if (b.dataset.ct === 'by') { by = b.dataset.id; return render(); }
+  if (b.dataset.ct === 'view') { view = b.dataset.id; render(); return $('.ct-tabs')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
   if (b.dataset.ct === 'ask') return ask(b.dataset.q);
   const s = G.S;
   if (b.dataset.ct === 'hire') {

@@ -903,10 +903,13 @@ console.log('suínos, negócios e galpões ok');
 }
 {
   const RV2 = await import('./rivals.js');
-  const calm = RV2.rivals(60), lead = 5e9, hunt = RV2.rivals(60, lead), top = Math.max(...hunt.map(r => r.worth));
-  assert.ok(top > Math.max(...calm.map(r => r.worth)) && top > lead * 0.97 && top < lead * 1.11, 'caçador colado no líder');
-  let ahead = 0; for (let m = 50; m < 250; m++) if (Math.max(...RV2.rivals(m, lead).map(r => r.worth)) > lead) ahead++;
-  assert.ok(ahead > 100 && ahead < 200, 'o líder às vezes ainda consegue o 1º lugar: ' + ahead);
+  const lead = 5e9, C = RV2.HUNT_CYCLE, at = u => Math.floor(Date.UTC(2026, 11, 1) / C) * C + u * C, top = u => Math.max(...RV2.rivals(60, lead, 0, at(u)).map(r => r.worth));
+  assert.ok(top(0.2) < lead && top(0.2) > lead * 0.85, 'fase do jogador: ele fica na frente ' + top(0.2) / lead);
+  assert.ok(top(0.75) > lead && top(0.75) < lead * 1.11, 'fase dos bots: retomam o 1º ' + top(0.75) / lead);
+  let jump = 0; for (let k = 0; k < 360; k++) jump = Math.max(jump, Math.abs(RV2.huntLevel(at(k / 360)) - RV2.huntLevel(at((k + 1) / 360))));
+  assert.ok(jump < 0.01, 'sobe e desce aos poucos, sem salto: ' + jump);
+  let ahead = 0; for (let k = 0; k < 100; k++) if (top(k / 100) > lead) ahead++;
+  assert.ok(ahead > 25 && ahead < 50, 'o jogador fica na frente mais da metade do tempo: bots na frente ' + ahead + '%');
 }
 {
   const RV3 = await import('./rivals.js'), r = RV3.rivals(400, 5e8, 2e6).map(x => x.worth).sort((a, b) => b - a);
@@ -1222,3 +1225,11 @@ import * as CT from './contador.js';
   for (const k of ['suino', 'grain', 'laranja', 'cana', 'ouro', 'biz']) assert.ok(Object.entries(PKx.ACC_PERKS).some(([id, p]) => p[k] > 0 && AV.CATALOG.acc.opts.some(o => o.id === id && o.price)), 'sem acessório para ' + k);
   const s = { owned: ['acc:bota de borracha', 'acc:chapéu de palha'] }; assert.equal(PKx.mult(s, 'suino'), 1.08); assert.equal(PKx.mult(s, 'grain'), 1.06);
   assert.ok(AV.avatarSVG({ acc: ['bota de borracha'] }, { full: true }).includes('viewBox="0 0 200 404"')); console.log('acessórios de todas as áreas ok'); }
+// propostas dos bots: aparecem só quando você tem o que negociar; fechar mexe no armazém e no dinheiro certo
+{ const BOx = await import('./bot-offers.js'), Lx = await import('./logic.js'); const s = Lx.newState(() => 0.5); s.stock.soja = 500; s.money = 1e4;
+  let o = null, t = Date.UTC(2026, 11, 1); for (let k = 0; k < 40 && !o; k++) o = BOx.offerFor(s, t += BOx.WIN);
+  assert.ok(o && o.kind === 'buy' && o.good === 'soja' && o.q <= 500, 'bot propõe comprar a soja');
+  const m = s.money, r = BOx.settle(s, o, o.total); assert.equal(s.money, m + o.total); assert.equal(s.stock.soja, 500 - o.q); assert.ok(r.val > 0);
+  s.botOfferDone = o.slot; assert.equal(BOx.offerFor(s, t), null, 'recusada não volta na mesma janela');
+  const N2 = await import('./npcs.js'), old = N2.NPCS.find(n => n.gnick); assert.equal(N2.byNick(old.orig), old, 'nick antigo acha o bot');
+  console.log('propostas dos bots ok'); }
