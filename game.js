@@ -1,7 +1,7 @@
 import * as L from './logic.js';
 import * as P from './progress.js';
 import { CATALOG, avatarSVG, accsOf, toggleAcc } from './avatar.js';
-import { G, $, esc, brl, int, RM, say, save, note, pay, award, checkAch, confetti, today, yesterday, reset, profileOf, levelUp } from './store.js';
+import { G, $, esc, brl, int, RM, say, save, note, pay, award, checkAch, confetti, today, yesterday, reset, profileOf, levelUp, ntOff, ntSet } from './store.js';
 import * as C from './casino.js';
 import * as RC from './racing.js';
 import * as sfx from './sfx.js';
@@ -656,7 +656,7 @@ function openProfile(pid, fetched) {
     <ul class="achs">${P.ACHIEVEMENTS.map(a => `<li class="${p.ach?.includes(a.id) ? 'is-got' : ''}"><span class="badge__medal" aria-hidden="true"></span>${esc(a.txt)}</li>`).join('')}</ul>
     ${!me && TUI.online().some(x => x.pid === pid) ? `<div class="pf__acts"><button class="btn btn--gold" data-act="trade-invite" data-id="${esc(pid)}">negociar</button></div>` : ''}
     ${!me && String(pid).startsWith('npc:') ? `<div class="pf__acts"><button class="btn btn--gold" data-act="trade-bot" data-id="${esc(String(pid).slice(4))}">negociar</button></div>` : ''}
-    ${me ? `<div class="pf__acts"><button class="btn btn--glass" data-act="edit-char">editar personagem</button>${Auth.account() ? '<button class="btn btn--glass" data-act="logout">sair da conta</button><button class="btn btn--danger btn--sm" data-act="wipe">apagar meus dados</button>' : ''}</div>${Auth.account() ? `<p class="muted small">Conta: ${esc(Auth.account().email)}</p>` : ''}` : ''}`;
+    ${me ? `<div class="pf__acts"><button class="btn btn--glass" data-act="edit-char">editar personagem</button><button class="btn btn--glass" data-act="toggle-nt">avisos na tela: ${ntOff('aviso') || ntOff('chat') ? 'desligados' : 'ligados'}</button>${Auth.account() ? '<button class="btn btn--glass" data-act="logout">sair da conta</button><button class="btn btn--danger btn--sm" data-act="wipe">apagar meus dados</button>' : ''}</div>${Auth.account() ? `<p class="muted small">Conta: ${esc(Auth.account().email)}</p>` : ''}` : ''}`;
   const dlg = $('#dlg-profile');
   if (!dlg.open) dlg.showModal();
 }
@@ -911,6 +911,7 @@ const ACTS = {
   'tr-tf'(id) { TR.pickTf(id); },
   'tr-asset'(id) { TR.pickAsset(id); },
   'edit-char'() { $('#dlg-profile').close(); G.goto('personagem'); },
+  'toggle-nt'() { const on = ntOff('aviso') || ntOff('chat'); ntSet('aviso', on); ntSet('chat', on); say(on ? 'Avisos ligados de novo.' : 'Avisos desligados (erros ainda aparecem).'); openProfile('me'); },
   'close-profile'() { const d = $('#dlg-profile'); if (d.open) d.close(); },
   'toggle-private'() { const s = S(); if (!(s.trophies || []).includes(L.PRIVATE_MIN)) return say('O perfil privado libera aos R$ 10 milhões.', true); s.privateProfile = !s.privateProfile; save(); say(s.privateProfile ? 'Perfil privado: os outros só veem seus troféus.' : 'Perfil público de novo.'); openProfile('me'); },
   async look(id, b) {
@@ -1384,7 +1385,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 82;
+const APP_VERSION = 83;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;

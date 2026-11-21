@@ -109,7 +109,7 @@ export function tab(which) {
   $('#chat-box').classList.toggle('on-tv', tv);
   draw();
 }
-function openNews() { if ($('#chat-box').hidden) $('#chat-fab').click(); tab('tv'); }
+function openNews() { G.openChat?.('tv'); }
 document.addEventListener('keydown', e => { if (e.target.id === 'tvx-screen' && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openNews(); } });
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-chat-tab]'); if (t) return tab(t.dataset.chatTab);

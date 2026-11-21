@@ -81,14 +81,40 @@ export function pay(v, why, buy = true) {   // buy=false: quitar dívida / empre
   G.S.money -= v; note(why, -v); return true;
 }
 
-let toastTimer;
+
+// avisos nas laterais (nunca no meio nem em cima): esquerda = avisos do jogo, direita = conversas e conquistas.
+// Ficam até a pessoa fechar (no máximo 4 por lado; o mais velho sai). "não mostrar" desliga aquele tipo (volta no perfil).
+export const ntOff = k => { try { return localStorage.getItem(`21world.nt.${k}`) === 'off'; } catch { return false; } };
+export function ntSet(k, on) { try { on ? localStorage.removeItem(`21world.nt.${k}`) : localStorage.setItem(`21world.nt.${k}`, 'off'); } catch {} }
+export function ntBox(side) {
+  if (matchMedia('(max-width: 40rem)').matches) side = 'm';   // celular: uma pilha só, logo acima da barra de baixo
+  let b = document.getElementById(`nt-${side}`);
+  if (!b) { b = Object.assign(document.createElement('div'), { id: `nt-${side}`, className: `nt nt--${side}` }); b.setAttribute('aria-live', 'polite'); document.body.append(b); }
+  return b;
+}
+export function notice({ side = 'left', kind = 'aviso', html, tone = 'ok', open = null, life = 0 }) {
+  const box = ntBox(side), max = matchMedia('(max-width: 40rem)').matches ? 2 : 4;
+  const c = document.createElement('div');
+  c.className = 'nt__card'; c.dataset.tone = tone; c.dataset.kind = kind;
+  c.innerHTML = `<div class="nt__body">${html}</div><div class="nt__acts">${open ? `<button type="button" class="nt__go">${open.label}</button>` : ''}<button type="button" class="nt__off">não mostrar</button></div><button type="button" class="nt__x" aria-label="fechar aviso">×</button>`;
+  const close = () => { c.classList.add('is-out'); setTimeout(() => c.remove(), 250); };
+  c.querySelector('.nt__x').onclick = close;
+  c.querySelector('.nt__off').onclick = () => { ntSet(kind, false); for (const x of document.querySelectorAll(`.nt__card[data-kind="${kind}"]`)) x.remove(); say(kind === 'chat' ? 'Avisos de conversa desligados. Religue no seu perfil.' : 'Avisos do jogo desligados (erros ainda aparecem). Religue no seu perfil.'); };
+  if (open) c.querySelector('.nt__go').onclick = () => { close(); open.fn(); };
+  box.append(c);
+  while (box.children.length > max) box.firstElementChild.remove();
+  if (life) setTimeout(close, life);
+  return c;
+}
 export function say(msg, bad = false) {
-  const el = $('#status');
-  el.textContent = msg;
-  el.dataset.tone = bad ? 'bad' : 'ok';
-  el.classList.add('is-on');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('is-on'), 3200);
+  const el = $('#status'); if (el) el.textContent = msg;   // leitor de tela
+  const off = ntOff('aviso');
+  if (off && !bad) return;
+  const box = ntBox('left'), last = box.lastElementChild;
+  if (last?.dataset.msg === msg) { const n = last.querySelector('.nt__n'); last.dataset.k = (Number(last.dataset.k) || 1) + 1; n.textContent = ` ×${last.dataset.k}`; n.hidden = false; return; }   // repetido: só conta
+  const c = notice({ side: 'left', kind: 'aviso', tone: bad ? 'bad' : 'ok', life: off ? 6000 : 0,
+    html: `<span class="nt__ico" aria-hidden="true">${bad ? '!' : '✓'}</span><p>${esc(msg)}<b class="nt__n" hidden></b></p>` });
+  c.dataset.msg = msg;
 }
 
 // cartão dourado que entra pela direita (conquista, missão cumprida)
@@ -96,9 +122,9 @@ export function badge(title, sub, kind = 'ach') {
   const el = document.createElement('div');
   el.className = `badge badge--${kind}`;
   el.innerHTML = `<span class="badge__medal" aria-hidden="true"></span><div><strong>${esc(title)}</strong><span>${esc(sub)}</span></div>`;
-  $('#badges').append(el);
-  setTimeout(() => el.classList.add('is-out'), ms(4200) || 4200);
-  setTimeout(() => el.remove(), (ms(4200) || 4200) + 600);
+  ntBox('right').append(el);
+  setTimeout(() => el.classList.add('is-out'), ms(8000) || 8000);
+  setTimeout(() => el.remove(), (ms(8000) || 8000) + 600);
 }
 
 export function confetti(n = 60) {
