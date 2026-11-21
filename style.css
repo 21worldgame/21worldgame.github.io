@@ -3120,3 +3120,6 @@ details.herd-guide > summary { margin: 0; }
 .cd-packbtn--sazonal { border-color: rgba(220,38,38,.7) !important; background: linear-gradient(135deg, rgba(220,38,38,.25), rgba(22,163,74,.2)) !important; }
 .cd-packbtn__season { color: #fca5a5; font-size: .72rem; font-weight: 700; }
 .cd-odds__note { grid-column: 1 / -1; margin: 6px 0 0; }
+
+.cd-coll__cards .cd-slot { position: relative; display: grid; gap: 4px; justify-items: center; }
+.cd-sell { width: 100%; padding: 3px 4px !important; font-size: .64rem !important; min-height: 0 !important; }

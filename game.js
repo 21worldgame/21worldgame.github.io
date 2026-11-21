@@ -608,7 +608,7 @@ function profileExtra(p, me) {
   if (p.private && !me) return trophies + '<p class="pf__private glass">🔒 Este jogador deixou o perfil privado. Só os troféus aparecem.</p>';
   if (p.noCard) return trophies + '<p class="pf__private glass">Este jogador ainda está numa versão antiga do jogo. Os detalhes aparecem assim que ele abrir ou recarregar o jogo.</p>';
   const biz = (p.biz || []).map(b => { const c = BIZ_LISTS[b.cat]?.[b.brand]; return c ? `<span class="pf__biz" style="--img:url(assets/biz/${b.brand}.webp)"><small>${esc(c.name)}</small></span>` : ''; }).join('');
-  const tiles = [['empresas', (p.biz || []).length], ['contador', p.npc ? `${brl(CT.npcFee(p.worth))}/mês` : p.acct ? `contratado (${CT.PLANS[p.acct]?.label || p.acct})` : 'não tem'], ['mina de ouro', p.mina ? 'sim' : 'não'], ['galpões', p.wh || 0], ['granja', `${p.granja || 0} galpões`], ['suínos', `${p.suinos || 0} barracões`], ['cartas raras', p.cardsN || 0], ['clube', p.club || 'nenhum']]
+  const tiles = [['empresas', (p.biz || []).length], ['contador', p.npc ? `${brl(CT.npcFee(p.worth))}/mês` : p.acct ? `contratado (${CT.PLANS[p.acct]?.label || p.acct})` : 'não tem'], ['mina de ouro', p.mina ? 'sim' : 'não'], ['galpões', p.wh || 0], ['granja', `${p.granja || 0} galpões`], ['suínos', `${p.suinos || 0} barracões`], ['cartas', p.cardsN || 0], ['clube', p.club || 'nenhum']]
     .map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${esc(String(v))}</strong></div>`).join('');
   const lands = (p.landList || []).length ? `<ul class="pf__lands">${p.landList.map(l => `<li>${int(l.ha)} ha · ${esc(l.region)}${l.orchard ? ' · pomar' : ''}${l.cane ? ' · canavial' : ''}</li>`).join('')}</ul>` : '';
   const ads = (p.listings || []).length ? `<h3>à venda agora <small class="muted">no Feirão 21</small></h3><ul class="pf__ads">${p.listings.map(l => `<li><span>${esc(l.label)}</span><b>${brl(l.price)}</b></li>`).join('')}</ul><div class="pf__acts"><button class="btn btn--gold btn--sm" data-loja-go="feirao" data-act="close-profile">ver no Feirão</button></div>` : '';
@@ -732,11 +732,14 @@ function renderCartas() {
         <span class="cd-coll__n">${p.have}/${p.total}</span></header>
       <div class="cd-coll__bar"><i style="width:${Math.round(p.have / p.total * 100)}%"></i></div>
       <p class="small"><b>Ao completar:</b> ${esc(S0.rewardTxt)}${S0.prestige ? ` · emblema no perfil · ${S0.prestige} de prestígio` : ''}</p>
-      <div class="cd-coll__cards">${S0.cards.map(c => { const have = p.keys.has(c.key); const card = id === 'campeoes' ? (cs.find(x => !x.set && x.champ === c.key) || { champ: c.key, tier: 'bronze' }) : { set: id, key: c.key };
-        return `<div class="cd-slot${have ? ' is-have' : ''}" title="${esc(c.name)}">${CD.cardHTML(card, { small: true, missing: !have })}</div>`; }).join('')}</div>
+      <div class="cd-coll__cards">${S0.cards.map(c => {
+        // cópias desta carta: a mais barata vai primeiro para a venda (nos Campeões cada cópia pode ter outra moldura)
+        const copies = cs.filter(x => CD.setOf(x) === id && CD.keyOf(x) === c.key).sort((a, b) => CD.value(a) - CD.value(b));
+        const card = copies[copies.length - 1] || (id === 'campeoes' ? { champ: c.key, tier: 'bronze' } : { set: id, key: c.key });
+        return `<div class="cd-slot${copies.length ? ' is-have' : ''}" title="${esc(c.name)}">${CD.cardHTML(card, { small: true, missing: !copies.length })}${copies.length > 1 ? `<span class="tag tag--gold cd-dup">×${copies.length}</span>` : ''}
+          ${copies.length ? `<button class="btn btn--glass btn--sm cd-sell" data-act="card-sell" data-id="${copies[0].id}">vender ${brl(CD.value(copies[0]))}</button>` : ''}</div>`; }).join('')}</div>
     </article>`;
   }).join('');
-  $('#cd-list').innerHTML = cs.map(c => `<div class="tcard-slot">${CD.cardHTML(c, { small: true })}${dup.has(c.id) ? '<span class="tag tag--gold cd-dup">repetida</span>' : ''}<button class="btn btn--glass btn--sm" data-act="card-sell" data-id="${c.id}">vender ${brl(CD.value(c))}</button></div>`).join('') || '<p class="empty glass">Ganhe pacotes na roleta do dia ou compre aqui em cima. Repetidas podem ir para a loja ou para outros jogadores.</p>';
 }
 // coleção que acabou de ficar completa: emblema, vantagem e aviso
 function checkCollections() {
@@ -1428,7 +1431,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 100;
+const APP_VERSION = 101;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false;
