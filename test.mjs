@@ -292,6 +292,12 @@ import * as PK from './perks.js';
   assert.equal(FT.takeClub(s, 'Barra-SC', r), null);
   assert.equal(s.money, 1e6 - FT.clubPrice('Barra-SC') + FT.SPONSOR[2]); assert.equal(s.fut.squad.length, 18); assert.equal(s.fut.div, 2);
   assert.equal(s.fut.league.teams.length, 20); assert.ok(s.fut.league.teams.some(t => t.name === 'Paysandu'));
+  { // mercado mensal: muda uma vez por mês, janela enche, preço nunca abaixo do valor
+    const t = { money: 1e9, month: 1 }; FT.takeClub(t, 'Barra-SC', r);
+    assert.equal(FT.marketTick(t, r), true); assert.equal(FT.marketTick(t, r), false); assert.ok(t.fut.market.length >= 24);
+    t.month = 2; const ids = t.fut.market.map(p => p.id).join(); assert.equal(FT.marketTick(t, r), true); assert.notEqual(t.fut.market.map(p => p.id).join(), ids);
+    assert.ok(t.fut.market.length >= 10 && t.fut.market.every(p => p.price >= FT.value(p) * 0.99));
+  }
   const l = FT.lineup(s.fut.squad, '4-3-3'); assert.equal(l.gk.length + l.def.length + l.mid.length + l.att.length, 11);
   // time mais forte vence mais (500 jogos)
   let hw = 0, lw = 0;

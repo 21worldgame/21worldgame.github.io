@@ -2,6 +2,7 @@
 import * as FT from './futebol.js';
 import { G, $, esc, brl, int, say, save, note, award, confetti, ms } from './store.js';
 import * as Live from './live.js';
+import * as W from './world.js';
 import * as sfx from './sfx.js';
 import { openDeal } from './deal-ui.js';
 
@@ -104,9 +105,12 @@ function renderTable() {
   $('#ft-hist').innerHTML = f().history.length ? f().history.map(h => `<li>Temporada ${h.season}, ${FT.DIVS[h.div]}: ${h.pos}º lugar, ${h.pts} pontos, prêmio ${brl(h.prize)}</li>`).join('') : '<li class="muted">Primeira temporada.</li>';
 }
 function renderMarket() {
-  $('#ft-market').innerHTML = f().market.map(p => `<tr><td><span class="posb posb--${p.pos}">${p.pos}</span></td><td>${esc(p.name)} <span class="muted small">${esc(p.club || '')}${p.trait ? `, ${esc(p.trait)}` : ''}</span></td><td class="num">${p.age}</td>
+  if (FT.marketTick(G.S)) save();
+  const m = G.S.month || 1, c = f(), news = c.mktNews || [];
+  $('#ft-mkt-info').innerHTML = `${FT.isWindow(m) ? '<b class="good">Janela de transferências aberta:</b> mercado cheio este mês.' : `Próxima janela em ${W.monthName([...Array(6)].map((_, i) => m + 1 + i).find(FT.isWindow))}.`} O mercado muda todo mês: entram jogadores novos e os que ficam muito tempo à venda são contratados por outros clubes.${news.length ? `<br>Saíram no último mês: ${news.map(esc).join(', ')}.` : ''}`;
+  $('#ft-market').innerHTML = [...c.market].sort((a, b) => (b.since ?? 0) - (a.since ?? 0) || b.ovr - a.ovr).map(p => `<tr><td><span class="posb posb--${p.pos}">${p.pos}</span></td><td>${esc(p.name)}${p.since === m ? ' <span class="tag">novo</span>' : ''}${p.hot ? ' <span class="tag tag--red" title="outros clubes querem: o preço sobe e ele sai rápido">disputado</span>' : ''} <span class="muted small">${esc(p.club || '')}${p.trait ? `, ${esc(p.trait)}` : ''}</span></td><td class="num">${p.age}</td>
     <td class="num"><strong>${p.ovr}</strong></td><td class="num">${p.pot}</td><td class="num">${brl(p.sal)}</td>
-    <td class="acts"><button class="btn btn--glass btn--sm" data-act="ft-haggle" data-id="${p.id}">negociar</button><button class="btn btn--gold btn--sm" data-act="ft-buy" data-id="${p.id}">pagar ${brl(p.price)}</button></td></tr>`).join('') || '<tr><td colspan="7" class="muted">Mercado vazio até a próxima temporada.</td></tr>';
+    <td class="acts"><button class="btn btn--glass btn--sm" data-act="ft-haggle" data-id="${p.id}">negociar</button><button class="btn btn--gold btn--sm" data-act="ft-buy" data-id="${p.id}">pagar ${brl(p.price)}</button></td></tr>`).join('') || '<tr><td colspan="7" class="muted">Mercado vazio: novos jogadores chegam no próximo mês.</td></tr>';
 }
 function renderOffers() {
   const c = f(), os = c.offers || [];
