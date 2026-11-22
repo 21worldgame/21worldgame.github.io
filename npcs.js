@@ -128,6 +128,8 @@ export function worthAt(n, month, t = Date.now()) {
   const start = 10000 * (Math.max(10000, n.base) / 10000) ** (m / 48);   // todo bot começa o mundo com R$ 10 mil e chega à fortuna dele no mês 49
   return Math.round(start * (1 + n.g * 0.55) ** m * (1 + (boost * late - 1) * r) * wave * form(n, t) * (PERF.fn ? PERF.fn(n, month) : 1));
 }
+// chegada: cada bot entra no mundo num momento diferente das primeiras 24 h reais (144 meses): o ranking enche aos poucos, como gente de verdade chegando
+export const startMonth = n => 1 + Math.floor(hash(n.i * 13 + 7) * 144);
 export const levelFor = worth => Math.max(1, Math.min(60, Math.round(Math.log10(Math.max(10, worth)) * 7 - 28)));
 
 // negócios do bot: a cada janela de 3 h em que ele estava com vontade de jogar, fecha um negócio do tamanho da fortuna dele

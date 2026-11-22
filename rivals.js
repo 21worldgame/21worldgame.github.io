@@ -3,7 +3,7 @@
 import { T } from './tune.js';
 import { rank } from './logic.js';
 
-import { NPCS, isAway, EARLY, worthAt as npcWorth, levelFor as npcLevel } from './npcs.js';
+import { NPCS, isAway, EARLY, startMonth, worthAt as npcWorth, levelFor as npcLevel } from './npcs.js';
 export const levelFor = npcLevel;
 // month pode ser fracionário (mês + progresso), para os números andarem de verdade
 // caçadores do topo: os 3 maiores concorrentes do mundo perseguem o líder real (leader = maior patrimônio de jogador).
@@ -20,7 +20,7 @@ export function huntLevel(t = Date.now(), top = T.huntLead) {
 export const NEAR = [1.03, 1.09, 1.17];   // vizinhos: sempre tem alguém logo acima de você
 export const hunted = new Map();   // id do npc -> fortuna de caçador (para o perfil mostrar o mesmo número do ranking)
 export function rivals(month, leader = 0, me = 0, t = Date.now()) {
-  const rows = NPCS.map(n => { const worth = npcWorth(n, month, t); return { away: isAway(n), pid: `npc:${n.id}`, id: n.id, name: n.nick, worth, look: n.look }; });
+  const rows = NPCS.filter(n => month >= startMonth(n)).map(n => { const worth = npcWorth(n, month, t); return { away: isAway(n), pid: `npc:${n.id}`, id: n.id, name: n.nick, worth, look: n.look }; });
   hunted.clear();
   const early = month < EARLY;   // largada: os jogadores têm chance de passar os bots
   if (leader > 0 && T.hunt && !early) [...rows].filter(r => !r.away).sort((a, b) => b.worth - a.worth).slice(0, HUNT.length).forEach((r, k) => {
@@ -39,7 +39,7 @@ export function merge({ cloud = [], me, peers = [], rivalRows = [], limit = 10 }
   const rows = new Map();
   const put = (r, tag) => { const k = r.name.trim().toLowerCase(); const cur = rows.get(k); if (!cur || tag === 'me' || (cur.tag !== 'me' && r.worth >= cur.worth)) rows.set(k, { ...r, tag }); };
   const idle = r => Number(r.worth) <= START;   // quem está parado nos R$ 10 mil do começo não entra no ranking (você sempre se vê)
-  rivalRows.filter(r => r.worth >= SHOW_MIN).forEach(r => put(r, 'npc'));   // bot só aparece depois de sair do começo
+  rivalRows.forEach(r => put(r, 'npc'));   // o bot aparece quando chega ao mundo (startMonth)
   cloud.filter(r => !idle(r)).forEach(r => put(r, 'cloud'));
   peers.filter(r => !idle(r)).forEach(r => put(r, 'peer'));
   if (me && !idle(me)) put(me, 'me');   // quem ainda está nos R$ 10 mil do começo não ganha posição (antes aparecia um "você" sozinho em 1º)
