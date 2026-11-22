@@ -34,11 +34,12 @@ export function rivals(month, leader = 0, me = 0, t = Date.now()) {
   return rows.map(({ id, away, ...r }) => ({ ...r, level: npcLevel(r.worth), rank: rank(r.worth) }));
 }
 // ranking final: jogadores reais da nuvem (com o seu valor sempre ao vivo), vizinhos online e os concorrentes do mundo
+export const START = 10000, SHOW_MIN = 25000;   // bots só entram no ranking e nos destaques a partir de R$ 25 mil
 export function merge({ cloud = [], me, peers = [], rivalRows = [], limit = 10 }) {
   const rows = new Map();
   const put = (r, tag) => { const k = r.name.trim().toLowerCase(); const cur = rows.get(k); if (!cur || tag === 'me' || (cur.tag !== 'me' && r.worth >= cur.worth)) rows.set(k, { ...r, tag }); };
-  rivalRows.forEach(r => put(r, 'npc'));
-  const idle = r => Number(r.worth) === 10000;   // quem está parado nos R$ 10 mil do começo não entra no ranking (você sempre se vê)
+  const idle = r => Number(r.worth) <= START;   // quem está parado nos R$ 10 mil do começo não entra no ranking (você sempre se vê)
+  rivalRows.filter(r => r.worth >= SHOW_MIN).forEach(r => put(r, 'npc'));   // bot só aparece depois de sair do começo
   cloud.filter(r => !idle(r)).forEach(r => put(r, 'cloud'));
   peers.filter(r => !idle(r)).forEach(r => put(r, 'peer'));
   if (me) put(me, 'me');

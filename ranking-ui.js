@@ -69,7 +69,7 @@ export function render() {
   if (!me && C1.min) { const w = profileOf().worth; $('#rk-me').innerHTML = `<div class="rk-me__txt"><b>💎 Clube dos 100 milhões</b><span class="small">Só entra quem passa de ${money(C1.min)} de patrimônio. Faltam <b class="good">${money(Math.max(0, C1.min - w))}</b> para você.</span></div>`; }
   if (!pageRows.length) $('#rk-list').innerHTML = `<li class="muted rk-empty">${query ? 'Nenhum jogador com esse nome.' : C1.min ? 'Ninguém chegou aos R$ 100 milhões ainda. Seja o primeiro.' : C1.has ? 'Ninguém pontuou aqui ainda: o mundo acabou de recomeçar. Seja o primeiro.' : 'Ninguém online agora.'}</li>`;
   last = now;
-  const onCount = every.filter(r => r.online).length;
+  const onCount = NPC.onlineCount(Live.now()) + 1;   // 20 a 32 do mundo + você (os bots que ainda não pontuam não entram na lista)
   $('#rk-count').innerHTML = `<b>${every.length}</b> jogadores no ranking · <b class="good">${onCount}</b> online agora <button class="btn btn--glass btn--sm" data-act="rk-online" aria-pressed="${onlyOn}">${onlyOn ? 'mostrar todos' : 'só quem está online'}</button>`;
   const nums = Array.from({ length: pages }, (_, k) => k).filter(k => k === 0 || k === pages - 1 || Math.abs(k - page) <= 2);
   $('#rk-pages').innerHTML = pages > 1 ? `<button class="btn btn--glass btn--sm" data-act="rk-page" data-id="${page - 1}" ${page ? '' : 'disabled'}>‹ anterior</button>${nums.map((k, j) => `${j && k - nums[j - 1] > 1 ? '<span class="muted">…</span>' : ''}<button class="rk-pg${k === page ? ' is-on' : ''}" data-act="rk-page" data-id="${k}">${k + 1}</button>`).join('')}<button class="btn btn--glass btn--sm" data-act="rk-page" data-id="${page + 1}" ${page < pages - 1 ? '' : 'disabled'}>próxima ›</button>` : '';
@@ -78,10 +78,10 @@ export function render() {
   const byWorth = [...all].sort((a, b) => b.worth - a.worth)[0], byHa = [...all].sort((a, b) => (b.ha || 0) - (a.ha || 0))[0], byBest = [...all].sort((a, b) => (b.best || 0) - (a.best || 0))[0], byLvl = [...all].sort((a, b) => b.level - a.level)[0];
   const total = all.reduce((s, r) => s + r.worth, 0);
   $('#rk-facts').innerHTML = [
-    ['jogadores online agora', `${every.filter(r => r.online).length}`], ['mês do mundo', W.dateLabel(m)],
-    ['maior fortuna', `${esc(byWorth?.name || '')} · ${money(byWorth?.worth || 0)}`], ['maior fazendeiro', byHa?.ha ? `${esc(byHa.name)} · ${int(byHa.ha)} ha` : '—'],
-    ['maior prêmio no 21', byBest?.best ? `${esc(byBest.name)} · ${int(byBest.best)} fichas` : '—'], ['nível mais alto', `${esc(byLvl?.name || '')} · nível ${byLvl?.level || 1}`],
-    ['dinheiro no ranking', money(total)], ['para entrar no top 10', all[9] ? C1.fmt(C1.val(all[9])) : '—'],
+    ['jogadores online agora', `${onCount}`], ['mês do mundo', W.dateLabel(m)],
+    ['maior fortuna', byWorth ? `${esc(byWorth.name)} · ${money(byWorth.worth)}` : '—'], ['maior fazendeiro', byHa?.ha ? `${esc(byHa.name)} · ${int(byHa.ha)} ha` : '—'],
+    ['maior prêmio no 21', byBest?.best ? `${esc(byBest.name)} · ${int(byBest.best)} fichas` : '—'], ['nível mais alto', byLvl ? `${esc(byLvl.name)} · nível ${byLvl.level}` : '—'],
+    ['dinheiro no ranking', total ? money(total) : '—'], ['para entrar no top 10', all[9] ? C1.fmt(C1.val(all[9])) : '—'],
   ].map(([k, v]) => `<div class="rk-fact"><span class="muted small">${k}</span><b>${v}</b></div>`).join('');
 }
 setInterval(render, 4000);
