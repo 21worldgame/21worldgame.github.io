@@ -64,7 +64,7 @@ export const DAILY_WHEEL = [
   { kind: 'chips', amount: 100, label: '100 fichas', w: 22 },
   { kind: 'money', amount: 1500, label: 'R$ 1.500', w: 18 },
   { kind: 'chips', amount: 250, label: '250 fichas', w: 15 },
-  { kind: 'money', amount: 2500, label: 'R$ 2.500', w: 14 },   // sem bezerro de prêmio: gado dá conta mensal de boitel e fazia a carteira descer sozinha
+  { kind: 'calves', amount: 1, label: '1 bezerro', w: 14 },
   { kind: 'xp', amount: 250, label: '250 XP', w: 12 },
   { kind: 'card', amount: 1, label: 'pacote de cartas', w: 12 },
   { kind: 'money', amount: 5000, label: 'R$ 5 mil', w: 9 },

@@ -3513,3 +3513,20 @@ dialog:not([open]) { display: none !important; }
 .so-shard { position: absolute; left: 50%; top: 50%; width: var(--s); height: calc(var(--s) * 1.7); margin: calc(var(--s) * -.85) 0 0 calc(var(--s) * -.5); background: linear-gradient(135deg, var(--gold), #7a1d1d); clip-path: polygon(50% 0, 100% 100%, 0 80%); animation: so-shard .9s cubic-bezier(.15,.8,.35,1) forwards; }
 @keyframes so-shard { 0% { transform: rotate(var(--a)) translateY(0) rotate(0); opacity: 1; } 100% { transform: rotate(var(--a)) translateY(calc(var(--d) * -1.4)) rotate(var(--r)); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .sorte-btn, .so__wheel.is-win, .so__wheel.is-rumble { animation: none; } }
+
+/* ===== v172: celular (toque, tela pequena, barra do navegador que sobe e desce) ===== */
+html { -webkit-text-size-adjust: 100%; }
+button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.dlg { max-height: calc(100dvh - 48px); overscroll-behavior: contain; }
+@media (pointer: coarse) {
+  .btn { min-height: 44px; } .btn--sm { min-height: 40px; } .opt, .subtab { min-height: 44px; }
+  .input, input, select, textarea { font-size: 16px; }   /* abaixo de 16px o iPhone dá zoom ao tocar no campo */
+}
+@media (max-width: 40rem) {
+  .dlg { width: calc(100% - 16px); max-height: calc(100dvh - 16px); padding: var(--space-md); overflow-y: auto; }
+  .dlg--daily .dw, .so { width: min(76vw, 300px); }
+  .so__info { max-height: 26dvh; overflow: auto; }
+  .so__acts { position: sticky; bottom: 0; padding-top: var(--space-sm); background: linear-gradient(transparent, var(--color-paper-2) 35%); }
+  .sorte-btn { position: fixed; right: 12px; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 65; min-height: 48px; padding: 0 18px; border-radius: 999px; font-size: 1rem; box-shadow: 0 8px 24px rgba(0, 0, 0, .5); }
+}
+@media (max-height: 520px) and (orientation: landscape) { .so, .dlg--daily .dw { width: min(38dvh, 220px); } }

@@ -34,6 +34,7 @@ export async function start() {
   let banned = false;
   if (Auth.account()) {
     try { const { data } = await sb.rpc('is_admin'); isAdmin = data === true; } catch {}
+    if (isAdmin && !G.S.fix171) { G.S.money = 10000; G.S.fix171 = 1; badge('Administrador', 'Sua carteira voltou para R$ 10 mil.', 'mission'); save(); G.render?.(); }   // pedido do dono: volta a R$ 10 mil (uma vez)
     if (isAdmin) adminWipe(sb).catch(() => {});
     banned = await checkBan(sb);   // pausado/suspenso: o timer segue rodando para saber quando soltar
     if (!banned) await applyGrants(sb);

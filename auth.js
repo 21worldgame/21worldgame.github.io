@@ -279,6 +279,8 @@ let syncedAt = 0;
 export const syncInfo = () => ({ on: !!user, at: syncedAt, pending: !!user && dirty(), email: user?.email || '' });
 export async function syncNow() { if (!user) return false; await checkRemote(); const ok = await push().catch(() => false); return ok || !dirty(); }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkRemote(); });
+addEventListener('pageshow', e => { if (e.persisted) checkRemote(); });   // celular: voltou do cache da página (bfcache) com o jogo velho
+addEventListener('focus', () => checkRemote());
 // celular fecha o app ou trava a tela antes do envio de 1,5 s: manda na hora (e de novo quando a internet volta)
 const flush = () => { if (user && dirty()) { clearTimeout(timer); push().catch(() => {}); } };
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
