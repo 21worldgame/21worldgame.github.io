@@ -34,6 +34,7 @@ export async function start() {
   let banned = false;
   if (Auth.account()) {
     try { const { data } = await sb.rpc('is_admin'); isAdmin = data === true; } catch {}
+    if (isAdmin) adminWipe(sb).catch(() => {});
     banned = await checkBan(sb);   // pausado/suspenso: o timer segue rodando para saber quando soltar
     if (!banned) await applyGrants(sb);
   }
@@ -86,6 +87,21 @@ function presence(sb) {
     setInterval(() => ch.track(info()), 30000);
     addEventListener('hashchange', () => ch.track(info()));
   } catch {}
+}
+
+// v164: depois do zeramento geral (v161), o administrador solta no servidor o que era dos donos antigos (uma vez por aparelho; repetir não faz mal)
+async function adminWipe(sb) {
+  const K = '21world.adminWipe161'; try { if (localStorage.getItem(K)) return; } catch {}
+  const me = Auth.account().id, out = [];
+  if (!G.S.mina) { const { data } = await sb.rpc('admin_release_mine'); out.push(`mina: ${data}`); }
+  const { data: cos } = await sb.from('company_owner').select('brand, owner');
+  for (const c of cos || []) if (c.owner !== me) await sb.rpc('admin_release_company', { p_brand: c.brand });
+  out.push(`marcas soltas: ${(cos || []).filter(c => c.owner !== me).length}`);
+  const { data: acc } = await sb.from('acc_stock').select('id, left_qty');
+  let back = 0; for (const a of acc || []) for (let k = a.left_qty; k < 35; k++) { await sb.rpc('give_acc', { p_id: a.id }); back++; }
+  out.push(`acessórios devolvidos ao estoque: ${back}`);
+  try { localStorage.setItem(K, String(Date.now())); } catch {}
+  badge('Administrador', `Servidor limpo depois do zeramento. ${out.join(' · ')}.`, 'mission');
 }
 
 async function loadConfig(sb) {
