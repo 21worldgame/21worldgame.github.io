@@ -61,9 +61,13 @@ export const EDITORIAL = [
     'Os frequentadores do salão reclamavam: depois de uma falta, a branca voltava para a mesa e a partida travava. O problema foi resolvido. Quem está com a bola na mão coloca a branca onde quiser e já pode tacar. De quebra, as bolas ganharam efeito: o número e a faixa giram na direção em que a bola rola.'),
   ed(15, 'alerta', 'assets/photo-chips.webp', 'Mutirão de reparos: inventário volta ao lugar e o Feirão para de inflar os números',
     'A equipe técnica do 21 World fez um mutirão. O inventário, que aparecia desarrumado no computador por causa de um conflito com a tela de investimentos, voltou ao normal. O número ao lado de cada categoria do Feirão agora conta só o que está de fato anunciado, e não mais o que você guarda em casa. Os valores dos cards de resumo pararam de quebrar no meio, e as fichas do pomar, do canavial e do leilão ganharam espaço para o texto respirar.'),
+  ed(16, 'alerta', 'assets/farm-pasto.webp', 'Corte da economia real leva 27 fazendas: Danilin e Buu ficam sem terra',
+    'O reajuste que reduziu as fortunas pela metade obrigou a venda de 27 propriedades, somando 840 hectares e R$ 52,9 milhões pelo valor de tabela. Danilin, que tinha o patrimônio quase todo em terra, entregou as 17 fazendas, 570 hectares de café. Buu vendeu as 7 que tinha, e Pastor Galego abriu mão de 3 das 40. NocBit, com caixa de sobra, pagou tudo em dinheiro e manteve as 15 propriedades. Quem perdeu a terra continua com a granja, os galpões e as empresas, e pode comprar de novo pelo preço de mercado.'),
+  ed(17, 'economia', 'assets/farm-roxa.webp', 'Laudo do mercado: terras são reavaliadas e a valorização sem fim acaba',
+    'Uma auditoria nas escrituras encontrou terras registradas muito acima do mercado. As propriedades subiam 0,6% a cada mês do jogo, sem parar, e algumas já valiam mais que o dobro de uma terra igual à venda. Um laudo reavaliou cada fazenda pelo preço da região, pelos hectares, pela água e pelas benfeitorias. As 15 fazendas do maior produtor do mundo, registradas em R$ 110 milhões, valem R$ 45,5 milhões pelo laudo de 2026. Daqui para frente a terra acompanha o mercado: sobe e desce até 2% ao mês em volta do valor de laudo, como na vida real.'),
 ];
-// edição do Jornal 21: muda a cada edição nova (a abertura aparece uma vez por edição para cada jogador)
-export const EDITION = 'jornal-v153';
+// edição do Jornal 21: o jornal abre com as reportagens que o jogador ainda não viu (guarda a hora da última vista)
+export const EDITION = 'jornal-v154';
 export const editorial = (now = Date.now()) => EDITORIAL.filter(e => now >= e.at - 864e5 && now - e.at < ED_DAYS * 864e5);
 // manchete pronta (texto puro; a tela escapa antes de mostrar)
 export function headline(n) {

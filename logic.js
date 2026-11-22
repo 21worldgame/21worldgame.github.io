@@ -203,6 +203,13 @@ export const REGION_K = {};   // região → multiplicador do preço da terra (p
 // preços de referência: Cepea/CNA, nov/2026
 export const ANCHOR = { soja: 150, milho: 64, cafe: 1600, arroba: 335, bezerro: 3500, cana: 130, laranja: 28, ...GR_PRICES, ...SU_PRICES };
 
+// valor de mercado de uma terra (laudo): preço da região x hectares, mais benfeitorias, menos a falta de água, x procura da região.
+// É a mesma conta das terras à venda (sem a variação do sorteio). A terra de cada jogador oscila em volta deste valor.
+export function landMarket(l) {
+  const reg = REGIONS.find(r => r.name === l.region); if (!reg) return 0;   // região desconhecida (save antigo): sem laudo, mantém o valor
+  const bonus = IMPROV.filter(([n]) => (l.improv || []).includes(n)).reduce((a, [, b]) => a + b, 0) + (l.water === 'sem água' ? -0.12 : 0);
+  return Math.round(reg.perHa * T.landPremium * (Number(l.ha) || 0) * (1 + bonus) * (REGION_K[reg.name] || 1));
+}
 export function refreshOffers(s, rng = Math.random) {
   const used = [];   // ofertas espalhadas pelo Brasil: regiões diferentes e longe umas das outras
   const far = r => used.every(u => Math.hypot(u.lat - r.lat, u.lon - r.lon) > 4);
@@ -312,7 +319,9 @@ export function tick(s, rng = Math.random) {
   for (const k of Object.keys(s.prices)) { const b = ANCHOR[k] && ANCHOR[k] * (ECON[k] || 1); let v = walk(b ? s.prices[k] + (b - s.prices[k]) * 0.1 : s.prices[k], rng, 0.06);   // ancorado: volta 10%/mês ao preço base, sem isso frango/ração derivavam sem limite e a granja virava prejuízo certo
     if (b) v = Math.min(b * 1.25, Math.max(b * 0.8, v));   // faixa realista: save antigo já derivado volta no próximo mês
     s.prices[k] = v < 100 ? Math.round(v * 100) / 100 : Math.round(v); }   // preço pequeno (frango, ração) anda em centavos
-  for (const l of s.lands) l.value = Math.round(l.value * (1 + 0.006 + (rng() * 2 - 1) * 0.02));
+  // terra acompanha o mercado: volta 10% por mês para o valor de laudo e oscila ±2% (antes subia 0,6% todo mês para sempre;
+  // com o mês de 10 minutos, terra comprada há poucos dias já valia mais que o dobro do mercado)
+  for (const l of s.lands) { const mk = landMarket(l); if (!mk) continue; const v = walk(l.value + (mk - l.value) * 0.1, rng, 0.02); l.value = Math.round(Math.min(mk * 1.25, Math.max(mk * 0.8, v))); }
 
   // gado: engorda no pasto; o excedente come ração
   const cap = capacity(s), n = heads(s), over = Math.max(0, n - cap);

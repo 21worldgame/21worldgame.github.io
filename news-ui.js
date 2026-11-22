@@ -165,10 +165,11 @@ function jSlide() {
   jStop();
 }
 export function jornal(force = false) {
-  jEds = N.editorial(); if (!jEds.length) return false;
+  // quem já viu a edição anterior (v153) só vê as reportagens novas; "jornal" na TV mostra a edição inteira
   let seen = ''; try { seen = localStorage.getItem(J_KEY) || ''; } catch {}
-  if (!force && seen === N.EDITION) return false;
-  try { localStorage.setItem(J_KEY, N.EDITION); } catch {}
+  const seenAt = Number(seen) || (seen === 'jornal-v153' ? (N.EDITORIAL.find(e => e.id === 'ed152-15')?.at || 0) : 0);
+  jEds = N.editorial().filter(e => force || e.at > seenAt); if (!jEds.length) return false;
+  try { localStorage.setItem(J_KEY, String(Math.max(...N.editorial().map(e => e.at)))); } catch {}
   jMount(); jI = 0; jAnchor = N.ANCHORS[Math.floor(Date.now() / 864e5) % N.ANCHORS.length];
   jSlide(); const d = $('#dlg-jornal'); if (!d.open) d.showModal();
   return true;

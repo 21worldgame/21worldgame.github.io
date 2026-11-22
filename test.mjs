@@ -47,6 +47,12 @@ assert.equal(lot.crop, undefined);
 f.cars.push({ id: 10, model: 'deere', value: 650000 });
 assert.equal(L.plantCost(f, 'soja', 10), Math.round(L.CROPS.soja.cost * 10 * 0.9));
 
+// terra acompanha o mercado (v154): escritura inflada volta para o laudo e nunca sobe para sempre
+{ const t = L.newState(() => 0.5), lt = { id: 7, own: true, region: 'cerrado, goiás', ha: 100, improv: ['curral'], water: 'rio' }, mk = L.landMarket(lt);
+  assert.equal(mk, Math.round(L.region('cerrado, goiás').perHa * 100 * 1.03));
+  lt.value = mk * 2; t.lands.push(lt); for (let i = 0; i < 120; i++) L.tick(t, () => 0.99);
+  assert.ok(lt.value <= mk * 1.25 && lt.value >= mk * 0.8, 'terra fica perto do mercado: ' + lt.value / mk);
+  assert.equal(L.landMarket({ region: 'região que não existe', ha: 10 }), 0); }
 // carro desvaloriza 1,5% e paga IPVA/seguro
 const g = L.newState(() => 0.5);
 g.cars.push({ id: 1, model: 'onix', value: 95000 });
