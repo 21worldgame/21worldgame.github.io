@@ -2,7 +2,7 @@ import { T } from './tune.js';
 import { value as cardValue } from './cards.js';
 import { value as suinosValue, PRICES as SU_PRICES } from './suinos.js';
 import { value as bizValue } from './negocios.js';
-import { value as minaValue } from './mina.js';
+import { value as minaValue, EQUIP as MINE_EQUIP } from './mina.js';
 import * as PK from './perks.js';
 import { total as investTotal } from './invest.js';
 import { granjaValue, PRICES as GR_PRICES } from './granja.js';
@@ -194,6 +194,7 @@ export const CARS = {
   graneleiro: { name: 'Volvu FH bitrem graneleiro', type: 'maquina', crop: 'graos', price: 1150000, cat: 'lavoura', img: 'maq-graneleiro', hp: 540, top: 90, perk: 'vende soja, milho e café 1% mais caro (frete próprio)' },
   autopropelido: { name: 'Jactu Uniporte 3030 autopropelido', type: 'maquina', crop: 'graos', price: 1400000, cat: 'lavoura', img: 'maq-autopropelido', hp: 0, top: 30, perk: 'plantio 3% mais barato (pulverização própria)' },
   colheitadeira: { name: 'John Dear S780 colheitadeira', type: 'maquina', crop: 'graos', price: 3600000, cat: 'lavoura', img: 'maq-colheitadeira', hp: 0, top: 25, perk: 'plantio 5% mais barato (colheita própria, sem pagar o serviço)' },
+  ...MINE_EQUIP,   // frota da mineradora (mina.js): vendida na loja 21
   veyron: { name: 'Bugati Veiron 61.4', type: 'super', price: 15000000, cat: 'hiperesportivo', img: 'car-veyron', hp: 1001, top: 407 },
 };
 export const OLD_CARS = { vento: 'onix', bravo: 'hilux', serra: 'sw4', campeiro: 'deere', boiadeiro: 'scania', falcao: 'porsche', tempesta: 'huracan' };

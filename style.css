@@ -3530,3 +3530,12 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
   .sorte-btn { position: fixed; right: 12px; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 65; min-height: 48px; padding: 0 18px; border-radius: 999px; font-size: 1rem; box-shadow: 0 8px 24px rgba(0, 0, 0, .5); }
 }
 @media (max-height: 520px) and (orientation: landscape) { .so, .dlg--daily .dw { width: min(38dvh, 220px); } }
+
+/* ---------- mineradora: logística ---------- */
+.mina-h { margin: var(--space-sm) 0 4px; font: 700 var(--text-md)/1.2 var(--font-display); }
+.mina-fleet { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--space-xs); }
+.mina-fl { padding: 5px 10px; border-radius: 999px; font-size: var(--text-sm); border: 1px solid var(--glass-edge); background: rgba(255,255,255,.04); }
+.mina-fl.is-ok { border-color: rgba(52, 211, 153, .5); } .mina-fl.is-no { border-color: rgba(255, 90, 106, .6); background: rgba(255, 90, 106, .08); }
+.mina-dre { width: 100%; border-collapse: collapse; font-size: var(--text-sm); margin: var(--space-xs) 0; }
+.mina-dre td { padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,.07); } .mina-dre td + td { text-align: right; white-space: nowrap; }
+.mina-dre caption { text-align: left; padding-bottom: 4px; } .mina-dre .is-tot td { border-bottom: 0; padding-top: 8px; }

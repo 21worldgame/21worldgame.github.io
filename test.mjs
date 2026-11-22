@@ -850,7 +850,7 @@ console.log('máquinas ok');
   const s = L2.newState(() => 0.4); s.money = 1e8; s.stable = { animals: [], offers: [], next: 1 }; s.stock.laranja = 0;
   s.month = 1; const now = 1.8e12;
   assert.ok(SHx.npcListings(s, now).every(l => l.price <= 10000), 'mundo novo: bot pobre não anuncia carro nem terra');
-  s.month = 600; const ls = SHx.npcListings(s, now);
+  s.month = 1200; const ls = SHx.npcListings(s, now);
   assert.ok(new Set(ls.map(l => l.cat)).size >= 6, 'anúncios de várias categorias');
   assert.deepEqual(SHx.npcListings(s, now).map(l => l.label), ls.map(l => l.label), 'iguais para todos na mesma janela');
   for (const l of ls) {
@@ -1026,9 +1026,24 @@ console.log('leilão ok');
   const s = { money: 1e9, prices: {} }; assert.equal(MI.buy(s), null); assert.match(MI.buy(s), /já é dono/);
   const m0 = s.money; MI.monthly(s, rng); assert.equal(m0 - s.money, MI.MINE.upkeep, 'sem equipes: só a manutenção, e não acha nada');
   assert.equal(s.mina.phase, 'prospeccao');
-  MI.setCrews(s, 10); let n = 0; while (s.mina.phase === 'prospeccao' && n++ < 400) MI.monthly(s, rng);
-  assert.equal(s.mina.phase, 'extracao'); assert.ok(s.mina.vein >= 18);
-  const before = s.money; MI.monthly(s, rng); assert.ok(s.money > before, 'extração dá lucro no mês');
+  // sem frota nada acontece: equipe parada sem perfuratriz, escavadeira, pá e caminhão
+  MI.setCrews(s, 10); for (let i = 0; i < 30; i++) MI.monthly(s, rng); assert.equal(s.mina.phase, 'prospeccao', 'sem perfuratriz não acha veio');
+  assert.deepEqual(MI.missing(s), ['perfuratriz', 'escavadeira', 'pá-carregadeira', 'caminhão']);
+  s.cars = [{ id: 1, model: 'mn_perf' }]; let n = 0; while (s.mina.phase === 'prospeccao' && n++ < 400) MI.monthly(s, rng);
+  assert.equal(s.mina.phase, 'extracao'); assert.ok(s.mina.vein >= 18 && s.mina.grade >= 0.9 && s.mina.grade <= 3.2);
+  let before = s.money; MI.monthly(s, rng); assert.ok(s.money < before && s.mina.mined === 0, 'achou o veio, mas sem escavadeira, pá e caminhão não extrai (só custa)');
+  // frota mínima: o elo mais fraco manda (1 escavadeira = 3.500 t, 1 basculante = 2.000 t)
+  s.cars.push({ id: 2, model: 'mn_escav' }, { id: 3, model: 'mn_carreg' }, { id: 4, model: 'mn_basc' });
+  assert.deepEqual(MI.missing(s), []); const cap = MI.capacity(s); assert.equal(cap.t, 2000); assert.equal(cap.limit, 'o transporte');
+  s.mina.vein = 80; s.mina.total = 80; s.mina.grade = 1.5; before = s.money; s.prices.ouro = 680000;
+  const out = MI.monthly(s, rng), kg = s.mina.mined; assert.ok(kg > 2 && kg < 4, `2.000 t x 1,5 g/t x 92% = ~2,8 kg (deu ${kg})`);
+  assert.ok(out.some(l => /CFEM/.test(l.txt) && l.val < 0) && out.some(l => /diesel/.test(l.txt) && l.val < 0) && out.some(l => /vendidos/.test(l.txt) && l.val > 0), 'receita, CFEM e diesel lançados');
+  // mais caminhões soltam o gargalo; a usina (8.000 t) é o teto
+  s.cars.push({ id: 5, model: 'mn_artic' }, { id: 6, model: 'mn_artic' }, { id: 7, model: 'mn_escav' }, { id: 8, model: 'mn_escav' }, { id: 9, model: 'mn_carreg' });
+  assert.equal(MI.capacity(s).limit, 'a perfuração', 'com 1 perfuratriz só dá 6.000 t'); s.cars.push({ id: 10, model: 'mn_perf' });
+  assert.equal(MI.capacity(s).t, 8000); assert.ok(['as equipes', 'a usina'].includes(MI.capacity(s).limit), 'teto: 10 equipes e usina de 8.000 t');
+  // ouro ao vivo: US$ 3.539 a onça x R$ 5,95
+  assert.ok(MI.setSpot(s, 3539, 5.95) && Math.abs(s.prices.ouro - 677000) < 2000, 'preço real do ouro em R$/kg'); assert.ok(!MI.setSpot(s, 5, 5.95) && !MI.setSpot(s, 3539, 0), 'número absurdo é ignorado');
   assert.equal(MI.sell(s), MI.MINE.price * MI.MINE.resale); assert.equal(s.mina, undefined);
 }
 console.log('mina ok');

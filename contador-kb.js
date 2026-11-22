@@ -156,9 +156,11 @@ export const KB = [
   { t: 'giro da sorte', k: ['giro', 'giro da sorte', 'sorte', 'roleta estoura', 'estourou', 'carta rara', 'ganhei giro'], a: [
     'Todo ano do mundo (12 meses, mais ou menos 2 horas reais) aparece o botão "giro da sorte" no topo e você ganha 1 giro. A roleta tem 10 fatias: 2 dão uma carta rara (20%) e as outras 8 estouram a roleta, sem nada.',
     'A carta do giro vem no mínimo rara, com chance de lendária. A carta é um item raro: complete uma coleção inteira para ganhar o emblema, subir no ranking de colecionadores e liberar vantagens para sempre. O giro não acumula: se passar o ano sem girar, ele continua guardado só um.'] },
-  { t: 'mina de ouro', k: ['mina', 'ouro', 'mineradora', 'garimpo', 'equipe de garimpo'], a: [
-    'A mina é única no jogo inteiro: só um jogador pode ser dono. Custa R$ 120 mi e tem manutenção de R$ 1,1 mi por mês.',
-    'Cada equipe custa R$ 95 mil por mês (até 10 equipes) e tem chance de achar ouro (uns R$ 540 mil o kg). Na revenda a mina vale 60%.'] },
+  { t: 'mina de ouro', k: ['mina', 'ouro', 'mineradora', 'garimpo', 'equipe de garimpo', 'escavadeira', 'perfuratriz', 'caminhao basculante', 'frota', 'minerio'], a: [
+    'A mina é única no jogo inteiro: só um jogador pode ser dono. Custa R$ 120 mi, com usina de 8.000 t de minério por mês. Custos fixos de R$ 850 mil por mês (licenças ambientais, segurança, alojamento, administração e energia). Na revenda vale 60%.',
+    'Para minerar precisa de frota comprada na loja 21 (aba máquinas): perfuratriz R$ 2,6 mi (6.000 t/mês, faz a sondagem), escavadeira R$ 1,45 mi (3.500 t), pá-carregadeira R$ 1,25 mi (4.500 t), caminhão basculante R$ 820 mil (2.000 t) ou articulado R$ 3,9 mi (5.000 t). A produção segue o elo mais fraco: equipes (800 t cada, R$ 95 mil por mês, até 10), usina, escavação, carga, transporte e perfuração.',
+    'Primeiro a sondagem acha um veio (mais equipes e perfuratrizes, mais chance). O veio tem teor entre 0,9 e 3,2 g/t e a usina recupera 92% do ouro. Custo por tonelada: R$ 95 (diesel, explosivo, reagentes). Sobre o ouro vendido paga CFEM de 1,5% e impostos (4,5% no total). A frota paga IPVA e seguro de 0,6% ao mês e desvaloriza 1%.',
+    'O preço do ouro é o real do dia: onça em dólar ÷ 31,1035 × dólar, atualizado de 10 em 10 minutos (em novembro de 2026 a onça andou entre US$ 3.700 e 4.150). Os custos seguem a média das mineradoras do mundo, perto de US$ 1.500 a 1.785 por onça (World Gold Council).'] },
   { t: 'empresas', k: ['empresa', 'empresas', 'negocio', 'negocios', 'marca', 'banco proprio', 'provedor', 'supermercado', 'hotel'], a: [
     'Na aba negócios você compra marcas (bancos, provedores, supermercados, usinas, hotéis e outras). Cada marca é única: só um dono no mundo.',
     'Cada empresa tem receitas e custos mensais próprios, que aparecem no fechamento. Vender devolve o valor de venda dela.'] },

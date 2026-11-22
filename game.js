@@ -605,6 +605,19 @@ function renderCarros() {
   }).join('') : '<p class="empty glass">Garagem vazia. Seu primeiro carro aparece aqui e no seu perfil.</p>';
 }
 
+// frota da mineradora: escavadeira, pá-carregadeira, caminhões e perfuratriz. Sem elas a mina não extrai (mina.js)
+function mineShop(s) {
+  const f = MI.fleet(s), cap = s.mina ? MI.capacity(s) : null, lack = MI.missing(s);
+  const card = ([id, c]) => { const n = s.cars.filter(x => x.model === id).length;
+    return `<article class="glass ccard ccard--maq"><div class="ccard__photo"><img src="assets/${c.img}.webp" alt="${esc(c.name)}" loading="lazy"><span class="tag tag--green">${esc(MI.ROLES[c.role])}</span>${n ? `<span class="tag tag--gold ccard__own">${n} na mina</span>` : ''}</div>
+      <div class="ccard__body"><h4>${esc(c.name)}</h4><p class="price">${brl(c.price)}</p><p class="small good perk">${esc(c.perk)}</p>
+        <p class="muted small">desvaloriza ${String(L.CAR_DEPREC * 100).replace('.', ',')}% e paga ${brl(c.price * L.CAR_UPKEEP)} de IPVA e seguro por mês</p>
+        <button class="btn btn--gold" data-act="buy-car" data-id="${id}">${n ? 'comprar mais um' : 'comprar'}</button></div></article>`; };
+  const status = !s.mina ? '<small class="muted">(rendem quando você for dono da mineradora)</small>'
+    : lack.length ? `<span class="tag tag--red">faltam: ${esc(lack.join(', '))}</span>` : `<span class="tag tag--green">frota completa: ${int(cap.t)} t/mês (limite: ${esc(cap.limit)})</span>`;
+  return `<h4 class="maq__t">⛏️ para a mineradora ${status}</h4><p class="small muted">Para minerar você precisa de pelo menos 1 perfuratriz, 1 escavadeira, 1 pá-carregadeira e 1 caminhão. A produção segue o elo mais fraco: equipes (800 t cada), usina (8.000 t), escavação, carga, transporte e perfuração. Frota de ${int(f.n.escavar || 0)} escavadeira(s), ${int(f.n.carregar || 0)} pá(s), ${int(f.n.transportar || 0)} caminhão(ões), ${int(f.n.furar || 0)} perfuratriz(es).</p>
+    <div class="cards cards--cars">${Object.entries(L.CARS).filter(([, c]) => c.crop === 'ouro').map(card).join('')}</div>`;
+}
 // máquinas: só aparecem as da cultura que a pessoa tem (pomar -> laranja, canavial -> cana)
 function renderMaq(s) {
   const hasO = s.lands.some(l => l.orchard), hasC = s.lands.some(l => l.cane) || !!s.caneHarvester, hasG = s.lands.some(l => l.crop || (l.own && l.use !== 'pasto'));
@@ -621,6 +634,7 @@ function renderMaq(s) {
         ${hv ? `<button class="btn btn--glass" data-act="cn-sellharv">vender por ${brl(hv.value * 0.85)}</button>` : '<button class="btn btn--gold" data-act="cn-buyharv">comprar</button>'}</div></article>`;
   $('#maq').innerHTML = `<h4 class="maq__t">🌱 para lavoura (soja, milho e café) ${hasG ? `<span class="tag tag--green">desconto das suas máquinas: ${Math.round(L.machDiscount(s) * 100)}% de ${Math.round(L.MACH_MAX * 100)}%</span>` : '<small class="muted">(rendem quando você plantar)</small>'}</h4><div class="cards cards--cars">${list('graos')}</div>`
     + `<h4 class="maq__t">🍊 para pomar de laranja ${hasO ? '<span class="tag tag--green">você tem pomar</span>' : '<small class="muted">(rendem quando você tiver um pomar)</small>'}</h4><div class="cards cards--cars">${list('laranja')}</div>`
+    + mineShop(s)
     + `<h4 class="maq__t">🌾 para canavial ${hasC ? '<span class="tag tag--green">você tem canavial</span>' : '<small class="muted">(rendem quando você tiver um canavial)</small>'}</h4><div class="cards cards--cars">${colh}${list('cana')}</div>`;
 }
 
@@ -1169,7 +1183,7 @@ const ACTS = {
   },
   'buy-car'(id) {
     const c = L.CARS[id];
-    if (c.type === 'maquina' && !PM.COVER[id] && S().cars.some(x => x.model === id)) return say('Essa máquina já está na sua fazenda.', true);
+    if (c.type === 'maquina' && c.crop !== 'ouro' && !PM.COVER[id] && S().cars.some(x => x.model === id)) return say('Essa máquina já está na sua fazenda.', true);   // frota da mina pode ter várias
     if (!confirm(`Comprar ${c.name} por ${brl(c.price)}?`)) return;
     if (!pay(c.price, `loja 21: ${c.name}`)) return;
     S().cars.push({ id: S().nextId++, model: id, value: c.price });
@@ -1580,7 +1594,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 173;
+const APP_VERSION = 174;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

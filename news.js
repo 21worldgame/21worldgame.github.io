@@ -93,9 +93,11 @@ export const EDITORIAL = [
     'A fábrica de cartas cortou a produção. Agora só 1 carta em cada 100 sai lendária e 9 saem raras, e o estoque de pacotes só volta no dia seguinte: 3 simples, 1 ouro e 1 lendário por dia. No Feirão, carta avulsa aparece de vez em quando. Quem completar uma coleção vai ter algo que quase ninguém tem.'),
   ed(31, 'alerta', 'assets/photo-chips.webp', 'Giro da sorte: uma roleta por ano, 20% de chance de carta rara',
     'Todo ano do mundo, cerca de duas horas reais, aparece o botão giro da sorte no topo do jogo. A roleta tem dez fatias: duas escondem uma carta rara e as outras oito estouram a roleta, sem nada. A carta é um item raro, não se compra pronta, e quem completar uma coleção inteira ganha emblema no perfil, sobe no ranking de colecionadores e libera vantagens para sempre. A roda do dia também ganhou giro novo, com freada e estalo de roleta de cassino.'),
+  ed(32, 'economia', 'assets/mina-ouro.webp', 'Mineradora ganha logística de verdade e ouro a preço real do dia',
+    'Quem for dono da Serra Dourada agora precisa comprar a frota na loja 21: perfuratriz, escavadeira, pá-carregadeira e caminhões. A produção segue o elo mais fraco da cadeia, da equipe à usina de 8.000 toneladas por mês. Os custos acompanham a média do setor, perto de US$ 1.500 a 1.785 por onça segundo o World Gold Council, com 1,5% de CFEM sobre o ouro. O preço do ouro vem do mercado: onça em dólar vezes o dólar do dia, atualizado de dez em dez minutos.'),
 ];
 // edição do Jornal 21: o jornal abre com as reportagens que o jogador ainda não viu (guarda a hora da última vista)
-export const EDITION = 'jornal-v162';
+export const EDITION = 'jornal-v174';
 export const editorial = (now = Date.now()) => EDITORIAL.filter(e => now >= e.at - 864e5 && now - e.at < ED_DAYS * 864e5);
 // manchete pronta (texto puro; a tela escapa antes de mostrar)
 export function headline(n) {
