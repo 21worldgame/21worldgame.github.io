@@ -3500,3 +3500,16 @@ dialog:not([open]) { display: none !important; }
 .tiles > .tile strong { font-size: min(var(--text-2xl), 17cqi); overflow-wrap: break-word; }
 .tiles--ft > .tile strong { font-size: min(var(--text-xl), 15cqi); }
 .hkpis > .hk .hk__v { font-size: min(1.2rem, 12cqi); overflow-wrap: break-word; }
+/* pomar e canavial dentro do cartão da terra: foto em faixa no alto e o texto com a largura toda (antes lado a lado e cortava) */
+.orchard { grid-template-columns: minmax(0, 1fr) !important; }
+.orchard img { width: 100% !important; height: 86px !important; }
+.orchard > div > * { min-width: 0; overflow-wrap: anywhere; }
+.eta { width: auto !important; max-width: 100%; white-space: normal; line-height: 1.25; }
+.orchard .row .btn { flex: 1 1 140px; }
+/* leilão: foto em cima e a ficha embaixo com largura toda (o texto ficava espremido ao lado da foto) */
+@media (min-width: 40.01rem) { .lei__horse { grid-template-columns: minmax(0, 1fr) !important; align-items: start; } .lei__photo { width: 100% !important; height: 210px !important; } }
+@media (max-width: 75rem) and (min-width: 40.01rem) { .lei { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) !important; } .lei__next { grid-column: 1 / -1; } }
+.prest-warn { margin: 10px 0; padding: 10px 12px; border-radius: 12px; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.35); } .prest-warn p { margin: 4px 0 0; }
+/* fichas altas no cassino */
+.chipbtn--5k { --c: #0ea5e9; } .chipbtn--25k { --c: #a855f7; } .chipbtn--100k { --c: #f59e0b; color: #1a1200; }
+.betpick { flex-wrap: wrap; }

@@ -283,8 +283,15 @@ export function playRound(s, rng = Math.random, prizeMult = 1) {
     if (home) {
       const t = Math.round(TICKET[f.div] * (1 + 0.2 * ((f.stadium || 1) - 1)) * PK.mult(s, 'ticket') * (0.7 + Math.min(0.6, lg.table.user.pts / Math.max(1, lg.table.user.p) / 5)));
       cash += t; lines.push({ txt: 'bilheteria', val: t });
+    } else {   // fora de casa não tem bilheteria: entra a cota de TV do jogo
+      const tv = Math.round(TICKET[f.div] * 0.35 * PK.mult(s, 'ticket'));
+      cash += tv; lines.push({ txt: 'cota de TV (jogo fora de casa)', val: tv });
     }
-    if (my > their) { const w = Math.round(WIN_PRIZE[f.div] * prizeMult); cash += w; lines.push({ txt: 'prêmio por vitória', val: w }); }
+    if (my > their) {   // vitória fora vale mais; e vencer nunca dá prejuízo na rodada (cobre os salários com folga)
+      const wage = Math.round(payroll(f) / 4), base = Math.round(WIN_PRIZE[f.div] * prizeMult * (home ? 1 : 1.5));
+      const w = Math.max(base, Math.round(wage * 1.2 - cash));
+      cash += w; lines.push({ txt: home ? 'prêmio por vitória' : 'prêmio por vitória fora de casa', val: w });
+    }
     f.morale = clamp((f.morale || 0) + (my > their ? 1 : my < their ? -1 : 0), -3, 3);
   }
   const wages = Math.round(payroll(f) / 4);

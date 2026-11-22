@@ -229,6 +229,9 @@
                 <button class="chipbtn chipbtn--100" data-add="100">100</button>
                 <button class="chipbtn chipbtn--500" data-add="500">500</button>
                 <button class="chipbtn chipbtn--1000" data-add="1000">1k</button>
+                <button class="chipbtn chipbtn--5k" data-add="5000">5k</button>
+                <button class="chipbtn chipbtn--25k" data-add="25000">25k</button>
+                <button class="chipbtn chipbtn--100k" data-add="100000">100k</button>
                 <span class="betshow"><span class="muted small">aposta</span><strong id="betshow">0</strong></span>
                 <button class="btn btn--glass btn--sm" data-act="bet-clear">limpar</button>
               </div>
@@ -276,7 +279,7 @@
         <div class="rl-board" id="rl-board"></div>
         <div class="controls">
           <div class="betpick" role="group" aria-label="ficha">
-            <button class="chipbtn chipbtn--5" data-rchip="5">5</button><button class="chipbtn chipbtn--25 is-on" data-rchip="25">25</button><button class="chipbtn chipbtn--100" data-rchip="100">100</button><button class="chipbtn chipbtn--500" data-rchip="500">500</button><button class="chipbtn chipbtn--1000" data-rchip="1000">1k</button>
+            <button class="chipbtn chipbtn--5" data-rchip="5">5</button><button class="chipbtn chipbtn--25 is-on" data-rchip="25">25</button><button class="chipbtn chipbtn--100" data-rchip="100">100</button><button class="chipbtn chipbtn--500" data-rchip="500">500</button><button class="chipbtn chipbtn--1000" data-rchip="1000">1k</button><button class="chipbtn chipbtn--5k" data-rchip="5000">5k</button><button class="chipbtn chipbtn--25k" data-rchip="25000">25k</button><button class="chipbtn chipbtn--100k" data-rchip="100000">100k</button>
             <span class="betshow"><span class="muted small">na mesa</span><strong id="rl-total">0</strong></span>
             <button class="btn btn--glass btn--sm" data-act="rl-clear">limpar</button>
             <button class="btn btn--glass btn--sm" data-act="rl-double">dobrar apostas</button>
@@ -293,7 +296,7 @@
             <div class="av-stage"><canvas id="av-canvas"></canvas><div class="av-mult" id="av-mult"></div><div class="av-msg" id="av-msg" hidden></div></div>
             <div class="glass av-controls">
               <label class="field"><span>aposta em fichas</span><input class="input" name="av-bet" type="number" min="10" step="10" value="100" inputmode="numeric"></label>
-              <div class="row"><button class="btn btn--glass btn--sm" data-av-quick="10">+10</button><button class="btn btn--glass btn--sm" data-av-quick="50">+50</button><button class="btn btn--glass btn--sm" data-av-quick="100">+100</button></div>
+              <div class="row"><button class="btn btn--glass btn--sm" data-av-quick="10">+10</button><button class="btn btn--glass btn--sm" data-av-quick="50">+50</button><button class="btn btn--glass btn--sm" data-av-quick="100">+100</button><button class="btn btn--glass btn--sm" data-av-quick="1000">+1k</button><button class="btn btn--glass btn--sm" data-av-quick="10000">+10k</button><button class="btn btn--glass btn--sm" data-av-quick="x2">dobrar</button></div>
               <label class="field"><span>saque automático em (opcional)</span><input class="input" name="av-auto" type="number" min="1.01" step="0.1" placeholder="ex.: 2.00" inputmode="decimal"></label>
               <button class="btn btn--gold btn--lg av-btn" id="av-btn" data-act="av-press">apostar</button>
             </div>
@@ -510,7 +513,7 @@
       <div class="subtabs" role="group" aria-label="espécie">
         <button class="subtab is-on" data-act="st-kind" data-id="dog">galgos</button><button class="subtab" data-act="st-kind" data-id="horse">cavalos</button>
       </div>
-      <h3 class="lei-title">🐎 leilão de cavalos de raça <small class="muted">um atrás do outro, o dia inteiro</small></h3>
+      <h3 class="lei-title" id="lei-title">🐕 leilão de galgos de raça</h3>
       <div id="lei-box"></div>
       <p class="muted small">Compre um animal, treine as semanas livres de cada mês e inscreva nas provas. Cada prova é limitada pela nota do animal, e o treino cansa: animal cansado treina e corre pior e pode se lesionar. Os atributos crescem até o potencial.</p>
       <h3 id="st-mine-title">seus animais</h3>

@@ -173,8 +173,8 @@ function hud() {
     <span class="sn-av">${avatarSVG(lookOf(s), { label: s.name || '' })}</span><div><b>${esc(s.name || 'esperando…')}${i === v.seat ? ' (você)' : ''}</b><small>${grp(v.groups?.[i])}${v.groups?.[i] ? ` · faltam ${v.left[i]}` : ''}</small>
     <span class="sn-left">${v.balls ? v.balls.filter(b => !b.in && b.n && v.groups?.[i] && SN.groupOf(b.n) === v.groups[i]).map(b => `<i style="--c:${COLORS[b.n > 8 ? b.n - 8 : b.n]}" class="${b.n > 8 ? 'is-st' : ''}">${b.n}</i>`).join('') : ''}</span></div></div>`).join('<span class="sn-vs">x</span>');
   const myTurn = v.phase === 'aim' && v.turn === v.seat && !anim;
-  $('#sn-msg').textContent = anim ? 'Bola rolando…' : placing ? 'Bola na mão: toque na mesa para colocar a branca.' : myTurn ? `Sua vez: mire na mesa, escolha a força e tacar. ${v.msg}` : v.msg;
-  $('#sn-shoot').disabled = !myTurn || placing;
+  $('#sn-msg').textContent = anim ? 'Bola rolando…' : placing ? 'Bola na mão: toque na mesa para colocar a branca onde quiser, ou já mire e tacar daí.' : myTurn ? `Sua vez: mire na mesa, escolha a força e tacar. ${v.msg}` : v.msg;
+  $('#sn-shoot').disabled = !myTurn;   // com bola na mão também dá para tacar (a branca já voltou para a mesa)
   $('#sn-again').hidden = !(v.phase === 'end' && (cur?.h || false));
   $('#sn-invite').hidden = !!cur?.local;
   if (cur?.watch) { $('#sn-msg').textContent = `Assistindo. ${v.msg}`; $('#sn-again').hidden = false; $('#sn-again').textContent = v.seats[1]?.kind === 'human' ? 'mesa cheia' : 'sentar e jogar'; $('#sn-again').disabled = v.seats[1]?.kind === 'human'; }
@@ -242,12 +242,30 @@ function draw(balls, aiming) {
     g.fillStyle = '#fff'; g.font = `800 ${3 * S}px system-ui`; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(`força ${Math.round(power * 100)}%`, bx + bw + 2 * S, by + bh / 2);
   }
 }
+// bola rolando: o número e a faixa giram na direção do movimento (ângulo = distância rodada / raio)
+const roll = new Map();
 function ball(b) {
   const g = g2, x = X(b.x), y = Y(b.y), r = SN.R * S, n = b.n, col = COLORS[n > 8 ? n - 8 : n];
+  let st = roll.get(n); if (!st) roll.set(n, st = { x: b.x, y: b.y, th: 0, dx: 1, dy: 0 });
+  const dd = Math.hypot(b.x - st.x, b.y - st.y);
+  if (dd > 1e-4 && dd < SN.R * 6) { st.dx = (b.x - st.x) / dd; st.dy = (b.y - st.y) / dd; st.th += dd / SN.R; } else if (dd >= SN.R * 6) st.th = 0;   // pulo grande (nova partida): zera
+  st.x = b.x; st.y = b.y;
+  const ang = Math.atan2(st.dy, st.dx), sin = Math.sin(st.th), cos = Math.cos(st.th);
   g.save(); g.beginPath(); g.arc(x, y, r, 0, 7); g.clip();
   g.fillStyle = n > 8 ? '#f8fafc' : col; g.fillRect(x - r, y - r, 2 * r, 2 * r);
-  if (n > 8) { g.fillStyle = col; g.fillRect(x - r, y - r * 0.55, 2 * r, r * 1.1); }
-  if (n) { g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, r * 0.48, 0, 7); g.fill(); g.fillStyle = '#111'; g.font = `800 ${r * 0.62}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(n, x, y + r * 0.04); }
+  if (n > 8) {   // faixa: anda pela bola e fica mais fina quando está de lado
+    g.save(); g.translate(x + st.dx * r * sin, y + st.dy * r * sin); g.rotate(ang + Math.PI / 2);
+    g.fillStyle = col; g.fillRect(-r * 1.6, -r * 0.55 * Math.max(0.25, Math.abs(cos)), r * 3.2, r * 1.1 * Math.max(0.25, Math.abs(cos))); g.restore();
+  }
+  const spot = (s, c) => {   // círculo branco com o número (aparece dos dois lados da bola)
+    if (c <= 0.05) return;
+    const sx = x + st.dx * r * 0.82 * s, sy = y + st.dy * r * 0.82 * s, k = 0.3 + 0.7 * c;
+    g.save(); g.translate(sx, sy); g.rotate(ang);
+    g.fillStyle = n ? '#fff' : 'rgba(220,38,38,.85)'; g.beginPath(); g.ellipse(0, 0, r * (n ? 0.48 : 0.16) * k, r * (n ? 0.48 : 0.16), 0, 0, 7); g.fill();
+    if (n && c > 0.45) { g.rotate(-ang); g.scale(st.dx * st.dx * k + st.dy * st.dy || 1, st.dy * st.dy * k + st.dx * st.dx || 1); g.fillStyle = '#111'; g.font = `800 ${r * 0.62}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(n, 0, r * 0.04); }
+    g.restore();
+  };
+  spot(sin, cos); spot(-sin, -cos);
   const sh = g.createRadialGradient(x - r * 0.4, y - r * 0.45, r * 0.1, x, y, r * 1.1); sh.addColorStop(0, 'rgba(255,255,255,.55)'); sh.addColorStop(0.35, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(0,0,0,.45)');
   g.fillStyle = sh; g.fillRect(x - r, y - r, 2 * r, 2 * r); g.restore();
 }

@@ -81,7 +81,7 @@ export class Sinuca {
   mine(seat) { return this.groups[seat]; }
   left(seat) { const g = this.groups[seat]; return g ? this.balls.filter(b => !b.in && groupOf(b.n) === g).length : 7; }
   target(seat) { const g = this.groups[seat]; if (!g) return 'qualquer'; return this.left(seat) ? g : 'oito'; }
-  place(seat, x, y) { if (seat !== this.turn || !this.inHand || !free(this.balls, x, y)) return 'não dá para colocar a branca aí.'; const c = this.balls[0]; Object.assign(c, { x, y, in: false, vx: 0, vy: 0 }); return null; }
+  place(seat, x, y) { if (seat !== this.turn || !this.inHand || !free(this.balls, x, y)) return 'não dá para colocar a branca aí.'; const c = this.balls[0]; Object.assign(c, { x, y, in: false, vx: 0, vy: 0 }); this.inHand = false; this.msg = `${this.seats[seat].name} colocou a branca.`; return null; }   // colocou: acabou a bola na mão (antes ficava preso)
   // aplica o resultado de uma tacada (bolas finais + eventos)
   apply(seat, res) {
     if (seat !== this.turn || this.phase !== 'aim') return 'não é a sua vez.';

@@ -105,9 +105,9 @@ function renderPass() {
 function renderHud() {
   const s = S(), worth = L.netWorth(s);
   const small = matchMedia('(max-width: 40rem)').matches, cmp = (v, pre) => { const a = Math.abs(v), f = (x, u) => `${pre}${String(+x.toFixed(x < 10 ? 1 : 0)).replace('.', ',')} ${u}`; return a >= 1e9 ? f(v / 1e9, 'bi') : a >= 1e6 ? f(v / 1e6, 'mi') : pre ? brl(v) : int(v); };
-  rollTo($('#r-money'), s.money, small && Math.abs(s.money) >= 1e6 ? v => cmp(v, 'R$ ') : brl);   // celular: R$ 10 bi em vez de R$ 9.999.996.000
+  rollTo($('#r-money'), s.money, (small && Math.abs(s.money) >= 1e6) || Math.abs(s.money) >= 1e9 ? v => cmp(v, 'R$ ') : brl);   // bilhões: R$ 1,05 bi (senão o topo quebra)   // celular: R$ 10 bi em vez de R$ 9.999.996.000
   rollTo($('#r-chips'), s.chips, small && s.chips >= 1e5 ? v => cmp(v, '') : int);
-  rollTo($('#r-worth'), worth, brl);
+  rollTo($('#r-worth'), worth, Math.abs(worth) >= 1e9 ? v => cmp(v, 'R$ ') : brl);
   rollTo($('#chips-now'), s.chips, v => `${int(v)} fichas`);
   rollTo($('#table-chips'), s.chips, int);
   $('#chips-val').textContent = `valem ${brl(s.chips * L.CHIP)}`;
@@ -962,7 +962,7 @@ const ACTS = {
   'spin-daily'() { spinDaily(); },
   logout() { Auth.logout(); },
   'link-phone'() { linkPhone(); },
-  'st-kind'(id) { SUI.setKind(id); },
+  'st-kind'(id) { SUI.setKind(id); LEU.setKind(id); },
   'fe-buy'(id) { feiraBuy(id); },
   'fe-sell'() { feiraSell(); },
   'card-close'() { $('#dlg-card').close(); },
@@ -1193,7 +1193,7 @@ document.addEventListener('click', e => {
   const rb = e.target.closest('[data-rbet]');
   if (rb) { RL.placeBet(rb.dataset.rbet); return; }
   const aq = e.target.closest('[data-av-quick]');
-  if (aq) { AV.quick(Number(aq.dataset.avQuick)); return; }
+  if (aq) { AV.quick(aq.dataset.avQuick === 'x2' ? 'x2' : Number(aq.dataset.avQuick)); return; }
   const b = e.target.closest('[data-act]');
   if (!b || b.disabled) return;
   const act = b.dataset.act;
@@ -1242,7 +1242,7 @@ function showSub(name) {
 }
 
 // atalhos da mesa: 1-5 fichas, espaço aposta, H pede, S para, R regras
-const CHIP_KEYS = { 1: 5, 2: 25, 3: 100, 4: 500, 5: 1000 };
+const CHIP_KEYS = { 1: 5, 2: 25, 3: 100, 4: 500, 5: 1000, 6: 5000, 7: 25000, 8: 100000 };
 document.addEventListener('keydown', e => {
   if (e.target.closest('input, select, textarea') || document.querySelector('dialog[open]') || $('#room').hidden || $('#p-mesa').hidden || $('#sub-21').hidden) return;
   const k = e.key.toLowerCase();
@@ -1409,7 +1409,7 @@ const PRESTIGE_TXT = {
   safira: 'Duzentos milhões. Poucos chegam aqui, e o mercado inteiro já sabe o seu nome. Cada decisão sua agora move preços e chama atenção dos concorrentes.',
   rubi: 'Trezentos milhões de patrimônio. Você não acompanha mais o mercado: ajuda a fazê-lo. Os grandes negócios do país passam pela sua mesa.',
   ouro: 'Meio bilhão. Seu império atravessa fazendas, empresas e mercados. Os outros jogadores estudam os seus passos.',
-  bilhao: 'Um bilhão de reais. Você entrou para a história do 21 World. Daqui em diante, cada movimento seu vira notícia.',
+  bilhao: 'Um bilhão de reais! Você acaba de entrar num grupo exclusivo onde só os muito ricos do 21 World estão. Pouquíssimos chegaram aqui, e daqui em diante cada movimento seu vira notícia. O próximo degrau, R$ 2 bilhões, é para lendas.',
   lenda: 'Dois bilhões. Não existe mais faixa acima de você: só a sua própria lenda.',
 };
 function prestigeParty(pr) {
@@ -1420,6 +1420,8 @@ function prestigeParty(pr) {
     <p>${PRESTIGE_TXT[pr.id]}</p>
     <p>Seu nome agora representa uma nova categoria de prestígio no mercado: <b>${pr.title}</b>.</p>
     <ul class="prest-gets"><li><b>${pr.trophy}</b> no seu perfil, para sempre</li><li>título <b>${pr.title}</b> e selo ${pr.icon} ao lado do seu nome</li><li>vantagem permanente: <b>${PK.label(pr.perk)}</b></li><li>lugar no <b>Clube dos 100 milhões</b>, no ranking</li></ul>
+    ${pr.id === 'bilhao' ? (() => { const f = x => `${(x * 100).toFixed(1).replace('.', ',').replace(',0', '')}%`, a = L.ELITE.find(e => e.min === 1e9), b = L.ELITE.find(e => e.min === 2e9);
+      return `<div class="prest-warn"><b>⚠️ Atenção: as taxas dos bilionários sobem</b><p class="small">Na faixa de bilionário o imposto sobre a fortuna vai a <b>${f(a.tax)} ao mês</b> (sobre o que passa de R$ 1 bi), o pedágio fica com <b>${f(a.gain)}</b> do lucro do mês, as compras saem <b>+${f(a.price)}</b> e as contas <b>${a.bills}×</b>. A partir de R$ 2 bi: imposto ${f(b.tax)}, pedágio ${f(b.gain)} e compras +${f(b.price)}. Crescer daqui para cima exige estratégia: empresas que dão lucro, terras que valorizam e cuidado com os gastos.</p></div>`; })() : ''}
     ${next ? `<p class="muted small">Próximo marco: <b>${brl(next.min)}</b> (${next.title}).</p>` : ''}`;
   d.showModal(); confetti(260); try { sfx.cash(true); } catch {}
   note(`marco de prestígio: ${pr.title} (${pr.trophy})`);
@@ -1437,6 +1439,7 @@ function bankRiskCheck() {
     <p>Para continuar operando com grandes volumes financeiros, você deverá buscar uma instituição de maior capacidade ou adquirir seu próprio banco.</p>`;
   d.showModal();
 }
+G.trophyCheck = () => trophyCheck();
 function trophyCheck() {
   const s = S(), w = L.netWorth(s); s.trophies ??= [];
   const nw = L.TROPHIES.filter(t => w >= t && !s.trophies.includes(t)); if (!nw.length) return;
@@ -1600,7 +1603,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 143;
+const APP_VERSION = 144;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

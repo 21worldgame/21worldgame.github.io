@@ -1513,3 +1513,19 @@ import * as CT from './contador.js';
   IV.apply(s, 'previdencia', 1e6, Lq.netWorth(s)); for (let m = 0; m < 10; m++) IV.monthly(s);
   const r = IV.withdraw(s, s.invest[0].id); assert.equal(r.value, 900000, 'previdência: sair antes perde rendimento e 10%');
   console.log('investimentos no banco ok'); }
+// sinuca: depois de colocar a branca (bola na mão) o jogo segue (antes travava com inHand preso)
+{ const SNq = await import('./sinuca.js'); const g = new SNq.Sinuca({ rng: () => 0.5 }); g.seats = [{ name: 'A' }, { name: 'B' }]; g.start?.();
+  g.turn = 0; g.phase = 'aim'; g.inHand = true; g.balls[0].in = false;
+  assert.equal(g.place(0, 30, 30), null); assert.equal(g.inHand, false, 'colocou a branca: sai da bola na mão');
+  console.log('sinuca bola na mão ok'); }
+// futebol: vitória fora de casa nunca dá prejuízo na rodada (cota de TV + prêmio maior cobre os salários)
+{ const FTq = await import('./futebol.js'), Lq = await import('./logic.js');
+  let checked = 0;
+  for (let k = 0; k < 400 && checked < 6; k++) {
+    const s = Lq.newState(() => 0.5); s.money = 1e10; FTq.takeClub(s, FTq.CLUBS.flat()[k % FTq.CLUBS.flat().length].n);
+    for (let r = 0; r < 6; r++) { const out = FTq.playRound(s, Math.random); if (!out?.mine) continue;
+      const away = out.mine.a === 'user', my = away ? out.mine.ag : out.mine.hg, th = away ? out.mine.hg : out.mine.ag;
+      if (away && my > th) { assert.ok(out.cash > 0, 'vitória fora de casa com lucro: ' + out.cash); checked++; } }
+  }
+  assert.ok(checked > 0, 'testou alguma vitória fora');
+  console.log('futebol vitória fora ok'); }

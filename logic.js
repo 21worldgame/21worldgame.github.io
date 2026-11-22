@@ -377,6 +377,9 @@ export const ELITE = [
   { min: 5e7, name: 'bilionário em formação', price: 0.3, bills: 2.3, tax: 0.01, gain: 0.22 },
   { min: 2e8, name: 'dono do mundo', price: 0.42, bills: 3, tax: 0.012, gain: 0.26 },
   { min: 1e9, name: 'imperador do 21 World', price: 0.6, bills: 4, tax: 0.015, gain: 0.3 },
+  // acima de 1 bi fica mais difícil crescer: o clube dos bilionários paga mais (por faixa, só sobre o pedaço acima de cada limite)
+  { min: 2e9, name: 'clube dos bilionários', price: 0.7, bills: 4.5, tax: 0.018, gain: 0.34 },
+  { min: 5e9, name: 'lenda bilionária', price: 0.8, bills: 5, tax: 0.021, gain: 0.38 },
 ];
 export const eliteIdx = s => { const w = netWorth(s); let i = -1; ELITE.forEach((e, k) => { if (w >= e.min) i = k; }); return i; };
 // o 1º do ranking paga ainda mais (s.top1 vem do ranking do servidor): a coroa pesa
