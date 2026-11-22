@@ -144,7 +144,8 @@ export function npcListings(s, now = Date.now()) {
   { const n = 10 + Math.floor(r() * 31); add('gado', `${n} bezerros nelore desmamados`, n * (s.prices?.bezerro || 2600) * 1.06, [], { heads: n }); }
   for (const g of ['soja', 'milho', 'cafe', 'laranja']) { const q = (g === 'cafe' ? 20 : 200) + Math.floor(r() * (g === 'cafe' ? 80 : 800)), p = s.prices?.[g] || { soja: 130, milho: 60, cafe: 1400, laranja: 38 }[g]; add('produto', `${q} ${g === 'laranja' ? 'caixas de laranja' : `sacas de ${g === 'cafe' ? 'café' : g}`}`, q * p * 1.05, [{ kind: 'good', good: g, qty: q }], { good: g }); }
   const champs = new Set();
-  for (let k = 0; k < 30 && champs.size < 5; k++) { const c = { ...CD.draw(r, k % 3), born: Math.max(0, month - Math.floor(r() * 24)) }; if (champs.has(c.champ)) continue; champs.add(c.champ); add('carta', `carta ${CD.label(c)}`, CD.value(c, month) * (1.02 + r() * 0.12), [{ kind: 'card', data: c }], { card: c }); }
+  const nCards = r() < 0.35 ? 1 : 0;   // carta no Feirão é rara: no máximo 1, e só às vezes
+  for (let k = 0; k < 30 && champs.size < nCards; k++) { const c = { ...CD.draw(r, k % 3), born: Math.max(0, month - Math.floor(r() * 24)) }; if (champs.has(c.champ)) continue; champs.add(c.champ); add('carta', `carta ${CD.label(c)}`, CD.value(c, month) * (1.02 + r() * 0.12), [{ kind: 'card', data: c }], { card: c }); }
   { const pos = Object.keys(FT.POS)[Math.floor(r() * 6)], p = FT.genPlayer(pos, 55 + Math.floor(r() * 25), r); add('futebol', `${FT.POS[pos]} ${p.name}, nota ${p.ovr}`, FT.value(p) * 1.1, [{ kind: 'player', data: p }]); }
   const sold = new Set(s.npcSold?.win === win ? s.npcSold.ids : []);
   return out.filter(l => !sold.has(l.id));

@@ -107,28 +107,29 @@ const drawSeasonal = (set, rng) => ({ set, key: pickW(SETS[set].cards.map(c => [
 export function draw(rng = Math.random, minTier = 0) { return drawStd(minTier >= 1 ? pickW([['rara', 85], ['lendaria', 15]], rng) : pickW(Object.entries(W_STD), rng), rng); }
 
 // ---------- pacotes ----------
-const W_STD = { comum: 82, rara: 15, lendaria: 3 };
+const W_STD = { comum: 90, rara: 9, lendaria: 1 };   // carta boa é rara de verdade
 export const PACKS = {
-  simples: { label: 'pacote simples', price: 6000, stock: 6, slots: [W_STD], hint: '1 carta' },
-  ouro: { label: 'pacote ouro', price: 18000, stock: 3, slots: [W_STD, W_STD, { rara: 85, lendaria: 15 }], hint: '3 cartas, 1 rara ou melhor garantida' },
-  lendario: { label: 'pacote lendário', price: 35000, stock: 1, slots: [W_STD, W_STD, W_STD, { rara: 70, lendaria: 30 }, { lendaria: 100 }], hint: '5 cartas, 1 lendária garantida' },
+  simples: { label: 'pacote simples', price: 6000, stock: 3, slots: [W_STD], hint: '1 carta' },
+  ouro: { label: 'pacote ouro', price: 18000, stock: 1, slots: [W_STD, W_STD, { rara: 93, lendaria: 7 }], hint: '3 cartas, 1 rara ou melhor garantida' },
+  lendario: { label: 'pacote lendário', price: 35000, stock: 1, slots: [W_STD, W_STD, W_STD, { rara: 85, lendaria: 15 }, { lendaria: 100 }], hint: '5 cartas, 1 lendária garantida' },
 };
-export const SEASON_PACK = { price: 25000, stock: 3, hint: '3 cartas: 1 da coleção da temporada garantida + 2 das coleções do ano' };
-export const SEASON_CHANCE = 0.1;   // pacotes comuns na temporada: 10% de chance de vir uma carta sazonal no lugar da primeira
+export const SEASON_PACK = { price: 25000, stock: 1, hint: '3 cartas: 1 da coleção da temporada garantida + 2 das coleções do ano' };
+export const SEASON_CHANCE = 0.04;   // pacotes comuns na temporada: 4% de chance de vir uma carta sazonal no lugar da primeira
 export const packInfo = id => (id.startsWith('sazonal:') ? { label: `pacote ${SETS[id.slice(8)]?.name || ''}`, ...SEASON_PACK } : PACKS[id]);
 // valor médio na loja (fixo por raridade)
 export function packEV(id) {
   if (id.startsWith('sazonal:')) return RARITY.exclusiva.value + 2 * packEV('simples');
   return PACKS[id].slots.reduce((sum, w) => { const tot = Object.values(w).reduce((a, b) => a + b, 0); return sum + Object.entries(w).reduce((a, [r, x]) => a + RARITY[r].value * x / tot, 0); }, 0);
 }
-export function packsLeft(s, id) { if (s.packs?.m !== (s.month || 0)) s.packs = { m: s.month || 0, n: {} }; return packInfo(id).stock - (s.packs.n[id] || 0); }
+export const PACK_DAY = 144;   // estoque dos pacotes renova a cada 144 meses do mundo (1 dia real), não a cada mês
+export function packsLeft(s, id) { const m = Math.floor((s.month || 0) / PACK_DAY); if (s.packs?.m !== m) s.packs = { m, n: {} }; return packInfo(id).stock - (s.packs.n[id] || 0); }
 // abre um pacote; free = prêmio (não cobra nem gasta o estoque do mês)
 export function openPack(s, id = 'ouro', rng = Math.random, now = Date.now(), free = false) {
   const P = packInfo(id), season = id.startsWith('sazonal:') ? id.slice(8) : null;
   if (!P || (season && !SETS[season])) return { err: 'pacote inválido.' };
   if (season && !seasonOpen(season, now)) return { err: `a temporada ${SETS[season].name} acabou. Agora essas cartas só com quem já tem.` };
   if (!free) {
-    if (packsLeft(s, id) <= 0) return { err: `${P.label} esgotado neste mês do mundo. O estoque volta no mês que vem.` };
+    if (packsLeft(s, id) <= 0) return { err: `${P.label} esgotado hoje. A fábrica manda pouco: o estoque volta amanhã.` };
     if (s.money < P.price) return { err: 'dinheiro insuficiente para o pacote.' };
     s.money -= P.price; s.packs.n[id] = (s.packs.n[id] || 0) + 1;
   }

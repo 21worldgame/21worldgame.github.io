@@ -810,13 +810,13 @@ console.log('logística da cana ok');
   assert.match(CD.openPack(s, 'sazonal:natal', Math.random, mar).err, /acabou/);
   for (let i = 0; i < 300; i++) { const r = CD.openPack({ money: 1e7, month: i, nextId: 1 }, 'simples', Math.random, mar); assert.ok(!r.cards.some(x => CD.SETS[x.set]?.kind === 'sazonal'), 'fora da temporada não sai sazonal'); }
   let saz = 0; for (let i = 0; i < 2000; i++) { const r = CD.openPack({ money: 1e7, month: i, nextId: 1 }, 'simples', Math.random, dez); if (r.cards.some(x => x.set === 'natal')) saz++; }
-  assert.ok(saz > 120 && saz < 300, `na temporada os pacotes comuns às vezes trazem sazonal (${saz}/2000)`);
+  assert.ok(saz > 40 && saz < 130, `na temporada os pacotes comuns às vezes trazem sazonal (${saz}/2000)`);
   // prêmio de pacote (roleta do dia) não cobra nem gasta estoque
   const g = { money: 0, month: 3, nextId: 1 }; assert.equal(CD.openPack(g, 'ouro', Math.random, mar, true).cards.length, 3); assert.equal(g.money, 0);
   // estoque mensal e troca só aceita carta que existe
   s.month = 20; for (let i = 0; i < CD.PACKS.ouro.stock; i++) assert.ok(!CD.openPack(s, 'ouro').err);
   assert.match(CD.openPack(s, 'ouro').err, /esgotado/);
-  s.month = 21; assert.ok(!CD.openPack(s, 'ouro').err, 'estoque volta no mês seguinte');
+  s.month = 21; assert.match(CD.openPack(s, 'ouro').err, /esgotado/, 'mês seguinte ainda esgotado'); s.month = 20 + CD.PACK_DAY; assert.ok(!CD.openPack(s, 'ouro').err, 'estoque volta no dia seguinte');
   assert.equal(CD.sanitize({ set: 'natal', key: 'xx' }), null); assert.deepEqual(CD.sanitize({ set: 'natal', key: 'noel', id: 'a' }), { set: 'natal', key: 'noel', id: 'a' });
 }
 console.log('coleções de cartas ok');

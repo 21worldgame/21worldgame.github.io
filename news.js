@@ -89,9 +89,11 @@ export const EDITORIAL = [
     'Com todo mundo começando com R$ 10 mil, o Feirão 21 amanheceu quase vazio: só umas cartas avulsas. Os jogadores do mundo só anunciam e só fazem propostas pelo que cabe no bolso deles, então os carros, as máquinas, os animais e as terras vão aparecendo conforme eles enriquecem. Quem tiver o que vender agora encontra o mercado sem concorrência.'),
   ed(29, 'alerta', 'assets/farm-soja.webp', 'Zeramento geral: todo mundo recomeça sem nada, com R$ 10 mil',
     'Terras, gado, carros, empresas, cartas, animais, fichas e investimentos foram apagados de todos os jogadores. Cada um recomeça com R$ 10 mil na carteira, o mesmo valor de quem chega agora, e o ranking começa vazio. Ficam só o personagem e o selo 🌱 pioneiro de quem jogou no começo do 21 World.'),
+  ed(30, 'economia', 'assets/photo-chips.webp', 'Cartas ficam raras: lendária sai em 1 de cada 100',
+    'A fábrica de cartas cortou a produção. Agora só 1 carta em cada 100 sai lendária e 9 saem raras, e o estoque de pacotes só volta no dia seguinte: 3 simples, 1 ouro e 1 lendário por dia. No Feirão, carta avulsa aparece de vez em quando. Quem completar uma coleção vai ter algo que quase ninguém tem.'),
 ];
 // edição do Jornal 21: o jornal abre com as reportagens que o jogador ainda não viu (guarda a hora da última vista)
-export const EDITION = 'jornal-v161';
+export const EDITION = 'jornal-v162';
 export const editorial = (now = Date.now()) => EDITORIAL.filter(e => now >= e.at - 864e5 && now - e.at < ED_DAYS * 864e5);
 // manchete pronta (texto puro; a tela escapa antes de mostrar)
 export function headline(n) {

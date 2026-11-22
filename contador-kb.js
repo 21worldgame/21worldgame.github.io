@@ -152,7 +152,7 @@ export const KB = [
     'Coleções padrão (Campeões, Prosperidade, Fortuna, Pecuária) saem nos pacotes o ano todo. Sazonais (Natal só em dezembro, Festa Junina de 1/6 a 31/7) só no período delas, em pacote próprio com 1 carta da temporada garantida, e às vezes nos pacotes comuns. Fora da temporada, só comprando de quem tem.',
     'Cada carta conta uma vez na coleção (repetidas não somam) e cada coleção se completa uma vez só. Completar dá emblema no perfil, sobe no ranking de colecionadores e libera a vantagem para sempre:',
     '• Campeões: +5% de XP · Prosperidade: 2 pontos a menos de mortalidade e de perda por praga · Fortuna: +2% no ganho de fichas no cassino · Pecuária: pintinhos, leitões e bezerros 5% mais baratos · Natal: 50 de prestígio · Festa Junina: +10% na roleta do dia e 30 de prestígio.',
-    'Pacotes: simples R$ 6 mil (1 carta), ouro R$ 18 mil (3, 1 rara ou melhor), lendário R$ 35 mil (5, 1 lendária), com estoque por mês do mundo. A roleta do dia também dá pacote.'] },
+    'Pacotes: simples R$ 6 mil (1 carta), ouro R$ 18 mil (3, 1 rara ou melhor), lendário R$ 35 mil (5, 1 lendária), com estoque pequeno que só volta no dia seguinte (3 simples, 1 ouro, 1 lendário por dia). Carta lendária sai em 1% das cartas comuns: é rara de verdade. A roleta do dia também dá pacote.'] },
   { t: 'mina de ouro', k: ['mina', 'ouro', 'mineradora', 'garimpo', 'equipe de garimpo'], a: [
     'A mina é única no jogo inteiro: só um jogador pode ser dono. Custa R$ 120 mi e tem manutenção de R$ 1,1 mi por mês.',
     'Cada equipe custa R$ 95 mil por mês (até 10 equipes) e tem chance de achar ouro (uns R$ 540 mil o kg). Na revenda a mina vale 60%.'] },
