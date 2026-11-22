@@ -3494,3 +3494,9 @@ dialog:not([open]) { display: none !important; }
 }
 @media (max-width: 40rem) { .panel--char .wardrobe { padding: 14px; } .wd-opts--acc { grid-template-columns: 1fr 1fr; } .wd-sec { padding: 10px 10px 12px; } }
 .wd-opts--acc { width: 100%; } .wd-opts--acc .opt--acc { width: 100%; box-sizing: border-box; }
+
+/* números dos cards de resumo: a fonte diminui com a largura do card em vez de quebrar o número no meio ("R$ 277.20" / "0") */
+.tiles > .tile, .hkpis > .hk { container-type: inline-size; }
+.tiles > .tile strong { font-size: min(var(--text-2xl), 17cqi); overflow-wrap: break-word; }
+.tiles--ft > .tile strong { font-size: min(var(--text-xl), 15cqi); }
+.hkpis > .hk .hk__v { font-size: min(1.2rem, 12cqi); overflow-wrap: break-word; }
