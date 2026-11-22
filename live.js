@@ -71,7 +71,7 @@ function realtime(sb) {
     const me = Auth.account()?.id, ch = sb.channel('live-game');
     if (me) ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_grants', filter: `user_id=eq.${me}` }, () => applyGrants(sb));
     ch.on('postgres_changes', { event: '*', schema: 'public', table: 'game_config' }, async () => { await loadConfig(sb); maintenance(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => loadAnnouncements(sb))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, async () => { await loadAnnouncements(sb); maintenance(); })
       .subscribe();
   } catch {}
   presence(sb);
@@ -101,6 +101,7 @@ async function loadConfig(sb) {
 }
 
 async function loadAnnouncements(sb) {
+  await checkReopen(sb);
   const { data, error } = await sb.from('announcements').select('id, text, kind').order('created_at', { ascending: false }).limit(5);
   if (error) return;
   anns = data || [];
@@ -120,15 +121,25 @@ function renderBar() {
   bar.innerHTML = items.map(a => `<span class="ann ann--${esc(a.kind)}">${esc(a.text)}</span>`).join('');
 }
 
+// fechado até a reinauguração: abre sozinho quando o administrador publica um aviso com "reinauguração" (painel > avisos)
+const LOCK_AT = '2026-11-22T21:36:00Z';   // só vale aviso publicado depois do fechamento
+let reopened = false;
+async function checkReopen(sb) {
+  if (reopened) return;
+  const { data, error } = await sb.from('announcements').select('id').ilike('text', '%reinaugura%').gte('created_at', LOCK_AT).limit(1);
+  if (!error && data?.length) reopened = true;
+}
 function maintenance() {
-  const d = $('#dlg-maint');
-  if (CFG.maintenance && !isAdmin) {
-    $('#maint-msg').textContent = CFG.maintenance_msg || 'O jogo está em manutenção. Volte em alguns minutos.';
+  const d = $('#dlg-maint'), shut = !reopened;
+  if ((CFG.maintenance || shut) && !isAdmin) {
+    $('#mt-title').textContent = shut ? 'fechado para a reinauguração' : 'em manutenção';
+    $('#maint-msg').textContent = shut ? 'O 21 World está sendo preparado para a reinauguração: todo mundo vai começar do zero, com R$ 10 mil. A data sai em breve no aviso do jogo. Quem jogou no começo já tem o selo 🌱 pioneiro guardado.' : CFG.maintenance_msg || 'O jogo está em manutenção. Volte em alguns minutos.';
     if (!d.open) d.showModal();
   } else if (d.open) d.close();
 }
 
-document.getElementById('dlg-ban')?.addEventListener('cancel', e => e.preventDefault());   // Esc não fecha: suspenso/pausado fica travado
+document.getElementById('dlg-ban')?.addEventListener('cancel', e => e.preventDefault());
+document.getElementById('dlg-maint')?.addEventListener('cancel', e => e.preventDefault());   // Esc não fura o fechamento   // Esc não fecha: suspenso/pausado fica travado
 async function checkBan(sb) {
   const { data, error } = await sb.from('bans').select('reason, until').eq('user_id', Auth.account().id).maybeSingle();
   const over = !error && (!data || (data.until && new Date(data.until) <= new Date()));
