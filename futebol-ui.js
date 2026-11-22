@@ -54,8 +54,9 @@ function renderNext() {
         <p class="muted small">${h === 'user' ? 'Jogo em casa: a bilheteria entra para você.' : 'Jogo fora de casa.'}${out.length ? ` Desfalques: ${out.map(p => `${esc(p.name)} (${p.sus ? 'suspenso' : 'lesionado'})`).join(', ')}.` : ''}</p>
         <div class="row"><label class="field"><span>formação</span><select class="input" id="ft-form">${Object.keys(FT.FORMATIONS).map(x => `<option ${x === c.formation ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
           <label class="field"><span>estilo</span><select class="input" id="ft-style">${Object.keys(FT.STYLES).map(x => `<option value="${x}" ${x === c.style ? 'selected' : ''}>${x === 'contra' ? 'contra-ataque' : x}</option>`).join('')}</select></label></div>
-        <div class="row"><button class="btn btn--gold btn--lg" data-act="ft-play" ${playing ? 'disabled' : ''}>assistir ao jogo</button>
-          <button class="btn btn--glass" data-act="ft-quick" ${playing ? 'disabled' : ''}>simular rápido</button></div>
+        <p class="muted small">Jogos restantes neste mês do mundo: ${FT.roundsLeft(G.S)} de ${FT.ROUNDS_PER_MONTH}.</p>
+        <div class="row"><button class="btn btn--gold btn--lg" data-act="ft-play" ${playing || !FT.roundsLeft(G.S) ? 'disabled' : ''}>assistir ao jogo</button>
+          <button class="btn btn--glass" data-act="ft-quick" ${playing || !FT.roundsLeft(G.S) ? 'disabled' : ''}>simular rápido</button></div>
         <div class="ft-stadium"><span>Estádio nível ${c.stadium || 1} de ${FT.STADIUM_MAX}: cada nível aumenta a bilheteria em 20%.</span>
           ${(c.stadium || 1) < FT.STADIUM_MAX ? `<button class="btn btn--glass btn--sm" data-act="ft-stadium">ampliar por ${brl(FT.stadiumCost(c))}</button>` : ''}</div>`;
     })();
@@ -180,6 +181,7 @@ export function quick() {
   applyTactics();
   const res = FT.playRound(G.S, Math.random, Live.CFG.prize_mult || 1);
   if (!res) return;
+  if (res.err) return say(res.err[0].toUpperCase() + res.err.slice(1), true);
   const { my, their } = bookkeep(res), g = res.mine;
   say(`${g.hn} ${g.hg} x ${g.ag} ${g.an}: ${my > their ? 'vitória' : my < their ? 'derrota' : 'empate'}. Caixa da rodada ${brl(res.cash)}.`, my < their);
   if (my > their) sfx.play('stack', 0.5);
@@ -192,6 +194,7 @@ export async function play() {
   applyTactics();
   const res = FT.playRound(G.S, Math.random, Live.CFG.prize_mult || 1);
   if (!res) return;
+  if (res.err) return say(res.err[0].toUpperCase() + res.err.slice(1), true);
   save();
   playing = true;
   const g = res.mine, home = g.h === 'user', d = $('#dlg-match');

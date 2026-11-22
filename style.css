@@ -3513,16 +3513,3 @@ dialog:not([open]) { display: none !important; }
 /* fichas altas no cassino */
 .chipbtn--5k { --c: #0ea5e9; } .chipbtn--25k { --c: #a855f7; } .chipbtn--100k { --c: #f59e0b; color: #1a1200; }
 .betpick { flex-wrap: wrap; }
-/* ficha de trabalho dos veículos da roça (garagem) */
-.fleet { display: grid; gap: 6px; margin: 8px 0; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.07); font-size: .82rem; min-width: 0; }
-.fleet__row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; }
-.fleet__how { margin: 0; overflow-wrap: anywhere; }
-.fleet__cond { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; font-weight: 700; }
-.fleet__cond--good .bar i { background: #22c55e; } .fleet__cond--warn .bar i { background: #f59e0b; } .fleet__cond--bad .bar i { background: #ef4444; }
-.fleet__facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
-.fleet__facts li { display: flex; justify-content: space-between; gap: 10px; } .fleet__facts span { color: var(--color-muted); flex: none; } .fleet__facts b { text-align: right; overflow-wrap: anywhere; min-width: 0; font-weight: 600; }
-.fleet__tip { margin: 2px 0 0; padding: 7px 9px; border-radius: 9px; background: rgba(255,255,255,.04); line-height: 1.35; }
-.fleet__tip.is-swap { background: rgba(250,204,21,.1); border: 1px solid rgba(250,204,21,.35); }
-.ccard--own .ccard__body { display: flex; flex-direction: column; justify-content: flex-start; gap: 6px; }
-.ccard--own .ccard__body > .btn { margin-top: auto; height: auto; min-height: 40px; }
-.ccard--own { display: flex !important; flex-direction: column; align-content: start; } .ccard--own .ccard__body { flex: 1; }

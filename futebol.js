@@ -257,9 +257,14 @@ function scorer(l, rng) {
   return pool[0]?.[0];
 }
 
+// uma rodada = uma semana do mundo: no máximo 4 por mês (antes dava para simular a temporada inteira em segundos e repetir prêmio/patrocínio)
+export const ROUNDS_PER_MONTH = 4;
+export const roundsLeft = s => (s.fut?.wk?.m === (s.month || 1) ? Math.max(0, ROUNDS_PER_MONTH - s.fut.wk.n) : ROUNDS_PER_MONTH);
 export function playRound(s, rng = Math.random, prizeMult = 1) {
   const f = s.fut, lg = f.league;
   if (lg.round >= lg.fixtures.length) return null;
+  if (!roundsLeft(s)) return { err: 'sem rodadas neste mês do mundo: são 4 jogos por mês (o relógio no topo mostra quando o próximo mês chega).' };
+  f.wk = { m: s.month || 1, n: ROUNDS_PER_MONTH - roundsLeft(s) + 1 };
   const games = lg.fixtures[lg.round], results = [];
   let mine = null, cash = 0;
   for (const [h, a] of games) {

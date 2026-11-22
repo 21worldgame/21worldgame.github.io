@@ -19,7 +19,6 @@ import { botsFor as BOTS } from './botpool.js';
 import * as NG from './negocios.js';
 import * as EC from './econ.js';
 import * as INV from './invest.js';
-import * as FR from './frota.js';
 import * as INVU from './invest-ui.js';
 import * as SH from './shop.js';
 import * as NGU from './negocios-ui.js';
@@ -248,20 +247,6 @@ function eta(monthsLeft, done = '') {
 function etaTxt(ms) { let mm = 600000; try { mm = Live.world().monthMs; } catch {} const d = Math.max(1, Math.ceil(ms / mm * 30)); return `faltam ${d} ${d === 1 ? 'dia' : 'dias'} · ~${realTxt(ms)}`; }
 G.eta = eta; G.monthFrac = monthFrac;
 setInterval(() => { for (const el of document.querySelectorAll('.eta[data-until]')) { const ms = Number(el.dataset.until) - Live.now(); el.textContent = ms > 0 ? `⏳ ${etaTxt(ms)}` : '✅ pronto na virada do mês'; } }, 5000);
-// ficha de trabalho do trator, caminhão e máquinas: rendimento, estado, risco de quebra e se vale trocar por 0 km
-function fleetHTML(s, car) {
-  const w = FR.work(s, car), k = FR.condition(car), rk = FR.risk(car), kv = FR.keepVsNew(s, car), pc = v => `${(v * 100).toFixed(1).replace('.', ',').replace(',0', '')}%`;
-  const tone = k >= 70 ? 'good' : k >= 40 ? 'warn' : 'bad';
-  return `<div class="fleet">
-    <div class="fleet__row"><span>${car.broken ? '🔧 <b class="bad">na oficina este mês</b>' : w.busy ? '✅ trabalhando' : '💤 parado'}</span><b class="good">${w.gain > 0 && !car.broken ? `rende ~${brl(w.gain)}/mês` : 'sem rendimento agora'}</b></div>
-    <p class="small muted fleet__how">${esc(w.how)}</p>
-    <div class="fleet__cond fleet__cond--${tone}"><span>estado ${k}%</span><span class="bar"><i style="transform:scaleX(${(k / 100).toFixed(2)})"></i></span></div>
-    <ul class="fleet__facts"><li><span>risco de quebrar</span><b class="${rk ? 'bad' : 'good'}">${rk ? `${pc(rk)} ao mês` : 'baixo'}</b></li>
-      ${rk ? `<li><span>conserto se quebrar</span><b>${brl(FR.repairCost(car))} + 1 mês parado</b></li>` : ''}
-      <li><span>manter custa</span><b>~${brl(kv.keep)}/mês</b></li><li><span>um 0 km custaria</span><b>~${brl(kv.fresh)}/mês</b></li>
-      <li><span>perdeu de valor</span><b>${pc(kv.lost)} (desgaste do uso)</b></li></ul>
-    <p class="fleet__tip ${kv.worth ? 'is-swap' : ''}">${kv.worth ? `💡 <b>Vale trocar:</b> vende por ${brl(kv.sell)} e compra um 0 km por ${brl(L.CARS[car.model].price)} (diferença ${brl(kv.diff)})${Number.isFinite(kv.pay) && kv.pay <= 36 ? `, que se paga em ~${kv.pay} meses pela economia` : `. Ele está gasto (${kv.k}%): ${rk ? `já quebra em ${pc(rk)} dos meses, e ` : ''}a manutenção e o risco só aumentam`}.` : kv.k >= 70 ? 'Ainda compensa manter: está em bom estado.' : `Desgastando: ainda dá para manter, mas a manutenção e o risco de quebra sobem todo mês${Number.isFinite(kv.pay) && kv.pay <= 120 ? ` (trocar agora se pagaria em ~${kv.pay} meses)` : ''}.`}</p></div>`;
-}
 function orchardBox(l) {
   const o = l.orchard, pr = Math.min(1, (o.age + monthFrac()) / PM.ORANGE.grow), nh = PM.nextHarvest(o);
   return `<div class="orchard${o.pest >= 3 ? ' is-sick' : ''}"><img src="assets/farm-laranja.webp" alt="" loading="lazy">
@@ -600,7 +585,6 @@ function renderCarros() {
       <div class="ccard__photo"><img src="${carImg(c)}" alt="${esc(c.name)}" loading="lazy"><span class="tag tag--green">sua</span></div>
       <div class="ccard__body"><h4>${esc(c.name)}</h4>
         <p class="price">${brl(car.value)}</p><p class="muted small">pagou ${brl(c.price)}, desvalorizou ${(lost * 100).toFixed(1)}%. A loja recompra por ${brl(car.value * L.CAR_BUYBACK)}.</p>
-        ${FR.isWork(car) ? fleetHTML(s, car) : ''}
         <button class="btn btn--glass" data-act="sell-car" data-id="${car.id}">vender</button></div></article>`;
   }).join('') : '<p class="empty glass">Garagem vazia. Seu primeiro carro aparece aqui e no seu perfil.</p>';
 }
@@ -1539,7 +1523,6 @@ function worldMonths0() {
     for (const l of SU.monthly(s)) N(l);
     for (const l of NG.monthly(s)) N(l);
     for (const l of INV.monthly(s)) N(l);   // investimentos do banco: rende e paga o que venceu
-    for (const l of FR.monthly(s)) N(l);    // frota: desgaste, manutenção e quebras
     for (const l of MI.monthly(s)) { N(l); if (l.big) { confetti(220); say(l.txt); } }
     for (const l of NG.enforce(s)) { N(l); say(l.txt[0].toUpperCase() + l.txt.slice(1) + '. Compre galpões na loja.', true); }
     for (const l of AB.monthly(s)) N(l);
@@ -1568,7 +1551,6 @@ G.ctForecast = () => {
     const s = structuredClone(s0), rng = () => 0.5;
     rec.push(...L.tick(s, rng));
     for (const m of [ST, GR, PM, CN, SU, NG, INV]) rec.push(...m.monthly(s, rng));
-    rec.push(...FR.monthly(s, () => 1));   // previsão: sem sorteio de quebra
     rec.push(...MI.monthly(s, rng), ...NG.enforce(s), ...AB.monthly(s), ...AM.monthly(s, rec, rng), ...CT.monthly(s, L.netWorth(s)));
     const spent = -rec.filter(l => l.val < 0).reduce((t, l) => t + l.val, 0), earned = rec.filter(l => l.val > 0 && !INV.NOT_PROFIT.test(l.txt)).reduce((t, l) => t + l.val, 0);
     rec.push(...L.eliteBills(s, spent, earned, livingOf(rec)));
@@ -1621,7 +1603,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 145;
+const APP_VERSION = 144;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
