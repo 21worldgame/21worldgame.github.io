@@ -3,7 +3,7 @@ import { mult } from './perks.js';
 // Só o dono contrata equipes. Primeiro vem a prospecção (meses procurando um veio, mais equipes = mais chance por mês);
 // achado o veio, cada equipe extrai alguns kg por mês, vendidos pelo preço do ouro. Acabou o veio, volta a procurar.
 export const MINE = { name: 'Mineradora Serra Dourada', price: 120000000, upkeep: 1100000, crew: 95000, maxCrews: 10, resale: 0.6 };
-export const FIND = 0.022, KG_PER_CREW = 1.4, GOLD = 540000;   // chance por equipe por mês · kg por equipe por mês · R$ por kg (inicial)
+export const FIND = 0.022, KG_PER_CREW = 1.4, GOLD = 680000;   // ouro ~US$ 3.700 a onça x R$ 5,70 = ~R$ 680 o grama (nov/2026)   // chance por equipe por mês · kg por equipe por mês · R$ por kg (inicial)
 export const ensure = s => { s.prices ??= {}; s.prices.ouro ??= GOLD; return s.mina; };
 export function buy(s) {
   if (s.mina) return 'você já é dono da mina.';

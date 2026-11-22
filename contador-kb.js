@@ -37,7 +37,7 @@ export const KB = [
     'O primeiro troféu (R$ 10 mi) libera o perfil privado: os outros só veem os seus troféus.'] },
   // ---------- dinheiro ----------
   { t: 'empréstimo no banco', k: ['emprestimo', 'banco', 'credito', 'parcela', 'juros', 'divida', 'financiar', 'pegar dinheiro'], a: [
-    'O banco cobra 3,5% de juros ao mês (alguns carros e acessórios baixam) e divide em 12 parcelas. Quem o banco não atende pega com agiota: paga o juro do banco, mais 1 ponto, mais o risco de calote dele. Se der calote, o cobrador recupera 25%.',
+    'O banco cobra 1,8% de juros ao mês, igual para todos (empréstimo com terra e gado de garantia, como na vida real; alguns carros, acessórios e terras grandes baixam um pouco) e divide em 12 parcelas. Quem o banco não atende pega com agiota: paga o juro do banco, mais 1 ponto, mais o risco de calote dele. Se der calote, o cobrador recupera 25%.',
     'O limite é a metade do valor das suas terras próprias + 20% do valor do rebanho, menos o que você já deve.',
     'Parcela sem dinheiro fica atrasada. Duas atrasadas seguidas e o banco toma a sua terra mais cara.'] },
   { t: 'emprestar dinheiro', k: ['emprestar', 'emprestei', 'calote', 'devedor', 'cobrar'], a: [
@@ -85,11 +85,11 @@ export const KB = [
     'Na revenda o barracão vale 70% do preço.'] },
   // ---------- lavouras ----------
   { t: 'lavoura', k: ['lavoura', 'plantar', 'plantio', 'colheita', 'colher', 'soja', 'milho', 'cafe', 'saca', 'sacas', 'safra'], a: [
-    'Soja: R$ 5.500 por ha, 4 meses, uns 60 sacas por ha. Milho: R$ 4.500 por ha, 5 meses, uns 100 sacas. Café: R$ 30.000 por ha, 12 meses, uns 30 sacas. São os custos reais de produção.',
-    'Com trator o plantio sai 15% mais barato. A colheita vai para o armazém e você vende quando quiser, pelo preço do dia.'] },
+    'Soja: R$ 6.300 por ha, 4 meses, uns 60 sacas por ha. Milho: R$ 4.800 por ha, 5 meses, uns 100 sacas. Café: R$ 32.000 por ha, 12 meses, uns 30 sacas. São os custos reais de produção.',
+    'Com trator o plantio sai 10% mais barato. A colheita vai para o armazém e você vende quando quiser, pelo preço do dia.'] },
   { t: 'laranja', k: ['laranja', 'pomar', 'pomares', 'caixa', 'caixas', 'greening', 'pulverizador', 'praga'], a: [
     'Pomar só em terra própria: R$ 30 mil por ha para plantar, 6 meses até a primeira colheita e depois uma colheita a cada 4 meses.',
-    'Pomar adulto e sadio: uns 330 caixas (40,8 kg) por ha por colheita. Manutenção de R$ 2.500 por ha por mês (defensivo, adubo e mão de obra).',
+    'Pomar adulto e sadio: uns 330 caixas (40,8 kg) por ha por colheita. Manutenção de R$ 1.800 por ha por mês (defensivo, adubo e mão de obra).',
     'Sem defensivo a praga (greening) cresce e derruba a safra, até perder tudo. Cada pulverizador cobre 150 ha e cada plataforma 200 ha.'] },
   { t: 'cana', k: ['cana', 'canavial', 'usina', 'corte', 'colhedora', 'broca'], a: [
     'Canavial só em terra própria: R$ 11 mil por ha, primeiro corte em 10 meses e depois a cada 10 meses.',
@@ -97,8 +97,8 @@ export const KB = [
     'Tratos de R$ 280 por ha por mês. A cana vai para a usina, e o frete depende da distância do seu estado. Colhedora própria: R$ 1,2 mi.'] },
   // ---------- veículos e acessórios ----------
   { t: 'carros', k: ['carro', 'carros', 'veiculo', 'caminhonete', 'trator', 'caminhao', 'ipva', 'garagem'], a: [
-    'Carros e máquinas perdem 1,5% do valor por mês e pagam 0,4% por mês de IPVA e seguro.',
-    'A concessionária recompra por 92% do valor de hoje. Alguns dão vantagens: o trator, por exemplo, deixa o plantio 15% mais barato. A vantagem de cada um aparece na loja.'] },
+    'Carros e máquinas perdem 1% do valor por mês (uns 12% ao ano, como na tabela Fipe) e pagam 0,6% por mês de IPVA e seguro.',
+    'A concessionária recompra por 92% do valor de hoje. Alguns dão vantagens: o trator, por exemplo, deixa o plantio 10% mais barato. A vantagem de cada um aparece na loja.'] },
   { t: 'acessórios', k: ['acessorio', 'acessorios', 'chapeu', 'relogio', 'corrente', 'oculos', 'estoque de acessorio', 'esgotado', 'personagem'], a: [
     'Cada acessório tem 35 unidades para o jogo inteiro. Esgotou, só comprando de outro jogador no Feirão.',
     'Muitos dão vantagens (preço de venda, juros menores, etc.). Vender para a loja paga metade do preço e devolve a unidade ao estoque.'] },
@@ -151,7 +151,7 @@ export const KB = [
     'A loja paga um valor fixo por carta: comum R$ 3 mil, rara R$ 5 mil, lendária R$ 8 mil, exclusiva (sazonal) R$ 10 mil. O valor de verdade é o que os jogadores pagam entre si.',
     'Coleções padrão (Campeões, Prosperidade, Fortuna, Pecuária) saem nos pacotes o ano todo. Sazonais (Natal só em dezembro, Festa Junina de 1/6 a 31/7) só no período delas, em pacote próprio com 1 carta da temporada garantida, e às vezes nos pacotes comuns. Fora da temporada, só comprando de quem tem.',
     'Cada carta conta uma vez na coleção (repetidas não somam) e cada coleção se completa uma vez só. Completar dá emblema no perfil, sobe no ranking de colecionadores e libera a vantagem para sempre:',
-    '• Campeões: +5% de XP · Prosperidade: 2 pontos a menos de mortalidade e de perda por praga · Fortuna: +15% no ganho de fichas no cassino · Pecuária: pintinhos, leitões e bezerros 15% mais baratos · Natal: 50 de prestígio · Festa Junina: +10% na roleta do dia e 30 de prestígio.',
+    '• Campeões: +5% de XP · Prosperidade: 2 pontos a menos de mortalidade e de perda por praga · Fortuna: +2% no ganho de fichas no cassino · Pecuária: pintinhos, leitões e bezerros 5% mais baratos · Natal: 50 de prestígio · Festa Junina: +10% na roleta do dia e 30 de prestígio.',
     'Pacotes: simples R$ 6 mil (1 carta), ouro R$ 18 mil (3, 1 rara ou melhor), lendário R$ 35 mil (5, 1 lendária), com estoque por mês do mundo. A roleta do dia também dá pacote.'] },
   { t: 'mina de ouro', k: ['mina', 'ouro', 'mineradora', 'garimpo', 'equipe de garimpo'], a: [
     'A mina é única no jogo inteiro: só um jogador pode ser dono. Custa R$ 120 mi e tem manutenção de R$ 1,1 mi por mês.',

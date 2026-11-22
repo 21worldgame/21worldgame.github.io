@@ -27,8 +27,39 @@ export function fromNote(name, txt, val) {
   const kind = troca ? 'troca' : /vend/i.test(txt) ? 'venda' : /roda|prêmio|ganhou|bônus/i.test(txt) ? 'premio' : val < 0 ? 'compra' : 'negocio';
   return { kind, name: tidy(name).slice(0, 18) || 'um jogador', what: what.slice(0, 90), val: Math.round(val) };
 }
+// ---------- edição especial: reportagens da redação sobre as mudanças do mundo (ficam no ar por 3 dias) ----------
+const ED_AT = Date.UTC(2026, 10, 22, 17, 0), ED_DAYS = 3;
+const ed = (i, kind, img, title, lead) => ({ id: `ed152-${i}`, kind, img, title, lead, at: ED_AT + i * 60000, ed: true, real: false });
+export const EDITORIAL = [
+  ed(1, 'economia', 'assets/photo-vegas.webp', 'Fim da taxa dos ricos: imposto do 21 World passa a ser igual para todos',
+    'O acréscimo nas compras, o pedágio sobre o lucro e o imposto sobre grandes fortunas foram extintos. A partir de hoje vale um único imposto de renda de 5% sobre o lucro do mês, com a mesma alíquota para o pequeno produtor e para o magnata. Mês fechado no prejuízo não paga nada. Juros do banco e honorário do contador (R$ 2.500 fixos) também deixam de variar conforme a fortuna.'),
+  ed(2, 'alerta', 'assets/farm-roxa.webp', 'Reajuste da economia real: fortunas encolhem pela metade após auditoria do campo',
+    'Levantamento da redação mostrou que as lavouras do 21 World davam até 79% de lucro, contra 30% a 40% na vida real. Para corrigir a distorção, o patrimônio de todos os jogadores foi reduzido em 50%, primeiro do caixa e, quando não havia dinheiro, com a venda de terras pelo valor de tabela. O ranking já mostra os novos números.'),
+  ed(3, 'economia', 'assets/farm-soja.webp', 'Choque de custos: soja passa a custar R$ 6.300 por hectare e margem cai para 30%',
+    'Com base nos custos do IMEA e da Aprosoja-MS para a safra 2025/26, que vão de R$ 5,6 mil a R$ 7,7 mil por hectare, o plantio ficou mais caro. A saca de soja segue o Cepea, perto de R$ 150 no Paraná. Milho custa R$ 4.800 por hectare (saca a R$ 64) e o café arábica R$ 32 mil, com uma colheita por ano e saca a R$ 1.600.'),
+  ed(4, 'economia', 'assets/farm-bezerro.webp', 'Boi gordo a R$ 335 e bezerro a R$ 3.500: reposição nunca foi tão cara',
+    'O indicador do bezerro do Cepea em Mato Grosso do Sul renovou a máxima histórica em outubro, perto de R$ 3.500 por cabeça, alta de quase 14% no ano. A arroba do boi gordo passa a ser negociada em torno de R$ 335. Quem engorda o gado precisa fazer conta: o lucro está na diferença entre a reposição e o boi pronto.'),
+  ed(5, 'alerta', 'assets/farm-laranja.webp', 'Laranja em crise: caixa cai para R$ 28 e pomar leva até 8 anos para se pagar',
+    'A indústria paga entre R$ 26 e R$ 30 pela caixa de 40,8 kg no início da safra 2026/27, segundo o Cepea, nível próximo ao de 2021. Com manutenção de R$ 1.800 por hectare ao mês, o pomar continua de pé, mas o retorno ficou longo. Na cana, o ATR em torno de R$ 1,05 por quilo deixa a tonelada perto de R$ 130.'),
+  ed(6, 'economia', 'assets/farm-pasto2.webp', 'Terra vale em média R$ 40 mil o hectare; Paraná e São Paulo lideram',
+    'A tabela de terras do 21 World foi atualizada com o mercado de 2026. A média nacional ficou em cerca de R$ 40 mil por hectare, segundo a Scot Consultoria. Campos Gerais (PR) e Ribeirão Preto (SP) chegam a R$ 90 mil; Rio Verde (GO), puxado pelas novas agroindústrias, R$ 55 mil. No Norte, o pasto ainda sai por R$ 10 mil a R$ 18 mil. O ágio de 35% sobre a tabela acabou.'),
+  ed(7, 'economia', 'assets/photo-chips.webp', 'Juros despencam no Banco 21: empréstimo cai de 3,5% para 1,8% ao mês',
+    'Com a Selic em 13,75% ao ano, o Banco 21 alinhou suas taxas ao mercado. O empréstimo com terra e gado de garantia passa a custar 1,8% ao mês. Na outra ponta, a poupança rende 0,55%, o CDB 1%, a LCA Agro 1,02% (isenta de imposto), o Tesouro 1,08% e a Previdência 1,1% ao mês. Pegar emprestado para aplicar não fecha a conta.'),
+  ed(8, 'negocio', 'assets/photo-stadium.webp', 'Futebol vira negócio de gente grande: clube da Série A custa R$ 150 milhões',
+    'O futebol do 21 World ganhou valores reais. Um titular da Série A recebe uns R$ 170 mil por mês e uma estrela chega a R$ 500 mil. Uma SAF da Série C sai por R$ 8 milhões e uma da Série A por R$ 150 milhões, com bilheteria, patrocínio e premiação da CBF na mesma escala. O clube médio fica perto do zero a zero: o lucro vem do G4, do acesso e da venda de jogadores. Quem tinha clube recebeu de volta o que pagou.'),
+  ed(9, 'negocio', 'assets/news/news-export.webp', 'Bolsa do 21 World abre pregão de ações: Ibovespa, Petrobras, Vale e Itaú na mesa de operações',
+    'A mesa de operações ganhou o Ibovespa, perto dos 171 mil pontos, e três das ações mais negociadas da B3: Petrobras PN, Vale ON e Itaú PN. O dólar foi atualizado para cerca de R$ 5,70 e o bitcoin para R$ 420 mil. Boi gordo e soja seguem a cotação do Cepea.'),
+  ed(10, 'compra', 'assets/car-porsche.webp', 'Concessionárias reajustam tabela: Porsche 911 a R$ 990 mil e Huracán a R$ 4,5 milhões',
+    'O Onix parte de R$ 100 mil, a Hilux SRX de R$ 335 mil e o Scania R 540 de R$ 1,02 milhão, perto da tabela Fipe. O Mercedes-AMG G 63 sai por R$ 2,15 milhões. O IPVA (4%) e o seguro (cerca de 3,5%) passam a custar 0,6% do valor por mês, e o carro desvaloriza uns 12% ao ano.'),
+  ed(11, 'alerta', 'assets/photo-roulette.webp', 'Grifes perdem o poder mágico: vantagens de acessórios são recalibradas',
+    'Chapéus, botas e relógios continuam dando vantagem, mas agora de 1% a 3%, o tamanho de um bom contrato com o comprador. Antes, um chapéu chegava a dobrar o lucro de uma granja. No cassino, a coleção Fortuna dá no máximo 2% e nenhuma combinação supera a vantagem da casa. O trator barateia o plantio em 10%.'),
+  ed(12, 'alerta', 'assets/photo-slots.webp', 'Receita Federal aperta o cerco a quem enriquece rápido demais',
+    'Quem tiver o patrimônio subindo mais de R$ 10 milhões e 25% em 10 minutos recebe um aviso da Receita. Se insistir, a conta é congelada para análise: 10 minutos na primeira vez, 15 na segunda e mais a cada nova ocorrência, até o administrador liberar.'),
+];
+export const editorial = (now = Date.now()) => EDITORIAL.filter(e => now >= e.at - 864e5 && now - e.at < ED_DAYS * 864e5);
 // manchete pronta (texto puro; a tela escapa antes de mostrar)
 export function headline(n) {
+  if (n.title) return n.title;   // edição especial
   if (n.text) return n.text;   // economia do mundo (econ-ui.js): manchete pronta
   const v = n.val ? ` por ${short(n.val)}` : '';
   if (n.kind === 'troca') return `${n.name} fechou uma troca ${n.what.replace(/^troca /, '')}.`;
@@ -54,11 +85,11 @@ const GEN = [
   r => { const g = pick(r, REGIONS), ha = pick(r, [80, 150, 300, 600, 1000]); return { kind: 'compra', what: `${ha} ha em ${g.name}`, val: -g.perHa * ha }; },
   r => { const d = r() < 0.3 ? 0 : r() < 0.6 ? 1 : 2, c = pick(r, CLUBS[d]); return { kind: 'compra', what: `o comando do ${c.n}`, val: -clubPrice(c.n) }; },
   r => { const b = pick(r, brands); return { kind: 'compra', what: `a marca ${b.name}`, val: -b.price }; },
-  r => { const n = pick(r, [40, 80, 150, 300]); return { kind: 'venda', what: `${n} bois gordos no frigorífico`, val: n * pick(r, [5200, 5600, 6100]) }; },
+  r => { const n = pick(r, [40, 80, 150, 300]); return { kind: 'venda', what: `${n} bois gordos no frigorífico`, val: n * pick(r, [5600, 6000, 6400]) }; },
   r => ({ kind: 'compra', what: `um cavalo ${pick(r, ['Puro-Sangue Inglês', 'Quarto de Milha', 'Árabe', 'Mangalarga Marchador'])} no leilão`, val: -pick(r, [180000, 260000, 420000, 750000]) }),
   r => ({ kind: 'premio', what: `uma carta ${pick(r, ['mestre', 'challenger', 'diamante'])} de ${pick(r, CHAMPS).name || 'campeão'} no pacote lendário`, val: pick(r, [400000, 900000, 2500000]) }),
   r => ({ kind: 'premio', what: `um saque de ${pick(r, ['18,4x', '32,7x', '55,0x', '12,9x'])} no aviator`, val: pick(r, [60000, 140000, 320000]) }),
-  r => { const [g, p, q] = pick(r, [['soja', 130, 30000], ['milho', 60, 50000], ['café', 1400, 3000]]), s = q * pick(r, [1, 2, 4]); return { kind: 'venda', what: `${s.toLocaleString('pt-BR')} sacas de ${g}`, val: s * p }; },
+  r => { const [g, p, q] = pick(r, [['soja', 150, 30000], ['milho', 64, 50000], ['café', 1600, 3000]]), s = q * pick(r, [1, 2, 4]); return { kind: 'venda', what: `${s.toLocaleString('pt-BR')} sacas de ${g}`, val: s * p }; },
   r => { const c = pick(r, cars); return { kind: 'venda', what: `o ${c.name} seminovo`, val: Math.round(c.price * 0.8) }; },
 ];
 export function npcNews(slot, nicks) {

@@ -1,12 +1,12 @@
 // Investimentos no Banco 21 (regras puras): dinheiro parado rende pouco e fica preso por bastante tempo.
-// Calibrado para render bem menos que terra (~0,6% ao mês) e empresas: é um porto seguro, não um atalho para enriquecer.
-// Juros simples (sem bola de neve), teto por pessoa e o valor aplicado conta no patrimônio (não serve para fugir das faixas).
-export const PRODUCTS = {
-  poupanca: { name: 'Poupança 21', icon: '🐷', months: 0, rate: 0.0003, desc: 'Sem prazo: tira quando quiser. Rende pouquinho, todo mês.', early: 0 },
-  cdb: { name: 'CDB 21', icon: '📄', months: 60, rate: 0.001, desc: 'Certificado do banco. Prazo curto para um investimento.', early: 0 },
-  lca: { name: 'LCA Agro 21', icon: '🌾', months: 120, rate: 0.0012, desc: 'Financia o agro do mundo. O rendimento é isento do pedágio dos mais ricos.', early: 0, exempt: true },
-  tesouro: { name: 'Tesouro 21', icon: '🏛️', months: 288, rate: 0.0014, desc: 'Título do governo do 21 World. Prazo longo, rendimento maior.', early: 0.02 },
-  previdencia: { name: 'Previdência 21', icon: '🛡️', months: 576, rate: 0.0016, desc: 'O mais longo e o que mais rende. Para quem pensa no futuro.', early: 0.1 },
+// Taxas da vida real: rendem menos que os juros do empréstimo do banco (1,8% ao mês), então pegar emprestado para aplicar não dá lucro.
+// Juros simples (sem bola de neve), teto por pessoa e o valor aplicado conta no patrimônio.
+export const PRODUCTS = {   // taxas reais de nov/2026 (Selic 13,75% ao ano = ~1,08% ao mês), por mês do mundo
+  poupanca: { name: 'Poupança 21', icon: '🐷', months: 0, rate: 0.0055, desc: 'Sem prazo: tira quando quiser. Rende como a poupança de verdade (0,5% + TR ao mês).', early: 0 },
+  cdb: { name: 'CDB 21', icon: '📄', months: 60, rate: 0.01, desc: 'Certificado do banco, ~93% do CDI. Prazo curto para um investimento.', early: 0 },
+  lca: { name: 'LCA Agro 21', icon: '🌾', months: 120, rate: 0.0102, desc: 'Financia o agro do mundo. Rendimento isento de imposto de renda.', early: 0, exempt: true },
+  tesouro: { name: 'Tesouro 21', icon: '🏛️', months: 288, rate: 0.0108, desc: 'Título do governo, rende a Selic. Prazo longo.', early: 0.02 },
+  previdencia: { name: 'Previdência 21', icon: '🛡️', months: 576, rate: 0.011, desc: 'O mais longo e o que mais rende. Para quem pensa no futuro.', early: 0.1 },
 };
 export const MIN = 10000, CAP_SHARE = 0.25, CAP_MAX = 50e6;
 export const total = s => (s.invest || []).reduce((t, i) => t + i.amt + (i.acc || 0), 0);

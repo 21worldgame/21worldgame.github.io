@@ -14,7 +14,7 @@ import { animalsValue } from './stable.js';
 export const CHIP = 10;           // 1 ficha = R$ 10
 export const HOUSE_FEE = 0.05;    // taxa do cassino sobre o pote
 export const MARKET_FEE = 0.01;   // taxa do mercado sobre vendas
-export const BANK_RATE = 0.035;   // juros do banco ao mês
+export const BANK_RATE = 0.018;   // juros do banco ao mês: empréstimo com terra de garantia (vida real, Selic 13,75% em nov/2026)
 // agiota: quem pega com ele é quem o banco não atende. Paga o banco + 1 ponto + o risco dele (calote ao mês) com 10% de folga.
 // Com calote o cobrador ainda recupera RECOVER do saldo, então emprestar dá lucro esperado: rate - risk * (1 - RECOVER) > 0.
 export const RECOVER = 0.25;
@@ -68,47 +68,47 @@ export function settle(seats, fee = HOUSE_FEE) {
 }
 
 // ---------- economia ----------
-// preço/ha aproximado da terra nua por região (ordem de grandeza real, 2025)
+// preço/ha de mercado por região (2026; Scot Consultoria: média nacional ~R$ 40 mil/ha). Lote à venda = este preço ± 15%
 // lat/lon: centro de uma zona agrícola real de cada região (o lote cai num raio de ~25 km)
 export const REGIONS = [
-  { name: 'várzea, tocantins', uf: 'to', perHa: 9000, use: 'pasto', lat: -10.79, lon: -49.62, city: 'Lagoa da Confusão' },
-  { name: 'cerrado, goiás', uf: 'go', perHa: 22000, use: 'lavoura', lat: -17.75, lon: -51.05, city: 'Rio Verde' },
-  { name: 'pastagem, mato grosso do sul', uf: 'ms', perHa: 18000, use: 'pasto', lat: -20.44, lon: -53.76, city: 'Ribas do Rio Pardo' },
-  { name: 'terra roxa, paraná', uf: 'pr', perHa: 55000, use: 'lavoura', lat: -24.95, lon: -53.45, city: 'Cascavel' },
-  { name: 'chapadão, mato grosso', uf: 'mt', perHa: 30000, use: 'lavoura', lat: -12.55, lon: -55.75, city: 'Sorriso' },
-  { name: 'sul de minas', uf: 'mg', perHa: 40000, use: 'café', lat: -21.37, lon: -45.51, city: 'Três Pontas' },
-  { name: 'oeste da bahia', uf: 'ba', perHa: 16000, use: 'lavoura', lat: -12.1, lon: -45.8, city: 'Luís Eduardo Magalhães' },
-  { name: 'sudeste do pará', uf: 'pa', perHa: 7000, use: 'pasto', lat: -7.1, lon: -49.95, city: 'Xinguara' },
-  { name: 'interior de são paulo', uf: 'sp', perHa: 95000, use: 'lavoura', lat: -21.18, lon: -47.81, city: 'Ribeirão Preto' },
-  { name: 'oeste paulista', uf: 'sp', perHa: 62000, use: 'pasto', lat: -22.12, lon: -51.39, city: 'Presidente Prudente' },
-  { name: 'serra gaúcha', uf: 'rs', perHa: 78000, use: 'lavoura', lat: -29.17, lon: -51.52, city: 'Bento Gonçalves' },
-  { name: 'planalto gaúcho', uf: 'rs', perHa: 70000, use: 'lavoura', lat: -28.26, lon: -52.41, city: 'Passo Fundo' },
-  { name: 'campanha gaúcha', uf: 'rs', perHa: 38000, use: 'pasto', lat: -31.33, lon: -54.1, city: 'Bagé' },
-  { name: 'oeste catarinense', uf: 'sc', perHa: 64000, use: 'lavoura', lat: -27.1, lon: -52.62, city: 'Chapecó' },
-  { name: 'campos gerais, paraná', uf: 'pr', perHa: 80000, use: 'lavoura', lat: -24.79, lon: -50.01, city: 'Castro' },
-  { name: 'triângulo mineiro', uf: 'mg', perHa: 56000, use: 'lavoura', lat: -19.75, lon: -47.93, city: 'Uberaba' },
-  { name: 'cerrado mineiro', uf: 'mg', perHa: 50000, use: 'café', lat: -18.94, lon: -46.99, city: 'Patrocínio' },
-  { name: 'montanhas capixabas', uf: 'es', perHa: 46000, use: 'café', lat: -20.34, lon: -41.13, city: 'Venda Nova do Imigrante' },
-  { name: 'serra fluminense', uf: 'rj', perHa: 52000, use: 'pasto', lat: -22.25, lon: -43.7, city: 'Valença' },
-  { name: 'entorno do df', uf: 'df', perHa: 60000, use: 'lavoura', lat: -15.95, lon: -47.55, city: 'Brasília (PAD-DF)' },
-  { name: 'matopiba, maranhão', uf: 'ma', perHa: 28000, use: 'lavoura', lat: -7.53, lon: -46.04, city: 'Balsas' },
-  { name: 'cerrado do piauí', uf: 'pi', perHa: 25000, use: 'lavoura', lat: -7.23, lon: -44.55, city: 'Uruçuí' },
-  { name: 'vale do são francisco', uf: 'pe', perHa: 65000, use: 'lavoura', lat: -9.39, lon: -40.6, city: 'Petrolina' },
-  { name: 'chapada do apodi', uf: 'rn', perHa: 32000, use: 'lavoura', lat: -5.66, lon: -37.8, city: 'Apodi' },
-  { name: 'cariri cearense', uf: 'ce', perHa: 22000, use: 'pasto', lat: -7.21, lon: -39.31, city: 'Juazeiro do Norte' },
-  { name: 'zona da mata alagoana', uf: 'al', perHa: 42000, use: 'lavoura', lat: -9.78, lon: -36.2, city: 'São Miguel dos Campos' },
-  { name: 'brejo paraibano', uf: 'pb', perHa: 20000, use: 'pasto', lat: -6.85, lon: -35.6, city: 'Guarabira' },
-  { name: 'sertão sergipano', uf: 'se', perHa: 19000, use: 'pasto', lat: -10.22, lon: -37.42, city: 'Nossa Senhora da Glória' },
-  { name: 'sul da bahia', uf: 'ba', perHa: 34000, use: 'lavoura', lat: -14.86, lon: -39.59, city: 'Ibicaraí' },
-  { name: 'cone sul de rondônia', uf: 'ro', perHa: 33000, use: 'lavoura', lat: -12.74, lon: -60.15, city: 'Vilhena' },
-  { name: 'vale do acre', uf: 'ac', perHa: 16000, use: 'pasto', lat: -9.97, lon: -67.6, city: 'Rio Branco' },
-  { name: 'várzea amazonense', uf: 'am', perHa: 14000, use: 'pasto', lat: -3.14, lon: -58.44, city: 'Itacoatiara' },
-  { name: 'lavrado de roraima', uf: 'rr', perHa: 17000, use: 'lavoura', lat: -2.82, lon: -60.67, city: 'Boa Vista' },
-  { name: 'cerrado do amapá', uf: 'ap', perHa: 15000, use: 'pasto', lat: 0.71, lon: -51.41, city: 'Porto Grande' },
-  { name: 'pantanal, mato grosso do sul', uf: 'ms', perHa: 16000, use: 'pasto', lat: -20.47, lon: -55.79, city: 'Aquidauana' },
-  { name: 'araguaia, mato grosso', uf: 'mt', perHa: 24000, use: 'pasto', lat: -14.05, lon: -52.16, city: 'Água Boa' },
-  { name: 'norte do tocantins', uf: 'to', perHa: 14000, use: 'pasto', lat: -7.19, lon: -48.2, city: 'Araguaína' },
-  { name: 'nordeste paraense', uf: 'pa', perHa: 19000, use: 'lavoura', lat: -2.99, lon: -47.35, city: 'Paragominas' },
+  { name: 'várzea, tocantins', uf: 'to', perHa: 15000, use: 'pasto', lat: -10.79, lon: -49.62, city: 'Lagoa da Confusão' },
+  { name: 'cerrado, goiás', uf: 'go', perHa: 55000, use: 'lavoura', lat: -17.75, lon: -51.05, city: 'Rio Verde' },
+  { name: 'pastagem, mato grosso do sul', uf: 'ms', perHa: 25000, use: 'pasto', lat: -20.44, lon: -53.76, city: 'Ribas do Rio Pardo' },
+  { name: 'terra roxa, paraná', uf: 'pr', perHa: 75000, use: 'lavoura', lat: -24.95, lon: -53.45, city: 'Cascavel' },
+  { name: 'chapadão, mato grosso', uf: 'mt', perHa: 45000, use: 'lavoura', lat: -12.55, lon: -55.75, city: 'Sorriso' },
+  { name: 'sul de minas', uf: 'mg', perHa: 55000, use: 'café', lat: -21.37, lon: -45.51, city: 'Três Pontas' },
+  { name: 'oeste da bahia', uf: 'ba', perHa: 30000, use: 'lavoura', lat: -12.1, lon: -45.8, city: 'Luís Eduardo Magalhães' },
+  { name: 'sudeste do pará', uf: 'pa', perHa: 12000, use: 'pasto', lat: -7.1, lon: -49.95, city: 'Xinguara' },
+  { name: 'interior de são paulo', uf: 'sp', perHa: 90000, use: 'lavoura', lat: -21.18, lon: -47.81, city: 'Ribeirão Preto' },
+  { name: 'oeste paulista', uf: 'sp', perHa: 40000, use: 'pasto', lat: -22.12, lon: -51.39, city: 'Presidente Prudente' },
+  { name: 'serra gaúcha', uf: 'rs', perHa: 60000, use: 'lavoura', lat: -29.17, lon: -51.52, city: 'Bento Gonçalves' },
+  { name: 'planalto gaúcho', uf: 'rs', perHa: 75000, use: 'lavoura', lat: -28.26, lon: -52.41, city: 'Passo Fundo' },
+  { name: 'campanha gaúcha', uf: 'rs', perHa: 30000, use: 'pasto', lat: -31.33, lon: -54.1, city: 'Bagé' },
+  { name: 'oeste catarinense', uf: 'sc', perHa: 50000, use: 'lavoura', lat: -27.1, lon: -52.62, city: 'Chapecó' },
+  { name: 'campos gerais, paraná', uf: 'pr', perHa: 90000, use: 'lavoura', lat: -24.79, lon: -50.01, city: 'Castro' },
+  { name: 'triângulo mineiro', uf: 'mg', perHa: 55000, use: 'lavoura', lat: -19.75, lon: -47.93, city: 'Uberaba' },
+  { name: 'cerrado mineiro', uf: 'mg', perHa: 55000, use: 'café', lat: -18.94, lon: -46.99, city: 'Patrocínio' },
+  { name: 'montanhas capixabas', uf: 'es', perHa: 45000, use: 'café', lat: -20.34, lon: -41.13, city: 'Venda Nova do Imigrante' },
+  { name: 'serra fluminense', uf: 'rj', perHa: 25000, use: 'pasto', lat: -22.25, lon: -43.7, city: 'Valença' },
+  { name: 'entorno do df', uf: 'df', perHa: 55000, use: 'lavoura', lat: -15.95, lon: -47.55, city: 'Brasília (PAD-DF)' },
+  { name: 'matopiba, maranhão', uf: 'ma', perHa: 25000, use: 'lavoura', lat: -7.53, lon: -46.04, city: 'Balsas' },
+  { name: 'cerrado do piauí', uf: 'pi', perHa: 18000, use: 'lavoura', lat: -7.23, lon: -44.55, city: 'Uruçuí' },
+  { name: 'vale do são francisco', uf: 'pe', perHa: 45000, use: 'lavoura', lat: -9.39, lon: -40.6, city: 'Petrolina' },
+  { name: 'chapada do apodi', uf: 'rn', perHa: 20000, use: 'lavoura', lat: -5.66, lon: -37.8, city: 'Apodi' },
+  { name: 'cariri cearense', uf: 'ce', perHa: 12000, use: 'pasto', lat: -7.21, lon: -39.31, city: 'Juazeiro do Norte' },
+  { name: 'zona da mata alagoana', uf: 'al', perHa: 30000, use: 'lavoura', lat: -9.78, lon: -36.2, city: 'São Miguel dos Campos' },
+  { name: 'brejo paraibano', uf: 'pb', perHa: 12000, use: 'pasto', lat: -6.85, lon: -35.6, city: 'Guarabira' },
+  { name: 'sertão sergipano', uf: 'se', perHa: 12000, use: 'pasto', lat: -10.22, lon: -37.42, city: 'Nossa Senhora da Glória' },
+  { name: 'sul da bahia', uf: 'ba', perHa: 20000, use: 'lavoura', lat: -14.86, lon: -39.59, city: 'Ibicaraí' },
+  { name: 'cone sul de rondônia', uf: 'ro', perHa: 35000, use: 'lavoura', lat: -12.74, lon: -60.15, city: 'Vilhena' },
+  { name: 'vale do acre', uf: 'ac', perHa: 10000, use: 'pasto', lat: -9.97, lon: -67.6, city: 'Rio Branco' },
+  { name: 'várzea amazonense', uf: 'am', perHa: 10000, use: 'pasto', lat: -3.14, lon: -58.44, city: 'Itacoatiara' },
+  { name: 'lavrado de roraima', uf: 'rr', perHa: 15000, use: 'lavoura', lat: -2.82, lon: -60.67, city: 'Boa Vista' },
+  { name: 'cerrado do amapá', uf: 'ap', perHa: 10000, use: 'pasto', lat: 0.71, lon: -51.41, city: 'Porto Grande' },
+  { name: 'pantanal, mato grosso do sul', uf: 'ms', perHa: 12000, use: 'pasto', lat: -20.47, lon: -55.79, city: 'Aquidauana' },
+  { name: 'araguaia, mato grosso', uf: 'mt', perHa: 25000, use: 'pasto', lat: -14.05, lon: -52.16, city: 'Água Boa' },
+  { name: 'norte do tocantins', uf: 'to', perHa: 18000, use: 'pasto', lat: -7.19, lon: -48.2, city: 'Araguaína' },
+  { name: 'nordeste paraense', uf: 'pa', perHa: 25000, use: 'lavoura', lat: -2.99, lon: -47.35, city: 'Paragominas' },
 ];
 export const placeLot = (reg, rng) => ({ lat: +(reg.lat + (rng() - 0.5) * 0.45).toFixed(5), lon: +(reg.lon + (rng() - 0.5) * 0.45).toFixed(5) });
 export const region = name => REGIONS.find(r => r.name === name) || REGIONS[0];
@@ -117,19 +117,20 @@ const WATER = [['rio', 1], ['açude', 1], ['poço artesiano', 0.9], ['sem água'
 const IMPROV = [['casa sede', 0.06], ['curral', 0.03], ['galpão', 0.04], ['cerca nova', 0.02]];
 
 // ---------- lavoura ----------
-// custo = custo operacional total por hectare (Conab/IMEA 2025); yield = sacas por hectare. Margem real: soja ~36%, milho ~33%, café ~50% ao ano
+// custo = custo operacional por hectare (IMEA/Aprosoja-MS/Conab 2025-26: soja R$ 5,6 mil a 7,7 mil); yield = sacas por hectare.
+// Com os preços do Cepea de nov/2026 a margem fica: soja ~30%, milho ~25%, café ~33% ao ano
 // (até a v150 o custo era bem menor e a lavoura dava 70% a 250% de lucro por safra, muito acima da vida real)
 export const CROPS = {
-  soja: { label: 'soja', cost: 5500, months: 4, yield: 60, good: 'soja' },     // sacas por hectare
-  milho: { label: 'milho', cost: 4500, months: 5, yield: 100, good: 'milho' },
-  cafe: { label: 'café', cost: 30000, months: 12, yield: 30, good: 'cafe' },   // arábica: uma safra por ano
+  soja: { label: 'soja', cost: 6300, months: 4, yield: 60, good: 'soja' },     // sacas por hectare
+  milho: { label: 'milho', cost: 4800, months: 5, yield: 100, good: 'milho' },
+  cafe: { label: 'café', cost: 32000, months: 12, yield: 30, good: 'cafe' },   // arábica: uma safra por ano
 };
 // máquina emprestada a parceiro (lentTo) não trabalha para você; a que você pegou emprestada (amigos.tools) trabalha
 export const hasVehicle = (s, type) => (s.cars || []).some(c => !c.lentTo && CARS[c.model]?.type === type) || (s.amigos?.tools || []).some(t => t.type === type);
 export const rentNow = l => Math.round(l.value * (l.rate ?? RENT_PAY) * (1 + RENT_RAISE * Math.floor((l.age || 0) / 12)));
 export const rentCredit = l => Math.min((l.paid || 0) * RENT_CREDIT, l.value * RENT_CREDIT_CAP);
 export const buyRentedPrice = l => Math.round(l.value - rentCredit(l));
-export const plantCost = (s, crop, ha, rented = false) => Math.round(CROPS[crop].cost * ha * (hasVehicle(s, 'trator') ? 0.85 : 1) * PK.mult(s, 'plant') * (rented ? RENT_INPUTS : 1));
+export const plantCost = (s, crop, ha, rented = false) => Math.round(CROPS[crop].cost * ha * (hasVehicle(s, 'trator') ? 0.9 : 1) * PK.mult(s, 'plant') * (rented ? RENT_INPUTS : 1));
 // compra da terra que você arrendava: o aluguel pago vira desconto
 export function buyRented(s, land) {
   if (!land || land.own) return 'essa terra já é sua.';
@@ -153,14 +154,14 @@ export function plant(s, land, crop) {
 // ---------- veículos (modelos fictícios) ----------
 // nomes de paródia, no estilo dos jogos de mundo aberto; foto real em assets/<img>.webp
 export const CARS = {
-  onix: { name: 'Chevrolé Ônyx', type: 'hatch', price: 95000, cat: 'popular', img: 'car-onix', hp: 116, top: 190 },
-  hilux: { name: 'Toyoda Hilox', type: 'picape', price: 330000, cat: 'picape', img: 'car-hilux', hp: 204, top: 180 },
+  onix: { name: 'Chevrolé Ônyx', type: 'hatch', price: 100000, cat: 'popular', img: 'car-onix', hp: 116, top: 190 },
+  hilux: { name: 'Toyoda Hilox', type: 'picape', price: 335000, cat: 'picape', img: 'car-hilux', hp: 204, top: 180 },
   sw4: { name: 'Toyoda SW5', type: 'suv', price: 420000, cat: 'SUV', img: 'car-sw4', hp: 204, top: 180 },
-  deere: { name: 'John Dear 6215', type: 'trator', price: 650000, cat: 'agrícola', img: 'car-deere', hp: 125, top: 40, perk: 'plantio 15% mais barato' },
-  scania: { name: 'Scanya R540 boiadeiro', type: 'caminhao', price: 950000, cat: 'agrícola', img: 'car-scania', hp: 540, top: 110, perk: 'vende gado sem taxa de frete' },
-  porsche: { name: 'Porshe 912 Carreira', type: 'esportivo', price: 1100000, cat: 'esportivo', img: 'car-porsche', hp: 385, top: 293 },
-  g63: { name: 'Mercedez G36 AMJ', type: 'suv', price: 2000000, cat: 'luxo', img: 'car-g63', hp: 585, top: 220 },
-  huracan: { name: 'Lamborgini Huracão', type: 'super', price: 3600000, cat: 'superesportivo', img: 'car-huracan', hp: 640, top: 325 },
+  deere: { name: 'John Dear 6215', type: 'trator', price: 650000, cat: 'agrícola', img: 'car-deere', hp: 125, top: 40, perk: 'plantio 10% mais barato' },
+  scania: { name: 'Scanya R540 boiadeiro', type: 'caminhao', price: 1020000, cat: 'agrícola', img: 'car-scania', hp: 540, top: 110, perk: 'vende gado sem taxa de frete' },
+  porsche: { name: 'Porshe 912 Carreira', type: 'esportivo', price: 990000, cat: 'esportivo', img: 'car-porsche', hp: 385, top: 293 },
+  g63: { name: 'Mercedez G36 AMJ', type: 'suv', price: 2150000, cat: 'luxo', img: 'car-g63', hp: 585, top: 220 },
+  huracan: { name: 'Lamborgini Huracão', type: 'super', price: 4500000, cat: 'superesportivo', img: 'car-huracan', hp: 640, top: 325 },
   // máquinas agrícolas: aparecem na concessionária para quem tem pomar ou canavial
   pulv: { name: 'Jactu Arbos 3030 (pulverizador)', type: 'maquina', crop: 'laranja', price: 380000, cat: 'laranja', img: 'maq-pulv', hp: 0, top: 25, perk: 'defensivo do pomar 30% mais barato; cada um atende 150 ha de pomar' },
   plataforma: { name: 'Plataforma Citrus PC-22', type: 'maquina', crop: 'laranja', price: 260000, cat: 'laranja', img: 'maq-plataforma', hp: 0, top: 20, perk: 'colhe 10% mais laranja (menos fruta no chão); cada uma atende 200 ha de pomar' },
@@ -169,8 +170,8 @@ export const CARS = {
   veyron: { name: 'Bugati Veiron 61.4', type: 'super', price: 15000000, cat: 'hiperesportivo', img: 'car-veyron', hp: 1001, top: 407 },
 };
 export const OLD_CARS = { vento: 'onix', bravo: 'hilux', serra: 'sw4', campeiro: 'deere', boiadeiro: 'scania', falcao: 'porsche', tempesta: 'huracan' };
-export const CAR_DEPREC = 0.015;   // desvaloriza 1,5% ao mês
-export const CAR_UPKEEP = 0.004;   // IPVA + seguro ao mês
+export const CAR_DEPREC = 0.01;    // desvaloriza ~12% ao ano (tabela Fipe)
+export const CAR_UPKEEP = 0.006;   // IPVA 4% + seguro ~3,5% ao ano = ~0,6% ao mês
 export const CAR_BUYBACK = 0.92;   // a concessionária recompra com margem
 export const cattleFee = s => (hasVehicle(s, 'caminhao') ? 0 : MARKET_FEE);
 
@@ -186,7 +187,7 @@ export function newState(rng = Math.random) {
   const s = {
     v: 1, month: 1, money: 100000, chips: 0, nextId: 1,
     lands: [], herd: [], stock: { soja: 0, milho: 0, cafe: 0 },
-    prices: { soja: 125, milho: 60, cafe: 1500, arroba: 310, bezerro: 3000 },
+    prices: { soja: 150, milho: 64, cafe: 1600, arroba: 335, bezerro: 3500 },
     loans: [], lent: [], offers: [], borrowers: [], log: [], cars: [],
   };
   refreshOffers(s, rng);
@@ -199,7 +200,8 @@ const walk = (v, rng, pct) => v * (1 + (rng() * 2 - 1) * pct);
 // ECON: multiplicador do preço de referência vindo da economia do mundo (econ.js), igual para todos; o jogo preenche antes do mês
 export const ECON = {};
 export const REGION_K = {};   // região → multiplicador do preço da terra (procura e saturação), também preenchido pelo jogo
-export const ANCHOR = { soja: 125, milho: 60, cafe: 1500, arroba: 310, bezerro: 3000, cana: 150, laranja: 50, ...GR_PRICES, ...SU_PRICES };
+// preços de referência: Cepea/CNA, nov/2026
+export const ANCHOR = { soja: 150, milho: 64, cafe: 1600, arroba: 335, bezerro: 3500, cana: 130, laranja: 28, ...GR_PRICES, ...SU_PRICES };
 
 export function refreshOffers(s, rng = Math.random) {
   const used = [];   // ofertas espalhadas pelo Brasil: regiões diferentes e longe umas das outras

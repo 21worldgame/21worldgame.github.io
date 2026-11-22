@@ -8,7 +8,7 @@ export const DEFAULTS = {
   near: true,         // sempre 3 concorrentes logo acima de quem está subindo
   incomeTax: 0.05,    // imposto de renda sobre o lucro do mês, igual para todos
   incomeMin: 300000,  // a partir de qual patrimônio paga imposto de renda
-  landPremium: 1.35,  // ágio das terras à venda (1,35 = 35% acima da tabela)
+  landPremium: 1,     // ágio sobre a tabela (a tabela já é o preço de mercado de 2026)
   landOffers: 24,     // quantos lotes de terra à venda por mês
   bizMult: 1,         // resultado mensal das empresas e usinas (receita)
 };

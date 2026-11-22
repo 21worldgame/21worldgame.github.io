@@ -39,21 +39,21 @@ const lot = { id: 9, own: true, region: 'cerrado, goiás', ha: 10, cap: 0.9, val
 f.lands.push(lot);
 assert.equal(L.capacity(f), 9);
 assert.equal(L.plant(f, lot, 'soja'), null);
-assert.equal(f.money, 1e6 - 55000);
+assert.equal(f.money, 1e6 - L.CROPS.soja.cost * 10);
 assert.equal(L.capacity(f), 0);
 for (let i = 0; i < 4; i++) L.tick(f, () => 0.5);
 assert.equal(f.stock.soja, 600);
 assert.equal(lot.crop, undefined);
 f.cars.push({ id: 10, model: 'deere', value: 650000 });
-assert.equal(L.plantCost(f, 'soja', 10), 46750);
+assert.equal(L.plantCost(f, 'soja', 10), Math.round(L.CROPS.soja.cost * 10 * 0.9));
 
 // carro desvaloriza 1,5% e paga IPVA/seguro
 const g = L.newState(() => 0.5);
 g.cars.push({ id: 1, model: 'onix', value: 95000 });
 const m0 = g.money;
 L.tick(g, () => 0.5);
-assert.equal(g.cars[0].value, 93575);
-assert.equal(Math.round(m0 - g.money), 380);
+assert.equal(g.cars[0].value, Math.round(95000 * (1 - L.CAR_DEPREC)));
+assert.equal(Math.round(m0 - g.money), Math.round(95000 * L.CAR_UPKEEP));
 // progressão: missão, nível com prêmio, conquista, bônus diário
 import * as P from './progress.js';
 const h = L.newState(() => 0.5);
@@ -324,7 +324,7 @@ import * as PK from './perks.js';
   const d3 = FT.dealFor(s.fut, s.fut.market[0].id, r); const c3 = BT.haggle(d3, Math.round(d3.limit * 0.9)); assert.equal(c3.result, 'counter'); assert.ok(c3.price >= d3.limit);
   // vantagens: carro e acessório somam
   const pk = { cars: [{ model: 'onix' }, { model: 'onix' }, { model: 'veyron' }], owned: ['acc:corrente de ouro'] };
-  assert.equal(+PK.mult(pk, 'xp').toFixed(2), 1.19); assert.equal(+PK.mult(pk, 'daily').toFixed(2), 1.6); assert.equal(PK.mult({ owned: ['acc:relógio de luxo'], cars: [{ model: 'g63' }] }, 'loan'), 1 - 0.35);
+  assert.equal(+PK.mult(pk, 'xp').toFixed(2), 1.19); assert.equal(+PK.mult(pk, 'daily').toFixed(2), 1.6); assert.equal(PK.mult({ owned: ['acc:relógio de luxo'], cars: [{ model: 'g63' }] }, 'loan'), 1 - 0.13);
   // mercado
   const p = s.fut.market[0]; const mb = s.money; assert.equal(FT.buy(s, p.id), null); assert.equal(s.money, mb - p.price);
   const sold = FT.sell(s, p.id); assert.ok(sold > 0 && sold < p.price);
@@ -645,12 +645,12 @@ import * as AB from './abate.js';
   const s2 = mk(), l2 = s2.lands[0]; PM.plant(s2, l2); PM.toggleSpray(l2);
   for (let i = 0; i < 6; i++) PM.monthly(s2, () => 0.99);
   assert.ok(s2.stock.laranja < c1, 'sem veneno deveria colher menos');
-  // retorno: com custo real o pomar se paga em 3 anos, mas não em 2 (na vida real leva 4 a 5)
+  // retorno: com custo e preço reais de 2026 (caixa a R$ 28) o pomar leva uns 8 anos para se pagar; em 3 não se paga
   const s3 = mk(), l3 = s3.lands[0], m0 = s3.money; PM.plant(s3, l3);
-  for (let i = 0; i < 24; i++) PM.monthly(s3, () => 0.5);
-  assert.ok(s3.money + s3.stock.laranja * PM.ORANGE.price < m0, 'pomar não pode se pagar em 2 anos');
-  for (let i = 24; i < 36; i++) PM.monthly(s3, () => 0.5);
-  assert.ok(s3.money + s3.stock.laranja * PM.ORANGE.price > m0, 'pomar deveria se pagar em 3 anos');
+  for (let i = 0; i < 36; i++) PM.monthly(s3, () => 0.5);
+  assert.ok(s3.money + s3.stock.laranja * PM.ORANGE.price < m0, 'pomar não pode se pagar em 3 anos');
+  for (let i = 36; i < 108; i++) PM.monthly(s3, () => 0.5);
+  assert.ok(s3.money + s3.stock.laranja * PM.ORANGE.price > m0, 'pomar deveria se pagar em 9 anos');
   // abate
   const a = L.newState(() => 0.5); a.money = 5e7; a.herd.push({ id: 1, heads: 10, kg: 450 });
   const vivo = AB.perHead(a, 450, 'vivo', L.cattleFee(a)), terc = AB.perHead(a, 450, 'terceiros'), prop = AB.perHead(a, 450, 'proprio');
@@ -767,9 +767,9 @@ console.log('logística da cana ok');
   assert.deepEqual(CD.claim(s), ['pecuaria']); assert.deepEqual(CD.claim(s), [], 'cada coleção completa uma vez só');
   assert.equal(CD.prestige(s), 10);
   const PKc = await import('./perks.js');
-  assert.ok(Math.abs(PKc.mult(s, 'animais') - 0.85) < 1e-9, 'Pecuária: pintinho, leitão e bezerro 15% mais baratos');
-  s.cards = s.cards.filter(x => x.set !== 'pecuaria'); assert.ok(Math.abs(PKc.mult(s, 'animais') - 0.85) < 1e-9, 'vantagem fica mesmo vendendo as cartas');
-  s.colls.fortuna = 1; assert.equal(PKc.luck(s, 1000), 150, 'Fortuna: +15% do ganho de fichas'); assert.equal(PKc.luck(s, -500), 0, 'perda não ganha bônus');
+  assert.ok(Math.abs(PKc.mult(s, 'animais') - 0.95) < 1e-9, 'Pecuária: pintinho, leitão e bezerro 5% mais baratos');
+  s.cards = s.cards.filter(x => x.set !== 'pecuaria'); assert.ok(Math.abs(PKc.mult(s, 'animais') - 0.95) < 1e-9, 'vantagem fica mesmo vendendo as cartas');
+  s.colls.fortuna = 1; assert.equal(PKc.luck(s, 1000), 20, 'Fortuna: +2% do ganho de fichas (teto abaixo da vantagem da casa)'); assert.equal(PKc.luck(s, -500), 0, 'perda não ganha bônus');
   s.colls.prosperidade = 1; assert.ok(Math.abs(PKc.bonus(s, 'perda') + 0.02) < 1e-9, 'Prosperidade: 2 pontos a menos de perda');
   // sazonal: só na temporada (calendário de verdade)
   const dez = Date.UTC(2026, 11, 10, 15), mar = Date.UTC(2027, 2, 10, 15);
@@ -1255,6 +1255,10 @@ console.log('mina ok');
   let n = 0; for (let s = 0; s < 200; s++) { const x = Nw.npcNews(s, ['A', 'B']); if (x) { n++; assert.ok(Nw.headline(x).length > 10 && !/undefined|NaN/.test(Nw.headline(x))); } } assert.ok(n > 100);
   assert.deepEqual(Nw.npcNews(77, ['A', 'B']), Nw.npcNews(77, ['A', 'B']), 'igual para todos');
   console.log('TV 21: notícias ok'); }
+{ const Ne = await import('./news.js'), t = Ne.EDITORIAL[0].at;
+  assert.equal(Ne.editorial(t + 3600e3).length, Ne.EDITORIAL.length, 'edição especial no ar'); assert.equal(Ne.editorial(t + 5 * 864e5).length, 0, 'sai do ar depois de 3 dias');
+  assert.ok(Ne.EDITORIAL.every(e => Ne.KINDS[e.kind] && e.title.length > 20 && e.lead.length > 80 && Ne.headline(e) === e.title));
+  console.log('TV 21: edição especial ok'); }
 { // TV 21 / Resenha: o mesmo jogador do mundo não fala de novo nas 6 janelas seguintes
   const G = 70000, t0 = Math.floor(Date.now() / G), out = [];
   for (let s = t0 - 200; s < t0; s++) { const nk = [...NP.onlineSet(s * G)].map(id => NP.byId(id)?.nick).filter(Boolean); out.push(NP.turnOf(s, nk, G)); }
@@ -1272,7 +1276,7 @@ console.log('mina ok');
 { const s = { money: 1e6, prices: {}, nextId: 1 }; GR.ensure(s); GR.buyHouse(s, 'pequeno'); const hid = s.granja.houses[0].id;
   const r0 = GR.house(s, hid, 5000, true); const l = s.granja.lots[0]; assert.equal(l.cost, r0.cost);
   GR.monthly(s, () => 0.5); GR.monthly(s, () => 0.5); assert.ok(l.cost > r0.cost * 2, 'ração entra no gasto do lote');
-  const plain = GR.lotValue(s, l); s.owned = ['acc:chapéu de granjeiro']; assert.ok(Math.abs(GR.lotValue(s, l) - plain * 1.08) <= 1, 'chapéu +8%');
+  const plain = GR.lotValue(s, l); s.owned = ['acc:chapéu de granjeiro']; assert.ok(Math.abs(GR.lotValue(s, l) - plain * 1.03) <= 1, 'chapéu +3%');
   const r = GR.sellLot(s, l.id); assert.equal(r.profit, r.amount - r.cost); console.log('granja lucro do lote ok'); }
 // contador: separa entrada, saída e bens; não diz o que compensa
 import * as CT from './contador.js';
@@ -1313,7 +1317,7 @@ import * as CT from './contador.js';
 // acessórios novos: cada área tem a sua vantagem e todos estão à venda no guarda-roupa
 { const AV = await import('./avatar.js'), PKx = await import('./perks.js');
   for (const k of ['suino', 'grain', 'laranja', 'cana', 'ouro', 'biz']) assert.ok(Object.entries(PKx.ACC_PERKS).some(([id, p]) => p[k] > 0 && AV.CATALOG.acc.opts.some(o => o.id === id && o.price)), 'sem acessório para ' + k);
-  const s = { owned: ['acc:bota de borracha', 'acc:chapéu de palha'] }; assert.equal(PKx.mult(s, 'suino'), 1.08); assert.equal(PKx.mult(s, 'grain'), 1.06);
+  const s = { owned: ['acc:bota de borracha', 'acc:chapéu de palha'] }; assert.equal(PKx.mult(s, 'suino'), 1.03); assert.equal(PKx.mult(s, 'grain'), 1.03);
   assert.ok(AV.avatarSVG({ acc: ['bota de borracha'] }, { full: true }).includes('viewBox="0 0 200 404"')); console.log('acessórios de todas as áreas ok'); }
 // propostas dos bots: aparecem só quando você tem o que negociar; fechar mexe no armazém e no dinheiro certo
 { const BOx = await import('./bot-offers.js'), Lx = await import('./logic.js'); const s = Lx.newState(() => 0.5); s.stock.soja = 500; s.money = 1e4;
@@ -1500,9 +1504,9 @@ import * as CT from './contador.js';
   assert.equal(IV.apply(s, 'cdb', 1e6, w0), null); assert.equal(s.money, 9e6);
   assert.ok(Math.abs(Lq.netWorth(s) - w0) < 1, 'aplicar não muda o patrimônio');
   assert.ok(IV.apply(s, 'tesouro', 5e6, w0), 'teto de 25% do patrimônio');
-  for (const [k, P] of Object.entries(IV.PRODUCTS)) assert.ok(P.rate < 0.006 / 3, `${k} rende bem menos que terra`);
+  for (const [k, P] of Object.entries(IV.PRODUCTS)) assert.ok(P.rate < Lq.BANK_RATE && P.rate >= 0.005, `${k}: taxa real, abaixo dos juros do empréstimo (pegar emprestado para aplicar não dá lucro)`);
   let lines = []; for (let m = 0; m < 60; m++) lines.push(...IV.monthly(s));
-  assert.equal(s.money, 9e6 + 1e6 * 1.06, 'CDB paga +6% em 60 meses (juros simples)');
+  assert.equal(s.money, 9e6 + 1e6 * (1 + IV.PRODUCTS.cdb.rate * 60), 'CDB paga a taxa do mês x 60 meses (juros simples)');
   assert.ok(lines.some(l => IV.NOT_PROFIT.test(l.txt) && l.val === 1e6), 'devolução do aplicado não conta como lucro');
   IV.apply(s, 'previdencia', 1e6, Lq.netWorth(s)); for (let m = 0; m < 10; m++) IV.monthly(s);
   const r = IV.withdraw(s, s.invest[0].id); assert.equal(r.value, 900000, 'previdência: sair antes perde rendimento e 10%');

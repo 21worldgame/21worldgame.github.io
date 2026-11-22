@@ -9,10 +9,10 @@ export const CANE = {
   plant: 11000,       // R$ por hectare (mudas, preparo do solo, plantio)
   first: 10,          // meses até o primeiro corte (cana-planta)
   cycle: 10,          // meses entre os cortes seguintes (soca)
-  yield: 85,          // toneladas por hectare no primeiro corte
+  yield: 100,         // toneladas por hectare no primeiro corte (média de ~79 t/ha em 5 cortes, como em SP)
   decline: 0.88,      // cada corte rende 12% menos que o anterior
   care: 280,          // R$ por hectare por mês (tratos culturais)
-  price: 150,         // R$ por tonelada (usina, preço inicial)
+  price: 130,         // R$ por tonelada (ATR ~R$ 1,05/kg x ~125 kg por tonelada, CNA/Pecege 2026)
   reform: 5,          // depois de tantos cortes o canavial pede reforma
 };
 // ---------- logística: corte, carregamento e frete até a usina (custo por tonelada) ----------

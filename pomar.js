@@ -6,8 +6,8 @@ export const ORANGE = {
   grow: 6,            // meses de formação até a primeira colheita
   cycle: 4,           // meses entre colheitas
   yield: 330,         // caixas de 40,8 kg por hectare por colheita (pomar adulto e sadio)
-  spray: 2500,        // R$ por hectare por mês (defensivo, adubação, mão de obra: ~R$ 30 por caixa, custo real)
-  price: 50,          // R$ por caixa (preço inicial do mercado, 2025)
+  spray: 1800,        // R$ por hectare por mês (defensivo, adubação, mão de obra: ~R$ 22 por caixa, custo real)
+  price: 28,          // R$ por caixa na indústria (Cepea, safra 2026/27: R$ 26 a 30)
 };
 export const ensure = s => { s.prices ??= {}; s.prices.laranja ??= ORANGE.price; s.stock ??= {}; s.stock.laranja ??= 0; };
 export const canPlant = l => l.own && !l.leasedOut && !l.crop && !l.orchard && !l.cane;

@@ -7,7 +7,7 @@ export const BARNS = {
   medio: { label: 'barracão de terminação', cap: 1000, price: 1350000, conv: 2.6, mort: 0.009, fixed: 24000, img: 'barn-medio' },
   tecnificado: { label: 'granja tecnificada (climatizada)', cap: 3000, price: 3600000, conv: 2.42, mort: 0.006, fixed: 58000, img: 'barn-tecnificado' },
 };
-export const PRICES = { leitao: 380, suino: 8.2, racaoSuino: 1.55 };   // R$ por leitão, R$ por kg vivo, R$ por kg de ração (milho + farelo)
+export const PRICES = { leitao: 330, suino: 6.9, racaoSuino: 1.35 };   // Cepea out/2026: suíno vivo ~R$ 6,9/kg; ração com milho a R$ 64 a saca   // R$ por leitão, R$ por kg vivo, R$ por kg de ração (milho + farelo)
 export const START_KG = 23, VACCINE = 12, FEE = 0.02, RESALE = 0.7;
 // peso por mês no lote: cresce bem até ~4 meses, depois a engorda desacelera e a conversão piora
 export const kgAt = age => Math.round(START_KG + [0, 25, 51, 76, 98, 114, 126][Math.min(6, age)]);

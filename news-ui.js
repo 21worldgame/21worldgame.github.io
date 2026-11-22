@@ -14,7 +14,7 @@ export const push = n => add(n);   // notícia pronta (economia do mundo, econ-u
 
 function add(n, fresh = true) {
   if (!n || (n.id && seen.has(n.id))) return;
-  seen.add(n.id); items.push(n); items.sort((a, b) => a.at - b.at); if (items.length > 40) items.shift();
+  seen.add(n.id); items.push(n); items.sort((a, b) => a.at - b.at); if (items.length > 40) items.splice(Math.max(0, items.findIndex(x => !x.ed)), 1);   // a edição especial não sai do ar
   if (fresh && n.at > Date.now() - 120000) cur = items.indexOf(n);   // notícia nova entra no ar na hora
   draw(); try { G.onTv?.(n); } catch {}   // portal de notícias acompanha a TV
 }
@@ -48,7 +48,7 @@ function npcTick(first = false) {
 }
 
 const card = (n, big) => `<span class="tv__kick tv__kick--${n.kind}">${N.KINDS[n.kind]}</span>${n.real ? '<span class="tv__real">ao vivo</span>' : ''}
-  <p class="tv__line">${esc(N.headline(n))}</p><small class="tv__by">${esc(N.anchorOf(n))}${big ? ` · ${new Date(n.at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}</small>`;
+  <p class="tv__line">${esc(N.headline(n))}</p>${big && n.lead ? `<p class="tv__lead">${esc(n.lead)}</p>` : ''}<small class="tv__by">${esc(N.anchorOf(n))}${big ? ` · ${new Date(n.at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}</small>`;
 
 // ---------- a TV na lateral ----------
 // apresentadores: visual fixo (o mesmo para todo mundo)
@@ -102,6 +102,7 @@ function draw() {
 // manchete troca sozinha
 setInterval(() => { if (items.length) { cur = (cur + 1) % items.length; draw(); } }, 9000);
 setTimeout(() => npcTick(true), 1200); setInterval(npcTick, 5000);
+for (const e of N.editorial()) add(e, false);   // edição especial da redação
 
 // abas da Resenha: conversa | TV 21
 export function tab(which) {
