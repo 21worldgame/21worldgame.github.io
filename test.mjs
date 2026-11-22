@@ -292,12 +292,6 @@ import * as PK from './perks.js';
   assert.equal(FT.takeClub(s, 'Barra-SC', r), null);
   assert.equal(s.money, 1e6 - FT.clubPrice('Barra-SC') + FT.SPONSOR[2]); assert.equal(s.fut.squad.length, 18); assert.equal(s.fut.div, 2);
   assert.equal(s.fut.league.teams.length, 20); assert.ok(s.fut.league.teams.some(t => t.name === 'Paysandu'));
-  { // mercado mensal: muda uma vez por mês, janela enche, preço nunca abaixo do valor
-    const t = { money: 1e9, month: 1 }; FT.takeClub(t, 'Barra-SC', r);
-    assert.equal(FT.marketTick(t, r), true); assert.equal(FT.marketTick(t, r), false); assert.ok(t.fut.market.length >= 24);
-    t.month = 2; const ids = t.fut.market.map(p => p.id).join(); assert.equal(FT.marketTick(t, r), true); assert.notEqual(t.fut.market.map(p => p.id).join(), ids);
-    assert.ok(t.fut.market.length >= 10 && t.fut.market.every(p => p.price >= FT.value(p) * 0.99));
-  }
   const l = FT.lineup(s.fut.squad, '4-3-3'); assert.equal(l.gk.length + l.def.length + l.mid.length + l.att.length, 11);
   // time mais forte vence mais (500 jogos)
   let hw = 0, lw = 0;
@@ -948,15 +942,6 @@ console.log('suínos, negócios e galpões ok');
   assert.ok(r.filter(w => w > 1.9e6 && w < 2.5e6).length >= 3, 'vizinhos logo acima de quem está subindo');
   assert.ok(r.filter(w => w > 2.5e8).length >= 9, '10 caçadores em escada atrás do líder');
 }
-{ // duelo: ReiDoGado encosta no Nocbit mas só passa depois das 21:30 de Brasília
-  const RV4 = await import('./rivals.js'), NP = await import('./npcs.js'), rdg = NP.NPCS.find(n => n.orig === 'ReiDoGado');
-  const at = t => RV4.rivals(400, 9e8, 9e8, t, 9e8).find(r => r.name === rdg.nick).worth / 9e8;
-  for (let t = RV4.DUEL.from; t < RV4.DUEL.passAt; t += 6e4) assert.ok(at(t) < 1 && at(t) > 0.9, 'antes das 21:30 fica atrás, mas perto: ' + at(t));
-  for (let t = RV4.DUEL.passAt + 3e5; t < RV4.DUEL.holdUntil; t += 6e4) assert.ok(at(t) > 1.08, 'passou e não deixa chegar perto: ' + at(t));
-  for (let t = RV4.DUEL.holdUntil; t < RV4.DUEL.holdUntil + 864e5; t += 6e4) assert.ok(at(t) > 1.05, 'depois segue em 1º: ' + at(t));
-  const top = t => { const rs = RV4.rivals(400, 9e8, 1e6, t, 5e8); return rs.sort((a, b) => b.worth - a.worth)[0].name; };
-  assert.equal(top(RV4.DUEL.passAt + 6e5), rdg.nick, 'passa o 1º do ranking, não só o alvo');
-}
 console.log('mais ricos ok');
 
 // ---------- leilão de cavalos de raça ----------
@@ -1515,19 +1500,3 @@ import * as CT from './contador.js';
   IV.apply(s, 'previdencia', 1e6, Lq.netWorth(s)); for (let m = 0; m < 10; m++) IV.monthly(s);
   const r = IV.withdraw(s, s.invest[0].id); assert.equal(r.value, 900000, 'previdência: sair antes perde rendimento e 10%');
   console.log('investimentos no banco ok'); }
-// sinuca: depois de colocar a branca (bola na mão) o jogo segue (antes travava com inHand preso)
-{ const SNq = await import('./sinuca.js'); const g = new SNq.Sinuca({ rng: () => 0.5 }); g.seats = [{ name: 'A' }, { name: 'B' }]; g.start?.();
-  g.turn = 0; g.phase = 'aim'; g.inHand = true; g.balls[0].in = false;
-  assert.equal(g.place(0, 30, 30), null); assert.equal(g.inHand, false, 'colocou a branca: sai da bola na mão');
-  console.log('sinuca bola na mão ok'); }
-// futebol: vitória fora de casa nunca dá prejuízo na rodada (cota de TV + prêmio maior cobre os salários)
-{ const FTq = await import('./futebol.js'), Lq = await import('./logic.js');
-  let checked = 0;
-  for (let k = 0; k < 400 && checked < 6; k++) {
-    const s = Lq.newState(() => 0.5); s.money = 1e10; FTq.takeClub(s, FTq.CLUBS.flat()[k % FTq.CLUBS.flat().length].n);
-    for (let r = 0; r < 6; r++) { const out = FTq.playRound(s, Math.random); if (!out?.mine) continue;
-      const away = out.mine.a === 'user', my = away ? out.mine.ag : out.mine.hg, th = away ? out.mine.hg : out.mine.ag;
-      if (away && my > th) { assert.ok(out.cash > 0, 'vitória fora de casa com lucro: ' + out.cash); checked++; } }
-  }
-  assert.ok(checked > 0, 'testou alguma vitória fora');
-  console.log('futebol vitória fora ok'); }

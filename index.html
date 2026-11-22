@@ -229,9 +229,6 @@
                 <button class="chipbtn chipbtn--100" data-add="100">100</button>
                 <button class="chipbtn chipbtn--500" data-add="500">500</button>
                 <button class="chipbtn chipbtn--1000" data-add="1000">1k</button>
-                <button class="chipbtn chipbtn--5k" data-add="5000">5k</button>
-                <button class="chipbtn chipbtn--25k" data-add="25000">25k</button>
-                <button class="chipbtn chipbtn--100k" data-add="100000">100k</button>
                 <span class="betshow"><span class="muted small">aposta</span><strong id="betshow">0</strong></span>
                 <button class="btn btn--glass btn--sm" data-act="bet-clear">limpar</button>
               </div>
@@ -279,7 +276,7 @@
         <div class="rl-board" id="rl-board"></div>
         <div class="controls">
           <div class="betpick" role="group" aria-label="ficha">
-            <button class="chipbtn chipbtn--5" data-rchip="5">5</button><button class="chipbtn chipbtn--25 is-on" data-rchip="25">25</button><button class="chipbtn chipbtn--100" data-rchip="100">100</button><button class="chipbtn chipbtn--500" data-rchip="500">500</button><button class="chipbtn chipbtn--1000" data-rchip="1000">1k</button><button class="chipbtn chipbtn--5k" data-rchip="5000">5k</button><button class="chipbtn chipbtn--25k" data-rchip="25000">25k</button><button class="chipbtn chipbtn--100k" data-rchip="100000">100k</button>
+            <button class="chipbtn chipbtn--5" data-rchip="5">5</button><button class="chipbtn chipbtn--25 is-on" data-rchip="25">25</button><button class="chipbtn chipbtn--100" data-rchip="100">100</button><button class="chipbtn chipbtn--500" data-rchip="500">500</button><button class="chipbtn chipbtn--1000" data-rchip="1000">1k</button>
             <span class="betshow"><span class="muted small">na mesa</span><strong id="rl-total">0</strong></span>
             <button class="btn btn--glass btn--sm" data-act="rl-clear">limpar</button>
             <button class="btn btn--glass btn--sm" data-act="rl-double">dobrar apostas</button>
@@ -296,7 +293,7 @@
             <div class="av-stage"><canvas id="av-canvas"></canvas><div class="av-mult" id="av-mult"></div><div class="av-msg" id="av-msg" hidden></div></div>
             <div class="glass av-controls">
               <label class="field"><span>aposta em fichas</span><input class="input" name="av-bet" type="number" min="10" step="10" value="100" inputmode="numeric"></label>
-              <div class="row"><button class="btn btn--glass btn--sm" data-av-quick="10">+10</button><button class="btn btn--glass btn--sm" data-av-quick="50">+50</button><button class="btn btn--glass btn--sm" data-av-quick="100">+100</button><button class="btn btn--glass btn--sm" data-av-quick="1000">+1k</button><button class="btn btn--glass btn--sm" data-av-quick="10000">+10k</button><button class="btn btn--glass btn--sm" data-av-quick="x2">dobrar</button></div>
+              <div class="row"><button class="btn btn--glass btn--sm" data-av-quick="10">+10</button><button class="btn btn--glass btn--sm" data-av-quick="50">+50</button><button class="btn btn--glass btn--sm" data-av-quick="100">+100</button></div>
               <label class="field"><span>saque automático em (opcional)</span><input class="input" name="av-auto" type="number" min="1.01" step="0.1" placeholder="ex.: 2.00" inputmode="decimal"></label>
               <button class="btn btn--gold btn--lg av-btn" id="av-btn" data-act="av-press">apostar</button>
             </div>
@@ -439,7 +436,7 @@
         <div data-ftpanel="jogo"><div class="ft-grid"><div class="glass ft-next" id="ft-next"></div><div id="ft-pitch"></div></div><div id="ft-last"></div></div>
         <div data-ftpanel="elenco" hidden><div class="glass scroll"><table><thead><tr><th>pos</th><th>jogador</th><th class="num">idade</th><th class="num">nota</th><th class="num">potencial</th><th class="num">salário</th><th class="num">valor</th><th></th></tr></thead><tbody id="ft-squad"></tbody></table></div></div>
         <div data-ftpanel="tabela" hidden><div class="glass scroll"><table><thead><tr><th class="num">#</th><th>clube</th><th class="num">J</th><th class="num">V</th><th class="num">E</th><th class="num">D</th><th class="num">gols</th><th class="num">pts</th></tr></thead><tbody id="ft-table"></tbody></table></div><h3>histórico</h3><ul class="ft-hist" id="ft-hist"></ul></div>
-        <div data-ftpanel="mercado" hidden><p class="muted small" id="ft-mkt-info"></p><p class="muted small">Clique em "negociar" para pechinchar com o clube dono do passe: ofereça pouco demais e ele desiste. Jogador jovem com potencial alto cresce a cada ano.</p><div class="glass scroll"><table><thead><tr><th>pos</th><th>jogador</th><th class="num">idade</th><th class="num">nota</th><th class="num">potencial</th><th class="num">salário</th><th></th></tr></thead><tbody id="ft-market"></tbody></table></div></div>
+        <div data-ftpanel="mercado" hidden><p class="muted small">O mercado renova a cada temporada. Clique em "negociar" para pechinchar com o clube dono do passe: ofereça pouco demais e ele desiste. Jogador jovem com potencial alto cresce a cada ano.</p><div class="glass scroll"><table><thead><tr><th>pos</th><th>jogador</th><th class="num">idade</th><th class="num">nota</th><th class="num">potencial</th><th class="num">salário</th><th></th></tr></thead><tbody id="ft-market"></tbody></table></div></div>
         <div data-ftpanel="propostas" hidden><div class="offers" id="ft-offers"></div></div>
       </div>
       </div>
@@ -513,7 +510,7 @@
       <div class="subtabs" role="group" aria-label="espécie">
         <button class="subtab is-on" data-act="st-kind" data-id="dog">galgos</button><button class="subtab" data-act="st-kind" data-id="horse">cavalos</button>
       </div>
-      <h3 class="lei-title" id="lei-title">🐕 leilão de galgos de raça</h3>
+      <h3 class="lei-title">🐎 leilão de cavalos de raça <small class="muted">um atrás do outro, o dia inteiro</small></h3>
       <div id="lei-box"></div>
       <p class="muted small">Compre um animal, treine as semanas livres de cada mês e inscreva nas provas. Cada prova é limitada pela nota do animal, e o treino cansa: animal cansado treina e corre pior e pode se lesionar. Os atributos crescem até o potencial.</p>
       <h3 id="st-mine-title">seus animais</h3>
@@ -691,6 +688,9 @@
         <thead><tr><th class="num">saldo devedor</th><th class="num">juros/mês</th><th class="num">parcelas</th><th>situação</th><th><span class="visually-hidden">ações</span></th></tr></thead>
         <tbody id="loans"></tbody>
       </table></div>
+      <h3>pedidos de empréstimo</h3>
+      <p class="muted small">Quem pede aqui é quem o banco não atende. O juro é o do banco, mais 1 ponto, mais o risco de calote da pessoa: quanto maior o risco, maior o juro. Se alguém der calote, o cobrador recupera 25% do que faltava.</p>
+      <div class="cards cards--3" id="borrowers"></div>
       <h3>investimentos <small class="muted">Banco 21 · novo</small></h3>
       <div id="invest" class="inv"></div>
       <h3>a receber</h3>

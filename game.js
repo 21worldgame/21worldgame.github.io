@@ -104,10 +104,9 @@ function renderPass() {
 
 function renderHud() {
   const s = S(), worth = L.netWorth(s);
-  const small = matchMedia('(max-width: 40rem)').matches, cmp = (v, pre) => { const a = Math.abs(v), f = (x, u) => `${pre}${String(+x.toFixed(x < 10 ? 1 : 0)).replace('.', ',')} ${u}`; return a >= 1e9 ? f(v / 1e9, 'bi') : a >= 1e6 ? f(v / 1e6, 'mi') : pre ? brl(v) : int(v); };
-  rollTo($('#r-money'), s.money, (small && Math.abs(s.money) >= 1e6) || Math.abs(s.money) >= 1e9 ? v => cmp(v, 'R$ ') : brl);   // bilhões: R$ 1,05 bi (senão o topo quebra)   // celular: R$ 10 bi em vez de R$ 9.999.996.000
-  rollTo($('#r-chips'), s.chips, small && s.chips >= 1e5 ? v => cmp(v, '') : int);
-  rollTo($('#r-worth'), worth, Math.abs(worth) >= 1e9 ? v => cmp(v, 'R$ ') : brl);
+  rollTo($('#r-money'), s.money, brl);
+  rollTo($('#r-chips'), s.chips, int);
+  rollTo($('#r-worth'), worth, brl);
   rollTo($('#chips-now'), s.chips, v => `${int(v)} fichas`);
   rollTo($('#table-chips'), s.chips, int);
   $('#chips-val').textContent = `valem ${brl(s.chips * L.CHIP)}`;
@@ -207,19 +206,14 @@ function renderChar() {
   $('#char-perks').innerHTML = `<h3>suas vantagens</h3>${Object.keys(b).length ? `<ul>${Object.entries(b).map(([k, v]) => `<li><b class="${v > 0 === (k !== 'loan') ? 'good' : 'bad'}">${v > 0 ? '+' : ''}${Math.round(v * 100)}%</b> ${PK.EFFECTS[k]}</li>`).join('')}</ul>` : '<p class="muted small">Nenhuma ainda. Compre carros na loja ou acessórios aqui.</p>'}`;
   ACS.refresh(() => { if (currentTab === 'personagem') renderChar(); });
   const stockTag = o => { const n = ACS.leftOf(o.id); return n == null ? '' : `<small class="${n ? 'muted' : 'bad'}">${n ? `restam ${n} de ${ACS.MAX}` : 'esgotado: só de jogadores no Feirão'}</small>`; };
-  // guarda-roupa em seções (ícone, nome e a escolha atual); acessórios viram cartões com preço, vantagem e "seu"
-  const WD_ICON = { skin: '🎨', hair: '💇', hairColor: '🖌️', beard: '🧔', eyes: '👁️', outfit: '👕', cloth: '🧵', acc: '💎' };
-  $('#wardrobe').innerHTML = Object.entries(CATALOG).map(([k, g]) => {
-    const cur = k === 'acc' ? (accsOf(a).length ? `${accsOf(a).length} em uso` : 'nenhum') : g.opts[0]?.swatch ? '' : String(a[k] ?? '');
-    return `<fieldset class="opts wd-sec wd-sec--${k}"><legend class="wd-sec__h"><span class="wd-sec__ico" aria-hidden="true">${WD_ICON[k] || '✨'}</span><b>${k === 'acc' ? 'acessórios' : g.label}</b>${cur ? `<small class="wd-sec__cur">${esc(cur)}</small>` : ''}</legend>
-      ${k === 'acc' ? '<p class="wd-sec__tip muted small">Use vários ao mesmo tempo, um por lugar (cabeça, olhos, pescoço, pulso...). Cada um comprado dá uma vantagem para sempre.</p>' : ''}
-      <div class="wd-opts${k === 'acc' ? ' wd-opts--acc' : ''}">${g.opts.map(o => {
-        const on = k === 'acc' ? (o.id === 'nenhum' ? !accsOf(a).length : accsOf(a).includes(o.id)) : String(a[k]) === String(o.id), locked = o.price && !S().owned.includes(`${k}:${o.id}`), mine = o.price && !locked;
-        return `<button class="opt${o.swatch ? ' opt--sw' : ''}${k === 'acc' ? ' opt--acc' : ''}${on ? ' is-on' : ''}${locked ? ' is-locked' : ''}" aria-pressed="${on}" data-act="look" data-k="${k}" data-id="${o.id}"
-          ${o.swatch ? `style="--sw:${o.swatch}" aria-label="${g.label} ${o.id}"` : ''}>${o.swatch ? '' : `<span class="opt__n">${esc(o.id)}</span>`}${mine ? '<small class="opt__own">✓ seu</small>' : ''}${locked ? `<small class="opt__price">${brl(o.price)}</small>${k === 'acc' ? stockTag(o) : ''}` : ''}${k === 'acc' && PK.ACC_PERKS[o.id] ? `<small class="good opt__perk">${esc(PK.label(PK.ACC_PERKS[o.id]))}</small>` : ''}</button>`;
-      }).join('')}</div>
-    </fieldset>`;
-  }).join('');
+  $('#wardrobe').innerHTML = Object.entries(CATALOG).map(([k, g]) => `
+    <fieldset class="opts"><legend>${k === 'acc' ? 'acessórios <small class="muted">use vários, um por lugar (cabeça, olhos, pescoço, pulso...)</small>' : g.label}</legend>
+      ${g.opts.map(o => {
+        const on = k === 'acc' ? (o.id === 'nenhum' ? !accsOf(a).length : accsOf(a).includes(o.id)) : String(a[k]) === String(o.id), locked = o.price && !S().owned.includes(`${k}:${o.id}`);
+        return `<button class="opt${o.swatch ? ' opt--sw' : ''}${on ? ' is-on' : ''}" aria-pressed="${on}" data-act="look" data-k="${k}" data-id="${o.id}"
+          ${o.swatch ? `style="--sw:${o.swatch}" aria-label="${g.label} ${o.id}"` : ''}>${o.swatch ? '' : esc(o.id)}${locked ? `<small>${brl(o.price)}</small>${k === 'acc' ? stockTag(o) : ''}` : ''}${k === 'acc' && PK.ACC_PERKS[o.id] ? `<small class="good">${esc(PK.label(PK.ACC_PERKS[o.id]))}</small>` : ''}</button>`;
+      }).join('')}
+    </fieldset>`).join('');
 }
 
 // ---------- terras: satélite real (Esri World Imagery) ----------
@@ -450,7 +444,7 @@ function renderGado() {
         <button class="btn btn--gold btn--sm" data-act="ab-kill" data-id="${h.id}">abater ${brl(h.heads * (AB.capLeft(s) >= h.heads ? AB.perHead(s, h.kg, 'proprio') : AB.perHead(s, h.kg, 'terceiros')))}</button>
         ${(() => { const ps = FN.options(h.heads); if (!ps.length) return ''; const pay = p => brl(h.heads * AB.perHead(s, h.kg, 'jogador', p.fee));
           return ps.length === 1 ? `<button class="btn btn--gold btn--sm" data-act="ab-killp" data-id="${h.id}" data-owner="${esc(ps[0].owner)}">abater no frigorífico de ${esc(ps[0].owner_name)} ${pay(ps[0])}</button>`
-            : `<span class="abp"><label class="visually-hidden" for="abp-${h.id}">frigorífico de jogador</label><select class="input abp__sel" id="abp-${h.id}">${ps.map(p => `<option value="${esc(p.owner)}"${abpPick[h.id] === p.owner ? ' selected' : ''} title="taxa ${brl(p.fee)}/cab. · ${int(p.left)} vagas">${esc(p.owner_name)} · recebe ${pay(p)}</option>`).join('')}</select><small class="muted abp__info">taxa e vagas: ${ps.map(p => `${esc(p.owner_name)} ${brl(p.fee)}/cab. (${int(p.left)} vagas)`).join(' · ')}</small><button class="btn btn--gold btn--sm" data-act="ab-killp" data-id="${h.id}">abater no frigorífico escolhido</button></span>`; })()}</div>
+            : `<span class="abp"><label class="visually-hidden" for="abp-${h.id}">frigorífico de jogador</label><select class="input abp__sel" id="abp-${h.id}">${ps.map(p => `<option value="${esc(p.owner)}"${abpPick[h.id] === p.owner ? ' selected' : ''}>${esc(p.owner_name)} · taxa ${brl(p.fee)}/cab. · você recebe ${pay(p)} · ${int(p.left)} vagas</option>`).join('')}</select><button class="btn btn--gold btn--sm" data-act="ab-killp" data-id="${h.id}">abater no frigorífico escolhido</button></span>`; })()}</div>
       <p class="small muted">${AB.capLeft(s) >= h.heads ? 'abate no seu frigorífico (com couro)' : s.abate?.owned ? 'seu frigorífico lotou este mês: abate em terceiros' : 'abate em frigorífico de terceiros'}</p></article>`;
   }).join('') : '<p class="empty glass">Você ainda não tem bois. Compre bezerros no leilão acima: se tiver pasto, eles vão para lá sozinhos.</p>';
 }
@@ -638,6 +632,16 @@ function renderBanco() {
     <td>${l.missed ? '<span class="tag tag--red">atrasada</span>' : '<span class="tag tag--green">em dia</span>'}</td>
     <td class="acts"><button class="btn btn--glass" data-act="payoff" data-id="${l.id}">quitar</button></td></tr>`).join('')
     : '<tr><td colspan="5" class="empty">Nenhuma dívida.</td></tr>';
+  $('#borrowers').innerHTML = s.borrowers.length ? s.borrowers.map(b => {
+    const look = { skin: (b.id % 5) + 1, hair: ['curto', 'longo', 'coque', 'raspado', 'boné'][b.id % 5], hairColor: (b.id % 4) + 1, outfit: ['moletom', 'regata', 'jaqueta'][b.id % 3], cloth: (b.id % 6) + 1, acc: 'nenhum' };
+    return `<article class="glass bcard">
+      <span class="bcard__avatar">${avatarSVG(look, { label: b.name })}</span>
+      <div><h4>${esc(b.name)}</h4><p class="price">${brl(b.amount)}</p>
+      <p class="muted small">${(b.rate * 100).toFixed(1)}% ao mês em ${b.months} meses</p>
+      <p class="small"><span class="tag ${b.risk > 0.07 ? 'tag--red' : b.risk > 0.035 ? 'tag--gold' : 'tag--green'}">risco ${(b.risk * 100).toFixed(1).replace('.', ',')}%/mês</span></p>
+      <p class="muted small">paga tudo em ${Math.round((1 - b.risk) ** b.months * 100)}% das vezes · lucro esperado ${brl(b.amount * L.lendEdge(b) * b.months)}</p></div>
+      <button class="btn btn--glass" data-act="lend" data-id="${b.id}">emprestar</button></article>`;
+  }).join('') : '<p class="empty glass">Ninguém pedindo empréstimo este mês.</p>';
   $('#lent').innerHTML = s.lent.length ? s.lent.map(p => `<tr>
     <td>${esc(p.name)}</td><td class="num">${brl(p.bal)}</td><td class="num">${(p.rate * 100).toFixed(1)}%</td><td class="num">${p.left}</td></tr>`).join('')
     : '<tr><td colspan="4" class="empty">Você ainda não emprestou para ninguém.</td></tr>';
@@ -962,7 +966,7 @@ const ACTS = {
   'spin-daily'() { spinDaily(); },
   logout() { Auth.logout(); },
   'link-phone'() { linkPhone(); },
-  'st-kind'(id) { SUI.setKind(id); LEU.setKind(id); },
+  'st-kind'(id) { SUI.setKind(id); },
   'fe-buy'(id) { feiraBuy(id); },
   'fe-sell'() { feiraSell(); },
   'card-close'() { $('#dlg-card').close(); },
@@ -1193,7 +1197,7 @@ document.addEventListener('click', e => {
   const rb = e.target.closest('[data-rbet]');
   if (rb) { RL.placeBet(rb.dataset.rbet); return; }
   const aq = e.target.closest('[data-av-quick]');
-  if (aq) { AV.quick(aq.dataset.avQuick === 'x2' ? 'x2' : Number(aq.dataset.avQuick)); return; }
+  if (aq) { AV.quick(Number(aq.dataset.avQuick)); return; }
   const b = e.target.closest('[data-act]');
   if (!b || b.disabled) return;
   const act = b.dataset.act;
@@ -1242,7 +1246,7 @@ function showSub(name) {
 }
 
 // atalhos da mesa: 1-5 fichas, espaço aposta, H pede, S para, R regras
-const CHIP_KEYS = { 1: 5, 2: 25, 3: 100, 4: 500, 5: 1000, 6: 5000, 7: 25000, 8: 100000 };
+const CHIP_KEYS = { 1: 5, 2: 25, 3: 100, 4: 500, 5: 1000 };
 document.addEventListener('keydown', e => {
   if (e.target.closest('input, select, textarea') || document.querySelector('dialog[open]') || $('#room').hidden || $('#p-mesa').hidden || $('#sub-21').hidden) return;
   const k = e.key.toLowerCase();
@@ -1409,7 +1413,7 @@ const PRESTIGE_TXT = {
   safira: 'Duzentos milhões. Poucos chegam aqui, e o mercado inteiro já sabe o seu nome. Cada decisão sua agora move preços e chama atenção dos concorrentes.',
   rubi: 'Trezentos milhões de patrimônio. Você não acompanha mais o mercado: ajuda a fazê-lo. Os grandes negócios do país passam pela sua mesa.',
   ouro: 'Meio bilhão. Seu império atravessa fazendas, empresas e mercados. Os outros jogadores estudam os seus passos.',
-  bilhao: 'Um bilhão de reais! Você acaba de entrar num grupo exclusivo onde só os muito ricos do 21 World estão. Pouquíssimos chegaram aqui, e daqui em diante cada movimento seu vira notícia. O próximo degrau, R$ 2 bilhões, é para lendas.',
+  bilhao: 'Um bilhão de reais. Você entrou para a história do 21 World. Daqui em diante, cada movimento seu vira notícia.',
   lenda: 'Dois bilhões. Não existe mais faixa acima de você: só a sua própria lenda.',
 };
 function prestigeParty(pr) {
@@ -1420,8 +1424,6 @@ function prestigeParty(pr) {
     <p>${PRESTIGE_TXT[pr.id]}</p>
     <p>Seu nome agora representa uma nova categoria de prestígio no mercado: <b>${pr.title}</b>.</p>
     <ul class="prest-gets"><li><b>${pr.trophy}</b> no seu perfil, para sempre</li><li>título <b>${pr.title}</b> e selo ${pr.icon} ao lado do seu nome</li><li>vantagem permanente: <b>${PK.label(pr.perk)}</b></li><li>lugar no <b>Clube dos 100 milhões</b>, no ranking</li></ul>
-    ${pr.id === 'bilhao' ? (() => { const f = x => `${(x * 100).toFixed(1).replace('.', ',').replace(',0', '')}%`, a = L.ELITE.find(e => e.min === 1e9), b = L.ELITE.find(e => e.min === 2e9);
-      return `<div class="prest-warn"><b>⚠️ Atenção: as taxas dos bilionários sobem</b><p class="small">Na faixa de bilionário o imposto sobre a fortuna vai a <b>${f(a.tax)} ao mês</b> (sobre o que passa de R$ 1 bi), o pedágio fica com <b>${f(a.gain)}</b> do lucro do mês, as compras saem <b>+${f(a.price)}</b> e as contas <b>${a.bills}×</b>. A partir de R$ 2 bi: imposto ${f(b.tax)}, pedágio ${f(b.gain)} e compras +${f(b.price)}. Crescer daqui para cima exige estratégia: empresas que dão lucro, terras que valorizam e cuidado com os gastos.</p></div>`; })() : ''}
     ${next ? `<p class="muted small">Próximo marco: <b>${brl(next.min)}</b> (${next.title}).</p>` : ''}`;
   d.showModal(); confetti(260); try { sfx.cash(true); } catch {}
   note(`marco de prestígio: ${pr.title} (${pr.trophy})`);
@@ -1439,7 +1441,6 @@ function bankRiskCheck() {
     <p>Para continuar operando com grandes volumes financeiros, você deverá buscar uma instituição de maior capacidade ou adquirir seu próprio banco.</p>`;
   d.showModal();
 }
-G.trophyCheck = () => trophyCheck();
 function trophyCheck() {
   const s = S(), w = L.netWorth(s); s.trophies ??= [];
   const nw = L.TROPHIES.filter(t => w >= t && !s.trophies.includes(t)); if (!nw.length) return;
@@ -1603,7 +1604,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 148;
+const APP_VERSION = 149;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

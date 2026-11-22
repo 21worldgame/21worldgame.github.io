@@ -8,10 +8,6 @@ import * as Auth from './auth.js';
 import * as NGU from './negocios-ui.js';
 import * as ACS from './acc-stock.js';
 import * as CD from './cards.js';
-import * as L from './logic.js';
-import * as PK from './perks.js';
-import * as FT from './futebol.js';
-import * as ST from './stable.js';
 
 let lobby = null, media = () => '', kindName = {}, announce = () => {}, cat = 'all';
 export const setCat = c => { cat = c || 'all'; render(); };
@@ -66,10 +62,7 @@ function cardFor(s, it, mine) {
 export function render() {
   const s = G.S, all = SH.items(s), mine = new Map((s.shop || []).map(l => [l.key, l]));
   const npcs = SH.npcListings(s, Date.now());
-  // número de cada categoria = o que está anunciado no Feirão (jogadores do mundo, outros jogadores e os seus anúncios), não o que você tem no inventário
-  const peerL = lobby ? [...lobby.peers.values()].flatMap(p => p.shop || []) : [];
-  const counts = {}, inc = c => { counts[c] = (counts[c] || 0) + 1; };
-  for (const l of npcs) inc(l.cat); for (const l of peerL) inc(SH.catOf({ kind: l.kind })); for (const l of s.shop || []) inc(SH.catOf({ kind: l.kind }));
+  const counts = {}; for (const i of all) counts[SH.catOf(i)] = (counts[SH.catOf(i)] || 0) + 1; for (const l of npcs) counts[l.cat] = (counts[l.cat] || 0) + 1;
   $('#shop-cats').innerHTML = [['all', 'tudo'], ...Object.entries(SH.CATS)].map(([k, v]) => `<button class="shop-cat${cat === k ? ' is-on' : ''}" data-act="shop-cat" data-id="${k}">${v}${k !== 'all' && counts[k] ? ` <small>${counts[k]}</small>` : ''}</button>`).join('');
   const its = all.filter(i => i.kind !== 'player' && inCat(SH.catOf(i))), players = inCat('futebol') ? all.filter(i => i.kind === 'player') : [];
   const card = it => cardFor(s, it, mine);
@@ -89,43 +82,12 @@ export function render() {
 
 // carta anunciada por outro jogador: só nomes simples (vão para url() e para a busca da coleção)
 const cleanCard = c => Object.fromEntries(['champ', 'set', 'key', 'tier'].map(k => [k, c[k] == null ? undefined : String(c[k]).replace(/[^\w-]/g, '').slice(0, 40)]));
-// ficha do anúncio do Feirão: tudo o que importa para decidir a compra, por tipo de produto
-const intl = v => new Intl.NumberFormat('pt-BR').format(Math.round(Number(v) || 0));
-const row = (k, v) => v == null || v === '' ? '' : `<li><span>${k}</span><b>${v}</b></li>`;
-function detailsHTML(l) {
-  const it = l.items?.[0], d = it?.data || {}, rows = [];
-  if (l.cat === 'terra' && l.land) {
-    const o = l.land, ri = G.regInfo?.()[o.region], perk = PK.label(PK.landPerk(o));
-    rows.push(row('área', `${intl(o.ha)} ha`), row('região', `${esc(o.region)}${o.uf ? ` (${esc(String(o.uf).toUpperCase())})` : ''}`), row('aptidão', esc(o.use)), row('água', esc(o.water)),
-      row('benfeitorias', (o.improv || []).length ? esc(o.improv.join(', ')) : 'nenhuma'), row('pasto para', `${intl(L.landCap(o))} bois`),
-      row('preço por hectare', brl(l.price / Math.max(1, o.ha))), row('ao comprar', perk ? esc(perk) : ''),
-      ri?.tag ? row('região', ri.tag === 'saturada' ? '⚠️ saturada' : ri.tag === 'pouco explorada' ? '🧭 pouco explorada' : '📈 produto em falta') : '');
-  } else if ((l.cat === 'veiculo' || l.cat === 'maquina') && d.model) {
-    const C = L.CARS[d.model] || {};
-    rows.push(row('modelo', esc(C.name || d.model)), row('vantagem', C.perk ? esc(C.perk) : ''), row('novo custa', C.price ? brl(C.price) : ''),
-      row('desconto', C.price ? `${Math.max(0, Math.round((1 - l.price / C.price) * 100))}% abaixo do novo` : ''), C.hp ? row('potência', `${C.hp} cv`) : '');
-  } else if (l.cat === 'animal' && l.animal) {
-    const a = l.animal;
-    rows.push(row('tipo', a.kind === 'horse' ? 'cavalo de corrida' : 'galgo de corrida'), row('nome', esc(a.name)), row('nota', ST.rating(a)), row('vitórias', a.wins ?? 0), a.age != null ? row('idade', `${a.age} ${a.age === 1 ? 'ano' : 'anos'}`) : '');
-  } else if (l.cat === 'gado' && l.heads) {
-    rows.push(row('cabeças', intl(l.heads)), row('peso', '~180 kg (desmamados)'), row('por cabeça', brl(l.price / l.heads)), row('vão para', 'seu pasto, ou o hotel de gado se não couber'));
-  } else if (l.cat === 'produto' && it?.qty) {
-    const ref = G.S.prices?.[it.good] || 0, unit = l.price / it.qty;
-    rows.push(row('quantidade', `${intl(it.qty)} ${it.good === 'laranja' ? 'caixas' : 'sacas'}`), row('preço por unidade', brl(unit)), ref ? row('cotação de hoje', `${brl(ref)} (${unit >= ref ? '+' : ''}${Math.round((unit / ref - 1) * 100)}%)`) : '', row('vai para', 'o seu armazém'));
-  } else if (l.cat === 'futebol' && d.pos) {
-    rows.push(row('posição', esc(FT.POS[d.pos] || d.pos)), row('nota', d.ovr), row('idade', d.age), row('característica', d.trait ? esc(d.trait) : ''));
-  } else if (l.cat === 'carta' && l.card) {
-    rows.push(row('carta', esc(CD.label(l.card))), row('valor de referência', brl(CD.value(l.card, G.S.month || 1))));
-  }
-  const html = rows.filter(Boolean).join('');
-  return html ? `<ul class="scard__facts">${html}</ul>` : '';
-}
 function npcCard(l) {
   const m = l.cat === 'veiculo' || l.cat === 'maquina' ? `<img src="assets/${l.img}.webp" alt="" loading="lazy">` : l.cat === 'terra' ? media({ kind: 'land', data: l.land }) : l.cat === 'animal' ? media({ kind: 'animal', data: l.animal })
     : l.cat === 'gado' ? '<img src="assets/farm-bezerro.webp" alt="" loading="lazy">' : l.cat === 'produto' ? media({ kind: 'good', good: l.good }) : l.cat === 'carta' ? media({ kind: 'card', data: l.card }) + CD.ownBadge(G.S, l.card) : media({ kind: 'player' });
   return `<article class="scard scard--other">
     <div class="scard__media">${m}<span class="scard__kind">${esc(SH.CATS[l.cat])}</span></div>
-    <div class="scard__body"><h4>${esc(l.label)}</h4><p class="small muted">anunciado por <b>${esc(l.seller)}</b></p>${detailsHTML(l)}<p class="scard__price">${brl(l.price)}</p>
+    <div class="scard__body"><h4>${esc(l.label)}</h4><p class="small muted">anunciado por <b>${esc(l.seller)}</b></p><p class="scard__price">${brl(l.price)}</p>
       <button class="btn btn--gold btn--sm" data-act="shop-npc" data-id="${esc(l.id)}">comprar</button></div></article>`;
 }
 export function buyNpc(id) {

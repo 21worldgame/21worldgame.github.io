@@ -171,31 +171,6 @@ export function refreshMarket(f, rng = Math.random) {
   f.market = Object.keys(POS).flatMap(pos => [genPlayer(pos, base + (rng() - 0.3) * 18, rng), genPlayer(pos, base + (rng() - 0.6) * 14, rng), genPlayer(pos, base - 8 + rng() * 6, rng)])
     .map(p => ({ ...p, price: value(p), club: pick(CLUBS[f.div], rng).n }));
 }
-// mercado vivo: muda todo mês do mundo. Janela (janeiro e julho) enche o mercado; nos outros meses entra pouca gente.
-// Quem fica muito tempo anunciado acaba vendido para outro clube; o "disputado" custa mais e sai rápido.
-// Preço nunca fica abaixo do valor (senão comprar e revender pelas propostas daria lucro).
-export const isWindow = m => [1, 7].includes(((m - 1) % 12 + 12) % 12 + 1);
-const listed = (f, rng, m) => {
-  const base = [76, 65, 56][f.div], pos = pick(Object.keys(POS), rng), hot = rng() < 0.18;
-  const p = genPlayer(pos, base + (hot ? 4 + rng() * 10 : (rng() - 0.55) * 16), rng);
-  return { ...p, price: Math.round(value(p) * (hot ? 1.15 : 1) / 100) * 100, club: pick(CLUBS[f.div], rng).n, hot, since: m };
-};
-export function marketTick(s, rng = Math.random) {
-  const f = s.fut, m = s.month || 1;
-  if (!f?.club || f.mktMonth === m) return false;
-  f.mktMonth = m;
-  const out = [];
-  f.market = (f.market || []).filter(p => {
-    const left = rng() < (p.hot ? 0.5 : 0.15) + 0.12 * (m - (p.since ?? m - 1));
-    if (left) out.push(`${p.name} → ${pick(CLUBS[Math.max(0, f.div - (rng() < 0.3 ? 1 : 0))].filter(c => c.n !== p.club && c.n !== f.club), rng).n}`);
-    return !left;
-  });
-  const want = isWindow(m) ? 24 : 10 + Math.floor(rng() * 5);
-  while (f.market.length < want) f.market.push(listed(f, rng, m));
-  for (const p of f.market) if (p.hot && p.since < m) p.price = Math.round(p.price * 1.05 / 100) * 100;   // disputado encarece
-  f.mktNews = out.slice(0, 6);
-  return true;
-}
 // compra a preço de tabela (ou pelo preço negociado com o bot)
 export function buy(s, id, price) {
   const f = s.fut, p = f?.market.find(x => x.id === id);
@@ -288,15 +263,8 @@ export function playRound(s, rng = Math.random, prizeMult = 1) {
     if (home) {
       const t = Math.round(TICKET[f.div] * (1 + 0.2 * ((f.stadium || 1) - 1)) * PK.mult(s, 'ticket') * (0.7 + Math.min(0.6, lg.table.user.pts / Math.max(1, lg.table.user.p) / 5)));
       cash += t; lines.push({ txt: 'bilheteria', val: t });
-    } else {   // fora de casa não tem bilheteria: entra a cota de TV do jogo
-      const tv = Math.round(TICKET[f.div] * 0.35 * PK.mult(s, 'ticket'));
-      cash += tv; lines.push({ txt: 'cota de TV (jogo fora de casa)', val: tv });
     }
-    if (my > their) {   // vitória fora vale mais; e vencer nunca dá prejuízo na rodada (cobre os salários com folga)
-      const wage = Math.round(payroll(f) / 4), base = Math.round(WIN_PRIZE[f.div] * prizeMult * (home ? 1 : 1.5));
-      const w = Math.max(base, Math.round(wage * 1.2 - cash));
-      cash += w; lines.push({ txt: home ? 'prêmio por vitória' : 'prêmio por vitória fora de casa', val: w });
-    }
+    if (my > their) { const w = Math.round(WIN_PRIZE[f.div] * prizeMult); cash += w; lines.push({ txt: 'prêmio por vitória', val: w }); }
     f.morale = clamp((f.morale || 0) + (my > their ? 1 : my < their ? -1 : 0), -3, 3);
   }
   const wages = Math.round(payroll(f) / 4);

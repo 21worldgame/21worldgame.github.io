@@ -39,7 +39,7 @@ export const ready = a => !a.inj && !retired(a) && a.wk > 0;
 
 export function price(kind, r, pot = r + 12) { return Math.round((KINDS[kind].base * Math.exp((r - 45) / 12) * (0.9 + (pot - r) / 100)) / 100) * 100; }
 // cavalo de raça vale mais: prêmio da raça e do pedigree (estrelas)
-export const BREED_PREM = { psi: 1.25, qm: 1.12, arabe: 1.15, mangalarga: 1.08, crioulo: 1.02, greyhound: 1.25, whippet: 1.15, saluki: 1.18, galgoesp: 1.12, afghan: 1.1 };
+export const BREED_PREM = { psi: 1.25, qm: 1.12, arabe: 1.15, mangalarga: 1.08, crioulo: 1.02 };
 export function value(a) {
   const f = retired(a) ? 0.15 : Math.min(1, ageFactor(a.kind, a.age) + 0.1), prem = (BREED_PREM[a.breed] || 1) * (1 + 0.12 * (a.stars || 0));
   return Math.round((price(a.kind, rating(a), a.pot) * f * SALE * prem) / 100) * 100;

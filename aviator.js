@@ -83,7 +83,7 @@ export function press() {
   if (st.phase === 'wait') mine = b; else next = b;
   renderBtn(); renderPlayers();
 }
-export function quick(n) { const i = $('[name="av-bet"]'), v = Number(i.value) || 0; i.value = Math.max(10, n === 'x2' ? v * 2 : v + n); }
+export function quick(n) { const i = $('[name="av-bet"]'); i.value = Math.max(10, (Number(i.value) || 0) + n); }
 
 function renderBtn() {
   const btn = $('#av-btn'); if (!btn) return;
