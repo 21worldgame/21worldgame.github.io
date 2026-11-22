@@ -570,11 +570,11 @@
       </div>
       <div class="glass wardrobe">
         <h2>meu personagem</h2>
-        <div class="char-nav" role="tablist" aria-label="categorias do personagem">
-          <button type="button" role="tab" class="is-on" data-act="char-tab" data-id="identidade" data-char="identidade" aria-selected="true"><span aria-hidden="true">🪪</span> identidade</button>
-          <button type="button" role="tab" data-act="char-tab" data-id="aparencia" data-char="aparencia" aria-selected="false"><span aria-hidden="true">🎨</span> aparência</button>
-          <button type="button" role="tab" data-act="char-tab" data-id="acessorios" data-char="acessorios" aria-selected="false"><span aria-hidden="true">💎</span> acessórios</button>
-          <button type="button" role="tab" data-act="char-tab" data-id="vantagens" data-char="vantagens" aria-selected="false"><span aria-hidden="true">⚡</span> vantagens</button>
+        <div class="char-nav" role="group" aria-label="categorias do personagem">
+          <button type="button" class="is-on" data-act="char-tab" data-id="identidade" data-char="identidade" aria-pressed="true"><span aria-hidden="true">🪪</span> identidade</button>
+          <button type="button" data-act="char-tab" data-id="aparencia" data-char="aparencia" aria-pressed="false"><span aria-hidden="true">🎨</span> aparência</button>
+          <button type="button" data-act="char-tab" data-id="acessorios" data-char="acessorios" aria-pressed="false"><span aria-hidden="true">💎</span> acessórios</button>
+          <button type="button" data-act="char-tab" data-id="vantagens" data-char="vantagens" aria-pressed="false"><span aria-hidden="true">⚡</span> vantagens</button>
         </div>
         <section class="char-sec" id="cs-identidade">
           <label class="field"><span>nome do personagem</span>

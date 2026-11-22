@@ -209,7 +209,7 @@ function renderChar() {
   if (document.activeElement !== $('#char-name')) $('#char-name').value = a.name || '';
   $('#char-name').disabled = locked;
   $('#char-name-hint').textContent = locked ? `Nome trocado no mês ${s.nameAt}. Próxima troca no mês ${s.nameAt + 10} do mundo (faltam ${s.nameAt + 10 - s.month}).` : 'Você pode trocar o nome a cada 10 meses do mundo. Ele fica salvo quando você sair do campo.';
-  document.querySelectorAll('[data-char]').forEach(b => { const on = b.dataset.char === charTab; b.classList.toggle('is-on', on); b.setAttribute('aria-selected', String(on)); });
+  document.querySelectorAll('[data-char]').forEach(b => { const on = b.dataset.char === charTab; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', String(on)); });
   document.querySelectorAll('.char-sec').forEach(x => { x.hidden = x.id !== `cs-${charTab}`; });
   if (charTab === 'identidade') {
     const rows = G.rankRows?.(500) || [], pos = rows.findIndex(r => r.pid === 'me'), own = s.lands.filter(l => l.own), accN = (s.owned || []).filter(t => t.startsWith('acc:')).length;
@@ -782,7 +782,7 @@ function pfTabs(p, me, X, st, rate) {
   const cars = `<div class="pf__cars">${(p.cars || []).length ? p.cars.map(m => L.CARS[m] ? `<span class="pf__car"><img src="assets/${L.CARS[m].img}.webp" alt=""><small>${esc(L.CARS[m].name)}</small></span>` : '').join('') : '<p class="muted small">Sem carros ainda.</p>'}</div>`;
   const achs = `<ul class="achs">${P.ACHIEVEMENTS.map(a => `<li class="${p.ach?.includes(a.id) ? 'is-got' : ''}"><span class="badge__medal" aria-hidden="true"></span>${esc(a.txt)}</li>`).join('')}</ul>`;
   const secs = [['resumo', '📋 resumo', stats + (p.deals?.length ? deals : '')], ['patrimonio', '💰 patrimônio', X.patrimonio], ['colecoes', '🃏 cartas e troféus', X.colecoes], ['garagem', '🚗 garagem', cars], ['conquistas', '🏆 conquistas', achs]].filter(x => x[2]);
-  return `<nav class="pf__nav" role="tablist" aria-label="categorias do perfil">${secs.map(([id, t], i) => `<button type="button" role="tab" class="${i ? '' : 'is-on'}" data-pftab="${id}" aria-selected="${i ? 'false' : 'true'}">${t}</button>`).join('')}</nav>
+  return `<nav class="pf__nav" aria-label="categorias do perfil">${secs.map(([id, t], i) => `<button type="button" class="${i ? '' : 'is-on'}" data-pftab="${id}" aria-pressed="${i ? 'false' : 'true'}">${t}</button>`).join('')}</nav>
     ${secs.map(([id, , html], i) => `<section class="pf__sec" data-pf="${id}"${i ? ' hidden' : ''}>${html}</section>`).join('')}`;
 }
 function openProfile(pid, fetched) {
@@ -819,7 +819,7 @@ function openProfile(pid, fetched) {
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-pftab]'); if (!b) return;
   const box = b.closest('#pf'); if (!box) return;
-  box.querySelectorAll('[data-pftab]').forEach(x => { const on = x === b; x.classList.toggle('is-on', on); x.setAttribute('aria-selected', String(on)); });
+  box.querySelectorAll('[data-pftab]').forEach(x => { const on = x === b; x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', String(on)); });
   box.querySelectorAll('[data-pf]').forEach(x => { x.hidden = x.dataset.pf !== b.dataset.pftab; });
 });
 // nome e foto de cada tipo de item (inventário, loja e trocas). Tipo novo sem entrada aqui ainda ganha nome e foto genéricos.
@@ -1646,7 +1646,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 176;
+const APP_VERSION = 177;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
