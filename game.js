@@ -743,7 +743,7 @@ function openProfile(pid, fetched) {
   $('#pf').innerHTML = `
     <div class="pf__head">
       <span class="pf__avatar is-full"${prTop ? ` data-prest="${prTop.id}"` : ''}>${avatarSVG(p.look, { label: p.name, full: true })}</span>
-      <div><h2 id="pf-name">${esc(p.name)}${prTop ? ` <span class="prest-badge prest-badge--${prTop.id}" title="${esc(prTop.trophy)}">${prTop.icon}</span>` : ''}</h2><p><span class="tag tag--gold">nível ${p.level}</span> <span class="tag ${prTop ? 'tag--prest' : 'tag--dark'}">${esc(prTop ? prTop.title : p.rank)}</span></p>
+      <div><h2 id="pf-name">${esc(p.name)}${prTop ? ` <span class="prest-badge prest-badge--${prTop.id}" title="${esc(prTop.trophy)}">${prTop.icon}</span>` : ''}</h2><p><span class="tag tag--gold">nível ${p.level}</span> <span class="tag ${prTop ? 'tag--prest' : 'tag--dark'}">${esc(prTop ? prTop.title : p.rank)}</span>${p.pioneer ? ' <span class="tag tag--gold" title="jogou no começo do 21 World: só quem estava lá tem">🌱 pioneiro</span>' : ''}</p>
       <p class="big">${brl(p.worth)}</p><p class="muted small">patrimônio</p>${xp}${p.bio ? `<p class="pf__bio">“${esc(p.bio)}”</p>` : ''}</div>
     </div>
     <div class="pf__stats">
@@ -1593,7 +1593,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 157;
+const APP_VERSION = 158;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

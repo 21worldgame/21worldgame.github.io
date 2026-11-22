@@ -150,7 +150,7 @@ let noCardUntil = 0;   // coluna card faltando: tenta de novo em 5 min (não des
 const mapLandsOf = s => (s.lands || []).filter(l => l.own && Number.isFinite(l.lat) && Number.isFinite(l.lon)).slice(0, 30).map(l => ({ r: l.region, c: l.city || '', u: l.use, ha: l.ha, lat: l.lat, lon: l.lon }));
 function profileRow() {
   const s = G.S, row = { user_id: user.id, name: cleanName(s.avatar?.name) || 'jogador', level: s.level || 1, worth: Math.round(L.netWorth(s)), rank: L.rank(L.netWorth(s)), look: s.avatar || null, updated_at: new Date().toISOString() };
-  if (Date.now() > noCardUntil) { const { look, name, level, worth, rank, ...p } = profileOf(s); row.card = p.private ? { private: true, trophies: p.trophies } : { ...p, mapLands: mapLandsOf(s) }; }
+  if (Date.now() > noCardUntil) { const { look, name, level, worth, rank, ...p } = profileOf(s); row.card = p.private ? { private: true, trophies: p.trophies, pioneer: p.pioneer } : { ...p, mapLands: mapLandsOf(s) }; }
   return row;
 }
 // perfil de outro jogador da nuvem (ao clicar no ranking)

@@ -37,8 +37,9 @@ export function merge({ cloud = [], me, peers = [], rivalRows = [], limit = 10 }
   const rows = new Map();
   const put = (r, tag) => { const k = r.name.trim().toLowerCase(); const cur = rows.get(k); if (!cur || tag === 'me' || (cur.tag !== 'me' && r.worth >= cur.worth)) rows.set(k, { ...r, tag }); };
   rivalRows.forEach(r => put(r, 'npc'));
-  cloud.forEach(r => put(r, 'cloud'));
-  peers.forEach(r => put(r, 'peer'));
+  const idle = r => Number(r.worth) === 10000;   // quem está parado nos R$ 10 mil do começo não entra no ranking (você sempre se vê)
+  cloud.filter(r => !idle(r)).forEach(r => put(r, 'cloud'));
+  peers.filter(r => !idle(r)).forEach(r => put(r, 'peer'));
   if (me) put(me, 'me');
   return [...rows.values()].sort((a, b) => b.worth - a.worth).slice(0, limit);
 }

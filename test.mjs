@@ -461,7 +461,7 @@ import * as CH from './chat.js';
 console.log('chat ok');
 // arrendamento: reajuste, plantio só com trator, parte do dono e compra com abatimento
 {
-  const mk = () => { const s = L.newState(); s.lands.push({ id: 900, own: false, leasedOut: false, region: 'x', ha: 10, value: 1000000, use: 'lavoura', cap: 1 }); return s; };
+  const mk = () => { const s = L.newState(); s.money = 100000; s.lands.push({ id: 900, own: false, leasedOut: false, region: 'x', ha: 10, value: 1000000, use: 'lavoura', cap: 1 }); return s; };
   let s = mk();
   assert.ok(L.plant(s, s.lands[0], 'soja').includes('trator'));
   s.cars.push({ id: 1, model: 'deere', value: 650000 });

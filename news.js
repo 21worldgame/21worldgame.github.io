@@ -81,9 +81,11 @@ export const EDITORIAL = [
     'Os galpões e barracões passaram a custar o preço de mercado: R$ 450 mil a R$ 2,8 milhões na avicultura e R$ 600 mil a R$ 4,8 milhões na suinocultura. A granja rende de 11% a 18% ao ano sobre o galpão. Nos suínos, o barracão pequeno não se paga com o preço atual e o tecnificado rende perto de 12%, como no setor. Na mina de ouro, com o metal no recorde, a equipe extrai 0,85 kg por mês.'),
   ed(25, 'alerta', 'assets/farm-soja.webp', 'Vida nova: o 21 World recomeça do zero para todo mundo',
     'O mundo foi reiniciado. Dinheiro, fichas, terras, gado, empresas, a mina de ouro e o ranking voltaram ao começo para todos os jogadores, sem exceção. As contas continuam: é só entrar com o mesmo login de sempre e começar de novo, agora com os preços, os custos e os lucros da vida real desde o primeiro dia. O relógio do mundo também voltou ao mês 1.'),
+  ed(26, 'alerta', 'assets/photo-chips.webp', 'Recomeço com R$ 10 mil para todos, bots também, e selo para os pioneiros',
+    'O mundo recomeçou outra vez, agora com R$ 10 mil na carteira de cada jogador. Os jogadores do mundo também partem de R$ 10 mil e vão crescendo mês a mês, e o relógio voltou ao mês 1. Quem continua parado nos R$ 10 mil do começo fica fora do ranking até voltar a jogar. Quem jogou no começo do 21 World ganhou no perfil o selo 🌱 pioneiro, que nenhum jogador novo vai ter.'),
 ];
 // edição do Jornal 21: o jornal abre com as reportagens que o jogador ainda não viu (guarda a hora da última vista)
-export const EDITION = 'jornal-v157';
+export const EDITION = 'jornal-v158';
 export const editorial = (now = Date.now()) => EDITORIAL.filter(e => now >= e.at - 864e5 && now - e.at < ED_DAYS * 864e5);
 // manchete pronta (texto puro; a tela escapa antes de mostrar)
 export function headline(n) {

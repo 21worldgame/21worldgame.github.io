@@ -160,9 +160,11 @@ async function applyGrants(sb) {
       G.S.lands.push({ ...g.item, own: true }); note(`terra devolvida pelo administrador: ${g.item.ha} ha, ${g.item.region}`);
       badge('Administrador', `Sua terra de ${int(g.item.ha)} ha em ${g.item.region} foi devolvida${why}.`, 'mission');
     }
+    if (g.kind === 'setmoney') { G.S.money = amt; note(`carteira zerada pelo administrador${why}`, amt); badge('Administrador', `Sua carteira agora tem ${brl(amt)}${why}.`, 'mission'); }
+    if (g.kind === 'pioneer') { G.S.pioneer = true; badge('Pioneiro do 21 World', 'Você jogou no começo do game: seu perfil ganhou o selo de pioneiro.', 'mission'); }
     if (g.kind === 'reset') {
       const name = G.S.avatar?.name;
-      G.S = blankState(name && name !== 'você' ? name : '');
+      const pioneer = G.S.pioneer; G.S = blankState(name && name !== 'você' ? name : ''); if (pioneer) G.S.pioneer = true;   // o selo de pioneiro fica
       say('O administrador reiniciou o seu progresso.', true);
     }
   }

@@ -121,7 +121,8 @@ export function worthAt(n, month, t = Date.now()) {
   const wave = 1 + 0.07 * Math.sin(month * 0.7 + n.i * 2.1) + 0.03 * Math.sin(month * 2.3 + n.i);
   const boost = 1 + (T.npcBoost - 1) * Math.min(1, m / 48);   // mundo novo continua alcançável
   const r = Math.min(1, Math.max(0, (month - NPC_RAMP_START) / NPC_RAMP));   // 0 em 19/11/2026, 1 daqui a um mês
-  return Math.round(n.base * (1 + n.g * 0.55) ** m * (1 + (boost * late - 1) * r) * wave * form(n, t) * (PERF.fn ? PERF.fn(n, month) : 1));
+  const start = 10000 * (Math.max(10000, n.base) / 10000) ** (m / 48);   // todo bot começa o mundo com R$ 10 mil e chega à fortuna dele no mês 49
+  return Math.round(start * (1 + n.g * 0.55) ** m * (1 + (boost * late - 1) * r) * wave * form(n, t) * (PERF.fn ? PERF.fn(n, month) : 1));
 }
 export const levelFor = worth => Math.max(1, Math.min(60, Math.round(Math.log10(Math.max(10, worth)) * 7 - 28)));
 
