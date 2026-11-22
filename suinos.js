@@ -3,9 +3,9 @@ import { mult, bonus } from './perks.js';
 // (conversão ~2,4–2,7 kg de ração por kg ganho) e são vendidos por kg vivo. Ponto de venda: ~4º mês (~115–120 kg).
 // Números de referência: Embrapa/FAEP (GPD ~790 g/dia, CA ~2,4) e Cepea (suíno vivo R$ 7,5–9,5/kg em 2025).
 export const BARNS = {
-  pequeno: { label: 'barracão pequeno', cap: 300, price: 480000, conv: 2.75, mort: 0.012, fixed: 9000, img: 'barn-pequeno' },
-  medio: { label: 'barracão de terminação', cap: 1000, price: 1350000, conv: 2.6, mort: 0.009, fixed: 24000, img: 'barn-medio' },
-  tecnificado: { label: 'granja tecnificada (climatizada)', cap: 3000, price: 3600000, conv: 2.42, mort: 0.006, fixed: 58000, img: 'barn-tecnificado' },
+  pequeno: { label: 'barracão pequeno', cap: 300, price: 600000, conv: 2.75, mort: 0.012, fixed: 9000, img: 'barn-pequeno' },
+  medio: { label: 'barracão de terminação', cap: 1000, price: 1800000, conv: 2.6, mort: 0.009, fixed: 24000, img: 'barn-medio' },
+  tecnificado: { label: 'granja tecnificada (climatizada)', cap: 3000, price: 4800000, conv: 2.42, mort: 0.006, fixed: 58000, img: 'barn-tecnificado' },
 };
 export const PRICES = { leitao: 330, suino: 6.9, racaoSuino: 1.35 };   // Cepea out/2026: suíno vivo ~R$ 6,9/kg; ração com milho a R$ 64 a saca   // R$ por leitão, R$ por kg vivo, R$ por kg de ração (milho + farelo)
 export const START_KG = 23, VACCINE = 12, FEE = 0.02, RESALE = 0.7;

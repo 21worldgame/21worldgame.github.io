@@ -41,7 +41,7 @@ assert.equal(L.capacity(f), 9);
 assert.equal(L.plant(f, lot, 'soja'), null);
 assert.equal(f.money, 1e6 - L.CROPS.soja.cost * 10);
 assert.equal(L.capacity(f), 0);
-for (let i = 0; i < 4; i++) L.tick(f, () => 0.5);
+for (let i = 0; i < L.CROPS.soja.months; i++) L.tick(f, () => 0.5);
 assert.equal(f.stock.soja, 600);
 assert.equal(lot.crop, undefined);
 f.cars.push({ id: 10, model: 'deere', value: 650000 });
@@ -53,6 +53,31 @@ assert.equal(L.plantCost(f, 'soja', 10), Math.round(L.CROPS.soja.cost * 10 * 0.9
   lt.value = mk * 2; t.lands.push(lt); for (let i = 0; i < 120; i++) L.tick(t, () => 0.99);
   assert.ok(lt.value <= mk * 1.25 && lt.value >= mk * 0.8, 'terra fica perto do mercado: ' + lt.value / mk);
   assert.equal(L.landMarket({ region: 'região que não existe', ha: 10 }), 0); }
+// máquinas de lavoura (v156): trator vale o maior, o resto soma, teto de 15%
+{ const car = m => ({ id: m, model: m, value: 1 });
+  assert.equal(L.machDiscount({ cars: [car('massey')] }), 0.07); assert.equal(L.machDiscount({ cars: [car('massey'), car('deere')] }), 0.1);
+  assert.equal(L.machDiscount({ cars: ['deere', 'plantadeira', 'colheitadeira', 'autopropelido', 'drone'].map(car) }), L.MACH_MAX);
+  assert.ok(Object.values(L.CARS).every(c => c.img && c.price > 0)); }
+// contratos de exportação e seguro agrícola (v156)
+{ const CTR = await import('./contratos.js'), pr = { soja: 150, milho: 64, cafe: 1600 };
+  const o = CTR.offers(40, pr); assert.deepEqual(o, CTR.offers(40, pr), 'mesmas propostas para todos'); assert.equal(o.length, CTR.OFFERS);
+  assert.ok(o.every(x => x.prem >= CTR.PREM[0] && x.prem <= CTR.PREM[1] && Math.abs(x.price - pr[x.good] * (1 + x.prem)) < 0.01));
+  const s = { ...L.newState(() => 0.5), month: 40 }; s.money = 1e9; const c = o[0];
+  assert.equal(CTR.accept(s, c), null); assert.ok(CTR.accept(s, c), 'não fecha o mesmo contrato duas vezes');
+  s.stock[c.good] = c.qty * 2; assert.ok(CTR.deliver(s, c.id).err, 'grão comprado no mercado não vale (só colheita própria)');
+  s.colhido[c.good] = c.qty; const m0 = s.money, r = CTR.deliver(s, c.id); assert.equal(s.money, m0 + Math.round(c.qty * c.price)); assert.equal(r.c.id, c.id); assert.equal(s.colhido[c.good], 0);
+  CTR.accept(s, o[1]); s.month += o[1].months; const m1 = s.money, fine = CTR.monthly(s); assert.equal(s.money, m1 - Math.round(o[1].qty * o[1].price * CTR.FINE)); assert.equal(fine.length, 1); assert.equal(s.contracts.length, 0);
+  // seguro: quebra de safra paga a diferença até 80%; sem seguro não paga
+  const mk = seg => { const t = L.newState(() => 0.5); t.money = 1e7; const l = { id: 3, own: true, region: 'cerrado, goiás', ha: 100, cap: 0.9, value: 5e6 }; t.lands.push(l); L.plant(t, l, 'soja', seg); return t; };
+  const a = mk(true), b = mk(false), ma = a.money, mb = b.money;
+  for (let i = 0; i < L.CROPS.soja.months - 1; i++) { L.tick(a, () => 0.5); L.tick(b, () => 0.5); }
+  L.tick(a, () => 0.01); L.tick(b, () => 0.01);
+  assert.equal(a.stock.soja, Math.round(100 * 60 * (L.CLIMATE.min + 0.01 * L.CLIMATE.span))); assert.ok(a.log.some(x => /quebra de safra/.test(x.txt)));
+  assert.ok((a.money - ma) - (b.money - mb) > 100 * 60 * a.prices.soja * 0.4, 'indenização do seguro na quebra: ' + ((a.money - ma) - (b.money - mb)));
+  assert.equal(L.plantTotal(a, 'soja', 100, false, true), Math.round(L.plantCost(a, 'soja', 100) * (1 + L.INSURE.premium)));
+  const ev = L.CLIMATE.chance * (L.INSURE.cover - (L.CLIMATE.min + L.CLIMATE.span / 2)) + (1 - L.CLIMATE.chance) * 0.1 * 0.025;
+  assert.ok(ev * 60 * 150 < L.CROPS.soja.cost * L.INSURE.premium * 1.2, 'seguro não é máquina de dinheiro');
+  console.log('contratos de exportação e seguro agrícola ok'); }
 // carro desvaloriza 1,5% e paga IPVA/seguro
 const g = L.newState(() => 0.5);
 g.cars.push({ id: 1, model: 'onix', value: 95000 });
@@ -1274,7 +1299,7 @@ console.log('mina ok');
 { const Cq = await import('./chat.js'); const seen = new Set(); for (let s = 1000; s < 1020; s++) seen.add(Cq.lineOf(s)); assert.equal(seen.size, 20, 'frases da Resenha não repetem em 20 falas seguidas'); console.log('frases sem repetir ok'); }
 // preços da granja/suínos voltam ao base: frango derrubado se recupera, ração disparada cai
 { const s = L.newState(() => 0.5); s.prices.frango = 3.9; s.prices.racao = 2.6; for (let i = 0; i < 40; i++) L.tick(s, () => 0.5);
-  assert.ok(Math.abs(s.prices.frango - 6.2) < 0.2 && Math.abs(s.prices.racao - 1.9) < 0.1, 'preço ancorado ' + s.prices.frango + ' ' + s.prices.racao); console.log('preço ancorado ok'); }
+  assert.ok(Math.abs(s.prices.frango - L.ANCHOR.frango) < 0.2 && Math.abs(s.prices.racao - L.ANCHOR.racao) < 0.1, 'preço ancorado ' + s.prices.frango + ' ' + s.prices.racao); console.log('preço ancorado ok'); }
 // arroba derrubada volta para a faixa: boi de 12 meses no boitel volta a dar lucro sobre o bezerro
 { const s = L.newState(() => 0.5); s.prices.arroba = 121; L.tick(s, () => 0.5); assert.ok(s.prices.arroba >= 248, 'arroba ancorada ' + s.prices.arroba);
   assert.ok(L.arrobas(180 + 12 * L.BOITEL_GAIN) * 310 * 0.99 > 2600 + 12 * L.BOITEL_COST, 'gado no boitel dá lucro no preço base'); console.log('arroba ancorada ok'); }

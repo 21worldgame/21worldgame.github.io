@@ -3467,3 +3467,9 @@ dialog:not([open]) { display: none !important; }
 .jn__acts { display: flex; gap: 6px; flex-wrap: wrap; }
 @media (max-width: 40rem) { .jn__stage { grid-template-columns: 90px minmax(0, 1fr); } .jn__anchor { width: 90px; height: 120px; } .jn__anchor svg { width: 90px; } .jn__date { display: none; } }
 .jn__body h2 { text-transform: none; max-width: none; } .jn__body p { max-width: none; }
+
+/* contratos de exportação */
+#ctx h4 { margin: 10px 0 6px; }
+.ctx { padding: 12px 14px; border-radius: 14px; display: grid; gap: 6px; align-content: start; }
+.ctx__h { display: flex; justify-content: space-between; gap: 8px; align-items: center; } .ctx p { margin: 0; }
+.ctx--mine { border: 1px solid rgba(250,204,21,.35); }

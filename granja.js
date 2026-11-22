@@ -3,9 +3,9 @@
 // (kg de ração por kg de frango) depende do galpão, mortalidade, vacina e o ponto certo de abate (~2,8 kg no 2º mês).
 import { mult, bonus } from './perks.js';
 export const HOUSES = {
-  pequeno: { label: 'galpão pequeno', cap: 5000, price: 150000, mort: 0.03, conv: 1.85, heat: true, energy: 0.35, img: 'granja-galpao' },
-  convencional: { label: 'galpão convencional', cap: 15000, price: 420000, mort: 0.025, conv: 1.75, heat: true, energy: 0.4, img: 'granja-aviario' },
-  climatizado: { label: 'galpão climatizado (dark house)', cap: 30000, price: 1100000, mort: 0.015, conv: 1.62, heat: false, energy: 0.55, img: 'granja-frangos' },
+  pequeno: { label: 'galpão pequeno', cap: 5000, price: 450000, mort: 0.03, conv: 1.85, heat: true, energy: 0.35, img: 'granja-galpao' },
+  convencional: { label: 'galpão convencional', cap: 15000, price: 1300000, mort: 0.025, conv: 1.75, heat: true, energy: 0.4, img: 'granja-aviario' },
+  climatizado: { label: 'galpão climatizado (dark house)', cap: 30000, price: 2800000, mort: 0.015, conv: 1.62, heat: false, energy: 0.55, img: 'granja-frangos' },
 };
 export const PRICES = { pintinho: 4, frango: 5.9, racao: 1.75 };   // frango vivo ~R$ 5,90/kg (resfriado a R$ 8,29 no atacado, Cepea out/2026, com 72% de carcaça); ração com milho a R$ 64 a saca
 export const WEIGHT = [0.045, 1.3, 2.8, 3.5, 3.8];                       // peso médio (kg) por mês de idade

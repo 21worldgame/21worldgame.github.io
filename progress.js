@@ -2,7 +2,7 @@ import * as PK from './perks.js';
 // Progressão: XP/nível, bônus diário, missões do dia e conquistas. Sem DOM.
 import { netWorth, heads } from './logic.js';
 
-export const XP = { hand: 10, win: 25, '21': 40, calves: 15, sellherd: 30, plant: 30, harvest: 40, land: 50, car: 60,
+export const XP = { contract: 40, export: 80, insured: 10, hand: 10, win: 25, '21': 40, calves: 15, sellherd: 30, plant: 30, harvest: 40, land: 50, car: 60,
   month: 5, race: 8, raceWin: 30, lend: 20, onlineHand: 20,
   trade: 40, ftFound: 50, ftMatch: 10, ftWin: 20, ftTitle: 200, job: 20, jobPerfect: 40, buyAnimal: 30, train: 10, stakeRun: 15, stakeWin: 60, stakeGP: 120, roulette: 6, rouletteWin: 20, aviator: 6, cashout: 15, trade: 10, tradeWin: 30, car: 60, truco: 60, sinuca: 60, fbBet: 8, fbWin: 25 };
 // multiplicador de XP vindo dos eventos do painel administrativo
@@ -35,10 +35,15 @@ export const MISSIONS = [
   { id: 'sinuca1', txt: 'Vença uma partida de sinuca', ev: 'sinuca', goal: 1, reward: 700 },
   { id: 'fbbet2', txt: 'Faça 2 apostas no futebol ao vivo', ev: 'fbBet', goal: 2, reward: 400 },
   { id: 'fbwin', txt: 'Acerte uma aposta no futebol ao vivo', ev: 'fbWin', goal: 1, reward: 600 },
+  { id: 'contract1', txt: 'Feche um contrato de exportação', ev: 'contract', goal: 1, reward: 500 },
+  { id: 'export1', txt: 'Entregue um contrato de exportação', ev: 'export', goal: 1, reward: 800 },
+  { id: 'insure1', txt: 'Plante uma lavoura com seguro', ev: 'insured', goal: 1, reward: 300 },
 ];
 
 export const ACHIEVEMENTS = [
   { id: 'truqueiro', txt: 'Truqueiro: 10 partidas de truco vencidas', ev: 'truco', goal: 10 },
+  { id: 'exportador', txt: 'Exportador: primeiro contrato entregue a uma trading', ev: 'export', goal: 1 },
+  { id: 'exportador10', txt: 'Gigante da exportação: 10 contratos entregues', ev: 'export', goal: 10 },
   { id: 'sinuca10', txt: 'Mestre da sinuca: 10 vitórias', ev: 'sinuca', goal: 10 },
   { id: 'pe-quente-fut', txt: 'Pé quente no futebol: 5 apostas certas', ev: 'fbWin', goal: 5 },
   { id: 'first-hand', txt: 'Primeira mão', ev: 'hand', goal: 1 },

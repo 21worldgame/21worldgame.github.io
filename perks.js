@@ -15,6 +15,15 @@ export const CAR_PERKS = {
   g63: { loan: -0.05, ticket: 0.03 },
   huracan: { race: 0.15, daily: 0.2, xp: 0.08 },
   veyron: { race: 0.25, daily: 0.4, xp: 0.15, ticket: 0.05 },
+  strada: { cattle: 0.01 },
+  corolla: { xp: 0.02 },
+  compass: { daily: 0.03 },
+  raptor: { race: 0.03, xp: 0.02 },
+  rrsport: { daily: 0.06 },
+  x5: { xp: 0.04 },
+  f296: { race: 0.1, xp: 0.06 },
+  cullinan: { daily: 0.15, xp: 0.05 },
+  graneleiro: { grain: 0.01 },
 };
 // acessórios (chave = id em avatar.CATALOG.acc). Calibrados para a economia real (v152): vantagem de venda de 1% a 3%,
 // do tamanho de um contrato melhor com o comprador; acima disso dobrava o lucro de quem tem margem real de 10% a 30%.

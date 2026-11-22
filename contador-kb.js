@@ -85,7 +85,7 @@ export const KB = [
     'Na revenda o barracão vale 70% do preço.'] },
   // ---------- lavouras ----------
   { t: 'lavoura', k: ['lavoura', 'plantar', 'plantio', 'colheita', 'colher', 'soja', 'milho', 'cafe', 'saca', 'sacas', 'safra'], a: [
-    'Soja: R$ 6.300 por ha, 4 meses, uns 60 sacas por ha. Milho: R$ 4.800 por ha, 5 meses, uns 100 sacas. Café: R$ 32.000 por ha, 12 meses, uns 30 sacas. São os custos reais de produção.',
+    'Soja: R$ 6.300 por ha, 6 meses, uns 60 sacas por ha. Milho: R$ 4.800 por ha, 5 meses, uns 100 sacas. Café: R$ 34.000 por ha, 12 meses, uns 30 sacas. São os custos reais de produção.',
     'Com trator o plantio sai 10% mais barato. A colheita vai para o armazém e você vende quando quiser, pelo preço do dia.'] },
   { t: 'laranja', k: ['laranja', 'pomar', 'pomares', 'caixa', 'caixas', 'greening', 'pulverizador', 'praga'], a: [
     'Pomar só em terra própria: R$ 30 mil por ha para plantar, 6 meses até a primeira colheita e depois uma colheita a cada 4 meses.',

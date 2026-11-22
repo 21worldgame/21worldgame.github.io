@@ -121,16 +121,24 @@ const IMPROV = [['casa sede', 0.06], ['curral', 0.03], ['galpão', 0.04], ['cerc
 // Com os preços do Cepea de nov/2026 a margem fica: soja ~30%, milho ~25%, café ~33% ao ano
 // (até a v150 o custo era bem menor e a lavoura dava 70% a 250% de lucro por safra, muito acima da vida real)
 export const CROPS = {
-  soja: { label: 'soja', cost: 6300, months: 4, yield: 60, good: 'soja' },     // sacas por hectare
+  soja: { label: 'soja', cost: 6300, months: 6, yield: 60, good: 'soja' },   // uma safra de soja por ano na janela de chuva (+ milho safrinha no resto)     // sacas por hectare
   milho: { label: 'milho', cost: 4800, months: 5, yield: 100, good: 'milho' },
-  cafe: { label: 'café', cost: 32000, months: 12, yield: 30, good: 'cafe' },   // arábica: uma safra por ano
+  cafe: { label: 'café', cost: 34000, months: 12, yield: 30, good: 'cafe' },   // ~R$ 1.130 por saca produzida   // arábica: uma safra por ano
 };
 // máquina emprestada a parceiro (lentTo) não trabalha para você; a que você pegou emprestada (amigos.tools) trabalha
 export const hasVehicle = (s, type) => (s.cars || []).some(c => !c.lentTo && CARS[c.model]?.type === type) || (s.amigos?.tools || []).some(t => t.type === type);
 export const rentNow = l => Math.round(l.value * (l.rate ?? RENT_PAY) * (1 + RENT_RAISE * Math.floor((l.age || 0) / 12)));
 export const rentCredit = l => Math.min((l.paid || 0) * RENT_CREDIT, l.value * RENT_CREDIT_CAP);
 export const buyRentedPrice = l => Math.round(l.value - rentCredit(l));
-export const plantCost = (s, crop, ha, rented = false) => Math.round(CROPS[crop].cost * ha * (hasVehicle(s, 'trator') ? 0.9 : 1) * PK.mult(s, 'plant') * (rented ? RENT_INPUTS : 1));
+// máquinas próprias barateiam o plantio (não paga o serviço de terceiros). O trator vale o maior; o resto soma, com teto de 15% (vida real)
+export const MACH_PLANT = { deere: 0.1, massey: 0.07, plantadeira: 0.03, colheitadeira: 0.05, autopropelido: 0.03, drone: 0.01 }, MACH_MAX = 0.15;
+export function machDiscount(s) {
+  const own = new Set((s.cars || []).filter(c => !c.lentTo).map(c => c.model)); if ((s.amigos?.tools || []).some(t => t.type === 'trator')) own.add('deere');
+  let d = Math.max(own.has('deere') ? MACH_PLANT.deere : 0, own.has('massey') ? MACH_PLANT.massey : 0);
+  for (const k of ['plantadeira', 'colheitadeira', 'autopropelido', 'drone']) if (own.has(k)) d += MACH_PLANT[k];
+  return Math.min(MACH_MAX, d);
+}
+export const plantCost = (s, crop, ha, rented = false) => Math.round(CROPS[crop].cost * ha * (1 - machDiscount(s)) * PK.mult(s, 'plant') * (rented ? RENT_INPUTS : 1));
 // compra da terra que você arrendava: o aluguel pago vira desconto
 export function buyRented(s, land) {
   if (!land || land.own) return 'essa terra já é sua.';
@@ -140,14 +148,18 @@ export function buyRented(s, land) {
   land.own = true; land.leasedOut = false; delete land.age; delete land.paid;
   return null;
 }
-export function plant(s, land, crop) {
+// seguro agrícola (vida real: seguro rural com prêmio de ~3% a 8% do custo): cobre a produção até 80% do esperado.
+// Quebra de safra por clima (seca ou geada) acontece em 8% das colheitas e derruba a produção para 30% a 60%.
+export const INSURE = { premium: 0.04, cover: 0.8 }, CLIMATE = { chance: 0.08, min: 0.3, span: 0.3 };
+export const plantTotal = (s, crop, ha, rented = false, seg = false) => Math.round(plantCost(s, crop, ha, rented) * (seg ? 1 + INSURE.premium : 1));
+export function plant(s, land, crop, seg = false) {
   if (land.crop || land.leasedOut || land.orchard || land.cane) return 'esta terra já está ocupada.';
   const busy = pastureBusy(s, land); if (busy) return busy;
   if (!land.own && !hasVehicle(s, 'trator')) return 'terra arrendada só aceita lavoura de quem tem trator (a máquina e os insumos ficam por sua conta).';
-  const cost = plantCost(s, crop, land.ha, !land.own);
+  const cost = plantTotal(s, crop, land.ha, !land.own, seg);
   if (cost > s.money) return 'dinheiro insuficiente para o plantio.';
   s.money -= cost;
-  land.crop = { type: crop, left: CROPS[crop].months };
+  land.crop = { type: crop, left: CROPS[crop].months, ...(seg ? { seg: true } : {}) };
   return null;
 }
 
@@ -167,6 +179,21 @@ export const CARS = {
   plataforma: { name: 'Plataforma Citrus PC-22', type: 'maquina', crop: 'laranja', price: 260000, cat: 'laranja', img: 'maq-plataforma', hp: 0, top: 20, perk: 'colhe 10% mais laranja (menos fruta no chão); cada uma atende 200 ha de pomar' },
   transbordo: { name: 'Transbordo Antoniossi 12 t', type: 'maquina', crop: 'cana', price: 320000, cat: 'cana', img: 'maq-transbordo', hp: 0, top: 30, perk: 'carregamento da cana de R$ 6 para R$ 2 por tonelada' },
   rodotrem: { name: 'Volvu FH rodotrem canavieiro', type: 'maquina', crop: 'cana', price: 1400000, cat: 'cana', img: 'maq-rodotrem', hp: 540, top: 90, perk: 'frete da cana até a usina 45% mais barato' },
+  // v156: mais carros (preços de tabela 2026) e máquinas de lavoura. Vantagens pequenas: carro de passeio só dá XP/roleta/provas.
+  strada: { name: 'Fiet Estrada Volcano', type: 'picape', price: 125000, cat: 'picape', img: 'car-strada', hp: 107, top: 175 },
+  corolla: { name: 'Toyoda Corola Cruz Híbrido', type: 'suv', price: 200000, cat: 'SUV', img: 'car-corolla', hp: 122, top: 180 },
+  compass: { name: 'Jipe Compasso 4xe', type: 'suv', price: 280000, cat: 'SUV', img: 'car-compass', hp: 240, top: 200 },
+  raptor: { name: 'Forde Rangér Raptor', type: 'picape', price: 480000, cat: 'picape', img: 'car-raptor', hp: 397, top: 180 },
+  rrsport: { name: 'Rangi Rover Esporte', type: 'suv', price: 1100000, cat: 'luxo', img: 'car-rrsport', hp: 400, top: 242 },
+  x5: { name: 'BMV X5 M Competição', type: 'suv', price: 1250000, cat: 'luxo', img: 'car-x5', hp: 625, top: 290 },
+  f296: { name: 'Ferrári 296 GTB', type: 'super', price: 4000000, cat: 'superesportivo', img: 'car-296', hp: 830, top: 330 },
+  cullinan: { name: 'Rolz-Roice Culinã', type: 'suv', price: 6500000, cat: 'luxo', img: 'car-cullinan', hp: 571, top: 250 },
+  massey: { name: 'Massei Fergusom 4707', type: 'trator', price: 330000, cat: 'agrícola', img: 'maq-massey', hp: 75, top: 35, perk: 'plantio 7% mais barato (trator pequeno)' },
+  drone: { name: 'Drone Agrás T50 (pulverização)', type: 'maquina', crop: 'graos', price: 180000, cat: 'lavoura', img: 'maq-drone', hp: 0, top: 40, perk: 'plantio 1% mais barato' },
+  plantadeira: { name: 'Jondir 1770 plantadeira 16 linhas', type: 'maquina', crop: 'graos', price: 650000, cat: 'lavoura', img: 'maq-plantadeira', hp: 0, top: 15, perk: 'plantio 3% mais barato' },
+  graneleiro: { name: 'Volvu FH bitrem graneleiro', type: 'maquina', crop: 'graos', price: 1150000, cat: 'lavoura', img: 'maq-graneleiro', hp: 540, top: 90, perk: 'vende soja, milho e café 1% mais caro (frete próprio)' },
+  autopropelido: { name: 'Jactu Uniporte 3030 autopropelido', type: 'maquina', crop: 'graos', price: 1400000, cat: 'lavoura', img: 'maq-autopropelido', hp: 0, top: 30, perk: 'plantio 3% mais barato (pulverização própria)' },
+  colheitadeira: { name: 'John Dear S780 colheitadeira', type: 'maquina', crop: 'graos', price: 3600000, cat: 'lavoura', img: 'maq-colheitadeira', hp: 0, top: 25, perk: 'plantio 5% mais barato (colheita própria, sem pagar o serviço)' },
   veyron: { name: 'Bugati Veiron 61.4', type: 'super', price: 15000000, cat: 'hiperesportivo', img: 'car-veyron', hp: 1001, top: 407 },
 };
 export const OLD_CARS = { vento: 'onix', bravo: 'hilux', serra: 'sw4', campeiro: 'deere', boiadeiro: 'scania', falcao: 'porsche', tempesta: 'huracan' };
@@ -335,12 +362,15 @@ export function tick(s, rng = Math.random) {
     if (!l.own) { const r = rentNow(l); l.age = (l.age || 0) + 1; l.paid = (l.paid || 0) + r; add(`arrendamento pago${l.friend ? ` a ${l.friend}` : ''}, ${l.region}`, -r); }
   }
 
-  // lavoura: cresce e colhe; a safra varia ±25% com o clima
+  // lavoura: cresce e colhe; a safra varia ±25% com o clima e, de vez em quando, quebra (seca ou geada)
   for (const l of s.lands) {
     if (!l.crop || --l.crop.left > 0) continue;
-    const c = CROPS[l.crop.type], bruto = Math.round(l.ha * c.yield * (0.75 + rng() * 0.5)), dono = l.own ? 0 : Math.round(bruto * RENT_SHARE), sacas = bruto - dono;
-    s.stock[c.good] += sacas;
+    const c = CROPS[l.crop.type], quebra = rng() < CLIMATE.chance, f = quebra ? CLIMATE.min + rng() * CLIMATE.span : 0.75 + rng() * 0.5;
+    const bruto = Math.round(l.ha * c.yield * f), dono = l.own ? 0 : Math.round(bruto * RENT_SHARE), sacas = bruto - dono;
+    s.stock[c.good] += sacas; (s.colhido ??= {})[c.good] = (s.colhido[c.good] || 0) + sacas;   // produção própria (contratos de exportação)
+    if (quebra) add(`quebra de safra (${c.good === 'cafe' ? 'geada' : 'seca'}) em ${l.region}: a lavoura de ${c.label} rendeu ${Math.round(f * 100)}% do normal`);
     add(`colheita de ${c.label}: ${sacas} sacas, ${l.region}${dono ? ` (${dono} ficaram com o dono da terra)` : ''}`);
+    if (l.crop.seg && f < INSURE.cover) add(`seguro agrícola: indenização da lavoura de ${c.label}, ${l.region}`, (INSURE.cover - f) * l.ha * c.yield * (s.prices[c.good] || 0));
     delete l.crop;
   }
 

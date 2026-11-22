@@ -4,6 +4,21 @@ Arquivos de terceiros usados no 21 World. As licenças CC BY e CC BY-SA exigem e
 
 ## Fotos (Wikimedia Commons)
 
+- car-strada: NaBUru38, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Fiat_Strada_2020_Volcano_in_Montevideo_(front).jpg
+- car-corolla: Alexander-93, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Toyota_Corolla_Cross_Hybrid_1X7A1861.jpg
+- car-compass: Alexander Migl, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Jeep_Compass_(MP)_PHEV_Facelift_1X7A0140.jpg
+- car-raptor: Alexander-93, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Ford_Ranger_Raptor_(P703)_1X7A6774.jpg
+- car-x5: Tokumeigakarinoaoshima, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:BMW_X5_M_Competition_(G05)_front.jpg
+- car-rrsport: Ethan Llamas, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:2023_Range_Rover_Sport_Dynamic_HSE_in_Santorini_Black_Metallic,_front_left.jpg
+- car-296: Alexander Migl, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Ferrari_296_GTB_1X7A6377.jpg
+- car-cullinan: Mathious Ier, CC0, https://commons.wikimedia.org/wiki/File:Rolls_Royce_Cullinan_(front).jpg
+- maq-massey: Acroterion, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Massey-Ferguson_4707_tractor_MD2.jpg
+- maq-plantadeira: Kowloonese, CC BY 3.0, https://commons.wikimedia.org/wiki/File:John_Deere_Planter_with_Case_IH_Tractor.JPG
+- maq-colheitadeira: Ermell, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:John_Deere_Combine_Harvester_Ebing_1811.jpg
+- maq-autopropelido: Hugh Venables, CC BY-SA 2.0, https://commons.wikimedia.org/wiki/File:Crop_sprayer_-_geograph.org.uk_-_3038217.jpg
+- maq-drone: MB-one, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:XAG_drone,_Agritechnica_2023,_Hanover_(P1160326).jpg
+- maq-graneleiro: Ikiwaner, CC BY-SA 3.0, https://commons.wikimedia.org/wiki/File:Eastern_Washington_Truck.jpg
+
 - news/news-leilao: Carlos Ebert, CC BY 2.0, https://commons.wikimedia.org/wiki/File:Nelore_cattle_Brasil.jpg
 - news/news-china: Lloyd Tudor, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Pudong_skyline_at_dusk.jpg
 - news/news-eua: Christian David, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Brooklyn_Bridge_and_the_Lower_Manhattan_skyline_from_Pebble_Beach,_New_York.jpg
