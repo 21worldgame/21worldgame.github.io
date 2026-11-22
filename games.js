@@ -61,15 +61,15 @@ export const liqPrice = pos => pos.entry * (1 - pos.side / pos.lev);
 
 // ---------- roda diária: só prêmio bom ----------
 export const DAILY_WHEEL = [
-  { kind: 'chips', amount: 1000, label: '1.000 fichas', w: 22 },
-  { kind: 'money', amount: 15000, label: 'R$ 15 mil', w: 18 },
-  { kind: 'chips', amount: 2500, label: '2.500 fichas', w: 15 },
-  { kind: 'calves', amount: 5, label: '5 bezerros', w: 14 },
+  { kind: 'chips', amount: 100, label: '100 fichas', w: 22 },
+  { kind: 'money', amount: 1500, label: 'R$ 1.500', w: 18 },
+  { kind: 'chips', amount: 250, label: '250 fichas', w: 15 },
+  { kind: 'calves', amount: 1, label: '1 bezerro', w: 14 },
   { kind: 'xp', amount: 250, label: '250 XP', w: 12 },
   { kind: 'card', amount: 1, label: 'pacote de cartas', w: 12 },
-  { kind: 'money', amount: 50000, label: 'R$ 50 mil', w: 9 },
-  { kind: 'chips', amount: 10000, label: '10.000 fichas', w: 7 },
-  { kind: 'money', amount: 250000, label: 'R$ 250 mil', w: 3 },
+  { kind: 'money', amount: 5000, label: 'R$ 5 mil', w: 9 },
+  { kind: 'chips', amount: 1000, label: '1.000 fichas', w: 7 },
+  { kind: 'money', amount: 25000, label: 'R$ 25 mil', w: 3 },
 ];
 export function spinDaily(rng = Math.random) {
   const tot = DAILY_WHEEL.reduce((a, s) => a + s.w, 0);

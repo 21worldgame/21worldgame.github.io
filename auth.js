@@ -332,7 +332,6 @@ async function afterLogin() {
   if (previous !== user.id) {
     if (cloud) return useCloud();
     const fresh = blankState(cleanName(user.user_metadata?.name || user.user_metadata?.full_name));   // conta nova começa do zero
-    fresh.chips = (fresh.chips || 0) + 500;                                                               // bônus de boas-vindas da tela de entrada
     writeSave(user.id, fresh); base = ''; pushed = 0; saveMeta();
     location.reload();
     return new Promise(() => {});
