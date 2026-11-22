@@ -2,12 +2,12 @@
 // enquanto cuidar. Sem defensivo ("veneno") todo mês a praga aumenta, a colheita cai e o greening pode matar árvores.
 import { bonus } from './perks.js';
 export const ORANGE = {
-  plant: 18000,       // R$ por hectare (mudas, covas, adubação de plantio)
+  plant: 30000,       // R$ por hectare (mudas, covas, adubação de plantio; implantação real ~R$ 30 mil)
   grow: 6,            // meses de formação até a primeira colheita
   cycle: 4,           // meses entre colheitas
   yield: 330,         // caixas de 40,8 kg por hectare por colheita (pomar adulto e sadio)
-  spray: 650,         // R$ por hectare por mês (defensivo + adubação de manutenção)
-  price: 38,          // R$ por caixa (preço inicial do mercado)
+  spray: 2500,        // R$ por hectare por mês (defensivo, adubação, mão de obra: ~R$ 30 por caixa, custo real)
+  price: 50,          // R$ por caixa (preço inicial do mercado, 2025)
 };
 export const ensure = s => { s.prices ??= {}; s.prices.laranja ??= ORANGE.price; s.stock ??= {}; s.stock.laranja ??= 0; };
 export const canPlant = l => l.own && !l.leasedOut && !l.crop && !l.orchard && !l.cane;

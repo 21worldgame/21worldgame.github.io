@@ -4,6 +4,7 @@ import * as W from './world.js';
 import { LISTS as BIZ, CAT_KEYS } from './negocios.js';
 import { GROUPS, groupOf } from './contador.js';
 import { lostLands } from './land-check.js';
+import * as AE from './admin-econ.js';
 
 const LIB = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/+esm';
 const $ = s => document.querySelector(s);
@@ -154,6 +155,40 @@ $('#ad-search').addEventListener('submit', e => { e.preventDefault(); loadUsers(
 document.addEventListener('click', e => { const r = e.target.closest('tr[data-user]'); if (r) openPlayer(r.dataset.user); });
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches?.('tr[data-user]')) openPlayer(e.target.dataset.user); });
 
+// economia do jogador: de que é feito o patrimônio, o que ele faz, lucro/prejuízo por atividade e alertas
+const pct = v => (v == null ? '—' : `${Math.round(v * 100)}%`);
+const pnlTable = (rows, extra) => `<div class="ad-tablewrap"><table><thead><tr><th>atividade</th><th class="num">faturou</th><th class="num">gastou</th><th class="num">lucro</th><th class="num">margem</th>${extra ? '<th>quem mais lucrou</th>' : ''}</tr></thead><tbody>
+  ${rows.filter(x => x.in || x.out).map(x => `<tr${x.alert ? ' class="ad-alert"' : ''}><td>${esc(x.label)}${x.alert ? ' <span class="tag tag--red">fora do normal</span>' : ''}</td><td class="num">${brl(x.in)}</td><td class="num">${brl(x.out)}</td>
+    <td class="num ${x.lucro < 0 ? 'bad' : 'good'}">${brl(x.lucro)}</td><td class="num">${pct(x.margin)}</td>${extra ? `<td>${esc(x.top?.name || '')} ${x.top ? brl(x.top.lucro) : ''}</td>` : ''}</tr>`).join('') || '<tr><td colspan="6" class="muted">Sem movimento ainda.</td></tr>'}</tbody></table></div>`;
+function econHTML(s) {
+  if (!s || s.money == null) return '';
+  try {
+    const w = AE.worthParts(s), p = AE.pnl(s), al = AE.alerts(s, p), act = AE.activities(s);
+    return `<h3>economia do jogador</h3>
+    ${al.length ? `<ul class="ad-err">${al.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : '<p class="good small">Nada fora do normal.</p>'}
+    <p class="small"><b>o que está fazendo:</b> ${act.length ? act.map(esc).join(' · ') : 'nada no momento'}</p>
+    <p class="small"><b>patrimônio ${brl(w.total)}:</b> ${Object.entries(w.parts).filter(([, v]) => Math.abs(v) >= 1000).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${AE.brlShort(v)} (${Math.round(v / Math.max(1, w.total) * 100)}%)`).join(' · ')}${w.debt ? ` · <span class="bad">dívidas ${AE.brlShort(w.debt)}</span>` : ''}</p>
+    <h4>lucro e prejuízo por atividade (últimos 36 meses do jogo)</h4>
+    <p class="small muted">Total: entrou ${brl(p.in)}, saiu ${brl(p.out)}, lucro ${brl(p.lucro)}. Compra e venda de bens (terras, galpões, empresas) não entram como lucro.</p>
+    ${pnlTable(p.rows)}
+    <h4>maiores lançamentos do livro-caixa</h4>
+    <div class="ad-tablewrap"><table><thead><tr><th>mês</th><th>o quê</th><th class="num">valor</th></tr></thead><tbody>${AE.bigMoves(s).map(l => `<tr><td>${l.m ?? ''}</td><td>${esc(l.txt)}</td><td class="num ${l.val < 0 ? 'bad' : 'good'}">${brl(l.val)}</td></tr>`).join('')}</tbody></table></div>`;
+  } catch (e) { console.error(e); return '<p class="ad-err">Não deu para analisar a economia deste save.</p>'; }
+}
+// saúde da economia: todos os jogadores somados por atividade
+async function loadEconomy() {
+  const box = $('#ad-econ'); if (!box) return;
+  box.innerHTML = '<p class="muted">Calculando...</p>';
+  const [{ data: sv, error }, { data: pf }] = await Promise.all([sb.from('saves').select('user_id, data'), sb.from('public_profiles').select('user_id, name')]);
+  if (error) return fail(error, 'ler os saves');
+  const nm = Object.fromEntries((pf || []).map(p => [p.user_id, p.name])), e = AE.economy((sv || []).map(x => ({ name: nm[x.user_id] || '?', data: x.data })));
+  const bad = e.rows.filter(r => r.alert);
+  box.innerHTML = `<div class="ad-tiles ad-tiles--sm"><div class="ad-tile"><span>jogadores</span><strong>${e.players}</strong></div><div class="ad-tile"><span>dinheiro em caixa (todos)</span><strong>${AE.brlShort(e.money)}</strong></div><div class="ad-tile"><span>patrimônio somado</span><strong>${AE.brlShort(e.worth)}</strong></div></div>
+    ${bad.length ? `<ul class="ad-err">${bad.map(r => `<li>${esc(r.label)}: margem de ${pct(r.margin)} em ${AE.brlShort(r.in)} (normal até ~${pct(AE.EXPECT[r.key])}). Vale revisar custo/preço dessa atividade.</li>`).join('')}</ul>` : '<p class="good small">Todas as atividades com margem dentro do normal.</p>'}
+    ${pnlTable(e.rows, true)}`;
+}
+document.addEventListener('click', e => { if (e.target.closest('[data-tab="economy"], #ad-econ-reload')) loadEconomy(); });
+
 async function openPlayer(id) {
   if (!users.length) await loadUsers('');
   const u = users.find(x => x.user_id === id) || { user_id: id };
@@ -173,6 +208,7 @@ async function openPlayer(id) {
     <p class="muted small">${esc(u.email || '')}, cadastro em ${when(u.created_at)}, último acesso em ${when(u.last_sign_in_at)}, save salvo em ${when(save?.updated_at)}</p>
     ${u.banned ? `<p class="ad-err">Suspenso${u.ban_reason ? `: ${esc(u.ban_reason)}` : ''}.</p>` : ''}
     <div class="ad-tiles ad-tiles--sm">${facts.map(([k, v]) => `<div class="ad-tile"><span>${k}</span><strong>${v}</strong></div>`).join('')}</div>
+    ${econHTML(s)}
     <h3>dar ou tirar</h3>
     <form class="row" id="ap-grant">
       <label class="field"><span>o quê</span><select class="input" name="kind"><option value="money">dinheiro (R$)</option><option value="chips">fichas</option><option value="xp">XP</option><option value="message">só mensagem</option></select></label>
@@ -499,11 +535,11 @@ import('./tune.js').then(({ DEFAULTS }) => {
   const fill = t => {
     const v = { ...DEFAULTS, ...(t || {}) };
     f.npcBoost.value = v.npcBoost; f.npcRampDays.value = v.npcRampDays; f.hunt.checked = !!v.hunt; f.huntLeadPct.value = Math.round((v.huntLead - 1) * 100);
-    f.near.checked = !!v.near; f.eliteMult.value = v.eliteMult; f.top1.checked = !!v.top1; f.incomeTaxPct.value = +(v.incomeTax * 100).toFixed(1); f.incomeMin.value = v.incomeMin;
+    f.near.checked = !!v.near; f.incomeTaxPct.value = +(v.incomeTax * 100).toFixed(1); f.incomeMin.value = v.incomeMin;
     f.landPremiumPct.value = Math.round((v.landPremium - 1) * 100); f.landOffers.value = v.landOffers; f.bizMult.value = v.bizMult;
   };
   const read = () => ({ npcBoost: +f.npcBoost.value, npcRampDays: +f.npcRampDays.value, hunt: f.hunt.checked, huntLead: 1 + f.huntLeadPct.value / 100, near: f.near.checked,
-    eliteMult: +f.eliteMult.value, top1: f.top1.checked, incomeTax: f.incomeTaxPct.value / 100, incomeMin: +f.incomeMin.value,
+    incomeTax: f.incomeTaxPct.value / 100, incomeMin: +f.incomeMin.value,
     landPremium: 1 + f.landPremiumPct.value / 100, landOffers: +f.landOffers.value, bizMult: +f.bizMult.value });
   const save = async (tuning, what) => {
     const { data: cur, error: e0 } = await sb.from('game_config').select('data').eq('id', 1).maybeSingle();
@@ -518,8 +554,8 @@ import('./tune.js').then(({ DEFAULTS }) => {
   $('#ad-tune-reset').addEventListener('click', () => { if (confirm('Voltar todas as regras ao padrão?')) save({ ...DEFAULTS }, 'padrão'); });
   document.querySelectorAll('[data-tune-preset]').forEach(b => b.addEventListener('click', () => {
     const easy = b.dataset.tunePreset === 'facil';
-    fill(easy ? { ...DEFAULTS, npcBoost: 1.5, npcRampDays: 60, huntLead: 0.97, near: false, eliteMult: 0.6, top1: false, incomeTax: 0.03, landPremium: 1.15, bizMult: 1.2 }
-      : { ...DEFAULTS, npcBoost: 5, npcRampDays: 14, huntLead: 1.08, eliteMult: 1.5, incomeTax: 0.1, incomeMin: 150000, landPremium: 1.6, bizMult: 0.85 });
+    fill(easy ? { ...DEFAULTS, npcBoost: 1.5, npcRampDays: 60, huntLead: 0.97, near: false, incomeTax: 0.03, landPremium: 1.15, bizMult: 1.2 }
+      : { ...DEFAULTS, npcBoost: 5, npcRampDays: 14, huntLead: 1.08, incomeTax: 0.1, incomeMin: 150000, landPremium: 1.6, bizMult: 0.85 });
     toast('Preenchido. Confira e clique em "salvar regras".');
   }));
 });

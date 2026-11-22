@@ -75,3 +75,7 @@ code { font-family: ui-monospace, monospace; color: var(--hud-accent-2); }
 tr.is-done { opacity: .55; }
 
 .ad-ledger { max-height: 26rem; overflow: auto; } .neg { color: var(--color-error); }
+/* economia: lucro/prejuízo e atividade fora do normal */
+.good { color: var(--color-success, #34d399); } .bad { color: var(--color-error); }
+ul.ad-err { padding-left: 28px; } ul.ad-err li + li { margin-top: 4px; }
+tr.ad-alert td { background: color-mix(in oklab, var(--color-error) 10%, transparent); }

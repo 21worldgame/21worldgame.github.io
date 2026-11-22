@@ -83,8 +83,7 @@ export function forgetUser() { try { localStorage.removeItem(UID_KEY); } catch {
 export function reset() { G.S = blankState(G.S.avatar?.name && G.S.avatar.name !== 'você' ? G.S.avatar.name : ''); save(); }
 export function note(txt, val = 0) { try { G.track?.(G.S, txt, val); } catch {} G.S.log.unshift({ m: G.S.month, txt, val: Math.round(val) }); try { G.onNote?.(txt, val); } catch {}
   if (val >= 2000) SFX.cash(val >= Math.max(1e6, (G.S.money || 0) * 0.05)); }   // onNote: TV 21 (news-ui) · dinheiro entrando: som (valor pequeno não toca)
-export function pay(v, why, buy = true) {   // buy=false: quitar dívida / emprestar não é compra, não leva a taxa dos mais ricos
-  const e = buy && L.eliteOf(G.S); if (e) { v = Math.round(v * (1 + e.price)); why += ` (+${Math.round(e.price * 100)}% de taxa para os mais ricos)`; }
+export function pay(v, why) {   // preço igual para todos (v151: acabou o acréscimo para os mais ricos)
   if (v > G.S.money) { say(`Dinheiro insuficiente para ${why}.`, true); return false; }
   G.S.money -= v; note(why, -v); return true;
 }

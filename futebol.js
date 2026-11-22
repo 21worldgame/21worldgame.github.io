@@ -3,12 +3,15 @@
 import * as PK from './perks.js';
 import { newDeal } from './bots.js';
 export const DIVS = ['Série A', 'Série B', 'Série C'];
-export const PRICE = [6000000, 900000, 120000];      // assumir o comando de um clube médio da divisão
+// Valores da vida real (2025), na escala de um elenco de 18: clube médio fica perto do zero a zero (folha ~ receita);
+// o lucro vem de terminar no G4, subir de divisão, ampliar o estádio e vender bem os jogadores. (Até a v150 o clube se pagava a cada temporada.)
+export const PRICE = [150e6, 30e6, 8e6];             // assumir o comando (SAF) de um clube médio da divisão
+export const OLD_PRICE = [6000000, 900000, 120000];  // preço antigo (até v150): devolvido a quem tinha clube na migração
 export const FOUND_COST = PRICE[2];
-export const TICKET = [190000, 55000, 13000];        // bilheteria por jogo em casa (estádio nível 1)
-export const WIN_PRIZE = [70000, 22000, 4500];       // prêmio por vitória
-export const SPONSOR = [2500000, 500000, 90000];     // patrocínio pago no início da temporada
-export const SEASON_PRIZE = [[8000000, 4500000, 2500000, 1500000], [1800000, 1000000, 600000, 400000], [450000, 250000, 140000, 90000]];
+export const TICKET = [1e6, 180000, 55000];          // bilheteria por jogo em casa (estádio nível 1)
+export const WIN_PRIZE = [150000, 40000, 15000];     // prêmio por vitória
+export const SPONSOR = [15e6, 3.2e6, 1.1e6];         // patrocínio + cota de TV pagos no início da temporada
+export const SEASON_PRIZE = [[30e6, 18e6, 12e6, 8e6], [3.5e6, 2.2e6, 1.5e6, 1e6], [900000, 550000, 350000, 250000]];   // premiação por posição (G4)
 export const POS = { GOL: 'goleiro', ZAG: 'zagueiro', LAT: 'lateral', VOL: 'volante', MEI: 'meia', ATA: 'atacante' };
 export const FORMATIONS = { '4-4-2': [4, 4, 2], '4-3-3': [4, 3, 3], '3-5-2': [3, 5, 2], '5-3-2': [5, 3, 2], '4-5-1': [4, 5, 1] };
 export const STYLES = { defensivo: [-0.06, 0.07], equilibrado: [0, 0], ofensivo: [0.07, -0.06], contra: [0.03, 0.03] };
@@ -34,7 +37,10 @@ export const CLUBS = [
 export const club = name => CLUBS.flat().find(c => c.n === name);
 export const divOf = name => CLUBS.findIndex(d => d.some(c => c.n === name));
 const divAvg = d => CLUBS[d].reduce((t, c) => t + c.r, 0) / CLUBS[d].length;
-export const clubPrice = name => { const d = divOf(name), c = club(name); return d < 0 ? PRICE[2] : Math.round(PRICE[d] * 1.07 ** (c.r - divAvg(d)) / 1000) * 1000; };
+// tamanho do clube: clube grande tem mais torcida, patrocínio e valor (mesma conta para preço, bilheteria e patrocínio)
+export const bigness = (name, d = divOf(name)) => { const c = club(name); return !c || d < 0 ? 1 : 1.07 ** (c.r - divAvg(d)); };   // comparado com a divisão em que o clube joga
+export const clubPrice = name => { const d = divOf(name); return d < 0 ? PRICE[2] : Math.round(PRICE[d] * bigness(name) / 1000) * 1000; };
+export const sponsorOf = f => Math.round(SPONSOR[f.div] * bigness(f.club, f.div) / 1000) * 1000;   // patrocínio da temporada na divisão em que o clube está
 
 const FIRST = ['Ademir', 'Bruno', 'Caio', 'Diego', 'Edu', 'Fábio', 'Gabriel', 'Hugo', 'Igor', 'João', 'Kauã', 'Léo', 'Marcos', 'Nando', 'Otávio', 'Pedro', 'Rafael', 'Samuel', 'Tiago', 'Vitor', 'Wesley', 'Yuri', 'Davi', 'Renan', 'Murilo', 'Luan', 'Enzo', 'Heitor', 'Matheus', 'Gustavo', 'Arthur', 'Ruan'];
 const LAST = ['Silva', 'Souza', 'Costa', 'Lima', 'Rocha', 'Alves', 'Pereira', 'Gomes', 'Ribeiro', 'Martins', 'Barbosa', 'Moura', 'Teixeira', 'Freitas', 'Cardoso', 'Nunes', 'Mendes', 'Ramos', 'Pinto', 'Araújo', 'Vieira', 'Batista'];
@@ -42,8 +48,10 @@ const TRAITS = { GOL: ['reflexo', 'saída do gol', 'pênalti'], ZAG: ['desarme',
 
 const pick = (arr, rng) => arr[Math.floor(rng() * arr.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-export const salary = ovr => Math.round(Math.max(400, (ovr - 30) ** 2 * 3) / 10) * 10;
-export const value = p => Math.round((4000 * 1.11 ** (p.ovr - 40) * (p.age <= 23 ? 1.35 : p.age >= 31 ? 0.6 : 1) * (1 + Math.max(0, p.pot - p.ovr) / 60)) / 100) * 100;
+// salário por mês: ~R$ 15 mil na Série C (força 55), ~R$ 170 mil num titular da Série A (75), ~R$ 500 mil numa estrela (84)
+export const salary = ovr => Math.round(Math.max(3000, 15000 * 1.13 ** (ovr - 55)) / 100) * 100;
+// valor de mercado: ~R$ 300 mil na Série C, ~R$ 5 mi num titular da Série A, ~R$ 17 mi numa estrela; jovem vale mais, veterano menos
+export const value = p => Math.round((300000 * 1.15 ** (p.ovr - 55) * (p.age <= 23 ? 1.35 : p.age >= 31 ? 0.6 : 1) * (1 + Math.max(0, p.pot - p.ovr) / 60)) / 1000) * 1000;
 
 let pid = 1;
 export function genPlayer(pos, ovr, rng = Math.random) {
@@ -149,20 +157,30 @@ export function takeClub(s, name, rng = Math.random) {
   if (s.money < cost) return 'dinheiro insuficiente para assumir esse clube.';
   s.money -= cost;
   const div = divOf(name);
-  s.fut = { club: c.n, colors: c.c, div, season: 1, formation: '4-4-2', style: 'equilibrado', squad: [...signed(genSquad(c.r - 3, rng)), ...(s.freeAgents || [])], market: [], offers: [], history: [], earned: 0, trophies: 0, stadium: 1, morale: 0, since: s.month || 1 };
+  s.fut = { club: c.n, colors: c.c, div, season: 1, formation: '4-4-2', style: 'equilibrado', squad: [...signed(genSquad(c.r - 3, rng)), ...(s.freeAgents || [])], market: [], offers: [], history: [], earned: 0, trophies: 0, stadium: 1, morale: 0, since: s.month || 1, real: true };
   s.freeAgents = [];
   s.fut.league = newLeague(div, c.n, rng);
-  s.money += SPONSOR[div]; s.fut.earned += SPONSOR[div];
+  const sp = sponsorOf(s.fut); s.money += sp; s.fut.earned += sp;
   refreshMarket(s.fut, rng);
   return null;
 }
 
+// migração v151 (preços reais): clube da escala antiga é devolvido pelo preço antigo; o jogador compra de novo no preço real.
+// Sem isso o elenco antigo seria vendido pelo valor novo (15 a 30 vezes maior). Devolve o valor reembolsado (0 = nada a fazer).
+export function migrate(s) {
+  if (!s.fut?.club || s.fut.real) return 0;
+  const d = divOf(s.fut.club), v = d < 0 ? OLD_PRICE[2] : Math.round(OLD_PRICE[d] * bigness(s.fut.club) / 1000) * 1000;
+  s.money = (Number(s.money) || 0) + v;
+  s.shop = (s.shop || []).filter(l => !/^(player|club):/.test(l.key || ''));
+  delete s.fut; s.freeAgents = [];
+  return v;
+}
 // clube comprado de outro jogador no Feirão: mesmo clube, elenco, estádio e títulos; temporada nova
 export function adoptClub(s, d, rng = Math.random) {
   if (s.fut?.club) return 'você já comanda um clube.';
   const c = club(d.club); if (!c) return 'clube inválido.';
   const div = divOf(c.n);
-  s.fut = { club: c.n, colors: c.c, div, season: 1, formation: '4-4-2', style: 'equilibrado', squad: [...signed(d.squad || []), ...(s.freeAgents || [])], market: [], offers: [], history: [], earned: 0, trophies: d.trophies || 0, stadium: d.stadium || 1, morale: 0, since: s.month || 1 };
+  s.fut = { club: c.n, colors: c.c, div, season: 1, formation: '4-4-2', style: 'equilibrado', squad: [...signed(d.squad || []), ...(s.freeAgents || [])], market: [], offers: [], history: [], earned: 0, trophies: d.trophies || 0, stadium: d.stadium || 1, morale: 0, since: s.month || 1, real: true };
   s.freeAgents = []; s.fut.league = newLeague(div, c.n, rng); refreshMarket(s.fut, rng);
   return null;
 }
@@ -195,7 +213,7 @@ export function sell(s, id, price) {
   f.offers = (f.offers || []).filter(o => o.pid !== id);
   return v;
 }
-export const payroll = f => f.squad.reduce((t, p) => t + p.sal, 0);
+export const payroll = f => f.squad.reduce((t, p) => t + salary(p.ovr), 0);   // sempre pela tabela atual
 export const stadiumCost = f => TICKET[f.div] * 8 * (f.stadium || 1);
 export function upgradeStadium(s) {
   const f = s.fut;
@@ -261,7 +279,7 @@ export function playRound(s, rng = Math.random, prizeMult = 1) {
       if (e.kind === 'vermelho') { const all = [...l.def, ...l.mid, ...l.att].filter(Boolean), p = all[Math.floor(rng() * all.length)], real = p && f.squad.find(x => x.id === p.id); if (real) { real.sus = 2; e.who = real.name; } }
     }
     if (home) {
-      const t = Math.round(TICKET[f.div] * (1 + 0.2 * ((f.stadium || 1) - 1)) * PK.mult(s, 'ticket') * (0.7 + Math.min(0.6, lg.table.user.pts / Math.max(1, lg.table.user.p) / 5)));
+      const t = Math.round(TICKET[f.div] * bigness(f.club, f.div) * (1 + 0.2 * ((f.stadium || 1) - 1)) * PK.mult(s, 'ticket') * (0.7 + Math.min(0.6, lg.table.user.pts / Math.max(1, lg.table.user.p) / 5)));
       cash += t; lines.push({ txt: 'bilheteria', val: t });
     }
     if (my > their) { const w = Math.round(WIN_PRIZE[f.div] * prizeMult); cash += w; lines.push({ txt: 'prêmio por vitória', val: w }); }
@@ -296,7 +314,7 @@ export function endSeason(s, rng = Math.random, prizeMult = 1) {
   }
   f.league = newLeague(f.div, f.club, rng);
   f.offers = [];
-  const sponsor = SPONSOR[f.div]; s.money += sponsor; f.earned += sponsor;
+  const sponsor = sponsorOf(f); s.money += sponsor; f.earned += sponsor;
   refreshMarket(f, rng);
   return { pos, prize, move, sponsor };
 }

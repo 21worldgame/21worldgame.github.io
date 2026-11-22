@@ -117,10 +117,12 @@ const WATER = [['rio', 1], ['açude', 1], ['poço artesiano', 0.9], ['sem água'
 const IMPROV = [['casa sede', 0.06], ['curral', 0.03], ['galpão', 0.04], ['cerca nova', 0.02]];
 
 // ---------- lavoura ----------
+// custo = custo operacional total por hectare (Conab/IMEA 2025); yield = sacas por hectare. Margem real: soja ~36%, milho ~33%, café ~50% ao ano
+// (até a v150 o custo era bem menor e a lavoura dava 70% a 250% de lucro por safra, muito acima da vida real)
 export const CROPS = {
-  soja: { label: 'soja', cost: 4500, months: 4, yield: 60, good: 'soja' },     // sacas por hectare
-  milho: { label: 'milho', cost: 3500, months: 5, yield: 110, good: 'milho' },
-  cafe: { label: 'café', cost: 12000, months: 8, yield: 30, good: 'cafe' },
+  soja: { label: 'soja', cost: 5500, months: 4, yield: 60, good: 'soja' },     // sacas por hectare
+  milho: { label: 'milho', cost: 4500, months: 5, yield: 100, good: 'milho' },
+  cafe: { label: 'café', cost: 30000, months: 12, yield: 30, good: 'cafe' },   // arábica: uma safra por ano
 };
 // máquina emprestada a parceiro (lentTo) não trabalha para você; a que você pegou emprestada (amigos.tools) trabalha
 export const hasVehicle = (s, type) => (s.cars || []).some(c => !c.lentTo && CARS[c.model]?.type === type) || (s.amigos?.tools || []).some(t => t.type === type);
@@ -184,7 +186,7 @@ export function newState(rng = Math.random) {
   const s = {
     v: 1, month: 1, money: 100000, chips: 0, nextId: 1,
     lands: [], herd: [], stock: { soja: 0, milho: 0, cafe: 0 },
-    prices: { soja: 130, milho: 60, cafe: 1400, arroba: 310, bezerro: 2600 },
+    prices: { soja: 125, milho: 60, cafe: 1500, arroba: 310, bezerro: 3000 },
     loans: [], lent: [], offers: [], borrowers: [], log: [], cars: [],
   };
   refreshOffers(s, rng);
@@ -197,7 +199,7 @@ const walk = (v, rng, pct) => v * (1 + (rng() * 2 - 1) * pct);
 // ECON: multiplicador do preço de referência vindo da economia do mundo (econ.js), igual para todos; o jogo preenche antes do mês
 export const ECON = {};
 export const REGION_K = {};   // região → multiplicador do preço da terra (procura e saturação), também preenchido pelo jogo
-export const ANCHOR = { soja: 130, milho: 60, cafe: 1400, arroba: 310, bezerro: 2600, cana: 150, laranja: 38, ...GR_PRICES, ...SU_PRICES };
+export const ANCHOR = { soja: 125, milho: 60, cafe: 1500, arroba: 310, bezerro: 3000, cana: 150, laranja: 50, ...GR_PRICES, ...SU_PRICES };
 
 export function refreshOffers(s, rng = Math.random) {
   const used = [];   // ofertas espalhadas pelo Brasil: regiões diferentes e longe umas das outras
@@ -242,9 +244,9 @@ export const herdValue = s => s.herd.reduce((a, h) => a + (h ? h.heads * arrobas
 export const debt = s => s.loans.reduce((a, l) => a + l.bal, 0);
 // ---------- banco da casa com capacidade limitada (clientes de alto patrimônio) ----------
 // O banco tem capital próprio (cresce devagar com o mundo) e só empresta a um cliente até uma fatia dele.
-// A partir de R$ 250 mi de patrimônio o cliente vira "alto patrimônio": o banco mede o risco e reajusta juros e limite.
+// A partir de R$ 250 mi de patrimônio o cliente vira "alto patrimônio": o limite fica menor (o banco não aguenta tudo). Os juros são os mesmos.
 // Ter o próprio banco (aba negócios) ajuda: metade do caixa dele entra como respaldo.
-export const BANK = { capital: 400e6, perClient: 0.05, highNet: 250e6, rearm: 225e6, maxPremium: 3 };
+export const BANK = { capital: 400e6, perClient: 0.05, highNet: 250e6, rearm: 225e6 };
 export function bankRisk(s) {
   const w = netWorth(s), cap = BANK.capital * Math.min(3, 1 + (s.month || 1) / 2000), own = (s.biz?.banks || []).reduce((t, b) => t + (Number(b.capital) || 0), 0) * 0.5;
   const lent = (s.loans || []).filter(l => !l.from).reduce((t, l) => t + l.bal, 0);          // só o que deve ao banco
@@ -253,10 +255,10 @@ export function bankRisk(s) {
   const usage = Math.min(2, lent / Math.max(1, ceiling));                                     // quanto do teto já usou
   const miss = Math.max(0, (s.creditMiss || 0) - Math.floor((s.creditGood || 0) / 12));       // atrasos, perdoados aos poucos pelas parcelas em dia
   const high = w >= BANK.highNet, base = creditLimit(s);
-  if (!high) return { high, w, cap, own, ceiling, exposure, usage, miss, premium: 0, rate: BANK_RATE * PK.mult(s, 'loan'), limit: base };
-  const premium = Math.min(BANK.maxPremium, 0.5 * Math.max(0, exposure - 0.6) + 0.8 * usage + 0.12 * Math.min(8, miss));
+  const rate = BANK_RATE * PK.mult(s, 'loan');   // juros iguais para todos (v151); o que muda com o tamanho do cliente é só o limite
+  if (!high) return { high, w, cap, own, ceiling, exposure, usage, miss, premium: 0, rate, limit: base };
   const room = ceiling * Math.max(0.15, Math.min(1, 1.6 - exposure)) - lent;                 // quanto mais o cliente supera o banco, menos ele empresta
-  return { high, w, cap, own, ceiling, exposure, usage, miss, premium, rate: +(BANK_RATE * (1 + premium) * PK.mult(s, 'loan')).toFixed(4), limit: Math.max(0, Math.floor(Math.min(base, room))) };
+  return { high, w, cap, own, ceiling, exposure, usage, miss, premium: 0, rate, limit: Math.max(0, Math.floor(Math.min(base, room))) };
 }
 export const creditLimit = s =>
   Math.max(0, Math.floor(s.lands.filter(l => l.own).reduce((a, l) => a + l.value, 0) * 0.5 + herdValue(s) * 0.2 - debt(s)));
@@ -366,62 +368,14 @@ export function tick(s, rng = Math.random) {
   return log;
 }
 
-// ---------- os mais ricos do mundo: quanto maior a fortuna, mais caro fica tudo (para não abrir desigualdade demais) ----------
-// price: acréscimo em toda compra · bills: multiplica as contas do mês · tax: imposto mensal sobre tudo o que passa de R$ 3 mi
-// gain: parte dos ganhos do mês que fica com o mundo (pedágio dos mais ricos)
-export const ELITE = [
-  { min: 3e6, name: 'jornada dos mais ricos', price: 0.12, bills: 1.4, tax: 0.002, gain: 0.08 },
-  { min: 5e6, name: 'milionário do topo', price: 0.16, bills: 1.6, tax: 0.004, gain: 0.1 },
-  { min: 1e7, name: 'magnata do mundo', price: 0.2, bills: 1.8, tax: 0.006, gain: 0.13 },
-  { min: 1.5e7, name: 'tubarão do mundo', price: 0.24, bills: 2, tax: 0.008, gain: 0.18 },
-  { min: 5e7, name: 'bilionário em formação', price: 0.3, bills: 2.3, tax: 0.01, gain: 0.22 },
-  { min: 2e8, name: 'dono do mundo', price: 0.42, bills: 3, tax: 0.012, gain: 0.26 },
-  { min: 1e9, name: 'imperador do 21 World', price: 0.6, bills: 4, tax: 0.015, gain: 0.3 },
-];
-export const eliteIdx = s => { const w = netWorth(s); let i = -1; ELITE.forEach((e, k) => { if (w >= e.min) i = k; }); return i; };
-// o 1º do ranking paga ainda mais (s.top1 vem do ranking do servidor): a coroa pesa
-export const TOP1 = { price: 0.25, bills: 1, tax: 2, gain: 0.15 };
-// sem degrau: entre um limite e o próximo, pedágio, compras e contas sobem aos poucos (escala log). O imposto sobre a fortuna é por faixa (fortuneTax)
-export const eliteOf = s => {
-  const i = eliteIdx(s), e0 = ELITE[i]; if (!e0) return null;
-  const w = netWorth(s), e1 = ELITE[i + 1], t = e1 ? Math.max(0, Math.min(1, Math.log(w / e0.min) / Math.log(e1.min / e0.min))) : 0, mix = k => e0[k] + ((e1 ? e1[k] : e0[k]) - e0[k]) * t;
-  const k = T.eliteMult, e = { ...e0, price: mix('price') * k, bills: 1 + (mix('bills') - 1) * k, tax: e0.tax * k, gain: mix('gain') * k };
-  return s.top1 && T.top1 ? { ...e, name: `1º do mundo (${e.name})`, price: e.price + TOP1.price, bills: e.bills + TOP1.bills, tax: e.tax * TOP1.tax, gain: e.gain + TOP1.gain } : e;
-};
-// imposto sobre grandes fortunas por faixa (como o imposto de renda): cada taxa só sobre o pedaço dentro da faixa
-export function fortuneTax(w, mult = 1) {
-  let t = 0;
-  ELITE.forEach((e, i) => { const hi = ELITE[i + 1]?.min ?? Infinity; if (w > e.min) t += (Math.min(w, hi) - e.min) * e.tax; });
-  return Math.round(t * T.eliteMult * mult);
-}
-// reembolso (v52): de v46 a v51 o imposto sobre fortunas foi de 3% a 7% ao mês e o pedágio chegou a 60% dos ganhos.
-// Devolve a diferença para as taxas atuais, lendo o livro-caixa a partir do mês `from` (mês do mundo quando a v46 entrou).
-const OLD_TAX = { 'milionário do topo': 0.03, 'magnata do mundo': 0.04, 'tubarão do mundo': 0.045, 'bilionário em formação': 0.05, 'dono do mundo': 0.06, 'imperador do 21 World': 0.07 };
-const OLD_GAIN = { 45: 0.18, 50: 0.22, 55: 0.26, 60: 0.3, 65: 0.37, 70: 0.41, 75: 0.45 };   // % cobrado → % de hoje (65 a 75 = 1º do ranking)
-export function taxRefund(log, from) {
-  let total = 0;
-  for (const l of log || []) {
-    if (!(l.m >= from) || !(l.val < 0)) continue;
-    const t = /^imposto sobre grandes fortunas \((?:1º do mundo \()?(.+?)\)?\)$/.exec(l.txt || ''), g = /^pedágio dos mais ricos: (\d+)% dos ganhos/.exec(l.txt || '');
-    if (t && OLD_TAX[t[1]]) total += -l.val * (1 - ELITE.find(e => e.name === t[1]).tax / OLD_TAX[t[1]]);
-    else if (g && OLD_GAIN[g[1]]) total += -l.val * (1 - OLD_GAIN[g[1]] / (g[1] / 100));
-  }
-  return Math.round(total);
-}
-// contas extras do mês: imposto sobre a fortuna + o quanto as contas normais encarecem
-// spent/earned: tudo o que saiu/entrou no fechamento · living: só os gastos da casa e das fazendas (sem empresas e sem parcelas)
-export function eliteBills(s, spent, earned = 0, living = spent) {
-  const e = eliteOf(s), profit = Math.max(0, earned - spent);   // "dos ganhos" = do lucro do mês, não do faturamento
-  if (!e) {   // ainda não é elite: imposto de renda simples sobre o lucro do mês
-    const it = netWorth(s) >= T.incomeMin ? Math.round(profit * T.incomeTax) : 0;
-    if (it > 0) { s.money -= it; return [{ txt: `imposto de renda (${Math.round(T.incomeTax * 100)}% do lucro do mês)`, val: -it }]; }
-    return [];
-  }
-  const w = netWorth(s), tax = fortuneTax(w, s.top1 && T.top1 ? TOP1.tax : 1), extra = Math.round(Math.max(0, living) * (e.bills - 1)), cut = Math.round(profit * e.gain), out = [];
-  if (cut > 0) { s.money -= cut; out.push({ txt: `pedágio dos mais ricos: ${Math.round(e.gain * 100)}% do lucro do mês`, val: -cut }); }
-  if (tax > 0) { s.money -= tax; out.push({ txt: `imposto sobre grandes fortunas (${e.name})`, val: -tax }); }
-  if (extra > 0) { s.money -= extra; out.push({ txt: `contas mais caras para quem está no topo (+${Math.round((e.bills - 1) * 100)}%)`, val: -extra }); }
-  return out;
+// ---------- imposto: igual para todos (v151) ----------
+// Só imposto de renda sobre o LUCRO do mês (o que entrou menos o que saiu), a mesma alíquota para qualquer patrimônio.
+// Antes havia o "imposto dos mais ricos" (acréscimo nas compras, contas mais caras, pedágio e imposto sobre a fortuna).
+export function monthTax(s, spent, earned = 0) {
+  const it = netWorth(s) >= T.incomeMin ? Math.round(Math.max(0, earned - spent) * T.incomeTax) : 0;
+  if (it <= 0) return [];
+  s.money -= it;
+  return [{ txt: `imposto de renda (${Math.round(T.incomeTax * 100)}% do lucro do mês)`, val: -it }];
 }
 
 // Receita Federal: patrimônio que sobe rápido demais numa janela de 10 min reais. samples = [[hora, patrimônio], ...]

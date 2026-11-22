@@ -29,12 +29,9 @@ export const KB = [
     'Os preços seguem a economia do mundo: quando muita gente planta o mesmo produto, a oferta sobe e o preço de referência cai; quando poucos produzem, sobe.',
     'Crises só acontecem quando há concentração exagerada num produto (mais ou menos a cada 2 anos do mundo, se houver) ou num evento como greve, geada ou contaminação. Sempre há aviso antes: 🟡 sinais de atenção, 🟠 risco elevado, 🔴 crise.',
     'O relatório do mercado (no sino, nas cotações e na TV 21) mostra a oferta de cada produto, os eventos e recomendações. Terra em região saturada mostra um alerta antes de comprar.'] },
-  { t: 'os mais ricos', k: ['ricos', 'rico', 'faixa', 'elite', 'imposto', 'fortuna', 'taxa dos', 'magnata', 'tubarao', 'pedagio'], a: [
-    'Quanto maior a fortuna, mais caro fica tudo (para o mundo não ficar desigual demais). O imposto é por faixa (cada taxa só no pedaço dentro da faixa), o pedágio é sobre o lucro do mês e as contas mais caras valem só para os gastos da casa e das fazendas (empresas e parcelas ficam fora). Entre uma faixa e outra as taxas sobem aos poucos. As faixas:',
-    '• a partir de R$ 3 mi: compras +12%, contas do mês ×1,4, imposto de 0,2% ao mês sobre o pedaço entre R$ 3 mi e R$ 5 mi',
-    '• R$ 5 mi: +16%, ×1,6, 0,4% · R$ 10 mi: +20%, ×1,8, 0,6% · R$ 15 mi: +24%, ×2, 0,8%',
-    '• R$ 50 mi: +30%, ×2,3, 1% · R$ 200 mi: +42%, ×3, 1,2% · R$ 1 bi: +60%, ×4, 1,5%',
-    'Cada faixa também fica com uma parte do lucro do mês (o pedágio dos mais ricos): de 8% a 30%.'] },
+  { t: 'impostos', k: ['ricos', 'rico', 'faixa', 'elite', 'imposto', 'fortuna', 'taxa dos', 'magnata', 'tubarao', 'pedagio'], a: [
+    'O imposto é igual para todos: 5% do lucro do mês (o que entrou menos o que saiu no fechamento), para quem tem patrimônio a partir de R$ 300 mil. Mês no prejuízo não paga.',
+    'Não existe mais taxa para os mais ricos: compras, contas do mês, terras e juros do banco custam o mesmo para qualquer jogador.'] },
   { t: 'troféus e perfil privado', k: ['trofeu', 'trofeus', 'privado', 'selo', 'esconder'], a: [
     'Troféus de patrimônio a cada R$ 10 mi (de 10 a 100 mi). Ficam para sempre, mesmo se a fortuna cair.',
     'O primeiro troféu (R$ 10 mi) libera o perfil privado: os outros só veem os seus troféus.'] },
@@ -88,11 +85,11 @@ export const KB = [
     'Na revenda o barracão vale 70% do preço.'] },
   // ---------- lavouras ----------
   { t: 'lavoura', k: ['lavoura', 'plantar', 'plantio', 'colheita', 'colher', 'soja', 'milho', 'cafe', 'saca', 'sacas', 'safra'], a: [
-    'Soja: R$ 4.500 por ha, 4 meses, uns 60 sacas por ha. Milho: R$ 3.500 por ha, 5 meses, uns 110 sacas. Café: R$ 12.000 por ha, 8 meses, uns 30 sacas.',
+    'Soja: R$ 5.500 por ha, 4 meses, uns 60 sacas por ha. Milho: R$ 4.500 por ha, 5 meses, uns 100 sacas. Café: R$ 30.000 por ha, 12 meses, uns 30 sacas. São os custos reais de produção.',
     'Com trator o plantio sai 15% mais barato. A colheita vai para o armazém e você vende quando quiser, pelo preço do dia.'] },
   { t: 'laranja', k: ['laranja', 'pomar', 'pomares', 'caixa', 'caixas', 'greening', 'pulverizador', 'praga'], a: [
-    'Pomar só em terra própria: R$ 18 mil por ha para plantar, 6 meses até a primeira colheita e depois uma colheita a cada 4 meses.',
-    'Pomar adulto e sadio: uns 330 caixas (40,8 kg) por ha por colheita. Manutenção de R$ 650 por ha por mês.',
+    'Pomar só em terra própria: R$ 30 mil por ha para plantar, 6 meses até a primeira colheita e depois uma colheita a cada 4 meses.',
+    'Pomar adulto e sadio: uns 330 caixas (40,8 kg) por ha por colheita. Manutenção de R$ 2.500 por ha por mês (defensivo, adubo e mão de obra).',
     'Sem defensivo a praga (greening) cresce e derruba a safra, até perder tudo. Cada pulverizador cobre 150 ha e cada plataforma 200 ha.'] },
   { t: 'cana', k: ['cana', 'canavial', 'usina', 'corte', 'colhedora', 'broca'], a: [
     'Canavial só em terra própria: R$ 11 mil por ha, primeiro corte em 10 meses e depois a cada 10 meses.',

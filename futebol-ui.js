@@ -95,7 +95,7 @@ function renderSquad() {
   const c = f(), order = Object.keys(FT.POS);
   $('#ft-squad').innerHTML = [...c.squad].sort((a, b) => order.indexOf(a.pos) - order.indexOf(b.pos) || b.ovr - a.ovr).map(p => `<tr>
     <td><span class="posb posb--${p.pos}">${p.pos}</span></td><td>${esc(p.name)}${p.trait ? ` <span class="muted small">${esc(p.trait)}</span>` : ''}${p.inj ? ' <span class="tag tag--red">lesionado</span>' : ''}${p.sus ? ' <span class="tag tag--red">suspenso</span>' : ''}</td><td class="num">${p.age}</td>
-    <td class="num"><strong>${p.ovr}</strong></td><td class="num">${p.pot}</td><td class="num">${brl(p.sal)}</td><td class="num">${brl(FT.value(p))}</td>
+    <td class="num"><strong>${p.ovr}</strong></td><td class="num">${p.pot}</td><td class="num">${brl(FT.salary(p.ovr))}</td><td class="num">${brl(FT.value(p))}</td>
     <td class="acts">${FT.lockedPlayer(G.S, p) ? `<span class="tag" title="${esc(FT.lockMsg(G.S))}">contrato: ${FT.contractLeft(G.S)} m</span>` : `<button class="btn btn--glass btn--sm" data-act="ft-sell" data-id="${p.id}">vender ${brl(Math.round(FT.value(p) * 0.8))}</button>`}</td></tr>`).join('');
 }
 function renderTable() {
@@ -106,7 +106,7 @@ function renderTable() {
 }
 function renderMarket() {
   $('#ft-market').innerHTML = f().market.map(p => `<tr><td><span class="posb posb--${p.pos}">${p.pos}</span></td><td>${esc(p.name)} <span class="muted small">${esc(p.club || '')}${p.trait ? `, ${esc(p.trait)}` : ''}</span></td><td class="num">${p.age}</td>
-    <td class="num"><strong>${p.ovr}</strong></td><td class="num">${p.pot}</td><td class="num">${brl(p.sal)}</td>
+    <td class="num"><strong>${p.ovr}</strong></td><td class="num">${p.pot}</td><td class="num">${brl(FT.salary(p.ovr))}</td>
     <td class="acts"><button class="btn btn--glass btn--sm" data-act="ft-haggle" data-id="${p.id}">negociar</button><button class="btn btn--gold btn--sm" data-act="ft-buy" data-id="${p.id}">pagar ${brl(p.price)}</button></td></tr>`).join('') || '<tr><td colspan="7" class="muted">Mercado vazio até a próxima temporada.</td></tr>';
 }
 function renderOffers() {
@@ -123,9 +123,9 @@ export function take(name) {
   const err = FT.takeClub(G.S, name);
   if (err) return say(err[0].toUpperCase() + err.slice(1), true);
   note(`assumiu o ${name}`, -FT.clubPrice(name));
-  note(`patrocínio da temporada`, FT.SPONSOR[G.S.fut.div]);
+  note(`patrocínio da temporada`, FT.sponsorOf(G.S.fut));
   award('ftFound'); confetti(80); sfx.play('stack', 0.7);
-  say(`Você é o novo presidente do ${name}! O patrocínio de ${brl(FT.SPONSOR[G.S.fut.div])} já entrou. Contrato de ${FT.CONTRACT} meses: o clube e o elenco só podem ser vendidos depois disso.`);
+  say(`Você é o novo presidente do ${name}! O patrocínio de ${brl(FT.sponsorOf(G.S.fut))} já entrou. Contrato de ${FT.CONTRACT} meses: o clube e o elenco só podem ser vendidos depois disso.`);
   view = 'jogo';
 }
 export function buy(id, price) {

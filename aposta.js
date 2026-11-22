@@ -155,7 +155,7 @@ export function form(team, slot) {
 }
 
 // cota de TV: quem é dono de um clube recebe por jogo do clube no Brasileirão ao vivo (mais um bônus quando vence)
-export const TV = [9500, 2800, 650], TV_WIN = [7000, 2200, 450], TV_MAX = 10;
+export const TV = [120000, 25000, 6000], TV_WIN = [60000, 12000, 3000], TV_MAX = 10;   // escala real (v151), ~8% da folha do mês
 export function tvIncome(s, now) {
   const club = s.fut?.club; if (!club) return [];
   const done = slotOf(now) - (phase(slotOf(now), now) === 'post' ? 0 : 1);

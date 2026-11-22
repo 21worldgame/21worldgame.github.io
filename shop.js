@@ -16,13 +16,14 @@ export const HOUSE_RATE = { car: CAR_BUYBACK, land: 0.95, card: CD.SELL, player:
 export const NPC_MAX = 1.05;            // comprador da casa paga até 5% acima do preço de venda na hora
 export const MAX_LISTINGS = 8;
 
-// valor do clube inteiro: 45% do preço do clube (um pouco menos da metade, com o elenco junto) + metade do que foi gasto no estádio.
-// Antes contava o elenco à parte e nas divisões de baixo o elenco valia até 3x o clube: comprar e vender jogadores dava lucro.
-export const CLUB_RESALE = 0.45;
+// valor do clube inteiro: 80% do preço do clube (com o elenco junto) + metade do que foi gasto no estádio. Com preço real o clube
+// dá perto do zero a zero, então revender por menos da metade (como era até a v150) tornava qualquer compra prejuízo certo.
+// Nunca acima do preço menos o patrocínio que veio junto: comprar e revender não dá lucro.
+export const CLUB_RESALE = 0.8;
 export function clubValue(f) {
   if (!f?.club) return 0;
   let stadium = 0; for (let l = 1; l < (f.stadium || 1); l++) stadium += FT.TICKET[f.div] * 8 * l * 0.5;
-  const price = FT.clubPrice(f.club), base = Math.min(price * CLUB_RESALE, (price - (FT.SPONSOR[FT.divOf(f.club)] || 0)) * 0.9);   // e nunca acima do preço menos o patrocínio que veio junto
+  const price = FT.clubPrice(f.club), base = Math.min(price * CLUB_RESALE, (price - FT.sponsorOf({ club: f.club, div: FT.divOf(f.club) })) * 0.9);   // e nunca acima do preço menos o patrocínio que veio junto
   return Math.round(Math.max(0, base) + stadium);
 }
 // tudo que dá para vender: o inventário de trocas + o clube inteiro

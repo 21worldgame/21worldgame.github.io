@@ -1,4 +1,4 @@
-// Contador (regras puras): honorário proporcional ao patrimônio e a prestação de contas de cada fechamento do mês.
+// Contador (regras puras): honorário fixo e a prestação de contas de cada fechamento do mês.
 // Ele não muda nenhuma cobrança do jogo: lê exatamente o que foi lançado em cada fechamento (s.closes) e separa
 // por produção (gado, granja, cana...) e por tipo de gasto (imposto, luz, água, funcionários...).
 // Linhas que juntam vários gastos ("energia, água e mão de obra") são separadas pela composição oficial abaixo (SPLIT):
@@ -7,14 +7,14 @@ import { LISTS, WAREHOUSES } from './negocios.js';
 import * as KB from './contador-kb.js';
 
 // ---------- honorário ----------
-export const FEE = { rate: 0.0012, min: 2500, rise: 0.02 };    // 0,12% do patrimônio por mês (mínimo R$ 2.500); mensal sobe 2% a cada mês
+export const FEE = { min: 2500, rise: 0.02 };    // R$ 2.500 por mês para qualquer jogador; o mensal sobe 2% a cada mês de contrato
 export const PLANS = {
   mensal: { months: 0, mult: 1, label: 'mensal', note: 'paga no fechamento de cada mês; sobe 2% a cada mês de contrato' },
   m1: { months: 1, mult: 1, label: '1 mês', note: 'pago agora, preço travado' },
   m3: { months: 3, mult: 0.93, label: '3 meses', note: 'pago agora, 7% de desconto' },
   m12: { months: 12, mult: 0.8, label: '1 ano', note: 'pago agora, 20% de desconto' },
 };
-export const feeFor = worth => Math.max(FEE.min, Math.round((Number(worth) || 0) * FEE.rate / 100) * 100);
+export const feeFor = () => FEE.min;   // preço igual para todos (v151): antes era 0,12% do patrimônio
 export const quote = (worth, plan) => { const P = PLANS[plan]; return P.months ? Math.round(feeFor(worth) * P.months * P.mult / 100) * 100 : feeFor(worth); };
 export const active = s => !!s.acct && (s.acct.plan === 'mensal' || (s.month || 0) < s.acct.until);
 export const monthsLeft = s => (s.acct?.plan === 'mensal' ? Infinity : Math.max(0, (s.acct?.until || 0) - (s.month || 0)));
@@ -61,7 +61,7 @@ const esc = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const BIZ = new RegExp(`^(${Object.values(LISTS).flatMap(o => Object.values(o).map(b => esc(b.name))).join('|')})`);
 const WH = new RegExp(`^(${Object.values(WAREHOUSES).map(w => esc(w.label)).join('|')})`);
 export const GROUPS = [
-  ['impostos', 'impostos do topo', /imposto de renda|pedágio dos mais ricos|grandes fortunas|contas mais caras|reembolso: imposto/],
+  ['impostos', 'impostos', /imposto de renda|pedágio dos mais ricos|grandes fortunas|contas mais caras|reembolso: imposto/],
   ['contador', 'contador', /^contador/],
   ['negocios', 'empresas e galpões', null],
   ['frigorifico', 'frigorífico (só a indústria)', /^frigorífico|construção do frigorífico|venda do frigorífico/],
@@ -226,7 +226,6 @@ export function answer(s, q0, ctx) {
     if (D.carros >= 1) out.push(`• carros: perdem 1,5% do valor por mês, uns ${brl(D.carros)} a menos agora.`);
     if (D.galpoes >= 1) out.push(`• galpões da granja: perdem 0,5% do valor por mês, uns ${brl(D.galpoes)}.`);
     if (D.juros >= 1) out.push(`• juros do banco: a dívida cresce uns ${brl(D.juros)} por mês, e a dívida é descontada do patrimônio.`);
-    if (D.elite) out.push(`• você está na faixa ${D.elite.name}: compras saem ${Math.round((D.elite.price || 0) * 100)}% mais caras e as contas também pesam mais.`);
     out.push('• preço do mercado: gado, estoque e produção contam pelo preço de hoje. Se a arroba ou a saca cai, o patrimônio cai junto, mesmo sem você vender nada. Quando o preço sobe, ele volta.');
     out.push('• compras: o dinheiro sai inteiro, mas o bem entra pelo valor de revenda (carro, galpão, empresa valem menos do que você pagou). Por isso o patrimônio dá um tranco logo depois de uma compra.');
     out.push('Ele sobe quando você vende produção com lucro (boi gordo, lote de frango, colheita) e quando os seus bens valorizam. Pergunte "qual meu lucro real?" para ver quanto cada produção deu.');

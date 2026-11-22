@@ -39,13 +39,13 @@ const lot = { id: 9, own: true, region: 'cerrado, goiás', ha: 10, cap: 0.9, val
 f.lands.push(lot);
 assert.equal(L.capacity(f), 9);
 assert.equal(L.plant(f, lot, 'soja'), null);
-assert.equal(f.money, 1e6 - 45000);
+assert.equal(f.money, 1e6 - 55000);
 assert.equal(L.capacity(f), 0);
 for (let i = 0; i < 4; i++) L.tick(f, () => 0.5);
 assert.equal(f.stock.soja, 600);
 assert.equal(lot.crop, undefined);
 f.cars.push({ id: 10, model: 'deere', value: 650000 });
-assert.equal(L.plantCost(f, 'soja', 10), 38250);
+assert.equal(L.plantCost(f, 'soja', 10), 46750);
 
 // carro desvaloriza 1,5% e paga IPVA/seguro
 const g = L.newState(() => 0.5);
@@ -287,10 +287,10 @@ import * as PK from './perks.js';
   assert.ok(FT.clubPrice('Flamengo') > FT.clubPrice('Remo') && FT.clubPrice('Remo') > FT.clubPrice('Sport'));
   const s = { money: 50000 };
   assert.ok(FT.takeClub(s, 'Barra-SC', r).includes('insuficiente'));
-  s.money = 1e6;
+  s.money = 20e6;
   assert.ok(FT.takeClub(s, 'Time Inventado', r).includes('lista'));
   assert.equal(FT.takeClub(s, 'Barra-SC', r), null);
-  assert.equal(s.money, 1e6 - FT.clubPrice('Barra-SC') + FT.SPONSOR[2]); assert.equal(s.fut.squad.length, 18); assert.equal(s.fut.div, 2);
+  assert.equal(s.money, 20e6 - FT.clubPrice('Barra-SC') + FT.sponsorOf(s.fut)); assert.equal(s.fut.squad.length, 18); assert.equal(s.fut.div, 2);
   assert.equal(s.fut.league.teams.length, 20); assert.ok(s.fut.league.teams.some(t => t.name === 'Paysandu'));
   const l = FT.lineup(s.fut.squad, '4-3-3'); assert.equal(l.gk.length + l.def.length + l.mid.length + l.att.length, 11);
   // time mais forte vence mais (500 jogos)
@@ -525,7 +525,7 @@ import * as SH from './shop.js';
   assert.equal(r.amount, Math.round(330000 * L.CAR_BUYBACK)); assert.equal(s.money, m0 + r.amount); assert.equal(s.cars.length, 0);
   const cv = SH.clubValue(s.fut); assert.ok(cv > 0);
   assert.ok(SH.sellToHouse(s, 'club:club').err, 'clube preso no contrato');
-  assert.ok(cv <= FT.clubPrice('Barra-SC') * 0.45 + 1, 'revenda: menos da metade do preço');
+  assert.ok(cv + FT.sponsorOf(s.fut) < FT.clubPrice('Barra-SC'), 'comprar, pegar o patrocínio e revender não dá lucro');
   s.month += FT.CONTRACT;
   const c = SH.sellToHouse(s, 'club:club'); assert.equal(c.amount, cv); assert.equal(s.fut, undefined);
   // comprador da casa: anunciar caro demais nunca vende; perto do preço da casa vende às vezes
@@ -545,7 +545,7 @@ import * as SH from './shop.js';
 console.log('loja ok');
 // escalação manual
 {
-  const s = { money: 1e7 }; FT.takeClub(s, 'Remo'); const f = s.fut;
+  const s = { money: 1e9 }; FT.takeClub(s, 'Remo'); const f = s.fut;
   const auto = FT.lineup(f.squad, '4-4-2');
   assert.equal([...auto.gk, ...auto.def, ...auto.mid, ...auto.att].filter(Boolean).length, 11);
   const ata = f.squad.find(p => p.pos === 'ATA');
@@ -565,6 +565,24 @@ console.log('escalação ok');
   const c = []; L.receitaFlag(c, 0, 1e6); assert.equal(L.receitaFlag(c, 700000, 20e6), 0);
   const d = []; L.receitaFlag(d, 0, 300e6); assert.equal(L.receitaFlag(d, 60000, 360e6), 0); assert.ok(L.receitaFlag(d, 120000, 380e6) > 0);
   console.log('receita federal ok');
+}
+{ // painel do admin: margem fora do normal vira alerta; margem normal não; economia soma os jogadores
+  const AE = await import('./admin-econ.js');
+  const mk = (lin, lout) => ({ ...L.newState(() => 0.5), month: 10, pl: { 9: { lavoura: { in: lin, out: lout, bem: 0 }, suinos: { in: 5e6, out: 4.2e6, bem: 0 } } } });
+  const bad = mk(80e6, 10e6), ok = mk(80e6, 50e6);
+  assert.ok(AE.pnl(bad).rows.find(x => x.key === 'lavoura').alert && AE.alerts(bad).some(a => /lavouras/.test(a)), 'lavoura com 88% de margem é alerta');
+  assert.ok(!AE.pnl(ok).rows.some(x => x.alert), 'margem de 37% é normal');
+  const e = AE.economy([{ name: 'a', data: bad }, { name: 'b', data: ok }]);
+  assert.equal(e.players, 2); assert.equal(e.rows.find(x => x.key === 'lavoura').in, 160e6); assert.equal(e.rows.find(x => x.key === 'lavoura').top.name, 'a');
+  assert.ok(AE.worthParts(ok).parts.dinheiro === ok.money && AE.activities({ ...ok, fut: { club: 'Remo', div: 1, season: 2, league: { round: 5 } } }).some(a => /Remo/.test(a)));
+  console.log('painel: economia do jogador ok');
+}
+{ // futebol com preço real (v151): clube da escala antiga é devolvido pelo preço antigo; clube novo não é mexido
+  const old = { money: 1000, fut: { club: 'Paysandu', div: 2, squad: [{ id: 'a', ovr: 60 }] }, shop: [{ key: 'player:a' }, { key: 'car:1' }], freeAgents: [{ id: 'b' }] };
+  const v = FT.migrate(old); assert.ok(v > 0 && v < 200000 && old.money === 1000 + v && !old.fut && old.shop.length === 1 && !old.freeAgents.length);
+  const nw = { money: 1e9 }; FT.takeClub(nw, 'Paysandu'); assert.equal(FT.migrate(nw), 0); assert.ok(nw.fut.real);
+  assert.ok(FT.sponsorOf({ club: 'Paysandu', div: 0 }) < FT.sponsorOf({ club: 'Flamengo', div: 0 }), 'clube pequeno na Série A ganha menos que o grande');
+  console.log('futebol: migração para preço real ok');
 }
 // jogadores do mundo: nicks únicos, ranking alcançável e movimento ao longo do dia
 import * as NP from './npcs.js';
@@ -627,10 +645,12 @@ import * as AB from './abate.js';
   const s2 = mk(), l2 = s2.lands[0]; PM.plant(s2, l2); PM.toggleSpray(l2);
   for (let i = 0; i < 6; i++) PM.monthly(s2, () => 0.99);
   assert.ok(s2.stock.laranja < c1, 'sem veneno deveria colher menos');
-  // retorno: em 2 anos (24 meses) o pomar paga plantio e manutenção
+  // retorno: com custo real o pomar se paga em 3 anos, mas não em 2 (na vida real leva 4 a 5)
   const s3 = mk(), l3 = s3.lands[0], m0 = s3.money; PM.plant(s3, l3);
   for (let i = 0; i < 24; i++) PM.monthly(s3, () => 0.5);
-  assert.ok(s3.money + s3.stock.laranja * PM.ORANGE.price > m0, 'pomar deveria se pagar em 2 anos');
+  assert.ok(s3.money + s3.stock.laranja * PM.ORANGE.price < m0, 'pomar não pode se pagar em 2 anos');
+  for (let i = 24; i < 36; i++) PM.monthly(s3, () => 0.5);
+  assert.ok(s3.money + s3.stock.laranja * PM.ORANGE.price > m0, 'pomar deveria se pagar em 3 anos');
   // abate
   const a = L.newState(() => 0.5); a.money = 5e7; a.herd.push({ id: 1, heads: 10, kg: 450 });
   const vivo = AB.perHead(a, 450, 'vivo', L.cattleFee(a)), terc = AB.perHead(a, 450, 'terceiros'), prop = AB.perHead(a, 450, 'proprio');
@@ -907,30 +927,16 @@ console.log('truco ok');
 }
 console.log('suínos, negócios e galpões ok');
 
-// ---------- os mais ricos pagam mais ----------
+// ---------- imposto igual para todos (v151) ----------
 {
-  const L3 = await import('./logic.js');
-  const poor = L3.newState(() => 0.5); assert.equal(L3.eliteOf(poor), null); assert.deepEqual(L3.eliteBills(poor, 1e5), []);
-  const mid = L3.newState(() => 0.5); mid.money = 5e5; assert.equal(L3.eliteBills(mid, 0, 100000)[0].val, -6000, 'imposto de renda 6%');
-  const rich = L3.newState(() => 0.5); rich.money = 12e6;
-  assert.equal(L3.eliteOf(rich).name, 'magnata do mundo');
-  const er = L3.eliteOf(rich), m0 = rich.money, lines = L3.eliteBills(rich, 100000, 200000);
-  assert.equal(lines.length, 3); assert.ok(rich.money < m0);
-  assert.equal(lines[0].val, -Math.round(100000 * er.gain), 'pedágio sobre o lucro do mês (200 mil entrou - 100 mil saiu)');
-  assert.equal(lines[2].val, -Math.round(100000 * (er.bills - 1)), 'contas mais caras sobre os gastos');
-  // revisão v119: sem salto na faixa, imposto por faixa, mês no prejuízo não paga pedágio, empresas fora das contas
-  assert.equal(L3.fortuneTax(5e6), 4000, 'imposto por faixa: 0,2% sobre os 2 mi acima de 3 mi');
-  assert.equal(L3.fortuneTax(50e6), 334000, 'por faixa em 50 mi');
-  const at = w => { const x = L3.newState(() => 0.5); x.money = w; return -L3.eliteBills(x, 3.75e6, 5.2e6, 3e5).reduce((t, l) => t + l.val, 0); };
-  assert.ok(Math.abs(at(200.2e6) - at(199.8e6)) < at(199.8e6) * 0.02, 'passar de 200 mi não dá salto');
-  assert.ok(at(100e6) < 2e6, 'empresário de 100 mi com hotel não paga mais que o lucro em pedágio e contas: ' + at(100e6));
-  const loss = L3.newState(() => 0.5); loss.money = 60e6; assert.ok(!L3.eliteBills(loss, 5e6, 1e6, 0).some(l => /pedágio/.test(l.txt)), 'mês no prejuízo não paga pedágio');
-  const top = L3.newState(() => 0.5); top.money = 3e8; assert.ok(L3.eliteOf(top).price > L3.eliteOf(rich).price, 'quanto mais rico, mais caro');
+  const L3 = await import('./logic.js'), sales = [];
+  const poor = L3.newState(() => 0.5); assert.deepEqual(L3.monthTax(poor, 0, 1e5), [], 'abaixo do mínimo não paga');
+  const mid = L3.newState(() => 0.5); mid.money = 5e5; assert.equal(L3.monthTax(mid, 0, 100000)[0].val, -5000, 'imposto de renda 5% do lucro');
+  const rich = L3.newState(() => 0.5); rich.money = 3e8; assert.equal(L3.monthTax(rich, 0, 100000)[0].val, -5000, 'rico paga a mesma alíquota');
+  assert.deepEqual(L3.monthTax(rich, 2e5, 1e5), [], 'mês no prejuízo não paga');
+  assert.equal(L3.bankRisk({ ...rich, lands: [], herd: [], loans: [], lent: [], cars: [], stock: {}, prices: {} }).rate, L3.BANK_RATE, 'juros iguais para rico');
 }
 {
-  const L3 = await import('./logic.js');
-  const a = L3.newState(() => 0.5); a.money = 12e6; const b = L3.newState(() => 0.5); b.money = 12e6; b.top1 = true;
-  assert.ok(L3.eliteOf(b).price > L3.eliteOf(a).price && L3.eliteOf(b).gain > L3.eliteOf(a).gain, 'o 1º paga mais');
   const ST3 = await import('./stable.js'), st = { stable: { animals: [], offers: [] } };
   for (let i = 0; i < ST3.PHOTO_POOL.dog.length; i++) { const d = { kind: 'dog', name: 'Rex', coat: 0 }; st.stable.animals.push(d); ST3.photo(d, st); }
   assert.equal(new Set(st.stable.animals.map(x => x.ph)).size, ST3.PHOTO_POOL.dog.length, 'nenhum galgo repete a foto');
@@ -1185,15 +1191,10 @@ console.log('mina ok');
     assert.ok(w / N < 1 / MKq.PAYOUT, `mercado ${a}: seguir/ir contra o gráfico não pode dar lucro (${(w / N * 100).toFixed(1)}%)`); }
   for (let sl = 1000; sl < 2500; sl++) { const l = LEq.lot(sl), st = LEq.state(l, LEq.endsAt(sl) - 1500); assert.ok(st.next >= l.value * 0.97, `leilão ${sl} saiu barato`); }
   console.log('mercado imprevisível e leilão sem cavalo barato ok'); }
-{ const Lr = await import('./logic.js');
-  const log = [{ m: 9, txt: 'imposto sobre grandes fortunas (magnata do mundo)', val: -40000 }, { m: 9, txt: 'pedágio dos mais ricos: 50% dos ganhos do mês', val: -100000 },
-    { m: 9, txt: 'imposto sobre grandes fortunas (1º do mundo (tubarão do mundo))', val: -90000 }, { m: 3, txt: 'imposto sobre grandes fortunas (magnata do mundo)', val: -1000 }, { m: 9, txt: 'pedágio dos mais ricos: 14% dos ganhos do mês', val: -14000 }];
-  assert.equal(Lr.taxRefund(log, 5), 40000 * (1 - 0.006 / 0.04) + 100000 * (1 - 0.22 / 0.5) + 90000 * (1 - 0.008 / 0.045));
-  console.log('reembolso do imposto alto ok'); }
 
 {
   const CT = await import('./contador.js');
-  assert.equal(CT.feeFor(0), CT.FEE.min); assert.ok(CT.feeFor(100e6) > CT.feeFor(1e6) * 10, 'rico paga mais');
+  assert.equal(CT.feeFor(0), CT.FEE.min); assert.equal(CT.feeFor(100e6), CT.feeFor(1e6), 'contador cobra igual de todos');
   const s = { money: 1e7, month: 10 };
   assert.equal(CT.hire(s, 'm3', 5e6).price, CT.quote(5e6, 'm3')); assert.ok(CT.active(s)); assert.ok(CT.hire(s, 'm1', 5e6).err);
   s.month = 13; assert.equal(CT.monthly(s, 5e6)[0].val, 0); assert.ok(!CT.active(s), 'contrato de 3 meses acaba no 3º fechamento');
@@ -1485,14 +1486,12 @@ import * as CT from './contador.js';
   const iv = E.npcInvestor(Nq.NPCS[2], 600); assert.ok(iv.style && iv.risk && iv.hist.length >= 1);
   const pv = E.playerInvestor({ crops: { cafe: 300, soja: 20 }, inv: { hist: ['agora: 2 colheitas de café'], trend: 'em alta' } }); assert.ok(pv.style === 'agricultor especializado' && pv.hist.length === 1 && pv.trend === 'em alta');
   console.log('perfis de investidor ok'); }
-// banco com capacidade limitada: a partir de R$ 250 mi juros sobem pelo risco, limite cai e empréstimo gigante é barrado
+// banco com capacidade limitada: a partir de R$ 250 mi o limite cai e empréstimo gigante é barrado; juros iguais para todos (v151)
 { const Lq = await import('./logic.js');
   const mk = (w, lent = 0, miss = 0) => ({ ...Lq.newState(() => 0.5), money: w, loans: lent ? [{ id: 1, bal: lent, rate: 0.035, left: 12, missed: 0 }] : [], lands: [{ id: 9, own: true, ha: 1000, value: w * 0.5, region: 'x' }], creditMiss: miss, month: 600 });
-  const low = Lq.bankRisk(mk(100e6)), hi = Lq.bankRisk(mk(400e6)), huge = Lq.bankRisk(mk(1.5e9)), owing = Lq.bankRisk(mk(400e6, 15e6)), late = Lq.bankRisk(mk(400e6, 0, 4));
-  assert.ok(!low.high && low.premium === 0, 'abaixo de 250 mi nada muda');
-  assert.ok(hi.high && hi.rate > low.rate && huge.rate > hi.rate, 'juros sobem com o patrimônio acima da capacidade');
-  assert.ok(owing.rate > hi.rate && owing.limit < hi.limit, 'quem já deve muito paga mais e pega menos');
-  assert.ok(late.rate > hi.rate, 'atraso no histórico pesa');
+  const low = Lq.bankRisk(mk(100e6)), hi = Lq.bankRisk(mk(400e6)), huge = Lq.bankRisk(mk(1.5e9)), owing = Lq.bankRisk(mk(400e6, 15e6));
+  assert.ok(!low.high && hi.high && hi.rate === low.rate && huge.rate === low.rate, 'juros iguais para todos');
+  assert.ok(owing.limit < hi.limit, 'quem já deve muito pega menos');
   assert.ok(huge.limit <= huge.ceiling && huge.limit < 50e6, 'empréstimo de valor gigante barrado');
   console.log('banco com capacidade limitada ok'); }
 // investimentos no banco: rendem pouco (abaixo da terra), prazo longo, teto, sair antes custa, aplicado conta no patrimônio
