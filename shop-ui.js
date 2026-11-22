@@ -62,7 +62,10 @@ function cardFor(s, it, mine) {
 export function render() {
   const s = G.S, all = SH.items(s), mine = new Map((s.shop || []).map(l => [l.key, l]));
   const npcs = SH.npcListings(s, Date.now());
-  const counts = {}; for (const i of all) counts[SH.catOf(i)] = (counts[SH.catOf(i)] || 0) + 1; for (const l of npcs) counts[l.cat] = (counts[l.cat] || 0) + 1;
+  // número de cada categoria = o que está anunciado no Feirão (jogadores do mundo, outros jogadores e os seus anúncios), não o que você tem no inventário
+  const peerL = lobby ? [...lobby.peers.values()].flatMap(p => p.shop || []) : [];
+  const counts = {}, inc = c => { counts[c] = (counts[c] || 0) + 1; };
+  for (const l of npcs) inc(l.cat); for (const l of peerL) inc(SH.catOf({ kind: l.kind })); for (const l of s.shop || []) inc(SH.catOf({ kind: l.kind }));
   $('#shop-cats').innerHTML = [['all', 'tudo'], ...Object.entries(SH.CATS)].map(([k, v]) => `<button class="shop-cat${cat === k ? ' is-on' : ''}" data-act="shop-cat" data-id="${k}">${v}${k !== 'all' && counts[k] ? ` <small>${counts[k]}</small>` : ''}</button>`).join('');
   const its = all.filter(i => i.kind !== 'player' && inCat(SH.catOf(i))), players = inCat('futebol') ? all.filter(i => i.kind === 'player') : [];
   const card = it => cardFor(s, it, mine);

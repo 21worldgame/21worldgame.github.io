@@ -3430,3 +3430,40 @@ dialog:not([open]) { display: none !important; }
 #tv-list .tv__line { -webkit-line-clamp: unset; font-weight: 700; }
 .tv__lead { margin: 2px 0 6px; font-size: .78rem; line-height: 1.45; opacity: .88; }
 .hero__in p { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* números dos cards de resumo: a fonte diminui com a largura do card em vez de quebrar o número no meio ("R$ 277.20" / "0") */
+.tiles > .tile, .hkpis > .hk { container-type: inline-size; }
+.tiles > .tile strong { font-size: min(var(--text-2xl), 17cqi); overflow-wrap: break-word; }
+.tiles--ft > .tile strong { font-size: min(var(--text-xl), 15cqi); }
+.hkpis > .hk .hk__v { font-size: min(1.2rem, 12cqi); overflow-wrap: break-word; }
+/* pomar e canavial dentro do cartão da terra: foto em faixa no alto e o texto com a largura toda (antes lado a lado e cortava) */
+.orchard { grid-template-columns: minmax(0, 1fr) !important; }
+.orchard img { width: 100% !important; height: 86px !important; }
+.orchard > div > * { min-width: 0; overflow-wrap: anywhere; }
+.eta { width: auto !important; max-width: 100%; white-space: normal; line-height: 1.25; }
+.orchard .row .btn { flex: 1 1 140px; }
+/* leilão: foto em cima e a ficha embaixo com largura toda (o texto ficava espremido ao lado da foto) */
+@media (min-width: 40.01rem) { .lei__horse { grid-template-columns: minmax(0, 1fr) !important; align-items: start; } .lei__photo { width: 100% !important; height: 210px !important; } }
+@media (max-width: 75rem) and (min-width: 40.01rem) { .lei { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) !important; } .lei__next { grid-column: 1 / -1; } }
+
+/* Jornal 21: abertura do telejornal (âncora, telão com a foto da reportagem, manchete e texto) */
+.jn { width: min(760px, calc(100vw - 20px)); padding: 0; overflow: hidden; border: 1px solid rgba(250,204,21,.35); background: linear-gradient(180deg, #0b1020, #05070d); }
+.jn__top { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: linear-gradient(90deg, #b91c1c, #7f1d1d 60%, #111827); color: #fff; font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; }
+.jn__logo { font: 800 1.05rem/1 var(--font-display); letter-spacing: .04em; } .jn__logo b { color: #facc15; margin-left: 2px; }
+.jn__ed { padding: 2px 8px; border-radius: 999px; background: rgba(0,0,0,.35); } .jn__live { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; } .jn__date { margin-left: auto; opacity: .8; text-transform: none; letter-spacing: 0; }
+.jn__stage { position: relative; display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 14px; padding: 16px 16px 0; align-items: end;
+  background: radial-gradient(120% 80% at 20% 0, rgba(59,130,246,.25), transparent 60%), repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0 2px, transparent 2px 40px); }
+.jn__anchor { width: 150px; height: 190px; overflow: hidden; display: grid; align-items: end; }
+.jn__anchor svg { width: 150px; height: auto; }
+.jn__anchor.is-talk { animation: jnTalk .5s ease-out; } @keyframes jnTalk { from { transform: translateY(6px); opacity: .6; } to { transform: none; opacity: 1; } }
+.jn__screen { position: relative; margin: 0 0 12px; border-radius: 12px; overflow: hidden; aspect-ratio: 16 / 8; border: 3px solid #1f2937; box-shadow: 0 18px 40px -18px rgba(0,0,0,.8); }
+.jn__screen img { width: 100%; height: 100%; object-fit: cover; animation: jnZoom 9s ease-out both; } @keyframes jnZoom { from { transform: scale(1.08); } to { transform: scale(1); } }
+.jn__screen figcaption { position: absolute; left: 10px; top: 10px; padding: 3px 10px; border-radius: 6px; background: #facc15; color: #111; font-weight: 800; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; }
+.jn__body { padding: 12px 18px 4px; border-top: 3px solid #facc15; background: rgba(255,255,255,.03); }
+.jn__body h2 { margin: 0 0 6px; font: 800 clamp(1.05rem, 2.6vw, 1.35rem)/1.25 var(--font-display); }
+.jn__body p { margin: 0 0 8px; color: #cbd5e1; line-height: 1.55; font-size: .92rem; } .jn__body small { color: #94a3b8; }
+.jn__nav { display: flex; align-items: center; gap: 10px; padding: 10px 16px 14px; flex-wrap: wrap; }
+.jn__dots { display: flex; gap: 5px; flex: 1; } .jn__dots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.2); } .jn__dots i.is-on { background: #facc15; }
+.jn__acts { display: flex; gap: 6px; flex-wrap: wrap; }
+@media (max-width: 40rem) { .jn__stage { grid-template-columns: 90px minmax(0, 1fr); } .jn__anchor { width: 90px; height: 120px; } .jn__anchor svg { width: 90px; } .jn__date { display: none; } }
+.jn__body h2 { text-transform: none; max-width: none; } .jn__body p { max-width: none; }

@@ -7,7 +7,7 @@ export const HOUSES = {
   convencional: { label: 'galpão convencional', cap: 15000, price: 420000, mort: 0.025, conv: 1.75, heat: true, energy: 0.4, img: 'granja-aviario' },
   climatizado: { label: 'galpão climatizado (dark house)', cap: 30000, price: 1100000, mort: 0.015, conv: 1.62, heat: false, energy: 0.55, img: 'granja-frangos' },
 };
-export const PRICES = { pintinho: 4.2, frango: 6.2, racao: 1.9 };       // R$ por pintinho, R$ por kg vivo, R$ por kg de ração
+export const PRICES = { pintinho: 4, frango: 5.9, racao: 1.75 };   // frango vivo ~R$ 5,90/kg (resfriado a R$ 8,29 no atacado, Cepea out/2026, com 72% de carcaça); ração com milho a R$ 64 a saca
 export const WEIGHT = [0.045, 1.3, 2.8, 3.5, 3.8];                       // peso médio (kg) por mês de idade
 export const VACCINE = 0.25;                                              // R$ por pintinho
 export const FEE = 0.01;                                                  // taxa do frigorífico

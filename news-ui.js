@@ -73,7 +73,7 @@ function mount() {
         <div class="tvx__crawl" aria-hidden="true"><span class="tvx__crawlin" id="tvx-crawl"></span></div>
       </div>
       <div class="tvx__bar"><i class="tv__dot" aria-hidden="true"></i><b>TV 21</b><span>plantão</span>
-        <button type="button" class="tvx__btn" data-tv-open>notícias</button><button type="button" class="tvx__btn" data-tv-mode="min" aria-label="minimizar a TV" title="minimizar">–</button></div>
+        <button type="button" class="tvx__btn" data-jornal title="assistir ao Jornal 21">jornal</button><button type="button" class="tvx__btn" data-tv-open>notícias</button><button type="button" class="tvx__btn" data-tv-mode="min" aria-label="minimizar a TV" title="minimizar">–</button></div>
     </div>
     <button type="button" class="tvx__mini" data-tv-mode="fixo" aria-label="abrir a TV 21" title="TV 21: deixar fixa na lateral"><span class="tvx__miniscreen"><i class="tv__dot"></i></span><b>TV 21</b><span id="tvx-minikick"></span></button>
   </aside>`);
@@ -120,3 +120,69 @@ document.addEventListener('click', e => {
   if (e.target.closest('[data-tv-open], #tvx-screen')) openNews();
 });
 mount(); draw();
+
+// ---------- Jornal 21: abertura em clima de telejornal quando o jogo abre (uma vez por edição) ----------
+// O âncora abre, apresenta cada reportagem da edição especial (foto, chamada, manchete e texto) e encerra.
+const J_KEY = '21world.jornal';
+let jEds = [], jI = 0, jAnchor = '';
+const jSpeak = t => { try { if (!window.speechSynthesis) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'pt-BR'; u.rate = 1.05; speechSynthesis.speak(u); } catch {} };
+const jStop = () => { try { speechSynthesis.cancel(); } catch {} };
+function jMount() {
+  if ($('#dlg-jornal')) return;
+  document.body.insertAdjacentHTML('beforeend', `<dialog class="dlg jn" id="dlg-jornal" aria-labelledby="jn-title">
+    <div class="jn__top"><span class="jn__logo">JORNAL<b>21</b></span><span class="jn__ed">edição especial</span><span class="jn__live"><i class="tv__dot" aria-hidden="true"></i>AO VIVO</span><span class="jn__date" id="jn-date"></span></div>
+    <div class="jn__stage"><div class="jn__anchor" id="jn-anchor" aria-hidden="true"></div><figure class="jn__screen"><img id="jn-img" alt=""><figcaption id="jn-kick"></figcaption></figure></div>
+    <div class="jn__body"><h2 id="jn-title"></h2><p id="jn-lead"></p><small id="jn-by"></small></div>
+    <div class="jn__nav"><div class="jn__dots" id="jn-dots"></div>
+      <div class="jn__acts"><button type="button" class="btn btn--glass btn--sm" data-jn="ouvir" title="ouvir a notícia">🔊 ouvir</button><button type="button" class="btn btn--glass btn--sm" data-jn="sair">pular o jornal</button><button type="button" class="btn btn--gold" data-jn="prox" id="jn-next">próxima notícia ▶</button></div></div>
+  </dialog>`);
+  $('#dlg-jornal').addEventListener('close', jStop);
+}
+function jSlide() {
+  const n = jEds.length, intro = jI === 0, outro = jI === n + 1, e = jEds[jI - 1];
+  const who = intro || outro ? jAnchor : N.ANCHORS[(N.ANCHORS.indexOf(jAnchor) + jI) % N.ANCHORS.length];
+  $('#jn-anchor').innerHTML = avatarSVG(LOOKS[who] || {}, { label: who });
+  const an = $('#jn-anchor'); an.classList.remove('is-talk'); void an.offsetWidth; an.classList.add('is-talk');
+  const tops = jEds.slice(0, 3).map(x => x.title.split(':')[0].toLowerCase()).join('; ');
+  if (intro) {
+    $('#jn-img').src = 'assets/photo-vegas.webp'; $('#jn-kick').textContent = 'boa noite';
+    $('#jn-title').textContent = `Boa noite. Eu sou ${who}, e este é o Jornal 21.`;
+    $('#jn-lead').textContent = `Numa edição especial, as mudanças que mexem com o bolso de todo mundo no 21 World: ${tops}. São ${n} reportagens. Fique com a gente.`;
+    $('#jn-by').textContent = 'Redação TV 21';
+  } else if (outro) {
+    $('#jn-img').src = 'assets/photo-vegas.webp'; $('#jn-kick').textContent = 'até a próxima';
+    $('#jn-title').textContent = 'Essas foram as notícias desta edição.';
+    $('#jn-lead').textContent = 'Todas as reportagens continuam no ar na TV 21, na aba da Resenha, e no destaque da página inicial. Obrigado pela audiência, boa noite e bons negócios.';
+    $('#jn-by').textContent = `${who}, Jornal 21`;
+  } else {
+    $('#jn-img').src = e.img; $('#jn-kick').textContent = N.KINDS[e.kind] || 'notícia';
+    $('#jn-title').textContent = e.title; $('#jn-lead').textContent = e.lead;
+    $('#jn-by').textContent = `Reportagem: ${who}, Redação TV 21 · ${jI} de ${n}`;
+  }
+  $('#jn-dots').innerHTML = Array.from({ length: n + 2 }, (_, k) => `<i class="${k === jI ? 'is-on' : ''}"></i>`).join('');
+  $('#jn-next').textContent = outro ? 'voltar ao jogo' : intro ? 'começar ▶' : 'próxima notícia ▶';
+  $('#jn-date').textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  jStop();
+}
+export function jornal(force = false) {
+  jEds = N.editorial(); if (!jEds.length) return false;
+  let seen = ''; try { seen = localStorage.getItem(J_KEY) || ''; } catch {}
+  if (!force && seen === N.EDITION) return false;
+  try { localStorage.setItem(J_KEY, N.EDITION); } catch {}
+  jMount(); jI = 0; jAnchor = N.ANCHORS[Math.floor(Date.now() / 864e5) % N.ANCHORS.length];
+  jSlide(); const d = $('#dlg-jornal'); if (!d.open) d.showModal();
+  return true;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-jn]'); if (b) {
+    const a = b.dataset.jn, d = $('#dlg-jornal');
+    if (a === 'sair') return d.close();
+    if (a === 'ouvir') return jSpeak(`${$('#jn-title').textContent} ${$('#jn-lead').textContent}`);
+    if (a === 'prox') { if (jI >= jEds.length + 1) return d.close(); jI++; return jSlide(); }
+  }
+  if (e.target.closest('[data-jornal]')) jornal(true);
+});
+// abre sozinho quando o jogo já carregou e não há outra janela aberta (tenta por até 2 minutos)
+let jTry = 0;
+const jAuto = () => { if (document.querySelector('dialog[open]') || !G.S) { if (++jTry < 24) setTimeout(jAuto, 5000); return; } jornal(); };
+setTimeout(jAuto, 6000);

@@ -55,7 +55,15 @@ export const EDITORIAL = [
     'Chapéus, botas e relógios continuam dando vantagem, mas agora de 1% a 3%, o tamanho de um bom contrato com o comprador. Antes, um chapéu chegava a dobrar o lucro de uma granja. No cassino, a coleção Fortuna dá no máximo 2% e nenhuma combinação supera a vantagem da casa. O trator barateia o plantio em 10%.'),
   ed(12, 'alerta', 'assets/photo-slots.webp', 'Receita Federal aperta o cerco a quem enriquece rápido demais',
     'Quem tiver o patrimônio subindo mais de R$ 10 milhões e 25% em 10 minutos recebe um aviso da Receita. Se insistir, a conta é congelada para análise: 10 minutos na primeira vez, 15 na segunda e mais a cada nova ocorrência, até o administrador liberar.'),
+  ed(13, 'economia', 'assets/farm-colheita.webp', 'Frango vivo a R$ 5,90 o quilo: granja segue no aperto, mas no azul',
+    'Sem cotação oficial do frango vivo nesta semana, a redação refez a conta a partir do atacado: o frango resfriado sai a R$ 8,29 o quilo na Grande São Paulo, segundo o Cepea, e cerca de 72% do peso vira carcaça. Com o abatedouro ficando com a margem dele, o produtor recebe perto de R$ 5,90 pelo quilo vivo. O pintinho de um dia sai a R$ 4 e a ração, puxada pelo milho a R$ 64 a saca, a R$ 1,75 o quilo. O lote de 45 dias continua dando lucro, mas apertado, como na vida real.'),
+  ed(14, 'negocio', 'assets/photo-blackjack.webp', 'Sinuca destravada: bola na mão não prende mais a partida e as bolas agora giram na mesa',
+    'Os frequentadores do salão reclamavam: depois de uma falta, a branca voltava para a mesa e a partida travava. O problema foi resolvido. Quem está com a bola na mão coloca a branca onde quiser e já pode tacar. De quebra, as bolas ganharam efeito: o número e a faixa giram na direção em que a bola rola.'),
+  ed(15, 'alerta', 'assets/photo-chips.webp', 'Mutirão de reparos: inventário volta ao lugar e o Feirão para de inflar os números',
+    'A equipe técnica do 21 World fez um mutirão. O inventário, que aparecia desarrumado no computador por causa de um conflito com a tela de investimentos, voltou ao normal. O número ao lado de cada categoria do Feirão agora conta só o que está de fato anunciado, e não mais o que você guarda em casa. Os valores dos cards de resumo pararam de quebrar no meio, e as fichas do pomar, do canavial e do leilão ganharam espaço para o texto respirar.'),
 ];
+// edição do Jornal 21: muda a cada edição nova (a abertura aparece uma vez por edição para cada jogador)
+export const EDITION = 'jornal-v153';
 export const editorial = (now = Date.now()) => EDITORIAL.filter(e => now >= e.at - 864e5 && now - e.at < ED_DAYS * 864e5);
 // manchete pronta (texto puro; a tela escapa antes de mostrar)
 export function headline(n) {
