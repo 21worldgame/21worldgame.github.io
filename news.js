@@ -87,9 +87,11 @@ export const EDITORIAL = [
     'Nos primeiros dois dias do mundo novo, os jogadores do mundo crescem seis vezes mais devagar e param de perseguir quem lidera o ranking. É a chance de quem começou agora chegar ao topo. Depois da largada, a concorrência volta ao ritmo normal.'),
   ed(28, 'economia', 'assets/photo-chips.webp', 'Feirão vazio no recomeço: ninguém tem o que vender',
     'Com todo mundo começando com R$ 10 mil, o Feirão 21 amanheceu quase vazio: só umas cartas avulsas. Os jogadores do mundo só anunciam e só fazem propostas pelo que cabe no bolso deles, então os carros, as máquinas, os animais e as terras vão aparecendo conforme eles enriquecem. Quem tiver o que vender agora encontra o mercado sem concorrência.'),
+  ed(29, 'alerta', 'assets/farm-soja.webp', 'Zeramento geral: todo mundo recomeça sem nada, com R$ 10 mil',
+    'Terras, gado, carros, empresas, cartas, animais, fichas e investimentos foram apagados de todos os jogadores. Cada um recomeça com R$ 10 mil na carteira, o mesmo valor de quem chega agora, e o ranking começa vazio. Ficam só o personagem e o selo 🌱 pioneiro de quem jogou no começo do 21 World.'),
 ];
 // edição do Jornal 21: o jornal abre com as reportagens que o jogador ainda não viu (guarda a hora da última vista)
-export const EDITION = 'jornal-v160';
+export const EDITION = 'jornal-v161';
 export const editorial = (now = Date.now()) => EDITORIAL.filter(e => now >= e.at - 864e5 && now - e.at < ED_DAYS * 864e5);
 // manchete pronta (texto puro; a tela escapa antes de mostrar)
 export function headline(n) {

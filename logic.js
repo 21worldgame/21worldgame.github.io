@@ -212,7 +212,7 @@ export function breakChips(n) {
 
 export function newState(rng = Math.random) {
   const s = {
-    v: 1, month: 1, money: 10000, chips: 0, nextId: 1, m10k: 1,
+    v: 1, month: 1, money: 10000, chips: 0, nextId: 1, m10k: 1, z161: 1,
     lands: [], herd: [], stock: { soja: 0, milho: 0, cafe: 0 },
     prices: { soja: 150, milho: 64, cafe: 1600, arroba: 335, bezerro: 3500 },
     loans: [], lent: [], offers: [], borrowers: [], log: [], cars: [],
