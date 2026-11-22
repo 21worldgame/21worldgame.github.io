@@ -117,7 +117,27 @@ async function loadOverview() {
   const { data: top } = await sb.from('public_profiles').select('user_id, name, level, worth').order('worth', { ascending: false }).limit(10);
   $('#ad-top').innerHTML = (top || []).map((p, i) => `<tr data-user="${p.user_id}"><td>${i + 1}</td><td>${esc(p.name)}</td><td class="num">${p.level}</td><td class="num">${brl(p.worth)}</td></tr>`).join('')
     || '<tr><td colspan="4" class="muted">Ninguém no ranking ainda.</td></tr>';
+  loadReceita();
 }
+async function loadReceita() {
+  const { data: cases } = await sb.from('receita_casos').select('user_id, at, gain, worth, minutes').order('at', { ascending: false }).limit(30);
+  const ids = [...new Set((cases || []).map(c => c.user_id))];
+  const [{ data: names }, { data: bans }] = ids.length ? await Promise.all([sb.from('public_profiles').select('user_id, name').in('user_id', ids), sb.from('bans').select('user_id, until, reason').in('user_id', ids)]) : [{}, {}];
+  const nm = Object.fromEntries((names || []).map(n => [n.user_id, n.name])), preso = Object.fromEntries((bans || []).filter(b => /^Receita Federal/.test(b.reason || '') && new Date(b.until) > new Date()).map(b => [b.user_id, b.until]));
+  const seen = new Set();
+  $('#ad-receita').innerHTML = (cases || []).map(c => {
+    const now = !seen.has(c.user_id) && preso[c.user_id]; seen.add(c.user_id);   // só a linha mais nova de cada um mostra o botão
+    return `<tr data-user="${c.user_id}"><td>${when(c.at)}</td><td><strong>${esc(nm[c.user_id] || '(sem nome)')}</strong></td><td class="num">${brl(c.gain)}</td><td class="num">${brl(c.worth)}</td><td class="num">${c.minutes} min</td>
+      <td>${now ? `<span class="tag tag--red">preso até ${new Date(now).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span> <button class="btn btn--gold btn--sm" data-solta="${c.user_id}">soltar</button>` : '<span class="tag tag--green">solto</span>'}</td></tr>`;
+  }).join('') || '<tr><td colspan="6" class="muted">Nenhum caso ainda.</td></tr>';
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-solta]'); if (!b) return;
+  e.stopPropagation(); b.disabled = true;
+  const { error } = await sb.from('bans').delete().eq('user_id', b.dataset.solta);
+  if (error) return fail(error, 'soltar');
+  await log('receita_solta', b.dataset.solta); toast('Liberado. O jogo dele volta em até 10 s.'); loadReceita();
+}, true);
 
 // ---------- jogadores ----------
 async function loadUsers(q = $('#ad-q').value.trim()) {

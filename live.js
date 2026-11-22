@@ -5,6 +5,7 @@ import { G, $, esc, brl, int, say, save, note, badge, levelUp, blankState, profi
 import * as P from './progress.js';
 import * as Auth from './auth.js';
 import * as W from './world.js';
+import * as L from './logic.js';
 
 export const CFG = { xp_mult: 1, daily_mult: 1, job_mult: 1, prize_mult: 1, maintenance: false, maintenance_msg: '', event: '' };
 const num = (v, d) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Math.min(10, Number(v)) : d);
@@ -30,19 +31,36 @@ export async function start() {
   await loadConfig(sb);
   worldReady = true;
   await loadAnnouncements(sb);
+  let banned = false;
   if (Auth.account()) {
     try { const { data } = await sb.rpc('is_admin'); isAdmin = data === true; } catch {}
-    if (await checkBan(sb)) return 'banned';
-    await applyGrants(sb);
+    banned = await checkBan(sb);   // pausado/suspenso: o timer segue rodando para saber quando soltar
+    if (!banned) await applyGrants(sb);
   }
   maintenance();
   realtime(sb);
   clearInterval(timer);
   timer = setInterval(async () => {
     await loadConfig(sb); await loadAnnouncements(sb); maintenance();
-    if (Auth.account()) { if (await checkBan(sb)) return; await applyGrants(sb); }
+    if (Auth.account()) { if (await checkBan(sb)) return; await applyGrants(sb); if (!isAdmin) await receita(sb); }
   }, 10000);
-  return 'ok';
+  return banned ? 'banned' : 'ok';
+}
+
+// Receita Federal: 1ª vez que o patrimônio dispara é só o aviso; se disparar de novo em até 24 h, pausa a conta (receita.sql)
+const amostras = [];
+async function receita(sb) {
+  const s = G.S, gain = L.receitaFlag(amostras, Date.now(), L.netWorth(s));
+  if (!gain) return;
+  amostras.length = 0;   // a próxima medição começa do zero
+  if (!s.receitaAt || Date.now() - s.receitaAt > 864e5) {
+    s.receitaAt = Date.now(); save();
+    $('#rf-gain').textContent = brl(gain);
+    const d = $('#dlg-receita'); if (d && !d.open) d.showModal();
+    return;
+  }
+  try { await sb.rpc('receita_pausa', { p_gain: Math.round(gain), p_worth: Math.round(L.netWorth(s)) }); } catch {}
+  await checkBan(sb);
 }
 export const admin = () => isAdmin;
 // tempo real: dinheiro do administrador, eventos e avisos chegam na hora (a consulta a cada 20 s fica de reserva)
@@ -110,12 +128,15 @@ function maintenance() {
   } else if (d.open) d.close();
 }
 
+document.getElementById('dlg-ban')?.addEventListener('cancel', e => e.preventDefault());   // Esc não fecha: suspenso/pausado fica travado
 async function checkBan(sb) {
   const { data, error } = await sb.from('bans').select('reason, until').eq('user_id', Auth.account().id).maybeSingle();
-  if (error || !data) return false;
-  if (data.until && new Date(data.until) <= new Date()) return false;
+  const over = !error && (!data || (data.until && new Date(data.until) <= new Date()));
+  if (over && $('#dlg-ban').open) location.reload();   // tempo acabou ou o admin soltou: volta a jogar
+  if (error || over) return false;
+  $('#ban-title').textContent = /^Receita Federal/.test(data.reason || '') ? 'Receita Federal: conta em análise' : 'conta suspensa';
   G.afterSave = null;                                                  // suspenso: nada mais vai para a nuvem
-  $('#ban-msg').textContent = `${data.reason ? `Motivo: ${data.reason}. ` : ''}${data.until ? `Até ${new Date(data.until).toLocaleString('pt-BR')}.` : 'Sem data para terminar.'}`;
+  $('#ban-msg').textContent = `${data.reason ? `Motivo: ${data.reason.replace(/\.$/, '')}. ` : ''}${data.until ? `Até ${new Date(data.until).toLocaleString('pt-BR')}.` : 'Sem data para terminar.'}`;
   const d = $('#dlg-ban'); if (!d.open) d.showModal();
   return true;
 }

@@ -558,6 +558,14 @@ console.log('loja ok');
   assert.ok(FT.setSlot(f, 'att9', ata.id));
 }
 console.log('escalação ok');
+{ // Receita Federal: sobe 10 mi devagar não pega; 15 mi em 5 min pega; amostra velha (> 10 min) sai da conta; rico precisa subir 25%
+  const a = []; let t = 0;
+  for (let i = 0; i < 20; i++) assert.equal(L.receitaFlag(a, t += 60000, 1e6 + i * 0.4e6), 0);   // +8 mi em 20 min
+  const b = []; assert.equal(L.receitaFlag(b, 0, 1e6), 0); assert.ok(L.receitaFlag(b, 300000, 16e6) > 0);
+  const c = []; L.receitaFlag(c, 0, 1e6); assert.equal(L.receitaFlag(c, 700000, 20e6), 0);
+  const d = []; L.receitaFlag(d, 0, 300e6); assert.equal(L.receitaFlag(d, 60000, 360e6), 0); assert.ok(L.receitaFlag(d, 120000, 380e6) > 0);
+  console.log('receita federal ok');
+}
 // jogadores do mundo: nicks únicos, ranking alcançável e movimento ao longo do dia
 import * as NP from './npcs.js';
 {

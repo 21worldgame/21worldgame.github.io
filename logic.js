@@ -423,3 +423,13 @@ export function eliteBills(s, spent, earned = 0, living = spent) {
   if (extra > 0) { s.money -= extra; out.push({ txt: `contas mais caras para quem está no topo (+${Math.round((e.bills - 1) * 100)}%)`, val: -extra }); }
   return out;
 }
+
+// Receita Federal: patrimônio que sobe rápido demais numa janela de 10 min reais. samples = [[hora, patrimônio], ...]
+// ponytail: limites fixos no aparelho; calibrar aqui se pegar jogador honesto (ou levar para a config do painel)
+export const RECEITA = { win: 600000, min: 10e6, pct: 0.25 };
+export function receitaFlag(samples, now, worth) {
+  while (samples.length && now - samples[0][0] > RECEITA.win) samples.shift();
+  samples.push([now, worth]);
+  const base = samples[0][1], gain = worth - base;
+  return gain > Math.max(RECEITA.min, Math.abs(base) * RECEITA.pct) ? gain : 0;
+}
