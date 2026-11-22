@@ -164,11 +164,12 @@ export function renderRanking() {
   const list = RV.merge({ cloud, me: { ...meP, pid: 'me' }, peers, rivalRows: RV.rivals(month, Math.max(Number(meP.worth) || 0, ...cloud.map(r => r.worth || 0), ...peers.map(p => p.worth || 0)), Number(meP.worth) || 0), limit: 10 });
   $('#ranking-title').textContent = 'ranking global ao vivo';
   const now = new Map(list.map((x, i) => [x.name, i]));
+  if (!list.length) { el.innerHTML = '<li class="empty glass">Ranking vazio: o mundo recomeçou e ninguém passou de R$ 10 mil ainda. Passe dos R$ 10 mil e seja o primeiro.</li>'; lastRank = new Map(); return; }
   el.innerHTML = list.map((x, i) => {
     const was = lastRank.get(x.name), mv = was === undefined ? '' : was > i ? '<i class="rk__mv is-up" title="subiu">▲</i>' : was < i ? '<i class="rk__mv is-down" title="caiu">▼</i>' : '';
     return `<li><button class="rk${x.pid === 'me' ? ' is-me' : ''}${i < 3 ? ` rkrow is-top${i + 1}` : ''}" ${x.pid ? `data-profile="${x.pid}"` : 'disabled'}>
     <span class="rk__pos">${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span><span class="rk__av">${avatarSVG(x.look || {}, { label: x.name })}</span>
-    <span class="rk__name">${esc(x.name)}${x.pid === 'me' ? ' <small>você</small>' : ''}${mv}<small>nível ${x.level}, ${esc(x.rank || '')}</small></span>
+    <span class="rk__name">${esc(x.name)}${x.pid === 'me' ? ' <small>você</small>' : ''}${mv}<small>nível ${x.level}${x.rank ? `, ${esc(x.rank)}` : ''}</small></span>
     <span class="rk__worth">${new Intl.NumberFormat('pt-BR', { notation: 'compact', style: 'currency', currency: 'BRL' }).format(x.worth)}</span></button></li>`;
   }).join('');
   lastRank = now;

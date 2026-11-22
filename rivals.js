@@ -42,7 +42,7 @@ export function merge({ cloud = [], me, peers = [], rivalRows = [], limit = 10 }
   rivalRows.filter(r => r.worth >= SHOW_MIN).forEach(r => put(r, 'npc'));   // bot só aparece depois de sair do começo
   cloud.filter(r => !idle(r)).forEach(r => put(r, 'cloud'));
   peers.filter(r => !idle(r)).forEach(r => put(r, 'peer'));
-  if (me) put(me, 'me');
+  if (me && !idle(me)) put(me, 'me');   // quem ainda está nos R$ 10 mil do começo não ganha posição (antes aparecia um "você" sozinho em 1º)
   return [...rows.values()].sort((a, b) => b.worth - a.worth).slice(0, limit);
 }
 

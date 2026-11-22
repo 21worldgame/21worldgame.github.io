@@ -66,6 +66,7 @@ export function render() {
       <span class="rkrow__name">${esc(r.name)}${r.pid === 'me' ? ' <small>você</small>' : ''}${mv}<small>nível ${r.level} · ${esc(r.rank || '')}</small></span>
       <span class="rkrow__val">${C1.fmt(C1.val(r))}</span></button></li>`;
   }).join('');
+  if (!me && !C1.min) $('#rk-me').innerHTML = '<div class="rk-me__txt"><b>Você ainda não está no ranking</b><span class="small">Quem está nos R$ 10 mil do começo não ganha posição. Passe disso para entrar.</span></div>';
   if (!me && C1.min) { const w = profileOf().worth; $('#rk-me').innerHTML = `<div class="rk-me__txt"><b>💎 Clube dos 100 milhões</b><span class="small">Só entra quem passa de ${money(C1.min)} de patrimônio. Faltam <b class="good">${money(Math.max(0, C1.min - w))}</b> para você.</span></div>`; }
   if (!pageRows.length) $('#rk-list').innerHTML = `<li class="muted rk-empty">${query ? 'Nenhum jogador com esse nome.' : C1.min ? 'Ninguém chegou aos R$ 100 milhões ainda. Seja o primeiro.' : C1.has ? 'Ninguém pontuou aqui ainda: o mundo acabou de recomeçar. Seja o primeiro.' : 'Ninguém online agora.'}</li>`;
   last = now;
