@@ -62,13 +62,15 @@ export class Truco {
     this.emit(); this.schedule();
   }
   botName(i) { return this.botNames?.[i] || botsFor('am-tr')[i]; }
-  fill() { this.seats = this.seats.map((s, i) => (s.kind === 'human' ? s : { kind: 'bot', name: this.botName(i) })); }
+  fill() { this.seats = this.seats.map((s, i) => (s.kind === 'human' || s.kind === 'bot' ? s : this.botNames?.[i] ? { kind: 'bot', name: this.botNames[i] } : s)); }   // a casa só entra se alguém da casa estiver sentado
   seatOf(pid) { return this.seats.findIndex(s => s.kind === 'human' && s.pid === pid); }
 
   // ---------- partida ----------
   start() {
     if (this.phase !== 'wait' && this.phase !== 'gameEnd') return 'a partida já está rolando.';
-    this.fill(); this.score = [0, 0]; this.dealer = Math.floor(this.rng() * 4); this.games++;
+    this.fill();
+    if (this.seats.some(s => s.kind === 'empty')) { this.msg = 'Mesa livre: faltam jogadores. O truco só começa com 4 pessoas.'; this.emit(); return this.msg; }
+    this.score = [0, 0]; this.dealer = Math.floor(this.rng() * 4); this.games++;
     this.deal(); return null;
   }
   deal() {

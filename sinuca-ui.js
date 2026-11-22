@@ -7,12 +7,13 @@ import { openTableRoom } from './net.js';
 import { NPC_LOOKS, avatarSVG } from './avatar.js';
 import { G, $, esc, int, say, save, note, award, profileOf, confetti } from './store.js';
 import * as sfx from './sfx.js';
-import { botFor } from './botpool.js';
+import { sitting } from './botpool.js';
+const oneBot = id => sitting(id, Date.now(), 1)[0] || null;   // mesa livre: a casa só senta de vez em quando
 
 export const HOUSE = [
-  { id: 'sn-bar', name: 'Bilhar do Bar', stake: 50, bot: botFor('sn-bar'), skill: 0.55 },
+  { id: 'sn-bar', name: 'Bilhar do Bar', stake: 50, get bot() { return oneBot('sn-bar'); }, skill: 0.55 },
   { id: 'sn-clube', name: 'Sinuca Clube', stake: 300, bot: null, skill: 0.7 },
-  { id: 'sn-pro', name: 'Mesa Profissional', stake: 1500, bot: botFor('sn-pro'), skill: 0.82 },
+  { id: 'sn-pro', name: 'Mesa Profissional', stake: 1500, get bot() { return oneBot('sn-pro'); }, skill: 0.82 },
   { id: 'sn-magnata', name: 'Mesa do Magnata', stake: 6000, bot: null, skill: 0.9 },
 ];
 export const PAY = 1.9;
@@ -61,7 +62,8 @@ function placeCue(h, seat, x, y) { const err = h.game.place(seat, x, y); if (!er
 // ---------- abrir mesa ----------
 function show(on) { $('#sn-lobby').hidden = on; $('#sn-room').hidden = !on; if (on) requestAnimationFrame(loop); }
 export async function sitHouse(id) {
-  const def = HOUSE.find(t => t.id === id); if (!def) return;
+  const d0 = HOUSE.find(t => t.id === id); if (!d0) return;
+  const def = { ...d0, bot: d0.bot };   // congela quem está sentado agora
   if ((G.S.chips || 0) < def.stake) return say(`Essa mesa pede ${int(def.stake)} fichas de entrada. Compre no caixa (aba vinte e um).`, true);
   if (!def.bot) { await host({ name: def.name, stake: def.stake, pub: true }); return; }   // mesa vazia: você espera um adversário de verdade
   if (await host({ name: def.name, stake: def.stake, pub: true, house: def })) return;

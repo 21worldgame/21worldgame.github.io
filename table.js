@@ -2,13 +2,14 @@
 // Ele embaralha o sapato, dá as cartas, joga pelo dealer e acerta cada mão. Os outros recebem o estado (view) e mandam ações.
 import * as BJ from './bj.js';
 
-import { botsFor } from './botpool.js';
+import { botsFor, sitting } from './botpool.js';
 export const BOTS = botsFor('am-21').map(name => ({ name }));
 export const SEATS = 6; const TURN_MS = 20000;
 
 export class Table {
-  constructor({ id, name, minBet = 50, onChange = () => {}, speed = 1, rng = Math.random, bots = null }) {
-    Object.assign(this, { id, name, minBet, onChange, speed, rng, botNames: bots });
+  constructor({ id, name, minBet = 50, onChange = () => {}, speed = 1, rng = Math.random, bots = null, pool = 'am-21' }) {
+    Object.assign(this, { id, name, minBet, onChange, speed, rng, botNames: bots, pool });
+    this.here = new Set();   // quem da casa está sentado nesta rodada (quase sempre ninguém: a mesa fica livre)
     this.round = 0; this.phase = 'bet'; this.turn = -1; this.hand = 0; this.deadline = 0; this.closed = false; this.shuffling = false;
     this.shoe = BJ.newShoe(rng);
     this.dealer = [];
@@ -16,6 +17,7 @@ export class Table {
     this.pending = [];
   }
 
+  here_(name) { return this.phase === 'bet' ? sitting(this.pool).includes(name) : this.here.has(name); }
   bot(i) { const b = this.botNames ? { name: this.botNames[i % this.botNames.length] } : BOTS[i % BOTS.length]; return { kind: 'bot', name: b.name, bet: 0, hands: [], pay: 0 }; }
   wait(ms) { return new Promise(r => setTimeout(r, ms * this.speed)); }
   emit() { if (!this.closed) this.onChange(this.view()); }
@@ -30,7 +32,7 @@ export class Table {
       id: this.id, name: this.name, minBet: this.minBet, round: this.round, phase: this.phase, turn: this.turn, hand: this.hand,
       deadline: this.deadline, shuffling: this.shuffling, shoeLeft: this.shoe.cards.length, shoeSize: this.shoe.size,
       dealer: this.dealer.map((c, i) => (hide && i === 1 ? { hidden: true } : c)),
-      seats: this.seats.map(s => ({ kind: s.kind, pid: s.pid, name: s.name, look: s.look, profile: s.profile, bet: s.bet, pay: s.pay, out: s.out, done: s.done,
+      seats: this.seats.map(s => ({ kind: s.kind, absent: s.kind === 'bot' && !this.here_(s.name), pid: s.pid, name: s.name, look: s.look, profile: s.profile, bet: s.bet, pay: s.pay, out: s.out, done: s.done,
         hands: s.hands.map(h => ({ cards: h.cards, bet: h.bet, done: h.done, doubled: h.doubled, split: h.split, result: h.result, pay: h.pay })) })),
     };
   }
@@ -96,7 +98,7 @@ export class Table {
 
   async play() {
     if (this.phase !== 'bet' || this.closed) return;
-    this.round++; this.deadline = 0;
+    this.round++; this.deadline = 0; this.here = new Set(sitting(this.pool));
     if (BJ.needsShuffle(this.shoe)) {
       this.shuffling = true; this.phase = 'deal'; this.emit();
       await this.wait(1600);
@@ -104,7 +106,7 @@ export class Table {
     }
     this.phase = 'deal'; this.dealer = [];
     for (const s of this.seats) {
-      if (s.kind === 'bot') s.bet = this.minBet * (1 + Math.floor(this.rng() * 4));
+      if (s.kind === 'bot') s.bet = this.here.has(s.name) ? this.minBet * (1 + Math.floor(this.rng() * 4)) : 0;
       s.out = !s.bet; s.pay = 0; s.done = false;
       s.hands = s.out ? [] : [{ cards: [], bet: s.bet }];
     }

@@ -7,7 +7,7 @@ import { G, $, esc, int, ms, sleep, say, save, award, profileOf, confetti } from
 import * as sfx from './sfx.js';
 import * as Auth from './auth.js';
 import * as Live from './live.js';
-import { botsFor } from './botpool.js';
+import { botsFor, sitting } from './botpool.js';
 import * as W from './world.js';
 import { luck } from './perks.js';
 import * as RV from './rivals.js';
@@ -109,7 +109,7 @@ const summary = v => ({ id: v.id, lock: !!cur?.pass, name: v.name, minBet: v.min
 const TIERS = ['bronze', 'prata', 'ouro', 'esmeralda', 'vip', 'diamante', 'high', 'magnata'];
 const lookOf = s => (s.kind === 'human' ? s.look : NPC.byNick(s.name)?.look || NPC_LOOKS.Dorival);
 function tableCard(t, kind, host) {
-  const seats = t.seats || (t.bots || botsFor('am-21')).map(name => ({ kind: 'bot', name }));
+  const seats = (t.seats || sitting(t.id || 'am-21').map(name => ({ kind: 'bot', name }))).filter(s => !s.absent);
   const humans = seats.filter(s => s.kind === 'human').length, tier = kind === 'online' ? 'online' : TIERS[SOLO.indexOf(t)] || 'bronze';
   const pot = Math.round(t.minBet * (6 + ((Live.now() / 60000 + t.minBet) % 9)));   // fichas em jogo agora, mexe com o tempo
   return `<article class="tcard3 tcard3--${tier}">
@@ -117,7 +117,7 @@ function tableCard(t, kind, host) {
     <div class="tcard3__table"><div class="tcard3__felt"><b>${lockTag(t)}${esc(t.name)}</b><small>${int(pot)} fichas na mesa</small></div>
       ${seats.slice(0, 5).map((s, i) => `<span class="tcard3__seat tcard3__seat--b${i}${s.kind === 'human' ? ' is-human' : ''}" title="${esc(s.name)}"><span class="tcard3__av">${avatarSVG(lookOf(s) || {}, { label: s.name })}</span><em>${esc(s.name)}</em></span>`).join('')}
       <span class="tcard3__seat tcard3__seat--you"><span class="tcard3__av tcard3__av--free">+</span><em>seu lugar</em></span></div>
-    <div class="tcard3__foot"><span class="muted small">${host ? `anfitrião: ${esc(host)}` : `${seats.length} lugares · 1 livre para você`}</span>
+    <div class="tcard3__foot"><span class="muted small">${host ? `anfitrião: ${esc(host)}` : `${seats.length ? `${seats.length} da casa sentados · mesa quase livre` : 'mesa livre para você'}`}</span>
       ${kind === 'online' ? `<button class="btn btn--glass btn--sm" data-c21="watch" data-id="${esc(t.id)}">assistir</button>` : ''}<button class="btn ${kind === 'online' || SOLO.indexOf(t) < 2 ? 'btn--gold' : 'btn--glass'}" data-act="sit" data-kind="${kind}" data-id="${esc(t.id)}">jogar</button></div></article>`;
 }
 // faixa do salão: online, pote do dia e prêmios recentes dos jogadores
@@ -209,7 +209,7 @@ export async function hostOnline({ name, minBet, pub, house, pass = '' }) {
   const pw = String(pass || '').trim();
   cur = { id: tid, host: true, pub, pass: pw, name, conn, house: house?.id || null };
   const { state, act, room } = conn;
-  cur.table = new Table({ id: tid, name, minBet, bots: house?.bots || null, onChange: v => { state.send(v); applyView(v); announce(); } });
+  cur.table = new Table({ id: tid, name, minBet, bots: house?.bots || null, pool: house?.id || 'am-21', onChange: v => { state.send(v); applyView(v); announce(); } });
   act.onMessage = (m, { peerId }) => {
     if (m.t === 'join') { if (!passOk(pw, m)) return state.send({ badpass: true }, { target: peerId }); cur.table.join(peerId, m.info); }
     if (m.t === 'bet') cur.table.bet(peerId, m.amount);
@@ -405,11 +405,12 @@ function applyView(v) {
 
   v.seats.forEach((s, i) => {
     const seat = $(`#seat-${i}`);
-    const sig = `${s.kind}|${s.pid}|${s.name}|${JSON.stringify(s.look || '')}`;
+    const sig = `${s.kind}|${s.pid}|${s.name}|${s.absent ? 'livre' : ''}|${JSON.stringify(s.look || '')}`;
     if (seat.dataset.sig !== sig) {
       seat.dataset.sig = sig;
-      seat.querySelector('.plate').innerHTML = `${esc(s.name)}${i === me && s.name !== 'você' ? ' <small>você</small>' : ''}`;
-      seat.querySelector('.seat__av').innerHTML = avatarSVG((i === me ? profileOf().look : lookOf(s)) || {}, { label: s.name });
+      seat.querySelector('.plate').innerHTML = s.absent ? '<small>lugar livre</small>' : `${esc(s.name)}${i === me && s.name !== 'você' ? ' <small>você</small>' : ''}`;
+      seat.querySelector('.seat__av').innerHTML = s.absent ? '' : avatarSVG((i === me ? profileOf().look : lookOf(s)) || {}, { label: s.name });
+      seat.classList.toggle('seat--free', !!s.absent);
       seat.querySelector('.seat__who').dataset.profile = s.kind === 'human' ? (i === me ? 'me' : s.pid) : '';
       seat.classList.toggle('seat--you', i === me);
       seat.classList.toggle('seat--human', s.kind === 'human' && i !== me);
@@ -559,7 +560,7 @@ function status(v, me) {
 }
 
 function whoList(v, me) {
-  $('#who-list').innerHTML = v.seats.map((s, i) => `<li><button class="who" ${s.kind === 'human' ? `data-profile="${i === me ? 'me' : s.pid}"` : NPC.byNick(s.name) ? `data-profile="npc:${NPC.byNick(s.name).id}"` : 'disabled'}>
+  $('#who-list').innerHTML = v.seats.map((s, i) => s.absent ? '' : `<li><button class="who" ${s.kind === 'human' ? `data-profile="${i === me ? 'me' : s.pid}"` : NPC.byNick(s.name) ? `data-profile="npc:${NPC.byNick(s.name).id}"` : 'disabled'}>
     <span class="who__av">${avatarSVG(s.kind === 'bot' ? NPC.byNick(s.name)?.look || NPC_LOOKS.Dorival : s.look, { label: s.name })}</span>
     <span>${esc(s.name)}${i === me && s.name !== 'você' ? ' (você)' : ''}</span><small>${s.kind === 'bot' ? `nível ${NPC.byNick(s.name) ? NPC.levelFor(NPC.worthAt(NPC.byNick(s.name), G.S.month)) : 1}` : `nível ${s.profile?.level ?? 1}`}</small></button></li>`).join('');
 }

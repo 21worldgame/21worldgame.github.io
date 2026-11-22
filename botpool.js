@@ -17,3 +17,14 @@ let nextSub = 0; const SUB = {};
 const swap = nick => (isAway(nick) ? (SUB[nick] ??= POOL.sub[nextSub++ % POOL.sub.length]) : nick);
 export const botsFor = id => (POOL[id] || []).map(swap);
 export const botFor = id => (POOL[id] ? swap(POOL[id][0]) : undefined);
+
+// v167: a mesa fica LIVRE para os jogadores. Os jogadores do mundo só sentam de vez em quando (cada mesa tem 4% de chance por janela de 6 min),
+// para parecer gente de verdade e não bot de enfeite. Igual para todos os aparelhos (sorteio pelo relógio).
+export const SIT_P = 0.04, SIT_WIN = 6 * 60000;
+const h01 = s => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return ((h >>> 0) % 100000) / 100000; };
+export function sitting(id, now = Date.now(), max = 2) {
+  const pool = botsFor(id), w = Math.floor(now / SIT_WIN);
+  if (!pool.length || h01(`${id}|${w}`) >= SIT_P) return [];
+  const k = 1 + Math.floor(h01(`${id}#${w}`) * Math.min(max, pool.length)), at = Math.floor(h01(`${id}@${w}`) * pool.length);
+  return Array.from({ length: k }, (_, i) => pool[(at + i) % pool.length]);
+}

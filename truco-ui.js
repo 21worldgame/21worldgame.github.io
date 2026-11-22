@@ -7,7 +7,7 @@ import { openTableRoom } from './net.js';
 import { NPC_LOOKS, avatarSVG } from './avatar.js';
 import { G, $, esc, int, say, save, note, award, profileOf, confetti } from './store.js';
 import * as sfx from './sfx.js';
-import { botsFor } from './botpool.js';
+import { botsFor, sitting } from './botpool.js';
 
 export const HOUSE = [
   { id: 'tr-boteco', name: 'Truco do Boteco', stake: 50, bots: botsFor('tr-boteco') },
@@ -29,7 +29,7 @@ export function renderLobby() {
   const el = $('#tr-tables'); if (!el || $('#sub-truco').hidden) return;
   const online = C.peerList().flatMap(([pid, p]) => (p.games || []).filter(g => g.kind === 'truco').map(g => ({ ...g, host: p.profile?.name })));
   const card = (t, kind) => {
-    const seats = t.seats || [{ name: 'seu lugar', free: true }, { name: t.bots[0] }, { name: t.bots[1] }, { name: t.bots[2] }];
+    const sit = sitting(t.id, Date.now(), 3), seats = t.seats || [{ name: 'seu lugar', free: true }, ...[0, 1, 2].map(k => sit[k] ? { name: sit[k] } : { name: 'livre', free: true })];
     return `<article class="tcard3 tcard3--${kind === 'online' ? 'online' : ['bronze', 'prata', 'ouro', 'magnata'][HOUSE.indexOf(t)] || 'vip'}">
       <div class="tcard3__top"><span class="tcard3__live"><i></i>${kind === 'online' ? `online · ${esc(t.host || '')}` : 'truco paulista'}</span><span class="tcard3__stake">entrada ${int(t.stake)}</span></div>
       <div class="tcard3__table"><div class="tcard3__felt tr-felt-mini"><b>${C.lockTag(t)}${esc(t.name)}</b><small>prêmio ${int(t.stake * PAY)} por jogador</small></div>
@@ -51,7 +51,7 @@ export async function sitHouse(id) {
   if (await host({ name: def.name, stake: def.stake, pub: true, house: def })) return;
   leave(true);
   const e = new TR.Truco({ id: def.id, name: def.name, stake: def.stake, onChange: x => draw(x.view(0)) });
-  e.botNames = [null, def.bots[0], def.bots[1], def.bots[2]];
+  const sit = sitting(def.id, Date.now(), 3); e.botNames = [null, ...sit];
   cur = { id: def.id, local: true, engine: e };
   e.join('me', me(), 0); show(true); e.start();
 }
@@ -64,7 +64,7 @@ export async function host({ name, stake, pub, house, pass = '' }) {
   const watchers = new Set();
   const e = new TR.Truco({ id, name: name || 'truco dos amigos', stake, onChange: x => { for (const [i, s] of x.seats.entries()) if (s.kind === 'human' && s.pid !== self) conn.state.send(x.view(i), { target: s.pid });
     if (watchers.size) { const v = x.view(-1); for (const w of watchers) if (x.seatOf(w) < 0) conn.state.send(v, { target: w }); } draw(x.view(x.seatOf(self))); C.announce(); } });
-  if (house) e.botNames = [null, ...house.bots];
+  if (house) e.botNames = [null, ...sitting(house.id, Date.now(), 3)];
   const pw = String(pass || '').trim();
   cur = { id, host: true, pub, pass: pw, engine: e, conn, watchers, house: house?.id || null };
   conn.act.onMessage = (m, { peerId }) => {

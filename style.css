@@ -175,6 +175,8 @@ main { padding-block: var(--space-lg) var(--space-3xl); }
   box-shadow: inset 0 0.12cqw 0 oklch(100% 0 0 / 0.12), 0 0.3cqw 0.5cqw oklch(0% 0 0 / 0.6), 0 0 0 0.12cqw oklch(60% 0.08 80 / 0.5); text-transform: uppercase; }
 .plate small { color: var(--color-muted); font-weight: 600; text-transform: lowercase; }
 .seat--you .plate { box-shadow: inset 0 0.12cqw 0 oklch(100% 0 0 / 0.12), 0 0 0 0.18cqw var(--hud-accent), 0 0 1.6cqw var(--glow-gold); }
+.seat--free { opacity: .55; }
+.seat--free .seat__av { background: transparent; box-shadow: 0 0 0 0.3cqw rgba(148, 163, 184, .35); }
 .seat--human .plate { box-shadow: inset 0 0.12cqw 0 oklch(100% 0 0 / 0.12), 0 0 0 0.16cqw var(--violet); }
 .seat.is-turn .plate { color: var(--money); box-shadow: 0 0 0 0.18cqw var(--money), 0 0 2cqw var(--glow-green); }
 .seat.is-winner .plate { animation: winner 1.2s var(--ease-out) 3; }

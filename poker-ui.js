@@ -8,7 +8,7 @@ import { openTableRoom } from './net.js';
 import { NPC_LOOKS, avatarSVG } from './avatar.js';
 import { G, $, esc, int, say, save, note, profileOf, confetti } from './store.js';
 import * as sfx from './sfx.js';
-import { botsFor } from './botpool.js';
+import { botsFor, sitting } from './botpool.js';
 
 export const HOUSE = [
   { id: 'pk-calcada', name: 'Pôquer da Calçada', bb: 5, skill: 0.5, bots: botsFor('pk-calcada') },
@@ -58,7 +58,7 @@ export function renderLobby() {
   const el = $('#pk-tables'); if (!el || $('#sub-poker').hidden) return;
   const online = C.peerList().flatMap(([, p]) => (p.games || []).filter(g => g.kind === 'poker').map(g => ({ ...g, host: p.profile?.name })));
   const tcard = (t, kind) => {
-    const seats = t.seats || t.bots.map(name => ({ kind: 'bot', name }));
+    const seats = t.seats || sitting(t.id, Date.now(), 3).map(name => ({ kind: 'bot', name }));   // mesa livre: a casa só senta de vez em quando
     return `<article class="tcard3 tcard3--${kind === 'online' ? 'online' : TIER[HOUSE.indexOf(t)]}">
       <div class="tcard3__top"><span class="tcard3__live"><i></i>${kind === 'online' ? `online · ${esc(t.host || '')}` : 'texas hold\'em'}</span><span class="tcard3__stake">blinds ${int(t.bb / 2)}/${int(t.bb)}</span></div>
       <div class="tcard3__table"><div class="tcard3__felt pk-felt-mini"><b>${C.lockTag(t)}${esc(t.name)}</b><small>compra ${int(t.bb * 100)} fichas</small></div>
@@ -80,9 +80,10 @@ export async function sitHouse(id) {
   const def = HOUSE.find(t => t.id === id); if (!def || !enough(def.bb)) return;
   if (await host({ name: def.name, bb: def.bb, pub: true, house: def })) return;
   leave(true);
-  const e = new PK.Poker({ id: def.id, name: def.name, bb: def.bb, skill: def.skill, botNames: def.bots, onChange: x => draw(x.view(x.seatOf('me'))) });
+  const sit = sitting(def.id, Date.now(), 3);
+  const e = new PK.Poker({ id: def.id, name: def.name, bb: def.bb, skill: def.skill, botNames: sit, onChange: x => draw(x.view(x.seatOf('me'))) });
   cur = { id: def.id, local: true, engine: e }; show(true);
-  e.join('me', me(), 0); e.fillBots(5);
+  e.join('me', me(), 0); if (sit.length) e.fillBots(sit.length); else say('Mesa livre: ainda não tem ninguém jogando. Espere alguém sentar ou chame amigos.');
 }
 export async function host({ name, bb, pub, house, pass = '' }) {
   if (!enough(bb)) return;

@@ -1,7 +1,7 @@
 // Roleta europeia (um zero): roda animada, bola e mesa de apostas.
 import * as GM from './games.js';
 import * as C from './casino.js';
-import { botsFor } from './botpool.js';
+import { sitting } from './botpool.js';
 import { avatarSVG, NPC_LOOKS } from './avatar.js';
 import * as NPC from './npcs.js';
 import { G, $, int, say, save, award, note, confetti, ms, RM } from './store.js';
@@ -114,7 +114,7 @@ function landFx(n) {
 
 // na mesa: você, os jogadores de verdade na roleta agora e os jogadores da casa (apostas mudam a cada giro)
 let botBets = [];
-const rollBots = () => { botBets = botsFor('rl').slice(0, 5 + Math.floor(Math.random() * 4)).map(name => ({ name, bet: [25, 50, 100, 250, 500, 1000][Math.floor(Math.random() * 6)] })); };
+const rollBots = () => { botBets = sitting('rl', Date.now(), 4).map(name => ({ name, bet: [25, 50, 100, 250, 500, 1000][Math.floor(Math.random() * 6)] })); };
 export function renderWho() {
   const el = document.querySelector('#rl-who'); if (!el) return;
   if (!botBets.length) rollBots();

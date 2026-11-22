@@ -1,12 +1,11 @@
 // Aviator: o multiplicador sobe até o avião "voar". Saque antes disso.
-import { botsFor } from './botpool.js';
+import { sitting } from './botpool.js';
 import * as GM from './games.js';
 import * as C from './casino.js';
 import { G, $, esc, int, say, save, award, note, confetti, RM } from './store.js';
 import * as sfx from './sfx.js';
 import { luck } from './perks.js';
 
-const BOT_NAMES = botsFor('av');
 let st = { phase: 'wait', until: 0, crash: 1, t0: 0, mult: 1 }, mine = null, next = null, bots = [], hist = [], raf = 0, active = false;
 const PLANE = new Path2D('M2 12 L22 6 L30 0 L34 2 L28 10 L44 8 L48 4 L52 6 L48 14 L28 18 L22 26 L18 25 L20 17 L6 16 Z');
 
@@ -19,8 +18,8 @@ function newRound() {
   st = { phase: 'wait', until: performance.now() + 6000, crash: GM.crashPoint(), t0: 0, mult: 1 };
   mine = next ? { ...next, done: false, won: 0 } : null;
   if (next) next = null;
-  const pick = [...BOT_NAMES].sort(() => Math.random() - 0.5);   // cada nome uma vez só na rodada
-  bots = Array.from({ length: Math.min(BOT_NAMES.length, 6 + Math.floor(Math.random() * 7)) }, (_, i) => ({
+  const pick = sitting('av', Date.now(), 4);   // rodada quase sempre só dos jogadores de verdade
+  bots = Array.from({ length: pick.length }, (_, i) => ({
     name: pick[i], bet: [10, 20, 50, 100, 200, 500][Math.floor(Math.random() * 6)],
     target: Math.max(1.1, Math.round((1 / (1 - Math.random() * 0.93)) * 100) / 100), out: 0,
   }));

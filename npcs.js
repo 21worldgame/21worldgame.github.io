@@ -173,8 +173,8 @@ const CURVE = [58, 46, 38, 33, 30, 31, 36, 42, 48, 52, 55, 58, 62, 60, 57, 58, 6
 const smooth = t => { const i = Math.floor(t), f = t - i, u = f * f * (3 - 2 * f); return hash(i) * (1 - u) + hash(i + 1) * u; };
 export function onlineCount(now = Date.now()) {
   const h = ((now / 3600000 - 3) % 24 + 24) % 24, i = Math.floor(h), f = h - i;
-  const base = CURVE[i] * (1 - f) + CURVE[(i + 1) % 24] * f;
-  return Math.round(base + (smooth(now / 420000) - 0.5) * 10);          // pequenas entradas e saídas a cada poucos minutos
+  const base = CURVE[i] * (1 - f) + CURVE[(i + 1) % 24] * f;   // curva do dia (30 a 102) comprimida para 20 a 32 jogadores: mundo novo, pouca gente
+  return Math.max(20, Math.min(32, Math.round(20 + (base - 30) / 72 * 11 + (smooth(now / 420000) - 0.5) * 2)));   // pequenas entradas e saídas a cada poucos minutos
 }
 // quem está online agora (rodízio a cada 20 min; sempre os mesmos para todos os aparelhos)
 export function onlineSet(now = Date.now()) {
@@ -199,6 +199,6 @@ export function turnOf(slot, nicks, gap) {
   if (!nicks.length) return null;
   // refaz em ordem as janelas anteriores (cada uma evitando as suas anteriores), igual em todo aparelho
   const chain = [];
-  if (gap) for (let k = TURN_AVOID * 2; k >= 1; k--) chain.push(rot(slot - k, nicksAt((slot - k) * gap), new Set(chain.slice(-TURN_AVOID))));
+  if (gap) for (let k = TURN_AVOID * 8; k >= 1; k--) chain.push(rot(slot - k, nicksAt((slot - k) * gap), new Set(chain.slice(-TURN_AVOID))));
   return rot(slot, nicks, new Set(chain.slice(-TURN_AVOID)));
 }

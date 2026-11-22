@@ -427,6 +427,14 @@ import { CAR_BUYBACK } from './logic.js';
   assert.equal(FE.econIndex([]), 1); assert.ok(FE.econIndex([5e7, 5e7, 5e7]) > 1 && FE.econIndex([1000]) < 1);
 }
 console.log('feira ok');
+{
+  const BPx = await import('./botpool.js');
+  let busy = 0, n = 0; const t0 = Date.UTC(2026, 10, 25);
+  for (let w = 0; w < 400; w++) for (const id of ['bot-dorival', 'pk-boteco', 'tr-praca', 'sn-bar', 'av', 'rl']) { n++; const x = BPx.sitting(id, t0 + w * BPx.SIT_WIN); if (x.length) { busy++; assert.ok(x.every(b => BPx.botsFor(id).includes(b)), 'bot da mesa certa'); } }
+  assert.ok(busy / n > 0.01 && busy / n < 0.09, `bot sentado em ${(busy / n * 100).toFixed(1)}% das janelas: tem que ser raro`);
+  assert.deepEqual(BPx.sitting('av', t0), BPx.sitting('av', t0 + 1000), 'igual para todos na mesma janela');
+}
+console.log('mesas livres ok');
 // cartas: pacote não dá lucro garantido, pagar terra com cartas devolve troco certo, troca só aceita carta válida
 import * as CD from './cards.js';
 {
@@ -623,9 +631,10 @@ import * as NP from './npcs.js';
   assert.ok(w1[0] < 1.2e6, 'topo alto demais');
   assert.ok(w1.filter(w => w < 100000).length >= 10, 'novato precisa passar alguém logo');
   const at = h => NP.onlineCount(Date.UTC(2026, 10, 18, h + 3));          // horário de Brasília
-  assert.ok(at(21) > at(4) * 2 && at(13) >= 45 && at(13) <= 75, `${at(4)} ${at(13)} ${at(21)}`);
+  for (let h = 0; h < 24; h++) assert.ok(at(h) >= 20 && at(h) <= 32, `online fora de 20 a 32 às ${h} h: ${at(h)}`);
+  assert.ok(at(21) > at(4), 'à noite tem mais gente que de madrugada');
   assert.equal(NP.onlineNow(Date.UTC(2026, 10, 18, 15)).length, NP.onlineNow(Date.UTC(2026, 10, 18, 15, 5)).length);
-  const p = NP.profile(NP.NPCS[0], 3); assert.ok(p.name && p.level >= 1 && p.stats.hands > 0 && p.bio);
+  const p = NP.profile(NP.NPCS[0], 3); assert.ok(p.name && p.level >= 1 && p.stats.hands >= 0 && p.bio);
 }
 console.log('jogadores do mundo ok');
 // confinamento: novato sem terra consegue lucrar com gado (menos que quem tem pasto)
@@ -872,7 +881,7 @@ console.log('anúncios dos jogadores ok');
   // partidas inteiras só com a casa jogando: sempre termina em 12, sem travar
   let sd = 5; const rng = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
   for (let g = 0; g < 40; g++) {
-    const t = new TR.Truco({ auto: false, rng }); t.start();
+    const t = new TR.Truco({ auto: false, rng }); t.botNames = ['A', 'B', 'C', 'D']; t.start();   // só joga quem da casa está sentado
     let guard = 0;
     while (t.phase !== 'gameEnd' && guard++ < 5000) {
       const need = t.who();
@@ -881,7 +890,7 @@ console.log('anúncios dos jogadores ok');
     assert.equal(t.phase, 'gameEnd', 'partida travou'); assert.ok(Math.max(...t.score) >= 12);
   }
   // pedir truco, correr: a outra dupla leva o valor de antes
-  const t = new TR.Truco({ auto: false, rng }); t.start();
+  const t = new TR.Truco({ auto: false, rng }); t.botNames = ['A', 'B', 'C', 'D']; t.start();   // só joga quem da casa está sentado
   while (t.phase !== 'play') { t.who().length ? t.botAct(t.who()[0]) : t.flush(); }
   const s0 = t.turn, sc = [...t.score];
   assert.equal(t.act(s0, { t: 'truco' }), null); assert.equal(t.phase, 'raise');
@@ -1113,7 +1122,7 @@ console.log('mina ok');
   const ids = [...fs.readFileSync('./botpool.js', 'utf8').matchAll(/\['([a-z0-9-]+)', \d+\]/g)].map(m => m[1]).filter(id => id !== 'sub');
   const seen = new Set();
   for (const id of ids) for (const n of BP.botsFor(id)) { assert.ok(NP.byNick(n), `${n} não é um NPC`); assert.ok(!seen.has(n), `${n} em duas mesas`); seen.add(n); }
-  for (const f of ['poker-ui.js', 'casino.js', 'truco-ui.js', 'sinuca-ui.js', 'aviator.js']) assert.ok(/botsFor|botFor/.test(fs.readFileSync(`./${f}`, 'utf8')), `${f} não usa botpool`);
+  for (const f of ['poker-ui.js', 'casino.js', 'truco-ui.js', 'sinuca-ui.js', 'aviator.js']) assert.ok(/botsFor|botFor|sitting/.test(fs.readFileSync(`./${f}`, 'utf8')), `${f} não usa botpool`);
   console.log(`bots: ${seen.size} únicos em ${ids.length} mesas, sem repetição ok`);
 }
 
@@ -1296,7 +1305,7 @@ console.log('mina ok');
   const G = 70000, t0 = Math.floor(Date.now() / G), out = [];
   for (let s = t0 - 200; s < t0; s++) { const nk = [...NP.onlineSet(s * G)].map(id => NP.byId(id)?.nick).filter(Boolean); out.push(NP.turnOf(s, nk, G)); }
   out.forEach((n, i) => assert.ok(!out.slice(Math.max(0, i - NP.TURN_AVOID), i).includes(n), `repetiu ${n}`));
-  assert.ok(new Set(out).size > 60); assert.equal(NP.turnOf(5, ['A', 'B'], 0), NP.turnOf(5, ['B', 'A'], 0));
+  assert.ok(new Set(out).size > 40); assert.equal(NP.turnOf(5, ['A', 'B'], 0), NP.turnOf(5, ['B', 'A'], 0));
   console.log('rodízio de quem fala ok'); }
 { const Cq = await import('./chat.js'); const seen = new Set(); for (let s = 1000; s < 1020; s++) seen.add(Cq.lineOf(s)); assert.equal(seen.size, 20, 'frases da Resenha não repetem em 20 falas seguidas'); console.log('frases sem repetir ok'); }
 // preços da granja/suínos voltam ao base: frango derrubado se recupera, ração disparada cai
