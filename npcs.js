@@ -109,6 +109,8 @@ function hourFit(n, t) { const h = ((t / 36e5 - 3) % 24 + 24) % 24, x = Math.abs
 export const propensity = (n, t) => hourFit(n, t) * 0.55 + drive(n, t) * 0.6 + hash(n.i * 97 + Math.floor(t / 1200000)) * 0.3;
 const byPropensity = t => [...NPCS].filter(n => !isAway(n, t)).sort((a, b) => propensity(b, t) - propensity(a, t));
 
+// largada: nos primeiros 288 meses do mundo (2 dias reais) os bots crescem 6x mais devagar e não caçam ninguém (rivals.js)
+export const EARLY = 288;
 export const NPC_LATE = 1.004, NPC_LATE_CAP = 6;
 // o reforço não entra de uma vez: começa no mês 440 do mundo (19/11/2026) e chega ao total em ~1 mês real (4320 meses de 10 min)
 export const NPC_RAMP_START = 440;   // força final e dias da rampa: painel admin (tune.js)
@@ -116,7 +118,7 @@ export const NPC_RAMP_START = 440;   // força final e dias da rampa: painel adm
 export const PERF = { fn: null };
 // fortuna no mês do mundo (pode ser fracionário: anda devagar entre um mês e outro)
 export function worthAt(n, month, t = Date.now()) {
-  const m = Math.min(48, Math.max(0, month - 1));   // arrancada nos primeiros 48 meses (~8 h de jogo)
+  const m = Math.min(48, Math.max(0, month - 1) * 48 / EARLY);   // arrancada esticada pela largada inteira (2 dias reais)
   const late = Math.min(NPC_LATE_CAP, NPC_LATE ** Math.max(0, month - 49)), NPC_RAMP = T.npcRampDays * 144;   // depois seguem crescendo devagar, até 6x
   const wave = 1 + 0.07 * Math.sin(month * 0.7 + n.i * 2.1) + 0.03 * Math.sin(month * 2.3 + n.i);
   const boost = 1 + (T.npcBoost - 1) * Math.min(1, m / 48);   // mundo novo continua alcançável

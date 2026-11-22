@@ -312,10 +312,11 @@ export async function cropsCloud(maxAge = 300000) {
   cropCache = { at: Date.now(), rows: data.map(p => p.cr).filter(c => c && typeof c === 'object') };
   return cropCache.rows;
 }
+const RANK_CUT = '2026-11-22T21:12:00Z';   // v159: só entra no ranking quem já abriu o jogo depois do recomeço com R$ 10 mil
 export async function ranking(maxAge = 60000) {
   if (!sb || !user) return null;
   if (rankCache && Date.now() - rankCache.at < maxAge) return rankCache.rows;
-  const { data, error } = await sb.from('public_profiles').select('user_id, name, level, worth, rank, look').order('worth', { ascending: false }).limit(10);
+  const { data, error } = await sb.from('public_profiles').select('user_id, name, level, worth, rank, look').gte('updated_at', RANK_CUT).order('worth', { ascending: false }).limit(10);
   if (error) return rankCache?.rows || null;
   rankCache = { at: Date.now(), rows: data };
   return data;

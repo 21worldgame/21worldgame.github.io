@@ -974,7 +974,7 @@ console.log('suínos, negócios e galpões ok');
 }
 {
   const RV2 = await import('./rivals.js');
-  const lead = 5e9, C = RV2.HUNT_CYCLE, at = u => Math.floor(Date.UTC(2026, 11, 1) / C) * C + u * C, top = u => Math.max(...RV2.rivals(60, lead, 0, at(u)).map(r => r.worth));
+  const lead = 5e9, C = RV2.HUNT_CYCLE, at = u => Math.floor(Date.UTC(2026, 11, 1) / C) * C + u * C, top = u => Math.max(...RV2.rivals(300, lead, 0, at(u)).map(r => r.worth));
   assert.ok(top(0.2) < lead && top(0.2) > lead * 0.85, 'fase do jogador: ele fica na frente ' + top(0.2) / lead);
   assert.ok(top(0.75) > lead && top(0.75) < lead * 1.11, 'fase dos bots: retomam o 1º ' + top(0.75) / lead);
   let jump = 0; for (let k = 0; k < 360; k++) jump = Math.max(jump, Math.abs(RV2.huntLevel(at(k / 360)) - RV2.huntLevel(at((k + 1) / 360))));

@@ -28,7 +28,9 @@ export const yesterday = () => day(new Date(Date.now() - 864e5));
 
 function normalize(s) {
   // save antigo ou incompleto: completa com os campos padrão que faltarem
+  const old10k = !!s && typeof s === 'object' && !s.m10k;   // save de antes da v159: carteira vira R$ 10 mil uma vez e ganha o selo de pioneiro
   s = s && typeof s === 'object' ? Object.assign(L.newState(), s) : L.newState();
+  if (old10k) { s.money = 10000; s.pioneer = true; s.m10k = 1; (s.log ||= []).unshift({ txt: 'Recomeço: a carteira de todo mundo foi zerada e cada um recebeu R$ 10 mil', val: 0 }); }
   for (const k of ['lands', 'herd', 'loans', 'lent', 'offers', 'borrowers', 'log']) if (!Array.isArray(s[k])) s[k] = [];
   s.stock = { soja: 0, milho: 0, cafe: 0, ...(s.stock || {}) };
   s.avatar ??= { ...DEFAULT };
