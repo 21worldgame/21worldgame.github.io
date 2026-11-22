@@ -2,7 +2,7 @@
 import { CARS, CAR_BUYBACK } from './logic.js';
 import { CATALOG } from './avatar.js';
 import { newDeal } from './bots.js';
-import { NPCS } from './npcs.js';
+import { NPCS, worthAt } from './npcs.js';
 const BOT_NAMES = NPCS.slice(8).map(n => n.nick);
 import { GOODS } from './trade.js';
 
@@ -19,8 +19,10 @@ const pick = (a, rng) => a[Math.floor(rng() * a.length)];
 // renova as bancas no começo de cada mês do jogo
 export function refresh(s, idx = 1, rng = Math.random) {
   if (s.feira?.month === s.month) return s.feira;
-  const list = [], models = Object.keys(CARS).filter(m => CARS[m].price <= Math.max(400000, (s.money || 0) * 3));
-  for (let i = 0; i < 3; i++) {
+  // realismo: bot só negocia o que cabe em 40% do patrimônio do mais rico deles (mundo novo = feira quase vazia)
+  const cap = 0.4 * Math.max(...NPCS.slice(8).map(n => worthAt(n, s.month || 1)));
+  const list = [], models = Object.keys(CARS).filter(m => CARS[m].price <= Math.min(cap, Math.max(400000, (s.money || 0) * 3)));
+  for (let i = 0; i < 3 && models.length; i++) {
     const m = pick(models, rng), age = 0.7 + rng() * 0.25, value = Math.round(CARS[m].price * age);
     list.push({ id: `f${s.month}-${i}`, kind: 'car', model: m, label: `${CARS[m].name} seminovo`, value, ask: Math.round(Math.min(CARS[m].price * 0.98, value * idx * (0.95 + rng() * 0.15))), bot: pick(BOT_NAMES, rng) });
   }
@@ -34,7 +36,8 @@ export function refresh(s, idx = 1, rng = Math.random) {
   const mine = [...(s.cars || []).map(c => ({ kind: 'car', id: c.id, label: CARS[c.model]?.name, value: c.value })),
     ...Object.entries(s.stock || {}).filter(([, q]) => q >= 10).map(([g, q]) => ({ kind: 'good', good: g, qty: q, label: `${q} sacas de ${GOODS[g]}`, value: q * (s.prices?.[g] || 0) }))];
   const want = mine.length ? pick(mine, rng) : null;
-  s.feira = { month: s.month, idx, list, want: want && { ...want, bid: Math.round(Math.min(want.value * 0.97, want.value * idx * (0.88 + rng() * 0.1))), bot: pick(BOT_NAMES, rng) } };
+  const bid = want && Math.round(Math.min(want.value * 0.97, want.value * idx * (0.88 + rng() * 0.1)));
+  s.feira = { month: s.month, idx, list: list.filter(i => i.ask <= cap), want: want && bid <= cap ? { ...want, bid, bot: pick(BOT_NAMES, rng) } : null };
   return s.feira;
 }
 

@@ -80,7 +80,7 @@ export function render() {
       ${l.kind === 'card' && l.card ? `<div class="scard__media">${media({ kind: 'card', data: cleanCard(l.card) })}${CD.ownBadge(G.S, cleanCard(l.card))}</div>` : ''}<div class="scard__body"><span class="scard__kind">${esc(kindName[l.kind] || l.kind)}</span><h4>${esc(String(l.label).slice(0, 60))}</h4>
         <p class="small muted">vendido por ${esc(String(l.seller).slice(0, 18))}</p><p class="scard__price">${brl(Number(l.price) || 0)}</p>
         <button class="btn btn--gold btn--sm" data-act="shop-buy" data-id="${esc(l.pid)}|${esc(l.id)}|${Number(l.price) || 0}" ${pending.has(l.id) ? 'disabled' : ''}>${pending.has(l.id) ? 'aguardando...' : 'comprar'}</button></div></article>`).join('') + npcHTML
-    : '<p class="empty glass">Nenhum jogador online está anunciando agora. Os seus anúncios aparecem aqui para os outros jogadores, e se ninguém comprar, um comprador da loja pode levar (pagando no máximo 5% acima do que a loja paga na hora).</p>';
+    : '<p class="empty glass">Ninguém tem o que vender ainda: o mundo acabou de recomeçar e os jogadores do mundo só anunciam o que cabe no bolso deles. Conforme eles enriquecem, o Feirão enche de carros, máquinas, animais e terras. Quem anunciar primeiro vende sem concorrência. Os seus anúncios aparecem aqui para os outros jogadores, e se ninguém comprar, um comprador da loja pode levar (pagando no máximo 5% acima do que a loja paga na hora).</p>';
 }
 
 // carta anunciada por outro jogador: só nomes simples (vão para url() e para a busca da coleção)

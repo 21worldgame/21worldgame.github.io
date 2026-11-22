@@ -124,11 +124,16 @@ export const NPC_WIN = 10 * 60 * 1000;
 export const CATS = { veiculo: 'veículos', maquina: 'máquinas', terra: 'terras', animal: 'cavalos e galgos', gado: 'gado', produto: 'produtos', carta: 'cartas', futebol: 'futebol', granja: 'granja', galpao: 'galpões', empresa: 'empresas', acessorio: 'acessórios' };
 function seeded(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const r100 = v => Math.round(v / 100) * 100;
+export const HOLD = 0.4;   // um bot não põe num item só mais que 40% do patrimônio dele
+const richOnline = (ids, month, t) => ids.map(id => NPCS.byId(id)).filter(Boolean).map(b => ({ nick: b.nick, worth: NPCS.worthAt(b, month, t) }));
 export function npcListings(s, now = Date.now()) {
   const win = Math.floor(now / NPC_WIN), r = seeded(win * 7717 + 3), out = [], month = s.month || 1;
-  const ids = [...NPCS.onlineSet(win * NPC_WIN)].sort(), seller = () => NPCS.byId(ids[Math.floor(r() * ids.length)])?.nick || 'A Boiadeira';
+  const ids = [...NPCS.onlineSet(win * NPC_WIN)].sort(), rich = richOnline(ids, month, win * NPC_WIN);
+  // realismo: só anuncia quem tem cacife (o item vale no máximo 40% do patrimônio do bot). Mundo novo, bots pobres: Feirão quase vazio, e vai enchendo conforme eles crescem
+  const seller = price => { const ok = rich.filter(b => b.worth * HOLD >= price); return ok.length ? ok[Math.floor(r() * ok.length)].nick : null; };
   const cars = Object.entries(CARS).filter(([, c]) => c.type !== 'maquina' && c.price <= 4e6), maqs = Object.entries(CARS).filter(([, c]) => c.type === 'maquina');
-  const add = (cat, label, price, items, extra = {}) => out.push({ id: `n${win}-${out.length}`, cat, label, price: r100(price), items, seller: seller(), ...extra });
+  let n = 0;   // id fixo por posição: o anúncio que sai por falta de cacife não muda o id dos outros
+  const add = (cat, label, price, items, extra = {}) => { const id = `n${win}-${n++}`, who = seller(price); if (who) out.push({ id, cat, label, price: r100(price), items, seller: who, ...extra }); };
   // vitrine cheia, mas sem repetir foto: cada anúncio é um modelo, produto, campeão ou animal diferente
   const mix = arr => { const x = [...arr]; for (let i = x.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [x[i], x[j]] = [x[j], x[i]]; } return x; };
   for (const [m, c] of mix(cars).slice(0, 6)) { const v = r100(c.price * (0.7 + r() * 0.2)); add('veiculo', `${c.name} seminovo`, v * 1.06, [{ kind: 'car', data: { model: m, value: v } }], { img: c.img }); }
@@ -169,7 +174,8 @@ export function npcOffer(s, now = Date.now(), rng = Math.random) {
   const l = ls[Math.floor(rng() * ls.length)], it = find(s, l.key); if (!it || blocked(s, it)) return null;
   const house = housePrice(s, it), f = indebted(s) ? 0.78 + rng() * 0.1 : 0.94 + rng() * 0.1;
   const price = Math.min(l.price - 100, Math.round(house * f / 100) * 100); if (price < house * 0.7 || price <= 0) return null;
-  const ids = [...NPCS.onlineSet(now)], npc = NPCS.byId(ids[Math.floor(rng() * ids.length)])?.nick || 'FeiraMaster';
+  const can = richOnline([...NPCS.onlineSet(now)], s.month || 1, now).filter(b => b.worth * HOLD >= price); if (!can.length) return null;   // ninguém online tem dinheiro para isso
+  const npc = can[Math.floor(rng() * can.length)].nick;
   const o = { id: `o${now.toString(36)}${Math.floor(rng() * 1e4)}`, lid: l.id, npc, price, label: l.label, ask: l.price, at: now, low: indebted(s) };
   s.offersIn.push(o); return o;
 }

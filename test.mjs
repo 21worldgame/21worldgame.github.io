@@ -416,7 +416,7 @@ import { CAR_BUYBACK } from './logic.js';
 {
   let sd = 5; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
   for (let k = 0; k < 40; k++) {
-    const s = { month: k, money: 1e8, cars: [{ id: 1, model: 'onix', value: 90000 }], stock: { soja: 30, milho: 0, cafe: 0 }, prices: { soja: 130, milho: 60, cafe: 1400 }, owned: [], nextId: 9 };
+    const s = { month: 400 + k, money: 1e8, cars: [{ id: 1, model: 'onix', value: 90000 }], stock: { soja: 30, milho: 0, cafe: 0 }, prices: { soja: 130, milho: 60, cafe: 1400 }, owned: [], nextId: 9 };
     const f = FE.refresh(s, 0.85 + r() * 0.4, r);
     for (const it of f.list) { const d = FE.buyDeal(it, r); assert.ok(d.limit >= (it.kind === 'car' ? it.value : it.kind === 'good' ? it.value : 0), 'bot vende abaixo do valor'); }
     if (f.want) { const d = FE.sellDeal(f.want, r); assert.ok(d.limit <= f.want.value); }
@@ -839,8 +839,10 @@ console.log('máquinas ok');
 {
   const SHx = await import('./shop.js'), L2 = await import('./logic.js');
   const s = L2.newState(() => 0.4); s.money = 1e8; s.stable = { animals: [], offers: [], next: 1 }; s.stock.laranja = 0;
-  const now = 1.8e12, ls = SHx.npcListings(s, now);
-  assert.ok(new Set(ls.map(l => l.cat)).size >= 8, 'anúncios de várias categorias');
+  s.month = 1; const now = 1.8e12;
+  assert.ok(SHx.npcListings(s, now).every(l => l.price <= 10000), 'mundo novo: bot pobre não anuncia carro nem terra');
+  s.month = 600; const ls = SHx.npcListings(s, now);
+  assert.ok(new Set(ls.map(l => l.cat)).size >= 6, 'anúncios de várias categorias');
   assert.deepEqual(SHx.npcListings(s, now).map(l => l.label), ls.map(l => l.label), 'iguais para todos na mesma janela');
   for (const l of ls) {
     const before = s.money, r = SHx.buyNpc(s, l.id, now);
