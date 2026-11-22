@@ -6,6 +6,8 @@ import * as C from './casino.js';
 import * as RC from './racing.js';
 import * as sfx from './sfx.js';
 import * as GM from './games.js';
+import * as SO from './sorte-ui.js';
+import { spinWheel, landAt } from './wheel.js';
 import * as AV from './aviator.js';
 import * as FB from './aposta-ui.js';
 import * as TRU from './truco-ui.js';
@@ -176,10 +178,9 @@ async function spinDaily() {
   if (!st) return;
   const btn = $('#dw-btn'); btn.disabled = true;
   const i = GM.spinDaily(), seg = 360 / GM.DAILY_WHEEL.length;
-  const target = dwAngle + 360 * 6 + ((360 - i * seg - (dwAngle % 360)) % 360 + 360) % 360;
+  const target = landAt(dwAngle, i, GM.DAILY_WHEEL.length, 6, Math.random());
   sfx.play('ball', 0.3);
-  await $('#dw-rot').animate([{ transform: `rotate(${dwAngle}deg)` }, { transform: `rotate(${target}deg)` }],
-    { duration: RM.matches ? 0 : 5200, easing: 'cubic-bezier(.12,.7,.18,1)', fill: 'forwards' }).finished;
+  await spinWheel($('#dw-rot'), { from: dwAngle, to: target, ms: 5600, pin: document.querySelector('.dw__pin'), seg, reduced: RM.matches });
   dwAngle = target;
   P.claimDaily(S(), today(), yesterday(), false);   // só registra a sequência; o prêmio vem da roda
   const prize = GM.DAILY_WHEEL[i], mult = streakBonus(S().daily.streak) * Live.CFG.daily_mult * PK.mult(S(), 'daily'), amt = Math.round(prize.amount * mult);
@@ -908,6 +909,7 @@ function render() {
   try { C.announce(); } catch (e) { console.error(e); }
 }
 G.render = () => { render(); G.onRender?.(); };
+G.showCard = cs => showCard(cs);
 G.callout = t => { const el = $('#race-call'); el.textContent = t; el.classList.remove('is-on'); void el.offsetWidth; el.classList.add('is-on'); };
 
 // ---------- ações ----------
@@ -1061,6 +1063,9 @@ const ACTS = {
     Auth.wipe();
   },
   'close-daily'() { $('#dlg-daily').close(); },
+  'sorte-open'() { SO.open(); },
+  'sorte-spin'() { SO.doSpin(); },
+  'sorte-close'() { SO.close(); },
   'map-lot'(id) { flyToLot(id); },
   'show-card'(id) { const el = document.querySelector(`.lcard[data-pin="${id}"]`); el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); el?.classList.add('is-hot'); setTimeout(() => el?.classList.remove('is-hot'), 2000); },
   'rl-spin'() { RL.spin(); },
@@ -1480,7 +1485,7 @@ setTimeout(econReal, 8000); setInterval(econReal, 300000);
 function worldMonths() { G.newsQuiet = true; try { worldMonths0(); } finally { G.newsQuiet = false; } }   // fechamento do mês não vira notícia na TV 21
 function worldMonths0() {
   const w = Live.world(), t = Live.now(), target = W.current(w, t), s = S();
-  GR.ensure(s); PM.ensure(s); AB.ensure(s); CN.ensure(s); SU.ensure(s); NG.ensure(s); CD.setMonth(s.month); CD.ensure(s);
+  SO.ensure(s); GR.ensure(s); PM.ensure(s); AB.ensure(s); CN.ensure(s); SU.ensure(s); NG.ensure(s); CD.setMonth(s.month); CD.ensure(s);
   { const v = FT.migrate(s); if (v) { note('futebol com preços reais: clube antigo devolvido pelo preço que você pagou', v); say(`O futebol agora tem preços reais. Seu clube foi devolvido e você recebeu ${brl(v)} de volta: escolha um clube de novo na aba futebol.`); save(); } }
   if (s.worldSync !== true) { s.month = target; s.worldSync = true; CD.setMonth(s.month); save(); render(); return; }     // primeira vez: entra no mês atual do mundo
   const p = W.plan(s.month, target);
@@ -1540,7 +1545,7 @@ function worldClock() {
   $('#wc-left').textContent = `${W.monthName(m + 1)} em ${W.fmt(W.msLeft(w, t))}`;
   for (const el of document.querySelectorAll('.biz-pay')) { el.querySelector('.biz-pay__t').textContent = W.fmt(W.msLeft(w, t)); el.querySelector('i').style.transform = `scaleX(${W.progress(w, t).toFixed(3)})`; }
 }
-setInterval(() => { if (!Live.worldReady) return; worldClock(); worldMonths(); }, 1000);
+setInterval(() => { if (!Live.worldReady) return; worldClock(); worldMonths(); SO.refresh(S()); }, 1000);
 // clique no relógio do mundo: como funciona o imposto (igual para todos)
 function openTaxes() {
   $('#tx-body').innerHTML = `<p>O imposto é <b>igual para todos</b>: <b>${Math.round(T.incomeTax * 100)}% do lucro do mês</b> (o que entrou menos o que saiu no fechamento), para quem tem patrimônio a partir de <b>${brl(T.incomeMin)}</b>.</p>
@@ -1575,7 +1580,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 169;
+const APP_VERSION = 170;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

@@ -1553,3 +1553,19 @@ import * as CT from './contador.js';
   IV.apply(s, 'previdencia', 1e6, Lq.netWorth(s)); for (let m = 0; m < 10; m++) IV.monthly(s);
   const r = IV.withdraw(s, s.invest[0].id); assert.equal(r.value, 900000, 'previdência: sair antes perde rendimento e 10%');
   console.log('investimentos no banco ok'); }
+
+// ---------- giro da sorte: 1 por ano, 20% de carta, o resto estoura ----------
+{
+  const SO = await import('./sorte.js'), L5 = await import('./logic.js'), CD5 = await import('./cards.js');
+  const s = L5.newState(); s.month = 1;
+  assert.ok(!SO.ready(s), 'no 1º ano não tem giro'); assert.ok(SO.spin(s).err, 'giro sem estar liberado');
+  s.month = 13; assert.ok(SO.ready(s), 'ano novo libera o giro'); assert.equal(SO.monthsLeft(s), 0);
+  const r = SO.spin(s, () => 0.1); assert.ok(r.win && r.card && SO.CARD_SLICES.includes(r.slice), 'rng baixo = carta na fatia dourada');
+  assert.ok(['rara', 'lendaria'].includes(CD5.rarityOf(r.card)), 'carta do giro é no mínimo rara');
+  assert.ok(!SO.ready(s) && SO.spin(s).err, 'só um giro por ano'); assert.equal(SO.monthsLeft(s), 12);
+  s.month = 25; const l = SO.spin(s, () => 0.9); assert.ok(!l.win && !l.card && !SO.CARD_SLICES.includes(l.slice), 'rng alto = estoura, fatia escura');
+  assert.equal((s.cards || []).length, 1, 'estourar não dá carta');
+  let w = 0; const N = 4000; for (let i = 0; i < N; i++) { const t = L5.newState(); t.month = 13; if (SO.spin(t).win) w++; }
+  assert.ok(w / N > 0.17 && w / N < 0.23, `chance de carta ${(w / N * 100).toFixed(1)}%: tem que ser ~20%`);
+  console.log('giro da sorte ok');
+}

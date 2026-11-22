@@ -153,6 +153,9 @@ export const KB = [
     'Cada carta conta uma vez na coleção (repetidas não somam) e cada coleção se completa uma vez só. Completar dá emblema no perfil, sobe no ranking de colecionadores e libera a vantagem para sempre:',
     '• Campeões: +5% de XP · Prosperidade: 2 pontos a menos de mortalidade e de perda por praga · Fortuna: +2% no ganho de fichas no cassino · Pecuária: pintinhos, leitões e bezerros 5% mais baratos · Natal: 50 de prestígio · Festa Junina: +10% na roleta do dia e 30 de prestígio.',
     'Pacotes: simples R$ 6 mil (1 carta), ouro R$ 18 mil (3, 1 rara ou melhor), lendário R$ 35 mil (5, 1 lendária), com estoque pequeno que só volta no dia seguinte (3 simples, 1 ouro, 1 lendário por dia). Carta lendária sai em 1% das cartas comuns: é rara de verdade. A roleta do dia também dá pacote.'] },
+  { t: 'giro da sorte', k: ['giro', 'giro da sorte', 'sorte', 'roleta estoura', 'estourou', 'carta rara', 'ganhei giro'], a: [
+    'Todo ano do mundo (12 meses, mais ou menos 2 horas reais) aparece o botão "giro da sorte" no topo e você ganha 1 giro. A roleta tem 10 fatias: 2 dão uma carta rara (20%) e as outras 8 estouram a roleta, sem nada.',
+    'A carta do giro vem no mínimo rara, com chance de lendária. A carta é um item raro: complete uma coleção inteira para ganhar o emblema, subir no ranking de colecionadores e liberar vantagens para sempre. O giro não acumula: se passar o ano sem girar, ele continua guardado só um.'] },
   { t: 'mina de ouro', k: ['mina', 'ouro', 'mineradora', 'garimpo', 'equipe de garimpo'], a: [
     'A mina é única no jogo inteiro: só um jogador pode ser dono. Custa R$ 120 mi e tem manutenção de R$ 1,1 mi por mês.',
     'Cada equipe custa R$ 95 mil por mês (até 10 equipes) e tem chance de achar ouro (uns R$ 540 mil o kg). Na revenda a mina vale 60%.'] },

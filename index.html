@@ -96,6 +96,7 @@
         <div class="is-chips"><dt>fichas</dt><dd><span class="chip-ico" aria-hidden="true"></span><span id="r-chips">0</span><button type="button" class="chipx-btn" data-act="open-chipx" title="Trocar fichas por dinheiro (ou comprar fichas)" aria-label="trocar fichas">⇄</button></dd></div>
         <div><dt>patrimônio</dt><dd id="r-worth">R$ 100.000</dd></div>
       </dl>
+      <button class="btn btn--gold btn--sm sorte-btn" id="sortebtn" type="button" data-act="sorte-open" hidden><span aria-hidden="true">🎰</span> giro da sorte!</button>
       <button class="rkpill" id="rkpill" type="button" data-tab-go="ranking" aria-label="sua posição no ranking" hidden><span class="rkpill__ico" aria-hidden="true">🏆</span><span class="rkpill__txt"><b id="rkpill-pos">—</b><small id="rkpill-of"></small></span><span class="rkpill__mv" id="rkpill-mv" aria-hidden="true"></span></button>
       <button class="btn btn--glass btn--pass" data-act="open-pass"><span class="pass-ico" aria-hidden="true"></span>passe <b id="pass-tier">0</b>/30<span class="pill" id="pass-badge" hidden>!</span></button>
       <div class="tkmenu"><button class="btn btn--glass btn--sm tk-btn" id="tk-btn" type="button" aria-expanded="false" aria-controls="ticker"><span class="tk-btn__dot" aria-hidden="true"></span>cotações</button>
@@ -958,6 +959,15 @@
     <ul class="mlist mlist--big" id="missions-full"></ul>
     <h3>sequência de dias</h3>
     <div class="streak" id="streak-mini"></div>
+  </dialog>
+
+  <!-- giro da sorte: 1 por ano do mundo, 20% de carta -->
+  <dialog class="dlg dlg--daily dlg--sorte" id="dlg-sorte" aria-labelledby="so-title">
+    <h2 id="so-title">giro da sorte</h2>
+    <p class="muted" id="so-sub"></p>
+    <div class="so"><div class="so__wheel" id="so-wheel"></div><span class="so__pin" id="so-pin" aria-hidden="true"></span><div class="so__fx" id="so-fx" aria-hidden="true"></div></div>
+    <div class="so__info glass" id="so-info"></div>
+    <div class="row so__acts"><button class="btn btn--gold btn--lg" data-act="sorte-spin" id="so-btn">girar a roleta</button><button class="btn btn--glass" data-act="sorte-close">fechar</button></div>
   </dialog>
 
   <!-- bônus diário -->

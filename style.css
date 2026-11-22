@@ -760,7 +760,7 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 /* ---------- roda de prêmios do dia ---------- */
 .dw { position: relative; width: min(100%, 340px); aspect-ratio: 1; margin: var(--space-md) auto; filter: drop-shadow(0 20px 30px var(--shade)); }
 .dw__wheel svg { width: 100%; height: 100%; display: block; }
-#dw-rot { transform-origin: 150px 150px; }
+#dw-rot, #so-rot { transform-origin: 150px 150px; }
 .dw-seg--0 { fill: var(--chip-5); } .dw-seg--1 { fill: var(--chip-100); } .dw-seg--2 { fill: var(--chip-500); } .dw-seg--3 { fill: var(--chip-25); }
 .dw-seg { stroke: var(--gold); stroke-width: 2; }
 .dw-txt { fill: var(--color-ink); font: 700 14px var(--font-display); text-anchor: middle; dominant-baseline: middle; }
@@ -770,7 +770,7 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 @keyframes bulb { 50% { fill: var(--gold); } }
 .dw-hub { fill: var(--gold); stroke: var(--gold-lo); stroke-width: 3; }
 .dw-hubtxt { fill: var(--hud-accent-ink); font: 700 22px var(--font-display); text-anchor: middle; }
-.dw__pin { position: absolute; top: -10px; left: 50%; margin-left: -14px; border: 14px solid transparent; border-top: 28px solid var(--hud-accent-2); filter: drop-shadow(0 3px 3px var(--shade)); }
+.dw__pin { transform-origin: 50% 0; position: absolute; top: -10px; left: 50%; margin-left: -14px; border: 14px solid transparent; border-top: 28px solid var(--hud-accent-2); filter: drop-shadow(0 3px 3px var(--shade)); }
 .dw-win { display: block; font: 700 var(--text-2xl)/1.2 var(--font-display); color: var(--hud-accent-2); }
 .dlg--daily .day strong { color: var(--money); }
 
@@ -3475,3 +3475,41 @@ dialog:not([open]) { display: none !important; }
 .ctx { padding: 12px 14px; border-radius: 14px; display: grid; gap: 6px; align-content: start; }
 .ctx__h { display: flex; justify-content: space-between; gap: 8px; align-items: center; } .ctx p { margin: 0; }
 .ctx--mine { border: 1px solid rgba(250,204,21,.35); }
+
+/* ---------- giro da sorte ---------- */
+.sorte-btn { animation: sorte-pulse 1.4s ease-in-out infinite; box-shadow: 0 0 0 0 oklch(80% 0.17 85 / .7); }
+@keyframes sorte-pulse { 0% { box-shadow: 0 0 0 0 oklch(80% 0.17 85 / .65); transform: scale(1); } 60% { box-shadow: 0 0 0 12px oklch(80% 0.17 85 / 0); transform: scale(1.06); } 100% { box-shadow: 0 0 0 0 oklch(80% 0.17 85 / 0); transform: scale(1); } }
+.dlg--sorte { max-width: min(94vw, 520px); }
+.so { position: relative; width: min(100%, 340px); aspect-ratio: 1; margin: var(--space-md) auto; }
+.so__wheel { width: 100%; height: 100%; filter: drop-shadow(0 20px 30px var(--shade)); transition: filter .4s; will-change: transform; }
+.so__wheel svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.so__pin { transform-origin: 50% 0; position: absolute; top: -10px; left: 50%; margin-left: -14px; z-index: 2; border: 14px solid transparent; border-top: 28px solid var(--hud-accent-2); filter: drop-shadow(0 3px 3px var(--shade)); }
+.so-seg { stroke: var(--gold); stroke-width: 2; }
+.so-seg--a { fill: #3b1d2a; } .so-seg--b { fill: #1f2a44; }
+.so-seg--card { fill: var(--gold); }
+.so-ico { font-size: 26px; text-anchor: middle; dominant-baseline: middle; }
+.so-rim { fill: none; stroke: var(--gold); stroke-width: 8; }
+.so-peg { fill: var(--hi); stroke: var(--gold-lo); stroke-width: 1.5; }
+.so-hub { fill: var(--gold); stroke: var(--gold-lo); stroke-width: 3; }
+.so-hubtxt { font-size: 22px; text-anchor: middle; }
+.so__info { margin: var(--space-sm) 0; padding: var(--space-sm) var(--space-md); text-align: left; font-size: var(--text-sm); line-height: 1.45; }
+.so__info p { margin: 0 0 .5em; }
+.so__acts { justify-content: center; gap: var(--space-sm); }
+.so-lose { display: block; font: 700 var(--text-xl)/1.2 var(--font-display); color: oklch(70% 0.2 25); }
+/* ganhou: halo dourado pulsando */
+.so__wheel.is-win { filter: drop-shadow(0 0 22px var(--gold)) drop-shadow(0 0 48px oklch(85% 0.17 85 / .7)); animation: so-win .6s ease-out 2; }
+@keyframes so-win { 50% { transform: scale(1.07); } }
+/* estoura: treme, explode e some */
+.so__wheel.is-rumble { animation: so-rumble .09s linear infinite; filter: drop-shadow(0 0 18px oklch(65% 0.25 25)) saturate(1.5); }
+@keyframes so-rumble { 0% { transform: translate(-3px, 1px) rotate(-.8deg); } 25% { transform: translate(3px, -2px) rotate(.8deg); } 50% { transform: translate(-2px, -2px) rotate(-.5deg); } 75% { transform: translate(2px, 2px) rotate(.6deg); } 100% { transform: translate(-3px, 1px) rotate(-.8deg); } }
+.so__wheel.is-burst { animation: so-burst .9s cubic-bezier(.1,.7,.3,1) forwards; }
+@keyframes so-burst { 0% { transform: scale(1); opacity: 1; filter: brightness(3); } 18% { transform: scale(1.35); opacity: 1; filter: brightness(2) blur(1px); } 100% { transform: scale(1.9); opacity: 0; filter: blur(10px) brightness(1); } }
+.so__wheel.is-gone { opacity: .18; transform: scale(.9); filter: grayscale(1); transition: all .5s; }
+.so__fx { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.so-flash { position: absolute; inset: -20%; border-radius: 50%; background: radial-gradient(circle, #fff 0%, oklch(90% 0.15 85 / .9) 25%, transparent 65%); animation: so-flash .55s ease-out forwards; }
+@keyframes so-flash { 0% { opacity: 0; transform: scale(.3); } 20% { opacity: 1; } 100% { opacity: 0; transform: scale(1.5); } }
+.so-smoke { position: absolute; left: 50%; top: 50%; width: 60%; aspect-ratio: 1; margin: -30% 0 0 -30%; border-radius: 50%; background: radial-gradient(circle, oklch(45% 0.02 270 / .85), transparent 70%); animation: so-smoke 1s ease-out forwards; }
+@keyframes so-smoke { 0% { opacity: .9; transform: scale(.3); } 100% { opacity: 0; transform: scale(2.4) translateY(-20%); } }
+.so-shard { position: absolute; left: 50%; top: 50%; width: var(--s); height: calc(var(--s) * 1.7); margin: calc(var(--s) * -.85) 0 0 calc(var(--s) * -.5); background: linear-gradient(135deg, var(--gold), #7a1d1d); clip-path: polygon(50% 0, 100% 100%, 0 80%); animation: so-shard .9s cubic-bezier(.15,.8,.35,1) forwards; }
+@keyframes so-shard { 0% { transform: rotate(var(--a)) translateY(0) rotate(0); opacity: 1; } 100% { transform: rotate(var(--a)) translateY(calc(var(--d) * -1.4)) rotate(var(--r)); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .sorte-btn, .so__wheel.is-win, .so__wheel.is-rumble { animation: none; } }

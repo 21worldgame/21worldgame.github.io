@@ -84,3 +84,43 @@ export function engine(on, pitch = 1) {
     if (!on && osc) { osc.stop(); osc = null; }
   } catch {}
 }
+
+// roleta: estalo de cada pino que passa pelo ponteiro (v = 0 a 1, mais forte quando a roda está rápida)
+export function tick(v = 0.6) {
+  if (muted) return;
+  try {
+    ctx ??= new AudioContext(); if (ctx.state === 'suspended') ctx.resume();
+    const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'square'; o.frequency.setValueAtTime(1300 + Math.random() * 500, t); o.frequency.exponentialRampToValueAtTime(700, t + 0.03);
+    g.gain.setValueAtTime(0.07 * v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
+    o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + 0.05);
+  } catch {}
+}
+// a roleta estoura: estrondo grave com chiado
+export function boom() {
+  if (muted) return;
+  try {
+    ctx ??= new AudioContext(); if (ctx.state === 'suspended') ctx.resume();
+    const t = ctx.currentTime, len = Math.floor(ctx.sampleRate * 0.7), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2);
+    const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(), o = ctx.createOscillator(), og = ctx.createGain();
+    n.buffer = buf; f.type = 'lowpass'; f.frequency.setValueAtTime(3200, t); f.frequency.exponentialRampToValueAtTime(180, t + 0.6);
+    g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.65);
+    o.type = 'sine'; o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(28, t + 0.5);
+    og.gain.setValueAtTime(0.6, t); og.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+    n.connect(f).connect(g).connect(ctx.destination); o.connect(og).connect(ctx.destination); n.start(t); o.start(t); o.stop(t + 0.6);
+  } catch {}
+}
+// ganhou a carta: três notas subindo
+export function fanfare() {
+  if (muted) return;
+  try {
+    ctx ??= new AudioContext(); if (ctx.state === 'suspended') ctx.resume();
+    [523, 659, 784, 1047].forEach((hz, i) => {
+      const t = ctx.currentTime + i * 0.11, o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'triangle'; o.frequency.setValueAtTime(hz, t);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + 0.55);
+    });
+  } catch {}
+}
