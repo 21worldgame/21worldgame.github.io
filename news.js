@@ -97,9 +97,11 @@ export const EDITORIAL = [
     'Quem for dono da Serra Dourada agora precisa comprar a frota na loja 21: perfuratriz, escavadeira, pá-carregadeira e caminhões. A produção segue o elo mais fraco da cadeia, da equipe à usina de 8.000 toneladas por mês. Os custos acompanham a média do setor, perto de US$ 1.500 a 1.785 por onça segundo o World Gold Council, com 1,5% de CFEM sobre o ouro. O preço do ouro vem do mercado: onça em dólar vezes o dólar do dia, atualizado de dez em dez minutos.'),
   ed(33, 'alerta', 'assets/photo-chips.webp', 'Perfil do personagem por categorias e vantagens dos acessórios revisadas',
     'A página do personagem agora tem identidade, aparência, acessórios por lugar do corpo e vantagens separadas por fonte, com teto geral em cada efeito. O perfil público também ficou em abas: resumo, patrimônio, cartas e troféus, garagem e conquistas. Para o jogo ficar mais justo, os acessórios foram revisados: cada um vale de 1% a 8%, e o XP, a roleta do dia, os prêmios de prova e o preço de venda dos produtos passaram a ter teto somando todas as fontes. O capacete de mineiro, que se pagava em menos de dois meses, subiu para R$ 900 mil e rende 1% sobre o ouro.'),
+  ed(34, 'alerta', 'assets/farm-soja.webp', 'Inauguração! O 21 World está aberto para todos',
+    'O mundo reabriu. Todo jogador começa com R$ 10 mil e nada mais, no mesmo ponto de largada, e os jogadores do mundo também partem do zero e crescem devagar nos primeiros dias. Quem jogou no começo ganhou o selo de pioneiro no perfil. As cartas são raras de verdade, a cada ano do mundo há um giro da sorte, a mineradora exige frota e usina, as mesas ficam livres para jogadores reais e o ranking começa vazio. Boa sorte, e que ganhe o melhor.'),
 ];
 // edição do Jornal 21: o jornal abre com as reportagens que o jogador ainda não viu (guarda a hora da última vista)
-export const EDITION = 'jornal-v175';
+export const EDITION = 'jornal-v176';
 export const editorial = (now = Date.now()) => EDITORIAL.filter(e => now >= e.at - 864e5 && now - e.at < ED_DAYS * 864e5);
 // manchete pronta (texto puro; a tela escapa antes de mostrar)
 export function headline(n) {

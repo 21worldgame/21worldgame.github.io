@@ -140,7 +140,7 @@ function renderBar() {
 
 // fechado até a reinauguração: abre sozinho quando o administrador publica um aviso com "reinauguração" (painel > avisos)
 const LOCK_AT = '2026-11-22T21:36:00Z';   // só vale aviso publicado depois do fechamento
-let reopened = false;
+let reopened = true;   // INAUGURADO em 22/11/2026: o jogo está aberto para todos (para fechar de novo: false)
 async function checkReopen(sb) {
   if (reopened) return;
   const { data, error } = await sb.from('announcements').select('id').ilike('text', '%reinaugura%').gte('created_at', LOCK_AT).limit(1);
