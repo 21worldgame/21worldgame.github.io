@@ -23,10 +23,10 @@ export function plant(s, land) {
   return null;
 }
 export function uproot(land) { delete land.orchard; }
-export const hasMachine = (s, m) => (s.cars || []).some(c => c.model === m);
+export const hasMachine = (s, m) => (s.cars || []).some(c => c.model === m && !c.broken);
 // cada pulverizador atende 150 ha de pomar e cada plataforma 200 ha: o benefício vale para a parte coberta
 export const COVER = { pulv: 150, plataforma: 200 }, SPRAY_CUT = 0.3, HARVEST_PLUS = 0.1;
-export const machines = (s, m) => (s.cars || []).filter(c => c.model === m).length;
+export const machines = (s, m) => (s.cars || []).filter(c => c.model === m && !c.broken).length;   // quebrada não conta
 export const orchardHa = s => (s.lands || []).reduce((t, l) => t + (l.orchard ? l.ha : 0), 0);
 export const coverage = (s, m) => { const ha = orchardHa(s), n = machines(s, m); return n ? (ha ? Math.min(1, n * COVER[m] / ha) : 1) : 0; };
 export const need = (s, m) => Math.ceil(orchardHa(s) / COVER[m]);

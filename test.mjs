@@ -1529,3 +1529,14 @@ import * as CT from './contador.js';
   }
   assert.ok(checked > 0, 'testou alguma vitória fora');
   console.log('futebol vitória fora ok'); }
+// frota: trator desgasta com o uso, começa a quebrar abaixo de 50% de estado, quebrado não dá a vantagem, e o conselho de troca aparece
+{ const Lq = await import('./logic.js'), FRq = await import('./frota.js');
+  const s = Lq.newState(() => 0.5); s.lands = [{ id: 1, own: true, ha: 100, value: 1e6, region: 'x', crop: { type: 'soja', left: 3 } }];
+  const t = { id: 9, model: 'deere', value: 650000 }; s.cars = [t];
+  assert.equal(FRq.condition(t), 100); assert.equal(FRq.risk(t), 0); assert.ok(FRq.work(s, t).gain > 0, 'trator trabalhando rende');
+  for (let m = 0; m < 40; m++) FRq.monthly(s, () => 1);
+  assert.ok(FRq.condition(t) <= 40 && FRq.risk(t) > 0, 'desgastado começa a quebrar');
+  assert.ok(FRq.keepVsNew(s, t).worth, 'conselho de trocar por 0 km');
+  FRq.monthly(s, () => 0); assert.equal(t.broken, 1); assert.ok(!Lq.hasVehicle(s, 'trator'), 'quebrado não trabalha');
+  FRq.monthly(s, () => 1); assert.equal(t.broken, 0, 'volta da oficina no mês seguinte');
+  console.log('frota (desgaste e quebra) ok'); }
