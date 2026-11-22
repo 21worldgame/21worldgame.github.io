@@ -101,7 +101,8 @@ export const KB = [
     'A concessionária recompra por 92% do valor de hoje. Alguns dão vantagens: o trator, por exemplo, deixa o plantio 10% mais barato. A vantagem de cada um aparece na loja.'] },
   { t: 'acessórios', k: ['acessorio', 'acessorios', 'chapeu', 'relogio', 'corrente', 'oculos', 'estoque de acessorio', 'esgotado', 'personagem'], a: [
     'Cada acessório tem 35 unidades para o jogo inteiro. Esgotou, só comprando de outro jogador no Feirão.',
-    'Muitos dão vantagens (preço de venda, juros menores, etc.). Vender para a loja paga metade do preço e devolve a unidade ao estoque.'] },
+    'Cada acessório dá uma vantagem pequena, de 1% a 8% (XP, roleta do dia, prêmios de prova, preço de venda de um produto, juros do banco). As vantagens somam entre carros, terras, acessórios, coleções de cartas e troféus, mas cada efeito tem um teto geral: XP até +25%, roleta do dia +50%, prêmios de prova +30%, bilheteria +10%, juros do banco −20% e preço de venda dos produtos +8% (ouro +5%).',
+    'Vender para a loja paga metade do preço e devolve a unidade ao estoque.'] },
   // ---------- futebol ----------
   { t: 'futebol: clube', k: ['futebol', 'clube', 'time', 'serie', 'comprar clube', 'fundar'], a: [
     'Você assume um clube de verdade: Série A uns R$ 6 mi, Série B uns R$ 900 mil, Série C uns R$ 120 mil (clube melhor custa mais). Fundar um clube novo custa o mesmo da Série C.',

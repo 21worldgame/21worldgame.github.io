@@ -355,7 +355,9 @@ import * as PK from './perks.js';
   const d3 = FT.dealFor(s.fut, s.fut.market[0].id, r); const c3 = BT.haggle(d3, Math.round(d3.limit * 0.9)); assert.equal(c3.result, 'counter'); assert.ok(c3.price >= d3.limit);
   // vantagens: carro e acessório somam
   const pk = { cars: [{ model: 'onix' }, { model: 'onix' }, { model: 'veyron' }], owned: ['acc:corrente de ouro'] };
-  assert.equal(+PK.mult(pk, 'xp').toFixed(2), 1.19); assert.equal(+PK.mult(pk, 'daily').toFixed(2), 1.6); assert.equal(PK.mult({ owned: ['acc:relógio de luxo'], cars: [{ model: 'g63' }] }, 'loan'), 1 - 0.13);
+  assert.equal(+PK.mult(pk, 'xp').toFixed(2), 1.19); assert.equal(+PK.mult(pk, 'daily').toFixed(2), 1.5); assert.equal(PK.mult({ owned: ['acc:relógio de luxo'], cars: [{ model: 'g63' }] }, 'loan'), 1 - 0.1);
+  assert.ok(Math.abs(PK.bonus({ owned: Object.keys(PK.ACC_PERKS).map(k => 'acc:' + k) }, 'daily') - 0.2) < 1e-9, 'todos os acessórios juntos: roleta do dia +20%'); assert.ok(PK.bonus({ owned: Object.keys(PK.ACC_PERKS).map(k => 'acc:' + k) }, 'xp') <= 0.25, 'teto de XP');
+  assert.equal(PK.bonus({ cars: [{ model: 'veyron' }, { model: 'huracan' }, { model: 'cullinan' }] }, 'daily'), 0.5, 'teto geral da roleta do dia: +50%');
   // mercado
   const p = s.fut.market[0]; const mb = s.money; assert.equal(FT.buy(s, p.id), null); assert.equal(s.money, mb - p.price);
   const sold = FT.sell(s, p.id); assert.ok(sold > 0 && sold < p.price);
@@ -1329,11 +1331,11 @@ console.log('mina ok');
 // arroba derrubada volta para a faixa: boi de 12 meses no boitel volta a dar lucro sobre o bezerro
 { const s = L.newState(() => 0.5); s.prices.arroba = 121; L.tick(s, () => 0.5); assert.ok(s.prices.arroba >= 248, 'arroba ancorada ' + s.prices.arroba);
   assert.ok(L.arrobas(180 + 12 * L.BOITEL_GAIN) * 310 * 0.99 > 2600 + 12 * L.BOITEL_COST, 'gado no boitel dá lucro no preço base'); console.log('arroba ancorada ok'); }
-// granja: o lote guarda o gasto total (lucro real na venda); chapéu de granjeiro paga 8% a mais no frango
+// granja: o lote guarda o gasto total (lucro real na venda); chapéu de granjeiro paga 2% a mais no frango
 { const s = { money: 1e6, prices: {}, nextId: 1 }; GR.ensure(s); GR.buyHouse(s, 'pequeno'); const hid = s.granja.houses[0].id;
   const r0 = GR.house(s, hid, 5000, true); const l = s.granja.lots[0]; assert.equal(l.cost, r0.cost);
   GR.monthly(s, () => 0.5); GR.monthly(s, () => 0.5); assert.ok(l.cost > r0.cost * 2, 'ração entra no gasto do lote');
-  const plain = GR.lotValue(s, l); s.owned = ['acc:chapéu de granjeiro']; assert.ok(Math.abs(GR.lotValue(s, l) - plain * 1.03) <= 1, 'chapéu +3%');
+  const plain = GR.lotValue(s, l); s.owned = ['acc:chapéu de granjeiro']; assert.ok(Math.abs(GR.lotValue(s, l) - plain * 1.02) <= 1, 'chapéu +2%');
   const r = GR.sellLot(s, l.id); assert.equal(r.profit, r.amount - r.cost); console.log('granja lucro do lote ok'); }
 // contador: separa entrada, saída e bens; não diz o que compensa
 import * as CT from './contador.js';
@@ -1374,7 +1376,7 @@ import * as CT from './contador.js';
 // acessórios novos: cada área tem a sua vantagem e todos estão à venda no guarda-roupa
 { const AV = await import('./avatar.js'), PKx = await import('./perks.js');
   for (const k of ['suino', 'grain', 'laranja', 'cana', 'ouro', 'biz']) assert.ok(Object.entries(PKx.ACC_PERKS).some(([id, p]) => p[k] > 0 && AV.CATALOG.acc.opts.some(o => o.id === id && o.price)), 'sem acessório para ' + k);
-  const s = { owned: ['acc:bota de borracha', 'acc:chapéu de palha'] }; assert.equal(PKx.mult(s, 'suino'), 1.03); assert.equal(PKx.mult(s, 'grain'), 1.03);
+  const s = { owned: ['acc:bota de borracha', 'acc:chapéu de palha'] }; assert.equal(PKx.mult(s, 'suino'), 1.02); assert.equal(PKx.mult(s, 'grain'), 1.02);
   assert.ok(AV.avatarSVG({ acc: ['bota de borracha'] }, { full: true }).includes('viewBox="0 0 200 404"')); console.log('acessórios de todas as áreas ok'); }
 // propostas dos bots: aparecem só quando você tem o que negociar; fechar mexe no armazém e no dinheiro certo
 { const BOx = await import('./bot-offers.js'), Lx = await import('./logic.js'); const s = Lx.newState(() => 0.5); s.stock.soja = 500; s.money = 1e4;

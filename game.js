@@ -1,6 +1,6 @@
 import * as L from './logic.js';
 import * as P from './progress.js';
-import { CATALOG, avatarSVG, accsOf, toggleAcc } from './avatar.js';
+import { CATALOG, SLOT, avatarSVG, accsOf, toggleAcc } from './avatar.js';
 import { G, $, esc, brl, int, RM, say, save, note, pay, award, checkAch, confetti, today, yesterday, reset, profileOf, levelUp, ntOff, ntSet, badge, blockKey, isBlocked, setBlocked } from './store.js';
 import * as C from './casino.js';
 import * as RC from './racing.js';
@@ -198,26 +198,66 @@ async function spinDaily() {
 }
 
 // ---------- personagem ----------
+let charTab = 'identidade';
+const SLOT_ORDER = ['cabeça', 'olhos', 'orelha', 'boca', 'pescoço', 'peito', 'pulso', 'mão', 'luvas', 'cintura', 'pés'];
+const SLOT_ICON = { cabeça: '🧢', olhos: '🕶️', orelha: '👂', boca: '😁', pescoço: '📿', peito: '👔', pulso: '⌚', mão: '💍', luvas: '🧤', cintura: '🪢', pés: '👟' };
+const pctTxt = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(Math.round(v * 1000) / 10).toString().replace('.', ',')}%`;
 function renderChar() {
-  const a = S().avatar;
+  const s = S(), a = s.avatar, p = profileOf(s), locked = nameLocked(), top = PK.prestigeTop(s.trophies);
   $('#char-preview').innerHTML = avatarSVG(a, { label: 'seu personagem', full: true });
   $('#char-name-show').textContent = a.name || 'você';
   if (document.activeElement !== $('#char-name')) $('#char-name').value = a.name || '';
-  const locked = nameLocked();
   $('#char-name').disabled = locked;
-  $('#char-name-hint').textContent = locked ? `Nome trocado no mês ${S().nameAt}. Próxima troca no mês ${S().nameAt + 10} do mundo (faltam ${S().nameAt + 10 - S().month}).` : 'Você pode trocar o nome a cada 10 meses do mundo. Ele fica salvo quando você sai do campo.';
-  const b = PK.bonuses(S());
-  $('#char-perks').innerHTML = `<h3>suas vantagens</h3>${Object.keys(b).length ? `<ul>${Object.entries(b).map(([k, v]) => `<li><b class="${v > 0 === (k !== 'loan') ? 'good' : 'bad'}">${v > 0 ? '+' : ''}${Math.round(v * 100)}%</b> ${PK.EFFECTS[k]}</li>`).join('')}</ul>` : '<p class="muted small">Nenhuma ainda. Compre carros na loja ou acessórios aqui.</p>'}`;
-  ACS.refresh(() => { if (currentTab === 'personagem') renderChar(); });
-  const stockTag = o => { const n = ACS.leftOf(o.id); return n == null ? '' : `<small class="${n ? 'muted' : 'bad'}">${n ? `restam ${n} de ${ACS.MAX}` : 'esgotado: só de jogadores no Feirão'}</small>`; };
-  $('#wardrobe').innerHTML = Object.entries(CATALOG).map(([k, g]) => `
-    <fieldset class="opts"><legend>${k === 'acc' ? 'acessórios <small class="muted">use vários, um por lugar (cabeça, olhos, pescoço, pulso...)</small>' : g.label}</legend>
-      ${g.opts.map(o => {
-        const on = k === 'acc' ? (o.id === 'nenhum' ? !accsOf(a).length : accsOf(a).includes(o.id)) : String(a[k]) === String(o.id), locked = o.price && !S().owned.includes(`${k}:${o.id}`);
-        return `<button class="opt${o.swatch ? ' opt--sw' : ''}${on ? ' is-on' : ''}" aria-pressed="${on}" data-act="look" data-k="${k}" data-id="${o.id}"
-          ${o.swatch ? `style="--sw:${o.swatch}" aria-label="${g.label} ${o.id}"` : ''}>${o.swatch ? '' : esc(o.id)}${locked ? `<small>${brl(o.price)}</small>${k === 'acc' ? stockTag(o) : ''}` : ''}${k === 'acc' && PK.ACC_PERKS[o.id] ? `<small class="good">${esc(PK.label(PK.ACC_PERKS[o.id]))}</small>` : ''}</button>`;
-      }).join('')}
-    </fieldset>`).join('');
+  $('#char-name-hint').textContent = locked ? `Nome trocado no mês ${s.nameAt}. Próxima troca no mês ${s.nameAt + 10} do mundo (faltam ${s.nameAt + 10 - s.month}).` : 'Você pode trocar o nome a cada 10 meses do mundo. Ele fica salvo quando você sair do campo.';
+  document.querySelectorAll('[data-char]').forEach(b => { const on = b.dataset.char === charTab; b.classList.toggle('is-on', on); b.setAttribute('aria-selected', String(on)); });
+  document.querySelectorAll('.char-sec').forEach(x => { x.hidden = x.id !== `cs-${charTab}`; });
+  if (charTab === 'identidade') {
+    const rows = G.rankRows?.(500) || [], pos = rows.findIndex(r => r.pid === 'me'), own = s.lands.filter(l => l.own), accN = (s.owned || []).filter(t => t.startsWith('acc:')).length;
+    const tile = (k, v, sub = '') => `<div class="ctile"><small>${k}</small><b>${v}</b>${sub ? `<span>${sub}</span>` : ''}</div>`;
+    $('#char-tiles').innerHTML = [
+      tile('patrimônio', brl(p.worth), esc(top ? top.title : p.rank)),
+      tile('nível', `${s.level} <span class="muted small">${int(s.xp)} / ${int(P.xpNeed(s.level))} XP</span>`, `<span class="bar"><i style="transform:scaleX(${Math.min(1, s.xp / P.xpNeed(s.level)).toFixed(3)})"></i></span>`),
+      tile('ranking', pos >= 0 ? `${pos + 1}º` : '—', pos >= 0 ? `de ${rows.length}` : 'passe de R$ 10 mil'),
+      tile('terras', own.length ? `${own.length}` : '—', own.length ? `${int(own.reduce((t, l) => t + l.ha, 0))} ha` : ''),
+      tile('carros e máquinas', `${(s.cars || []).length}`),
+      tile('cartas', `${(s.cards || []).length}`, `${(p.colls || []).length} ${(p.colls || []).length === 1 ? 'coleção completa' : 'coleções completas'}`),
+      tile('acessórios', `${accN} de ${CATALOG.acc.opts.length - 1}`),
+      tile('conquistas', `${(s.ach || []).length} de ${P.ACHIEVEMENTS.length}`),
+      s.pioneer ? tile('selo', '🌱 pioneiro', 'jogou no começo do 21 World') : '',
+    ].join('');
+  }
+  if (charTab === 'aparencia') {
+    $('#wardrobe').innerHTML = Object.entries(CATALOG).filter(([k]) => k !== 'acc').map(([k, g]) => `
+      <fieldset class="opts"><legend>${g.label}</legend>
+        ${g.opts.map(o => {
+          const on = String(a[k]) === String(o.id), lk = o.price && !s.owned.includes(`${k}:${o.id}`);
+          return `<button class="opt${o.swatch ? ' opt--sw' : ''}${on ? ' is-on' : ''}" aria-pressed="${on}" data-act="look" data-k="${k}" data-id="${o.id}"
+            ${o.swatch ? `style="--sw:${o.swatch}" aria-label="${g.label} ${o.id}"` : ''}>${o.swatch ? '' : esc(o.id)}${lk ? `<small>${brl(o.price)}</small>` : ''}</button>`;
+        }).join('')}
+      </fieldset>`).join('');
+  }
+  if (charTab === 'acessorios') {
+    ACS.refresh(() => { if (currentTab === 'personagem') renderChar(); });
+    const stockTag = o => { const n = ACS.leftOf(o.id); return n == null ? '' : `<small class="${n ? 'muted' : 'bad'}">${n ? `restam ${n} de ${ACS.MAX}` : 'esgotado: só de jogadores no Feirão'}</small>`; };
+    const worn = accsOf(a), bySlot = {};
+    for (const o of CATALOG.acc.opts) if (o.id !== 'nenhum') (bySlot[SLOT[o.id] || 'outros'] ??= []).push(o);
+    const card = o => { const own = s.owned.includes(`acc:${o.id}`), on = worn.includes(o.id), perk = PK.ACC_PERKS[o.id];
+      return `<button class="acc-card${on ? ' is-on' : ''}${own ? ' is-own' : ''}" aria-pressed="${on}" data-act="look" data-k="acc" data-id="${esc(o.id)}">
+        <b>${esc(o.id)}</b>${perk ? `<span class="good">${esc(PK.label(perk))}</span>` : ''}
+        <small>${on ? '✔ equipado' : own ? 'seu: toque para usar' : `${brl(o.price)} ${stockTag(o)}`}</small></button>`; };
+    $('#wardrobe-acc').innerHTML = `<div class="acc-head"><p class="small muted">Use um por lugar do corpo. A vantagem vale para todos que você possui, usando ou não, até o teto de cada efeito.</p>
+      <button type="button" class="btn btn--glass btn--sm" data-act="look" data-k="acc" data-id="nenhum" ${worn.length ? '' : 'disabled'}>tirar todos</button></div>`
+      + [...SLOT_ORDER, ...Object.keys(bySlot).filter(k => !SLOT_ORDER.includes(k))].filter(k => bySlot[k]).map(k => `<fieldset class="accslot"><legend>${SLOT_ICON[k] || '✨'} ${k}</legend><div class="accgrid">${bySlot[k].map(card).join('')}</div></fieldset>`).join('');
+  }
+  if (charTab === 'vantagens') {
+    const bd = PK.breakdown(s), keys = Object.keys(bd);
+    const row = k => { const r = bd[k], neg = k === 'loan' || k === 'plant' || k === 'animais', good = neg ? r.total < 0 : r.total > 0, cap = r.cap, fill = cap ? Math.min(1, Math.abs(r.total) / Math.abs(cap)) : 0, hit = cap && Math.abs(r.raw) > Math.abs(cap) + 1e-9;
+      return `<li class="perk-row"><div class="perk-row__top"><span>${esc(PK.EFFECTS[k])}</span><b class="${good ? 'good' : 'bad'}">${pctTxt(r.total)}</b></div>
+        ${cap ? `<span class="bar perk-bar"><i style="transform:scaleX(${fill.toFixed(3)})"></i></span><small class="muted">teto ${pctTxt(cap)}${hit ? ` · você já passou: ${pctTxt(r.raw)} contam só até o teto` : ''}</small>` : ''}
+        <div class="perk-src">${Object.entries(r.parts).map(([n, v]) => `<span class="tag tag--dark">${esc(PK.SOURCES[n])} ${pctTxt(v)}</span>`).join('')}</div></li>`; };
+    $('#char-perks').innerHTML = keys.length ? `<p class="small muted">Tudo que dá vantagem, separado por efeito e por fonte. Cada efeito tem um teto geral para o jogo ficar justo.</p><ul class="perk-list">${keys.map(row).join('')}</ul>`
+      : '<p class="empty glass">Nenhuma vantagem ainda. Carros, terras, acessórios, coleções de cartas e troféus de patrimônio dão vantagens pequenas e permanentes.</p>';
+  }
 }
 
 // ---------- terras: satélite real (Esri World Imagery) ----------
@@ -713,8 +753,8 @@ function profileExtra(p, me) {
   const tr = p.trophies || [];
   const trophies = `<h3>troféus de patrimônio <small class="muted">${tr.length} de ${L.TROPHIES.length}</small></h3><div class="pf__troph">${L.TROPHIES.map((t, i) => { const pr = PK.PRESTIGE.find(x => x.min === t); return `<span class="troph${tr.includes(t) ? ' is-got' : ''}${i === 0 ? ' troph--selo' : ''}${pr ? ` troph--prest troph--${pr.id}` : ''}" title="${pr ? `${pr.trophy}: ${pr.title} (${mi(t)})` : `${i === 0 ? 'selo' : 'troféu'} de ${mi(t)}`}"><b>${pr ? pr.icon : i === 0 ? '🎖️' : '🏆'}</b><small>${mi(t)}</small></span>`; }).join('')}</div>`;
   const priv = me && tr.includes(L.PRIVATE_MIN) ? `<div class="pf__acts"><button class="btn btn--glass btn--sm" data-act="toggle-private">${S().privateProfile ? '🔒 perfil privado (tornar público)' : '🔓 perfil público (tornar privado)'}</button></div>` : me ? '<p class="muted small">Ao chegar a R$ 10 milhões você ganha o selo e pode deixar o perfil privado.</p>' : '';
-  if (p.private && !me) return trophies + '<p class="pf__private glass">🔒 Este jogador deixou o perfil privado. Só os troféus aparecem.</p>';
-  if (p.noCard) return trophies + '<p class="pf__private glass">Este jogador ainda está numa versão antiga do jogo. Os detalhes aparecem assim que ele abrir ou recarregar o jogo.</p>';
+  if (p.private && !me) return { colecoes: trophies + '<p class="pf__private glass">🔒 Este jogador deixou o perfil privado. Só os troféus aparecem.</p>' };
+  if (p.noCard) return { colecoes: trophies + '<p class="pf__private glass">Este jogador ainda está numa versão antiga do jogo. Os detalhes aparecem assim que ele abrir ou recarregar o jogo.</p>' };
   const biz = (p.biz || []).map(b => { const c = BIZ_LISTS[b.cat]?.[b.brand]; return c ? `<span class="pf__biz" style="--img:url(assets/biz/${b.brand}.webp)"><small>${esc(c.name)}</small></span>` : ''; }).join('');
   const tiles = [['empresas', (p.biz || []).length], ['contador', p.npc ? `${brl(CT.npcFee(p.worth))}/mês` : p.acct ? `contratado (${CT.PLANS[p.acct]?.label || p.acct})` : 'não tem'], ['mina de ouro', p.mina ? 'sim' : 'não'], ['galpões', p.wh || 0], ['granja', `${p.granja || 0} galpões`], ['suínos', `${p.suinos || 0} barracões`], ['cartas', p.cardsN || 0], ['clube', p.club || 'nenhum']]
     .map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${esc(String(v))}</strong></div>`).join('');
@@ -722,7 +762,7 @@ function profileExtra(p, me) {
   const ads = (p.listings || []).length ? `<h3>à venda agora <small class="muted">no Feirão 21</small></h3><ul class="pf__ads">${p.listings.map(l => `<li><span>${esc(l.label)}</span><b>${brl(l.price)}</b></li>`).join('')}</ul><div class="pf__acts"><button class="btn btn--gold btn--sm" data-loja-go="feirao" data-act="close-profile">ver no Feirão</button></div>` : '';
   const emb = (p.colls || []).filter(k => CD.SETS[k]);
   const emblems = `<h3>coleções de cartas <small class="muted">${emb.length} de ${Object.keys(CD.SETS).length} · ${int(p.prestige || 0)} de prestígio</small></h3><div class="pf__troph">${Object.entries(CD.SETS).map(([k, S0]) => `<span class="troph${emb.includes(k) ? ' is-got' : ''}" title="coleção ${esc(S0.name)}"><b>${S0.icon}</b><small>${esc(S0.name)}</small></span>`).join('')}</div>`;
-  return invHTML(p) + trophies + emblems + priv + (p.biz || p.landList ? `<h3>tudo o que tem</h3><div class="pf__stats">${tiles}</div>${biz ? `<div class="pf__bizs">${biz}</div>` : ''}${lands}` : '') + ads;
+  return { patrimonio: (p.biz || p.landList ? `<h3>tudo o que tem</h3><div class="pf__stats">${tiles}</div>${biz ? `<div class="pf__bizs">${biz}</div>` : ''}${lands}` : '') + invHTML(p) + ads, colecoes: trophies + emblems + priv };
 }
 const agoTxt = at => { const m = Math.max(1, Math.round((Live.now() - at) / 60000)); return m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.round(m / 60)} h` : m < 2880 ? 'ontem' : `há ${Math.round(m / 1440)} dias`; };
 let boShown = null;
@@ -733,6 +773,18 @@ function boSettle(o, total) {
 }
 // propostas automáticas de outros jogadores ("tenho 20 bezerros...") desligadas a pedido: não aparecem mais em lugar nenhum
 
+function pfTabs(p, me, X, st, rate) {
+  const stats = `<div class="pf__stats">
+      ${[['mãos de 21', int(st.hands || 0)], ['vitórias', `${int(st.wins || 0)} (${rate}%)`], ['maior prêmio', `${int(st.best || 0)} fichas`], ['corridas', `${int(st.races || 0)}, ${int(st.raceWins || 0)} acertos`],
+        ['terras', p.lands == null ? '—' : `${p.lands} (${int(p.ha || 0)} ha)`], ['gado', p.heads == null ? '—' : `${int(p.heads)} cabeças`], ['canil e haras', p.animals ? `${p.animals.length} animais` : '—']].map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${v}</strong></div>`).join('')}
+    </div>`;
+  const deals = `${p.deals?.length ? `<h3>últimos negócios</h3><ul class="pf__deals">${p.deals.map(d => `<li><span>${esc(d.txt)}<small class="muted">${agoTxt(d.at)}</small></span><b class="${d.val >= 0 ? 'good' : 'bad'}">${d.val >= 0 ? '+' : '−'}${brl(Math.abs(d.val))}</b></li>`).join('')}</ul>` : ''}`;
+  const cars = `<div class="pf__cars">${(p.cars || []).length ? p.cars.map(m => L.CARS[m] ? `<span class="pf__car"><img src="assets/${L.CARS[m].img}.webp" alt=""><small>${esc(L.CARS[m].name)}</small></span>` : '').join('') : '<p class="muted small">Sem carros ainda.</p>'}</div>`;
+  const achs = `<ul class="achs">${P.ACHIEVEMENTS.map(a => `<li class="${p.ach?.includes(a.id) ? 'is-got' : ''}"><span class="badge__medal" aria-hidden="true"></span>${esc(a.txt)}</li>`).join('')}</ul>`;
+  const secs = [['resumo', '📋 resumo', stats + (p.deals?.length ? deals : '')], ['patrimonio', '💰 patrimônio', X.patrimonio], ['colecoes', '🃏 cartas e troféus', X.colecoes], ['garagem', '🚗 garagem', cars], ['conquistas', '🏆 conquistas', achs]].filter(x => x[2]);
+  return `<nav class="pf__nav" role="tablist" aria-label="categorias do perfil">${secs.map(([id, t], i) => `<button type="button" role="tab" class="${i ? '' : 'is-on'}" data-pftab="${id}" aria-selected="${i ? 'false' : 'true'}">${t}</button>`).join('')}</nav>
+    ${secs.map(([id, , html], i) => `<section class="pf__sec" data-pf="${id}"${i ? ' hidden' : ''}>${html}</section>`).join('')}`;
+}
 function openProfile(pid, fetched) {
   if (!pid) return;
   let p = fetched || C.findProfile(pid);
@@ -745,22 +797,14 @@ function openProfile(pid, fetched) {
   if (p.npc && !p.ach) p.ach = P.ACHIEVEMENTS.slice(0, p.achCount).map(a => a.id);
   const rate = st.hands ? Math.round((st.wins / st.hands) * 100) : 0;
   const xp = me ? `<div class="pf__xp"><span class="small">nível ${p.level}, ${S().xp} de ${P.xpNeed(S().level)} XP</span><span class="bar"><i style="transform:scaleX(${S().xp / P.xpNeed(S().level)})"></i></span></div>` : '';
+  const X = profileExtra(p, me);
   $('#pf').innerHTML = `
     <div class="pf__head">
       <span class="pf__avatar is-full"${prTop ? ` data-prest="${prTop.id}"` : ''}>${avatarSVG(p.look, { label: p.name, full: true })}</span>
       <div><h2 id="pf-name">${esc(p.name)}${prTop ? ` <span class="prest-badge prest-badge--${prTop.id}" title="${esc(prTop.trophy)}">${prTop.icon}</span>` : ''}</h2><p><span class="tag tag--gold">nível ${p.level}</span> <span class="tag ${prTop ? 'tag--prest' : 'tag--dark'}">${esc(prTop ? prTop.title : p.rank)}</span>${p.pioneer ? ' <span class="tag tag--gold" title="jogou no começo do 21 World: só quem estava lá tem">🌱 pioneiro</span>' : ''}</p>
       <p class="big">${brl(p.worth)}</p><p class="muted small">patrimônio</p>${xp}${p.bio ? `<p class="pf__bio">“${esc(p.bio)}”</p>` : ''}</div>
     </div>
-    <div class="pf__stats">
-      ${[['mãos de 21', int(st.hands || 0)], ['vitórias', `${int(st.wins || 0)} (${rate}%)`], ['maior prêmio', `${int(st.best || 0)} fichas`], ['corridas', `${int(st.races || 0)}, ${int(st.raceWins || 0)} acertos`],
-        ['terras', p.lands == null ? '—' : `${p.lands} (${int(p.ha || 0)} ha)`], ['gado', p.heads == null ? '—' : `${int(p.heads)} cabeças`], ['canil e haras', p.animals ? `${p.animals.length} animais` : '—']].map(([k, v]) => `<div class="tile glass"><span class="muted small">${k}</span><strong>${v}</strong></div>`).join('')}
-    </div>
-    ${profileExtra(p, me)}
-    ${p.deals?.length ? `<h3>últimos negócios</h3><ul class="pf__deals">${p.deals.map(d => `<li><span>${esc(d.txt)}<small class="muted">${agoTxt(d.at)}</small></span><b class="${d.val >= 0 ? 'good' : 'bad'}">${d.val >= 0 ? '+' : '−'}${brl(Math.abs(d.val))}</b></li>`).join('')}</ul>` : ''}
-    <h3>garagem</h3>
-        <div class="pf__cars">${(p.cars || []).length ? p.cars.map(m => L.CARS[m] ? `<span class="pf__car"><img src="assets/${L.CARS[m].img}.webp" alt=""><small>${esc(L.CARS[m].name)}</small></span>` : '').join('') : '<p class="muted small">Sem carros ainda.</p>'}</div>
-    <h3>conquistas ${p.ach?.length || 0} de ${P.ACHIEVEMENTS.length}</h3>
-    <ul class="achs">${P.ACHIEVEMENTS.map(a => `<li class="${p.ach?.includes(a.id) ? 'is-got' : ''}"><span class="badge__medal" aria-hidden="true"></span>${esc(a.txt)}</li>`).join('')}</ul>
+    ${pfTabs(p, me, X, st, rate)}
     ${!me && TUI.online().some(x => x.pid === pid) ? `<div class="pf__acts"><button class="btn btn--gold" data-act="trade-invite" data-id="${esc(pid)}">negociar</button></div>` : ''}
     ${!me && String(pid).startsWith('npc:') ? `<div class="pf__acts"><button class="btn btn--gold" data-act="trade-bot" data-id="${esc(String(pid).slice(4))}">negociar</button></div>` : ''}
     ${!me ? (() => { const npcId = String(pid).startsWith('npc:') ? String(pid).slice(4) : null, key = blockKey(p.name, npcId), on = isBlocked(p.name, npcId);
@@ -771,6 +815,13 @@ function openProfile(pid, fetched) {
   if (!dlg.open) dlg.showModal();
 }
 
+// abas do perfil (resumo, patrimônio, cartas e troféus, garagem, conquistas)
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-pftab]'); if (!b) return;
+  const box = b.closest('#pf'); if (!box) return;
+  box.querySelectorAll('[data-pftab]').forEach(x => { const on = x === b; x.classList.toggle('is-on', on); x.setAttribute('aria-selected', String(on)); });
+  box.querySelectorAll('[data-pf]').forEach(x => { x.hidden = x.dataset.pf !== b.dataset.pftab; });
+});
 // nome e foto de cada tipo de item (inventário, loja e trocas). Tipo novo sem entrada aqui ainda ganha nome e foto genéricos.
 export const ITEM_KIND = { car: 'veículo', animal: 'animal', land: 'terra', good: 'armazém', card: 'carta rara', player: 'jogador de futebol', squad: 'futebol', club: 'clube de futebol', aviario: 'granja', galpao: 'galpão', empresa: 'empresa', acc: 'acessório' };
 const GOOD_IMG = { soja: 'farm-soja', milho: 'farm-colheita', cafe: 'farm-cafe', laranja: 'farm-laranja' };
@@ -1092,6 +1143,7 @@ const ACTS = {
   'tr-tf'(id) { TR.pickTf(id); },
   'tr-asset'(id) { TR.pickAsset(id); },
   'edit-char'() { $('#dlg-profile').close(); G.goto('personagem'); },
+  'char-tab'(id) { charTab = id; renderChar(); },
   'toggle-nt'() { const on = ntOff('aviso') || ntOff('chat'); ntSet('aviso', on); ntSet('chat', on); say(on ? 'Avisos ligados de novo.' : 'Avisos desligados (erros ainda aparecem).'); openProfile('me'); },
   'close-profile'() { const d = $('#dlg-profile'); if (d.open) d.close(); },
   'toggle-private'() { const s = S(); if (!(s.trophies || []).includes(L.PRIVATE_MIN)) return say('O perfil privado libera aos R$ 10 milhões.', true); s.privateProfile = !s.privateProfile; save(); say(s.privateProfile ? 'Perfil privado: os outros só veem seus troféus.' : 'Perfil público de novo.'); openProfile('me'); },
@@ -1594,7 +1646,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 174;
+const APP_VERSION = 175;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

@@ -95,9 +95,11 @@ export const EDITORIAL = [
     'Todo ano do mundo, cerca de duas horas reais, aparece o botão giro da sorte no topo do jogo. A roleta tem dez fatias: duas escondem uma carta rara e as outras oito estouram a roleta, sem nada. A carta é um item raro, não se compra pronta, e quem completar uma coleção inteira ganha emblema no perfil, sobe no ranking de colecionadores e libera vantagens para sempre. A roda do dia também ganhou giro novo, com freada e estalo de roleta de cassino.'),
   ed(32, 'economia', 'assets/mina-ouro.webp', 'Mineradora ganha logística de verdade e ouro a preço real do dia',
     'Quem for dono da Serra Dourada agora precisa comprar a frota na loja 21: perfuratriz, escavadeira, pá-carregadeira e caminhões. A produção segue o elo mais fraco da cadeia, da equipe à usina de 8.000 toneladas por mês. Os custos acompanham a média do setor, perto de US$ 1.500 a 1.785 por onça segundo o World Gold Council, com 1,5% de CFEM sobre o ouro. O preço do ouro vem do mercado: onça em dólar vezes o dólar do dia, atualizado de dez em dez minutos.'),
+  ed(33, 'alerta', 'assets/photo-chips.webp', 'Perfil do personagem por categorias e vantagens dos acessórios revisadas',
+    'A página do personagem agora tem identidade, aparência, acessórios por lugar do corpo e vantagens separadas por fonte, com teto geral em cada efeito. O perfil público também ficou em abas: resumo, patrimônio, cartas e troféus, garagem e conquistas. Para o jogo ficar mais justo, os acessórios foram revisados: cada um vale de 1% a 8%, e o XP, a roleta do dia, os prêmios de prova e o preço de venda dos produtos passaram a ter teto somando todas as fontes. O capacete de mineiro, que se pagava em menos de dois meses, subiu para R$ 900 mil e rende 1% sobre o ouro.'),
 ];
 // edição do Jornal 21: o jornal abre com as reportagens que o jogador ainda não viu (guarda a hora da última vista)
-export const EDITION = 'jornal-v174';
+export const EDITION = 'jornal-v175';
 export const editorial = (now = Date.now()) => EDITORIAL.filter(e => now >= e.at - 864e5 && now - e.at < ED_DAYS * 864e5);
 // manchete pronta (texto puro; a tela escapa antes de mostrar)
 export function headline(n) {

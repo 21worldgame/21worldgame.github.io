@@ -569,13 +569,24 @@
         <p class="stage__name"><span id="char-name-show">você</span><span class="tag tag--gold" id="char-rank">iniciante</span></p>
       </div>
       <div class="glass wardrobe">
-        <h2>guarda-roupa</h2>
-        <label class="field"><span>nome do personagem</span>
-          <input class="input" id="char-name" name="char-name" maxlength="18" autocomplete="off"></label>
-        <p class="small muted" id="char-name-hint"></p>
-        <div id="wardrobe"></div>
-        <div class="perks" id="char-perks"></div>
-        <p class="muted small">Cada carro e acessório comprado dá uma vantagem permanente (valem todos os que você possui). Nada muda a sorte das cartas ou da roleta.</p>
+        <h2>meu personagem</h2>
+        <div class="char-nav" role="tablist" aria-label="categorias do personagem">
+          <button type="button" role="tab" class="is-on" data-act="char-tab" data-id="identidade" data-char="identidade" aria-selected="true"><span aria-hidden="true">🪪</span> identidade</button>
+          <button type="button" role="tab" data-act="char-tab" data-id="aparencia" data-char="aparencia" aria-selected="false"><span aria-hidden="true">🎨</span> aparência</button>
+          <button type="button" role="tab" data-act="char-tab" data-id="acessorios" data-char="acessorios" aria-selected="false"><span aria-hidden="true">💎</span> acessórios</button>
+          <button type="button" role="tab" data-act="char-tab" data-id="vantagens" data-char="vantagens" aria-selected="false"><span aria-hidden="true">⚡</span> vantagens</button>
+        </div>
+        <section class="char-sec" id="cs-identidade">
+          <label class="field"><span>nome do personagem</span>
+            <input class="input" id="char-name" name="char-name" maxlength="18" autocomplete="off"></label>
+          <p class="small muted" id="char-name-hint"></p>
+          <div class="char-tiles" id="char-tiles"></div>
+          <div class="row"><button type="button" class="btn btn--glass btn--sm" data-profile="me">ver como os outros veem meu perfil</button></div>
+        </section>
+        <section class="char-sec" id="cs-aparencia" hidden><div id="wardrobe"></div></section>
+        <section class="char-sec" id="cs-acessorios" hidden><div id="wardrobe-acc"></div></section>
+        <section class="char-sec" id="cs-vantagens" hidden><div class="perks" id="char-perks"></div></section>
+        <p class="muted small">Cada carro e acessório comprado dá uma vantagem permanente (valem todos os que você possui, até o teto de cada vantagem). Nada muda a sorte das cartas ou da roleta.</p>
       </div>
     </section>
 

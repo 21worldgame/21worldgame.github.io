@@ -28,25 +28,29 @@ export const CAR_PERKS = {
 // acessórios (chave = id em avatar.CATALOG.acc). Calibrados para a economia real (v152): vantagem de venda de 1% a 3%,
 // do tamanho de um contrato melhor com o comprador; acima disso dobrava o lucro de quem tem margem real de 10% a 30%.
 export const ACC_PERKS = {
-  brinco: { xp: 0.03 },
-  'óculos escuros': { daily: 0.08 },
-  'fone gamer': { xp: 0.05 },
-  'boné de marca': { xp: 0.04 },
+  // v175 (revisão de equilíbrio): o que importa é o bônus SOMADO. Antes os 18 acessórios somavam +21% de XP, +36% da roleta do dia e +17% nos prêmios
+  // de prova, e o capacete de mineiro (+3% sobre a receita da mina) se pagava em menos de 2 meses. Agora cada item vale 1% a 8% e tem teto geral (CAPS).
+  brinco: { xp: 0.02 },
+  'óculos escuros': { daily: 0.05 },
+  'fone gamer': { xp: 0.04 },
+  'boné de marca': { xp: 0.03 },
   'chapéu de peão': { cattle: 0.02 },
-  'chapéu de granjeiro': { frango: 0.03 },
-  'pulseira de prata': { race: 0.05 },
-  'relógio de luxo': { loan: -0.08 },
-  'corrente de ouro': { daily: 0.15, ticket: 0.02 },
-  'anel de diamante': { race: 0.12 },
-  'grillz de ouro': { xp: 0.06, daily: 0.1 },
-  'tênis de grife': { xp: 0.03, daily: 0.03 },
-  'bota de borracha': { suino: 0.03 },
-  'luvas de colheita': { laranja: 0.03 },
-  'chapéu de palha': { grain: 0.03 },
-  'cinto de fivela': { cana: 0.03, cattle: 0.01 },
-  'gravata de seda': { biz: 0.03, loan: -0.03 },
-  'capacete de mineiro': { ouro: 0.03 },
+  'chapéu de granjeiro': { frango: 0.02 },
+  'pulseira de prata': { race: 0.03 },
+  'relógio de luxo': { loan: -0.05 },
+  'corrente de ouro': { daily: 0.08, ticket: 0.02 },
+  'anel de diamante': { race: 0.08 },
+  'grillz de ouro': { xp: 0.04, daily: 0.05 },
+  'tênis de grife': { xp: 0.02, daily: 0.02 },
+  'bota de borracha': { suino: 0.02 },
+  'luvas de colheita': { laranja: 0.02 },
+  'chapéu de palha': { grain: 0.02 },
+  'cinto de fivela': { cana: 0.02 },
+  'gravata de seda': { biz: 0.02, loan: -0.02 },
+  'capacete de mineiro': { ouro: 0.01 },
 };
+// teto de cada efeito somando TUDO (carros, terras, acessórios, coleções e prestígio). Sem teto, quem junta tudo dobra a economia dos outros.
+export const CAPS = { xp: 0.25, daily: 0.5, race: 0.3, ticket: 0.1, loan: -0.2, plant: -0.08, animais: -0.1, cattle: 0.08, frango: 0.08, suino: 0.08, grain: 0.08, laranja: 0.08, cana: 0.08, ouro: 0.05, biz: 0.08, casino: 0.02 };
 
 // terras próprias: cada tipo de lote dá uma vantagem, com teto
 const cap = (v, m) => Math.min(m, v);
@@ -92,7 +96,23 @@ export function bonuses(s) {
   for (const tag of s.owned || []) if (tag.startsWith('acc:')) add(out, ACC_PERKS[tag.slice(4)]);
   for (const r of collRewards(s)) add(out, r);                                                // coleções de cartas completas
   for (const p of prestigeOf(s.trophies)) add(out, p.perk);                                   // marcos de R$ 100 mi para cima
+  for (const [k, c] of Object.entries(CAPS)) if (k in out) out[k] = c >= 0 ? Math.min(out[k], c) : Math.max(out[k], c);   // teto geral de cada efeito
   return out;
+}
+// de onde vem cada vantagem (para a página do personagem): total (já com o teto), soma crua e o que cada fonte dá
+export const SOURCES = { carros: 'carros e máquinas', terras: 'terras', acessorios: 'acessórios', colecoes: 'coleções de cartas', prestigio: 'troféus' };
+export function breakdown(s) {
+  const src = { carros: {}, terras: landBonuses(s.lands), acessorios: {}, colecoes: {}, prestigio: {} };
+  for (const c of new Set((s.cars || []).map(c => c.model))) add(src.carros, CAR_PERKS[c]);
+  for (const tag of s.owned || []) if (tag.startsWith('acc:')) add(src.acessorios, ACC_PERKS[tag.slice(4)]);
+  for (const r of collRewards(s)) add(src.colecoes, r);
+  for (const p of prestigeOf(s.trophies)) add(src.prestigio, p.perk);
+  const tot = bonuses(s), rows = {};
+  for (const k of Object.keys(tot)) {
+    const parts = Object.fromEntries(Object.entries(src).map(([n, o]) => [n, o[k] || 0]).filter(([, v]) => v));
+    rows[k] = { total: tot[k], raw: Object.values(parts).reduce((t, v) => t + v, 0), cap: CAPS[k] ?? null, parts };
+  }
+  return rows;
 }
 // multiplicador final de um efeito (juros nunca caem abaixo de 50%)
 // coleção Fortuna: +2% no que a pessoa ganhou de fichas (só o lucro da rodada, nunca a aposta de volta)

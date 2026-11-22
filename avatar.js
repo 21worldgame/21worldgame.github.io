@@ -15,7 +15,7 @@ export const CATALOG = {
     label: 'acessório',
     opts: [{ id: 'nenhum' }, { id: 'brinco', price: 1200 }, { id: 'óculos escuros', price: 2500 }, { id: 'fone gamer', price: 4000 }, { id: 'boné de marca', price: 6000 }, { id: 'chapéu de peão', price: 9000 }, { id: 'chapéu de granjeiro', price: 35000 }, { id: 'pulseira de prata', price: 15000 }, { id: 'corrente de ouro', price: 25000 }, { id: 'relógio de luxo', price: 60000 }, { id: 'grillz de ouro', price: 90000 }, { id: 'anel de diamante', price: 150000 },
       { id: 'tênis de grife', price: 8000 }, { id: 'bota de borracha', price: 30000 }, { id: 'luvas de colheita', price: 30000 }, { id: 'chapéu de palha', price: 40000 },
-      { id: 'cinto de fivela', price: 50000 }, { id: 'gravata de seda', price: 120000 }, { id: 'capacete de mineiro', price: 400000 }],
+      { id: 'cinto de fivela', price: 50000 }, { id: 'gravata de seda', price: 120000 }, { id: 'capacete de mineiro', price: 900000 }],
   },
 };
 
