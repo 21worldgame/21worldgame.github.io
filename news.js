@@ -79,9 +79,11 @@ export const EDITORIAL = [
     'A loja agrícola ganhou o trator pequeno Massey Ferguson 4707 (R$ 330 mil), drone de pulverização (R$ 180 mil), plantadeira de 16 linhas (R$ 650 mil), caminhão graneleiro (R$ 1,15 milhão), autopropelido (R$ 1,4 milhão) e colheitadeira (R$ 3,6 milhões). Cada máquina barateia o plantio por evitar o serviço de terceiros, até o teto de 15% somando a frota toda. O graneleiro paga 1% a mais pelos grãos com o frete próprio.'),
   ed(24, 'economia', 'assets/farm-frigorifico.webp', 'Granja e suinocultura com custo real: galpão climatizado sobe para R$ 2,8 milhões',
     'Os galpões e barracões passaram a custar o preço de mercado: R$ 450 mil a R$ 2,8 milhões na avicultura e R$ 600 mil a R$ 4,8 milhões na suinocultura. A granja rende de 11% a 18% ao ano sobre o galpão. Nos suínos, o barracão pequeno não se paga com o preço atual e o tecnificado rende perto de 12%, como no setor. Na mina de ouro, com o metal no recorde, a equipe extrai 0,85 kg por mês.'),
+  ed(25, 'alerta', 'assets/farm-soja.webp', 'Vida nova: o 21 World recomeça do zero para todo mundo',
+    'O mundo foi reiniciado. Dinheiro, fichas, terras, gado, empresas, a mina de ouro e o ranking voltaram ao começo para todos os jogadores, sem exceção. As contas continuam: é só entrar com o mesmo login de sempre e começar de novo, agora com os preços, os custos e os lucros da vida real desde o primeiro dia. O relógio do mundo também voltou ao mês 1.'),
 ];
 // edição do Jornal 21: o jornal abre com as reportagens que o jogador ainda não viu (guarda a hora da última vista)
-export const EDITION = 'jornal-v156';
+export const EDITION = 'jornal-v157';
 export const editorial = (now = Date.now()) => EDITORIAL.filter(e => now >= e.at - 864e5 && now - e.at < ED_DAYS * 864e5);
 // manchete pronta (texto puro; a tela escapa antes de mostrar)
 export function headline(n) {
