@@ -154,13 +154,14 @@ export function deals(n, worth, now = Date.now(), max = 6) {
 // perfil completo (para a janela de perfil)
 export function profile(n, month) {
   const worth = worthAt(n, month), lv = levelFor(worth), r = k => hash(n.i * 31 + k);
-  const hands = Math.round(80 + lv * 45 + r(1) * 400), cars = Object.keys(CARS).filter(c => CARS[c].type !== 'maquina' && CARS[c].price < worth * 0.6).slice(-1 - Math.floor(r(2) * 2));
+  const age = Math.min(1, Math.max(0, (month - 1) / EARLY));   // 0 no mês 1: sem partidas, conquistas, bichos nem negócios; chega ao normal na largada (2 dias)
+  const hands = Math.round((80 + lv * 45 + r(1) * 400) * age), cars = Object.keys(CARS).filter(c => CARS[c].type !== 'maquina' && CARS[c].price < worth * 0.6).slice(-1 - Math.floor(r(2) * 2));
   return {
     npc: true, id: n.id, name: n.nick, look: n.look, level: lv, rank: rank(worth), worth, bio: n.bio,
-    stats: { hands, wins: Math.round(hands * (0.38 + r(3) * 0.08)), best: Math.round(200 + r(4) * worth / 200), races: Math.round(r(5) * 60), raceWins: Math.round(r(6) * 14) },
+    stats: { hands, wins: Math.round(hands * (0.38 + r(3) * 0.08)), best: Math.round((200 + r(4) * worth / 200) * age), races: Math.round(r(5) * 60 * age), raceWins: Math.round(r(6) * 14 * age) },
     lands: Math.floor(worth / 250000), ha: Math.floor(worth / 250000) * (30 + Math.floor(r(7) * 70)), heads: Math.floor(worth / 60000) * 10,
-    cars, animals: Array.from({ length: Math.floor(r(8) * 3) }, (_, k) => ({ kind: k % 2 ? 'horse' : 'dog', name: '', rating: 50 + Math.floor(r(9 + k) * 30), wins: Math.floor(r(12 + k) * 8) })),
-    achCount: Math.min(20, 2 + Math.floor(lv / 2)), deals: deals(n, worth),
+    cars, animals: Array.from({ length: Math.floor(r(8) * 3 * age) }, (_, k) => ({ kind: k % 2 ? 'horse' : 'dog', name: '', rating: 50 + Math.floor(r(9 + k) * 30), wins: Math.floor(r(12 + k) * 8) })),
+    achCount: Math.floor(Math.min(20, 2 + Math.floor(lv / 2)) * age), deals: deals(n, worth).filter(d => Date.now() - d.at < (month - 1) * 6e5),   // negócio só desde que o mundo começou (ponytail: assume 10 min por mês)
   };
 }
 

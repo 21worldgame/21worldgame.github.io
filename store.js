@@ -30,8 +30,10 @@ function normalize(s) {
   // save antigo ou incompleto: completa com os campos padrão que faltarem
   // v161: save de antes do zeramento geral vira save novo (R$ 10 mil, sem itens). Ficam só o personagem e o selo de pioneiro (quem jogou antes da v159)
   const wipe = !!s && typeof s === 'object' && !s.z161;
-  if (wipe) s = { avatar: s.avatar, pioneer: !!s.pioneer || !s.m10k, log: [{ txt: 'Zeramento geral: todo mundo recomeçou sem itens, com R$ 10 mil', val: 0 }] };
+  if (wipe) s = { avatar: s.avatar, pioneer: !!s.pioneer || !s.m10k };
+  const oldLog = !!s && typeof s === 'object' && !s.l165;   // v165: livro-caixa zerado para todos (sem lançamento nenhum) até a reinauguração
   s = s && typeof s === 'object' ? Object.assign(L.newState(), s) : L.newState();
+  if (oldLog) { s.log = []; s.l165 = 1; s.borrowers = []; }
   for (const k of ['lands', 'herd', 'loans', 'lent', 'offers', 'borrowers', 'log']) if (!Array.isArray(s[k])) s[k] = [];
   s.stock = { soja: 0, milho: 0, cafe: 0, ...(s.stock || {}) };
   s.avatar ??= { ...DEFAULT };

@@ -158,21 +158,6 @@ export function lendTo(s, nick, amount, rate, months, mode = 'auto') {
   s.lent.push({ id: s.nextId++, name: nick, nick, bal: amount, rate, left: months, risk: lendRisk(s, nick, mode), mode });
   return null;
 }
-// pedidos de empréstimo dos jogadores do mundo (agiotagem): parceiro paga menos juros mas quase não dá calote
-function worldBorrowers(s, rng) {
-  const m = s.month || 1, out = [], r = seeded(m * 6151 + 3);
-  for (const f of friends(s).filter(f => !f.npc.peer)) if (r() < 0.35) {
-    const risk = (0.02 + r() * 0.08) * (1 - f.conf / 130);
-    out.push({ id: s.nextId++, name: f.nick, nick: f.nick, friend: true, amount: r1000(10000 + r() * Math.min(300000, 20000 + f.conf * 3000)), rate: +Math.max(0.025, L.agiotaRate(risk) * 0.75).toFixed(3),   // parceiro paga menos que o agiota
-      months: 3 + Math.floor(r() * 6), risk: +risk.toFixed(3) });
-  }
-  const online = [...NPC.onlineSet()].map(NPC.byId).filter(n => n && !isFriend(s, n.nick));
-  for (let i = 0; i < 2 && online.length; i++) {
-    const n = online.splice(Math.floor(rng() * online.length), 1)[0], risk = 0.02 + rng() * 0.1;
-    out.push({ id: s.nextId++, name: n.nick, nick: n.nick, amount: r1000(5000 + rng() * 150000), rate: L.agiotaRate(+risk.toFixed(3)), months: 3 + Math.floor(rng() * 6), risk: +risk.toFixed(3) });
-  }
-  return out;
-}
 export function lend(s, b) {
   if (s.money < b.amount) return false;
   s.money -= b.amount; s.borrowers = s.borrowers.filter(x => x.id !== b.id);
@@ -249,7 +234,7 @@ export function monthly(s, lines = [], rng = Math.random) {
   for (const w of s.biz?.wh || []) if (w.lentTo) { add(`${NG.WAREHOUSES[w.type]?.label || 'galpão'} alugado para ${w.lentTo}`, w.value * WH_LEND); bump(w.lentTo, 1); }
   for (const c of s.cars || []) if (c.lentTo) { add(`${L.CARS[c.model]?.name || 'máquina'} emprestado para ${c.lentTo}`, L.CARS[c.model].price * TOOL_RENT * 0.8); bump(c.lentTo, 1); }
   for (const l of s.lands || []) if (l.leaseTo) bump(l.leaseTo, 1);
-  s.borrowers = [...(s.borrowers || []), ...worldBorrowers(s, rng)];
+  s.borrowers = [];   // pedidos de empréstimo dos bots foram removidos (v165)
 
   return out;
 }

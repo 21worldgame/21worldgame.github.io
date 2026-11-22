@@ -24,14 +24,15 @@ const fold = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '
 export const search = q => { query = fold(q).trim(); page = 0; render(); };
 
 // coleções dos jogadores do mundo: fixas por pessoa (a maioria tem poucas, alguns têm várias)
-const npcColls = pid => { let h = 0; for (const ch of String(pid)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return ['campeoes', 'pecuaria', 'prosperidade', 'fortuna'].slice(0, [0, 0, 0, 1, 1, 1, 2, 2, 3, 4][h % 10]); };
+const COLL_FROM = 1440;   // bots só têm coleção depois de ~10 dias reais de mundo (carta é rara)
+const npcColls = (pid, month) => { if (month < COLL_FROM) return []; let h = 0; for (const ch of String(pid)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return ['campeoes', 'pecuaria', 'prosperidade', 'fortuna'].slice(0, [0, 0, 0, 1, 1, 1, 2, 2, 3, 4][h % 10]); };
 // junta os dados extras (hectares, maior prêmio) que cada fonte tem
 function rows() {
   const w = Live.world(), t = Live.now(), month = W.current(w, t) + W.progress(w, t), me = profileOf();
   const on = NPC.onlineSet(t);
   return C.rankingRows(500).map(r => {
     r = { ...r, online: r.pid === 'me' ? true : String(r.pid || '').startsWith('npc:') ? on.has(r.pid.slice(4)) : String(r.pid || '').startsWith('u:') ? false : !!r.pid };   // da nuvem sem estar no salão = fora agora
-    if (String(r.pid).startsWith('npc:')) { const p = NPC.profile(NPC.byId(r.pid.slice(4)), month), c = npcColls(r.pid); return { ...r, ha: p.ha, best: p.stats.best, wins: p.stats.wins, colls: c, prestige: c.length * 10 }; }
+    if (String(r.pid).startsWith('npc:')) { const p = NPC.profile(NPC.byId(r.pid.slice(4)), month), c = npcColls(r.pid, month); return { ...r, ha: p.ha, best: p.stats.best, wins: p.stats.wins, colls: c, prestige: c.length * 10 }; }
     if (r.pid === 'me') return { ...r, ha: me.ha, best: me.stats?.best || 0, wins: me.stats?.wins || 0, colls: me.colls || [], prestige: me.prestige || 0 };
     return r;
   });
@@ -39,7 +40,7 @@ function rows() {
 
 export function render() {
   if ($('#p-ranking')?.hidden) return;
-  const C1 = CATS[cat], every = rows().filter(r => !C1.min || r.worth >= C1.min).sort((a, b) => C1.val(b) - C1.val(a)), all = every;
+  const C1 = CATS[cat], every = rows().filter(r => (!C1.min || r.worth >= C1.min) && (cat !== 'colls' || r.colls?.length)).sort((a, b) => C1.val(b) - C1.val(a)), all = every;
   const shown = every.filter(r => (!onlyOn || r.online) && (!query || fold(r.name).includes(query))), pages = Math.max(1, Math.ceil(shown.length / PER));
   page = Math.min(page, pages - 1);
   const top = every.slice(0, 3), pageRows = shown.slice(page * PER, page * PER + PER);
@@ -66,7 +67,7 @@ export function render() {
       <span class="rkrow__val">${C1.fmt(C1.val(r))}</span></button></li>`;
   }).join('');
   if (!me && C1.min) { const w = profileOf().worth; $('#rk-me').innerHTML = `<div class="rk-me__txt"><b>💎 Clube dos 100 milhões</b><span class="small">Só entra quem passa de ${money(C1.min)} de patrimônio. Faltam <b class="good">${money(Math.max(0, C1.min - w))}</b> para você.</span></div>`; }
-  if (!pageRows.length) $('#rk-list').innerHTML = `<li class="muted rk-empty">${query ? 'Nenhum jogador com esse nome.' : C1.min ? 'Ninguém chegou aos R$ 100 milhões ainda. Seja o primeiro.' : 'Ninguém online agora.'}</li>`;
+  if (!pageRows.length) $('#rk-list').innerHTML = `<li class="muted rk-empty">${query ? 'Nenhum jogador com esse nome.' : C1.min ? 'Ninguém chegou aos R$ 100 milhões ainda. Seja o primeiro.' : cat === 'colls' ? 'Ninguém completou uma coleção de cartas ainda. As cartas são raras: seja o primeiro.' : 'Ninguém online agora.'}</li>`;
   last = now;
   const onCount = every.filter(r => r.online).length;
   $('#rk-count').innerHTML = `<b>${every.length}</b> jogadores no ranking · <b class="good">${onCount}</b> online agora <button class="btn btn--glass btn--sm" data-act="rk-online" aria-pressed="${onlyOn}">${onlyOn ? 'mostrar todos' : 'só quem está online'}</button>`;
