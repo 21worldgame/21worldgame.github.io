@@ -65,9 +65,11 @@ export const EDITORIAL = [
     'O reajuste que reduziu as fortunas pela metade obrigou a venda de 27 propriedades, somando 840 hectares e R$ 52,9 milhões pelo valor de tabela. Danilin, que tinha o patrimônio quase todo em terra, entregou as 17 fazendas, 570 hectares de café. Buu vendeu as 7 que tinha, e Pastor Galego abriu mão de 3 das 40. NocBit, com caixa de sobra, pagou tudo em dinheiro e manteve as 15 propriedades. Quem perdeu a terra continua com a granja, os galpões e as empresas, e pode comprar de novo pelo preço de mercado.'),
   ed(17, 'economia', 'assets/farm-roxa.webp', 'Laudo do mercado: terras são reavaliadas e a valorização sem fim acaba',
     'Uma auditoria nas escrituras encontrou terras registradas muito acima do mercado. As propriedades subiam 0,6% a cada mês do jogo, sem parar, e algumas já valiam mais que o dobro de uma terra igual à venda. Um laudo reavaliou cada fazenda pelo preço da região, pelos hectares, pela água e pelas benfeitorias. As 15 fazendas do maior produtor do mundo, registradas em R$ 110 milhões, valem R$ 45,5 milhões pelo laudo de 2026. Daqui para frente a terra acompanha o mercado: sobe e desce até 2% ao mês em volta do valor de laudo, como na vida real.'),
+  ed(18, 'negocio', 'assets/farm-cafe.webp', 'Depois de protestos, Danilin e Buu recebem as fazendas de volta',
+    'Os dois produtores que ficaram sem terra no corte da economia real reclamaram alto, e o laudo de mercado deu razão a eles: no corte, as fazendas foram descontadas pela escritura antiga, inflada pela valorização sem fim. As 17 propriedades de Danilin contaram como R$ 45,7 milhões, mas valem R$ 12,3 milhões pelo mercado de 2026. A administração devolveu as 24 fazendas, 765 hectares no total, com os cafezais do jeito que estavam e registradas pelo valor de laudo. Danilin volta a ter 570 hectares de café; Buu, 195.'),
 ];
 // edição do Jornal 21: o jornal abre com as reportagens que o jogador ainda não viu (guarda a hora da última vista)
-export const EDITION = 'jornal-v154';
+export const EDITION = 'jornal-v155';
 export const editorial = (now = Date.now()) => EDITORIAL.filter(e => now >= e.at - 864e5 && now - e.at < ED_DAYS * 864e5);
 // manchete pronta (texto puro; a tela escapa antes de mostrar)
 export function headline(n) {
