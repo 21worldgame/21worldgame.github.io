@@ -1,13 +1,15 @@
 // Inventário e trocas entre jogadores (regras puras, sem DOM nem rede).
 // Item da troca: { kind: 'chips'|'money', amount } | { kind: 'good', good, qty } | { kind: 'car'|'animal'|'land', data }
-import { CARS, region } from './logic.js';
+import { CARS, ANCHOR, region } from './logic.js';
 import { KINDS as ANIMAL, value as animalValue } from './stable.js';
 import * as CD from './cards.js';
 import { POS as FPOS, value as fValue, salary as fSalary, club as fClub, adoptClub, contractLeft, lockedPlayer, lockMsg } from './futebol.js';
 import * as NG from './negocios.js';
 import * as GR from './granja.js';
 import { CATALOG, accsOf } from './avatar.js';
-export const GOODS = { soja: 'soja', milho: 'milho', cafe: 'café', laranja: 'laranja (caixas)' };
+export const GOODS = { soja: 'soja', milho: 'milho', cafe: 'café', laranja: 'laranja' };
+export const UNIT = g => (g === 'laranja' ? 'caixas' : 'sacas');   // laranja se vende em caixa, não em saca
+const priceOf = (s, g) => s.prices?.[g] || ANCHOR[g] || 0;   // sem preço no save (ainda sem pomar): vale o preço de referência
 export const MAX_ITEMS = 8;
 
 // tudo o que o jogador tem e pode trocar
@@ -18,12 +20,12 @@ export function inventory(s) {
   for (const l of s.lands || []) if (l.own) out.push({ kind: 'land', id: l.id, label: `${l.ha} ha, ${l.region}`, value: l.value, data: l });
   for (const c of s.cards || []) out.push({ kind: 'card', id: c.id, label: `carta ${CD.label(c)}`, value: CD.value(c), data: c });
   for (const p of s.fut?.squad || []) out.push({ kind: 'player', id: p.id, label: `${p.name} (${p.pos}, nota ${p.ovr})`, value: fValue(p), data: p });
-  for (const [g, q] of Object.entries(s.stock || {})) if (q > 0) out.push({ kind: 'good', id: g, good: g, label: `${GOODS[g] || g}: ${q} sacas`, qty: q, value: q * (s.prices?.[g] || 0) });
+  for (const [g, q] of Object.entries(s.stock || {})) if (q > 0) out.push({ kind: 'good', id: g, good: g, label: `${GOODS[g] || g}: ${q} ${UNIT(g)}`, qty: q, value: q * priceOf(s, g) });
   return out;
 }
 
 export const describe = it => it.kind === 'chips' ? `${it.amount} fichas` : it.kind === 'money' ? `R$ ${Math.round(it.amount).toLocaleString('pt-BR')}`
-  : it.kind === 'good' ? `${it.qty} sacas de ${GOODS[it.good] || it.good}` : it.kind === 'car' ? (CARS[it.data.model]?.name || 'carro')
+  : it.kind === 'good' ? `${it.qty} ${UNIT(it.good)} de ${GOODS[it.good] || it.good}` : it.kind === 'car' ? (CARS[it.data.model]?.name || 'carro')
   : it.kind === 'acc' ? `acessório ${it.acc}` : it.kind === 'galpao' ? NG.WAREHOUSES[it.data?.type]?.label || 'galpão' : it.kind === 'aviario' ? `${GR.HOUSES[it.data?.type]?.label || 'galpão'} (granja)`
   : it.kind === 'empresa' ? NG.LISTS[it.cat]?.[it.data?.brand]?.name || 'empresa' : it.kind === 'club' ? `clube ${it.data?.club}`
   : it.kind === 'card' ? `carta ${CD.label(it.data)}` : it.kind === 'player' ? `jogador ${it.data.name} (${it.data.pos}, nota ${it.data.ovr})` : it.kind === 'animal' ? `${it.data.name} (${ANIMAL[it.data.kind]?.label || 'animal'})` : it.kind === 'land' ? `${it.data.ha} ha, ${it.data.region}` : '?';

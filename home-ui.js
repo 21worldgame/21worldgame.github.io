@@ -85,6 +85,19 @@ function slides(s) {
   out.unshift(...editorial().slice(0, 4).map(e => ({ img: e.img, tag: '📰 TV 21 · edição especial', title: e.title, lead: e.lead })));   // reportagens da semana primeiro
   return out;
 }
+// ranking ao vivo na página inicial (atualiza sozinho a cada 4 s, sem redesenhar a página toda)
+const rankKpi = (rows, pos) => [pos >= 0 ? `${pos + 1}º` : '—', pos >= 0 ? `de ${rows.length} ${rows.length === 1 ? 'jogador' : 'jogadores'}` : 'passe dos R$ 10 mil para entrar'];
+const topHTML = top => top.length ? top.map((r, i) => `<li><button type="button" data-profile="${esc(r.pid || '')}"><span>${['🥇', '🥈', '🥉'][i]}</span><b>${esc(r.name)}</b><small>${short(r.worth)}</small></button></li>`).join('') : '<li class="muted small">Ninguém no ranking ainda: o mundo acabou de recomeçar.</li>';
+const clubTxt = n => `💎 Clube dos 100 milhões: <b>${n}</b> ${n === 1 ? 'membro' : 'membros'}`;
+function liveRank() {
+  if (document.getElementById('p-inicio')?.hidden) return;
+  const k = document.querySelector('.hk--rank'), ol = document.getElementById('htop-live'); if (!k || !ol) return;
+  const rows = G.rankRows?.(500) || [], pos = rows.findIndex(r => r.pid === 'me'), [v, sub] = rankKpi(rows, pos);
+  k.querySelector('.hk__v').textContent = v; k.querySelector('small').textContent = sub;
+  const html = topHTML(rows.slice(0, 3)); if (ol.innerHTML !== html) ol.innerHTML = html;
+  const c = document.getElementById('hclub-live'); if (c) c.innerHTML = clubTxt(rows.filter(r => r.worth >= 100e6).length);
+}
+setInterval(liveRank, 4000);
 function panelHTML(s) {
   const st = EC.state(s.month || 1), [ic, lv] = EC.LEVELS[st.level], w = netWorth(s), net = plMonth(s), nx = nextMark(s), sl = slides(s);
   const rows = G.rankRows?.(500) || [], pos = rows.findIndex(r => r.pid === 'me'), top = rows.slice(0, 3), club = rows.filter(r => r.worth >= 100e6).length;
@@ -96,11 +109,11 @@ function panelHTML(s) {
       <button class="hero__nav hero__nav--p" type="button" data-hero="-1" aria-label="anterior">‹</button><button class="hero__nav hero__nav--n" type="button" data-hero="1" aria-label="próximo">›</button>
       <div class="hero__dots">${sl.map((_, i) => `<button type="button" class="${i === 0 ? 'is-on' : ''}" data-hero-go="${i}" aria-label="destaque ${i + 1}"></button>`).join('')}</div></section>
     <div class="hkpis">${kpi('patrimônio', brl(w), PK.prestigeTop(s.trophies)?.title || '', '', w)}${kpi('últimos 12 meses', `${net >= 0 ? '+' : ''}${brl(net)}`, 'entradas menos saídas', net >= 0 ? 'is-up' : 'is-down')}
-      ${kpi('mercado', `${ic} ${lv}`, st.events.length ? `${st.events.length} evento(s) no radar` : 'sem crise à vista', `is-l${st.level}`)}${kpi('ranking', pos >= 0 ? `${pos + 1}º` : '—', pos >= 0 ? `de ${rows.length} ${rows.length === 1 ? 'jogador' : 'jogadores'}` : 'passe dos R$ 10 mil para entrar')}
+      ${kpi('mercado', `${ic} ${lv}`, st.events.length ? `${st.events.length} evento(s) no radar` : 'sem crise à vista', `is-l${st.level}`)}${kpi('ranking', ...rankKpi(rows, pos), 'hk--rank')}
       ${nx ? `<div class="hk glass"><span class="hk__k">próximo marco</span><b class="hk__v">${esc(nx.label)}</b><span class="hero__bar"><i style="width:${Math.round(nx.pct * 100)}%"></i></span></div>` : ''}</div>
     <div class="hgrid"><section class="glass hbox"><h3>oportunidades e recomendações</h3><ul class="hlist">${tips.map(t => `<li>${esc(t)}</li>`).join('') || '<li class="muted">Mercado equilibrado: nenhum sinal forte agora.</li>'}</ul><button class="btn btn--glass btn--sm" type="button" data-econ-open>relatório do mercado</button></section>
-      <section class="glass hbox"><h3>destaques do mundo</h3><ol class="htop">${top.length ? '' : '<li class="muted small">Ninguém no ranking ainda: o mundo acabou de recomeçar.</li>'}${top.map((r, i) => `<li><button type="button" data-profile="${esc(r.pid || '')}"><span>${['🥇', '🥈', '🥉'][i]}</span><b>${esc(r.name)}</b><small>${short(r.worth)}</small></button></li>`).join('')}</ol>
-        <p class="small muted">💎 Clube dos 100 milhões: <b>${club}</b> ${club === 1 ? 'membro' : 'membros'}</p><button class="btn btn--glass btn--sm" type="button" data-tab-go="ranking">ver ranking</button></section></div>`;
+      <section class="glass hbox"><h3>destaques do mundo</h3><ol class="htop" id="htop-live">${topHTML(top)}</ol>
+        <p class="small muted" id="hclub-live">${clubTxt(club)}</p><button class="btn btn--glass btn--sm" type="button" data-tab-go="ranking">ver ranking</button></section></div>`;
 }
 // carrossel: troca a cada 7 s, pausa com o mouse em cima; números contam até o valor
 let heroT = 0, heroI = 0;

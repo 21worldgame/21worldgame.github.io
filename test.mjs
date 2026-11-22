@@ -1586,3 +1586,13 @@ import * as CT from './contador.js';
   assert.ok(w / N > 0.17 && w / N < 0.23, `chance de carta ${(w / N * 100).toFixed(1)}%: tem que ser ~20%`);
   console.log('giro da sorte ok');
 }
+
+// ---------- produtos no inventário: unidade e preço de referência ----------
+{
+  const TDx = await import('./trade.js'), s = { cars: [], stable: { animals: [] }, lands: [], cards: [], stock: { soja: 10, laranja: 10 }, prices: { soja: 150 } };
+  const g = TDx.inventory(s).filter(i => i.kind === 'good'), la = g.find(i => i.good === 'laranja'), so = g.find(i => i.good === 'soja');
+  assert.equal(la.label, 'laranja: 10 caixas', 'laranja é caixa, não saca'); assert.equal(so.label, 'soja: 10 sacas');
+  assert.equal(la.value, 10 * 28, 'sem preço no save vale o preço de referência'); assert.equal(so.value, 1500);
+  assert.equal(TDx.describe({ kind: 'good', good: 'laranja', qty: 3 }), '3 caixas de laranja');
+  console.log('produtos do inventário ok');
+}

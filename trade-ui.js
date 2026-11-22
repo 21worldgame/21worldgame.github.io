@@ -196,7 +196,7 @@ export function addPicked() {
   const it = SH.find(G.S, v);
   if (!it) return;
   const b = SH.blocked(G.S, it); if (b) return say(b[0].toUpperCase() + b.slice(1), true);
-  if (it.kind === 'good') { const q = Math.floor(Number(prompt(`Quantas sacas de ${TD.GOODS[it.good] || it.good}? (você tem ${it.qty})`, it.qty)) || 0); if (q <= 0) return; ss.mine.push({ kind: 'good', good: it.good, qty: Math.min(q, it.qty) }); }
+  if (it.kind === 'good') { const q = Math.floor(Number(prompt(`Quantas ${TD.UNIT(it.good)} de ${TD.GOODS[it.good] || it.good}? (você tem ${it.qty})`, it.qty)) || 0); if (q <= 0) return; ss.mine.push({ kind: 'good', good: it.good, qty: Math.min(q, it.qty) }); }
   else if (it.kind === 'acc') ss.mine.push({ kind: 'acc', acc: it.acc });
   else if (it.kind === 'empresa') ss.mine.push({ kind: 'empresa', cat: it.cat, data: it.data });
   else if (it.kind === 'club') ss.mine.push({ kind: 'club', data: JSON.parse(JSON.stringify(G.S.fut)) });

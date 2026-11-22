@@ -1,6 +1,6 @@
 // Loja (regras puras): vender qualquer coisa na hora para a casa ou anunciar.
 // Anúncio: outros jogadores online podem comprar; se ninguém comprar, compradores da casa pagam no máximo 5% acima do preço da casa.
-import { CARS, CAR_BUYBACK, MARKET_FEE } from './logic.js';
+import { CARS, CAR_BUYBACK, MARKET_FEE, ANCHOR } from './logic.js';
 import * as ST from './stable.js';
 import * as CD from './cards.js';
 import * as FT from './futebol.js';
@@ -40,7 +40,7 @@ export function housePrice(s, it) {
   if (it.kind === 'car') return Math.round(it.data.value * CAR_BUYBACK);
   if (it.kind === 'animal') return ST.value(it.data);
   if (it.kind === 'land') return Math.round(it.data.value * 0.95 + (PM.orchardValue(s, it.data) + CN.caneValue(s, it.data)) * 0.9);
-  if (it.kind === 'good') return Math.round(it.qty * (s.prices?.[it.good] || 0) * (1 - MARKET_FEE));
+  if (it.kind === 'good') return Math.round(it.qty * (s.prices?.[it.good] || ANCHOR[it.good] || 0) * (1 - MARKET_FEE));
   if (it.kind === 'card') return Math.round(CD.value(it.data) * CD.SELL);
   if (it.kind === 'player') return Math.round(FT.value(it.data) * 0.8);
   if (it.kind === 'club') return clubValue(s.fut);
