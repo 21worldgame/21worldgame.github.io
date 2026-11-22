@@ -82,7 +82,9 @@ for (const n of [...BASE, ...EXTRA]) {
   delete n.nick;
   Object.defineProperty(n, 'nick', { enumerable: true, get() { return this.gnick && Date.now() >= this.renameAt ? this.gnick : this.orig; } });
 }
-export const NPCS = [...BASE, ...EXTRA];
+// mundo recomeçado: as bios antigas falavam de time, haras, galgo, fazenda e carta que ninguém tem mais. Todo bot começa com uma frase de quem acabou de chegar
+const FRESH = ['comecei agora, bora', 'recomeçando do zero kkk', 'primeiro dia por aqui', 'sem nada ainda, vamos ver', 'rumo ao primeiro milhão', 'recomecei do zero, sem drama', 'novo por aqui, pega leve', 'meta: sair dos 10 mil'];
+export const NPCS = [...BASE, ...EXTRA].map(n => ({ ...n, bio: FRESH[n.i % FRESH.length] }));
 // folga: jogadores fora do jogo até a hora indicada (UTC). 12:20 de Brasília = 15:20 UTC. Apague a linha para voltarem antes.
 export const AWAY = { 'ReiDoGado': Date.UTC(2026, 10, 21, 15, 20), 'A Boiadeira': Date.UTC(2026, 10, 21, 15, 20) };
 export const isAway = (n, now = Date.now()) => (AWAY[typeof n === 'string' ? byNick(n)?.orig ?? n : n?.orig ?? n?.nick] || 0) > now;

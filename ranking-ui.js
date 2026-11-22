@@ -12,10 +12,10 @@ const money = v => new Intl.NumberFormat('pt-BR', { notation: v >= 1e6 ? 'compac
 const CATS = {
   worth: { label: 'patrimônio', val: r => r.worth, fmt: money },
   level: { label: 'nível', val: r => r.level, fmt: v => `nível ${v}` },
-  farm: { label: 'fazendeiros', val: r => r.ha || 0, fmt: v => `${int(v)} ha` },
-  casino: { label: 'cassino', val: r => r.best || 0, fmt: v => `${int(v)} fichas` },
+  farm: { label: 'fazendeiros', has: r => r.ha > 0, val: r => r.ha || 0, fmt: v => `${int(v)} ha` },
+  casino: { label: 'cassino', has: r => r.best > 0, val: r => r.best || 0, fmt: v => `${int(v)} fichas` },
   clube: { label: 'clube dos 100 milhões', val: r => r.worth, fmt: money, min: 100e6 },   // só quem passou de R$ 100 mi
-  colls: { label: 'colecionadores', val: r => (r.colls?.length || 0) * 1000 + (r.prestige || 0), fmt: v => `${Math.floor(v / 1000)} ${Math.floor(v / 1000) === 1 ? 'coleção' : 'coleções'} · ${v % 1000} prestígio` },
+  colls: { label: 'colecionadores', has: r => r.colls?.length > 0, val: r => (r.colls?.length || 0) * 1000 + (r.prestige || 0), fmt: v => `${Math.floor(v / 1000)} ${Math.floor(v / 1000) === 1 ? 'coleção' : 'coleções'} · ${v % 1000} prestígio` },
 };
 export const setCat = c => { if (CATS[c]) { cat = c; page = 0; render(); } };
 export const setPage = p => { page = Math.max(0, Number(p) || 0); render(); document.getElementById('rk-count')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); };
@@ -40,7 +40,7 @@ function rows() {
 
 export function render() {
   if ($('#p-ranking')?.hidden) return;
-  const C1 = CATS[cat], every = rows().filter(r => (!C1.min || r.worth >= C1.min) && (cat !== 'colls' || r.colls?.length)).sort((a, b) => C1.val(b) - C1.val(a)), all = every;
+  const C1 = CATS[cat], every = rows().filter(r => (!C1.min || r.worth >= C1.min) && (!C1.has || C1.has(r))).sort((a, b) => C1.val(b) - C1.val(a)), all = every;
   const shown = every.filter(r => (!onlyOn || r.online) && (!query || fold(r.name).includes(query))), pages = Math.max(1, Math.ceil(shown.length / PER));
   page = Math.min(page, pages - 1);
   const top = every.slice(0, 3), pageRows = shown.slice(page * PER, page * PER + PER);
@@ -67,7 +67,7 @@ export function render() {
       <span class="rkrow__val">${C1.fmt(C1.val(r))}</span></button></li>`;
   }).join('');
   if (!me && C1.min) { const w = profileOf().worth; $('#rk-me').innerHTML = `<div class="rk-me__txt"><b>💎 Clube dos 100 milhões</b><span class="small">Só entra quem passa de ${money(C1.min)} de patrimônio. Faltam <b class="good">${money(Math.max(0, C1.min - w))}</b> para você.</span></div>`; }
-  if (!pageRows.length) $('#rk-list').innerHTML = `<li class="muted rk-empty">${query ? 'Nenhum jogador com esse nome.' : C1.min ? 'Ninguém chegou aos R$ 100 milhões ainda. Seja o primeiro.' : cat === 'colls' ? 'Ninguém completou uma coleção de cartas ainda. As cartas são raras: seja o primeiro.' : 'Ninguém online agora.'}</li>`;
+  if (!pageRows.length) $('#rk-list').innerHTML = `<li class="muted rk-empty">${query ? 'Nenhum jogador com esse nome.' : C1.min ? 'Ninguém chegou aos R$ 100 milhões ainda. Seja o primeiro.' : C1.has ? 'Ninguém pontuou aqui ainda: o mundo acabou de recomeçar. Seja o primeiro.' : 'Ninguém online agora.'}</li>`;
   last = now;
   const onCount = every.filter(r => r.online).length;
   $('#rk-count').innerHTML = `<b>${every.length}</b> jogadores no ranking · <b class="good">${onCount}</b> online agora <button class="btn btn--glass btn--sm" data-act="rk-online" aria-pressed="${onlyOn}">${onlyOn ? 'mostrar todos' : 'só quem está online'}</button>`;
@@ -79,8 +79,8 @@ export function render() {
   const total = all.reduce((s, r) => s + r.worth, 0);
   $('#rk-facts').innerHTML = [
     ['jogadores online agora', `${every.filter(r => r.online).length}`], ['mês do mundo', W.dateLabel(m)],
-    ['maior fortuna', `${esc(byWorth?.name || '')} · ${money(byWorth?.worth || 0)}`], ['maior fazendeiro', `${esc(byHa?.name || '')} · ${int(byHa?.ha || 0)} ha`],
-    ['maior prêmio no 21', `${esc(byBest?.name || '')} · ${int(byBest?.best || 0)} fichas`], ['nível mais alto', `${esc(byLvl?.name || '')} · nível ${byLvl?.level || 1}`],
+    ['maior fortuna', `${esc(byWorth?.name || '')} · ${money(byWorth?.worth || 0)}`], ['maior fazendeiro', byHa?.ha ? `${esc(byHa.name)} · ${int(byHa.ha)} ha` : '—'],
+    ['maior prêmio no 21', byBest?.best ? `${esc(byBest.name)} · ${int(byBest.best)} fichas` : '—'], ['nível mais alto', `${esc(byLvl?.name || '')} · nível ${byLvl?.level || 1}`],
     ['dinheiro no ranking', money(total)], ['para entrar no top 10', all[9] ? C1.fmt(C1.val(all[9])) : '—'],
   ].map(([k, v]) => `<div class="rk-fact"><span class="muted small">${k}</span><b>${v}</b></div>`).join('');
 }
