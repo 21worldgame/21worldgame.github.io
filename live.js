@@ -54,6 +54,7 @@ export async function start() {
 const amostras = [];
 async function receita(sb) {
   const s = G.S, gain = L.receitaFlag(amostras, Date.now(), L.netWorth(s));
+  aviso24h(s);
   if (!gain) return;
   amostras.length = 0;   // a próxima medição começa do zero
   if (!s.receitaAt || Date.now() - s.receitaAt > 864e5) {
@@ -64,6 +65,15 @@ async function receita(sb) {
   }
   try { await sb.rpc('receita_pausa', { p_gain: Math.round(gain), p_worth: Math.round(L.netWorth(s)) }); } catch {}
   await checkBan(sb);
+}
+// aviso de medo: patrimônio subiu mais de R$ 300 mil na janela de 24 h (só avisa, não pune)
+function aviso24h(s) {
+  const now = Date.now(), w = L.netWorth(s);
+  if (!s.dia24 || now - s.dia24[0] > 864e5) { s.dia24 = [now, w, 0]; save(); return; }
+  if (s.dia24[2] || w - s.dia24[1] <= 3e5) return;
+  s.dia24[2] = 1; save();
+  $("#rf24-gain").textContent = brl(w - s.dia24[1]);
+  const d = $("#dlg-receita24"); if (d && !d.open) d.showModal();
 }
 export const admin = () => isAdmin;
 // tempo real: dinheiro do administrador, eventos e avisos chegam na hora (a consulta a cada 20 s fica de reserva)
