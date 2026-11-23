@@ -82,7 +82,7 @@ function slides(s) {
   const ct = [...(s.contracts || [])].sort((a, b) => a.due - b.due)[0];   // contrato que vence primeiro: lembrete para voltar e entregar
   if (ct) { const left = ct.due - m, r = CTR.ready(s, ct.good); out.unshift({ img: `assets/${CROP_IMG[ct.good] || 'farm-soja'}.webp`, tag: '📦 contrato de exportação', title: `${ct.qty.toLocaleString('pt-BR')} sacas de ${CTR.GOODS[ct.good].label} para a ${ct.trader}`,
     lead: `${left <= 0 ? 'Vence agora' : `Vence em ${left} ${left === 1 ? 'mês' : 'meses'}`}. Você já tem ${r.toLocaleString('pt-BR')} da sua colheita no armazém. Entregue e receba ${short(ct.qty * ct.price)}; se atrasar, paga ${Math.round(CTR.FINE * 100)}% de multa.`, act: ['ir ao mercado', 'data-tab-go="mercado"'] }); }
-  out.unshift(...editorial().slice(0, 4).map(e => ({ img: e.img, tag: '📰 TV 21 · edição especial', title: e.title, lead: e.lead })));   // reportagens da semana primeiro
+  out.unshift(...editorial().slice(-4).reverse().map(e => ({ img: e.img, tag: '📰 TV 21 · edição especial', title: e.title, lead: e.lead })));   // reportagens da semana primeiro
   return out;
 }
 // ranking ao vivo na página inicial (atualiza sozinho a cada 4 s, sem redesenhar a página toda)
