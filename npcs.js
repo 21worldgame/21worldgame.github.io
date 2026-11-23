@@ -175,9 +175,10 @@ const CURVE = [58, 46, 38, 33, 30, 31, 36, 42, 48, 52, 55, 58, 62, 60, 57, 58, 6
 const smooth = t => { const i = Math.floor(t), f = t - i, u = f * f * (3 - 2 * f); return hash(i) * (1 - u) + hash(i + 1) * u; };
 export function onlineCount(now = Date.now()) {
   const h = ((now / 3600000 - 3) % 24 + 24) % 24, i = Math.floor(h), f = h - i;
-  const base = CURVE[i] * (1 - f) + CURVE[(i + 1) % 24] * f;   // curva do dia (30 a 102) comprimida para 20 a 32 jogadores: mundo novo, pouca gente
-  return Math.max(20, Math.min(32, Math.round(20 + (base - 30) / 72 * 11 + (smooth(now / 420000) - 0.5) * 2)));   // pequenas entradas e saídas a cada poucos minutos
+  const base = CURVE[i] * (1 - f) + CURVE[(i + 1) % 24] * f;   // curva do dia (30 a 102) vira 68 a 159 jogadores: pico à noite, vale de madrugada
+  return Math.max(ONLINE_MIN, Math.min(ONLINE_MAX, Math.round(68 + (base - 30) / 72 * 83 + (smooth(now / 420000) - 0.5) * 10 + (smooth(now / 90000) - 0.5) * 4)));   // gente entrando e saindo a cada poucos minutos
 }
+export const ONLINE_MIN = 68, ONLINE_MAX = 159;
 // quem está online agora (rodízio a cada 20 min; sempre os mesmos para todos os aparelhos)
 export function onlineSet(now = Date.now()) {
   return new Set(byPropensity(now).slice(0, Math.min(NPCS.length, onlineCount(now))).map(n => n.id));

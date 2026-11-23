@@ -4,7 +4,7 @@ export const DEFAULTS = {
   npcBoost: 3,        // força final dos concorrentes do mundo (x)
   npcRampDays: 30,    // dias reais para os concorrentes chegarem à força final
   hunt: true,         // os maiores concorrentes perseguem o líder do ranking
-  huntLead: 1.04,     // quanto o 1º perseguidor fica acima do líder (1,04 = 4%)
+  huntLead: 1.02,     // quanto o 1º perseguidor fica acima do líder (1,02 = 2%)
   near: true,         // sempre 3 concorrentes logo acima de quem está subindo
   incomeTax: 0.05,    // imposto de renda sobre o lucro do mês, igual para todos
   incomeMin: 300000,  // a partir de qual patrimônio paga imposto de renda

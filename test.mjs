@@ -633,7 +633,8 @@ import * as NP from './npcs.js';
   assert.ok(w1[0] < 1.2e6, 'topo alto demais');
   assert.ok(w1.filter(w => w < 100000).length >= 10, 'novato precisa passar alguém logo');
   const at = h => NP.onlineCount(Date.UTC(2026, 10, 18, h + 3));          // horário de Brasília
-  for (let h = 0; h < 24; h++) assert.ok(at(h) >= 20 && at(h) <= 32, `online fora de 20 a 32 às ${h} h: ${at(h)}`);
+  for (let h = 0; h < 24; h++) assert.ok(at(h) >= 68 && at(h) <= 159, `online fora de 68 a 159 às ${h} h: ${at(h)}`);
+  assert.ok(at(21) > 130 && at(4) < 80, 'pico à noite, vale de madrugada');
   assert.ok(at(21) > at(4), 'à noite tem mais gente que de madrugada');
   assert.equal(NP.onlineNow(Date.UTC(2026, 10, 18, 15)).length, NP.onlineNow(Date.UTC(2026, 10, 18, 15, 5)).length);
   const p = NP.profile(NP.NPCS[0], 3); assert.ok(p.name && p.level >= 1 && p.stats.hands >= 0 && p.bio);
