@@ -8,7 +8,7 @@ export const STYLES = ['educado', 'informal', 'amigo', 'chato'];
 const SPEED = [[8e3, 45e3], [60e3, 120e3], [120e3, 300e3], [300e3, 600e3]];
 export function persona(nick) {
   const x = hash(nick), s = (x >>> 4) % 100;
-  return { style: STYLES[x % 4], speed: SPEED[s < 30 ? 0 : s < 65 ? 1 : s < 85 ? 2 : 3], ignore: [0.08, 0.1, 0.05, 0.3][x % 4] };
+  return { style: STYLES[x % 4], speed: SPEED[s < 30 ? 0 : s < 65 ? 1 : s < 85 ? 2 : 3], ignore: [0.12, 0.2, 0.08, 0.55][x % 4] };
 }
 
 const fold = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');

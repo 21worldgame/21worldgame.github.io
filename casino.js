@@ -74,7 +74,7 @@ export async function initCasino() {
   renderLobby();
   G.onLogin = loadGlobalRanking; loadGlobalRanking(); setInterval(loadGlobalRanking, 5000);
   Auth.onRankChange(loadGlobalRanking);
-  setInterval(() => { if (!$('#lobby').hidden && $('#lobby-hero')) $('#lobby-hero').innerHTML = lobbyHero(Math.max(NPC.onlineSet(Live.now()).size, (lobby?.peers.size || 0) + 1)); renderRanking(); if (lobby) $('#online').innerHTML = `<i class="is-on"></i>${NPC.onlineSet(Live.now()).size + lobby.peers.size + 1} jogadores online`; }, 4000);   // os números do mundo andam sozinhos
+  setInterval(() => { NPC.CLOCK.real = (lobby?.peers.size || 0) + 1; if (!$('#lobby').hidden && $('#lobby-hero')) $('#lobby-hero').innerHTML = lobbyHero(NPC.onlineTotal(Live.now())); renderRanking(); if (lobby) $('#online').innerHTML = `<i class="is-on"></i>${NPC.onlineTotal(Live.now())} jogadores online`; }, 4000);   // os números do mundo andam sozinhos
   G.onRender = renderRanking;
   const code = new URLSearchParams(location.search).get('mesa');
   if (code) { G.goto('mesa'); joinOnline(code); }
@@ -140,7 +140,7 @@ export function renderLobby() {
     ...online.map(o => tableCard(o.t, 'online', o.host)),
     ...SOLO.map(t => tableCard(t, 'solo')),
   ].join('');
-  const onN = NPC.onlineSet(Live.now()).size + peers.length + 1;
+  NPC.CLOCK.real = peers.length + 1; const onN = NPC.onlineTotal(Live.now());
   if (lobby) $('#online').innerHTML = `<i class="is-on"></i>${onN} jogadores online`;
   if ($('#lobby-hero')) $('#lobby-hero').innerHTML = lobbyHero(onN);
   renderRanking();

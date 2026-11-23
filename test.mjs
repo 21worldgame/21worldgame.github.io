@@ -1610,3 +1610,6 @@ import * as CT from './contador.js';
   assert.equal(L.landSale(s, l), 920000, 'revenda na hora: no máximo o que pagou, menos 8%');
   s.month = 22; assert.equal(L.landSale(s, l), Math.round(1e6 * 1.06 * 0.92), 'um ano depois: até 6% de ganho');
   assert.equal(L.landSale(s, { value: 5e5 }), 460000, 'terra sem preço de compra: valor menos 8%'); console.log('venda de terra ok'); }
+{ const t = Date.now(); NP.CLOCK.real = 4; const s = NP.onlineSet(t), m = WD.current(NP.CLOCK.world, t);
+  assert.ok([...s].every(id => NP.startMonth(NP.byId(id)) <= m), 'bot online já chegou ao mundo (está no ranking)');
+  assert.equal(NP.onlineTotal(t), s.size + 4); assert.ok(NP.NPCS.some(n => !n.bio) && NP.NPCS.some(n => n.bio)); NP.CLOCK.real = 1; console.log('online alinhado ok'); }

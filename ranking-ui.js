@@ -29,9 +29,9 @@ const npcColls = (pid, month) => { if (month < COLL_FROM) return []; let h = 0; 
 // junta os dados extras (hectares, maior prêmio) que cada fonte tem
 function rows() {
   const w = Live.world(), t = Live.now(), month = W.current(w, t) + W.progress(w, t), me = profileOf();
-  const base = C.rankingRows(500), isReal = r => r.pid === 'me' || (r.pid && !String(r.pid).startsWith('npc:') && !String(r.pid).startsWith('u:'));
+  const base = C.rankingRows(500);
   // online alinhado: o mundo mostra de 68 a 159 jogadores online no total, contando os jogadores de verdade; os bots completam o resto
-  const on = new Set([...NPC.onlineSet(t)].slice(0, Math.max(0, NPC.onlineCount(t) - base.filter(isReal).length)));
+  const on = NPC.onlineSet(t);
   return base.map(r => {
     r = { ...r, online: r.pid === 'me' ? true : String(r.pid || '').startsWith('npc:') ? on.has(r.pid.slice(4)) : String(r.pid || '').startsWith('u:') ? false : !!r.pid };   // da nuvem sem estar no salão = fora agora
     if (String(r.pid).startsWith('npc:')) { const p = NPC.profile(NPC.byId(r.pid.slice(4)), month), c = npcColls(r.pid, month); return { ...r, ha: p.ha, best: p.stats.best, wins: p.stats.wins, colls: c, prestige: c.length * 10 }; }
@@ -72,7 +72,7 @@ export function render() {
   if (!me && C1.min) { const w = profileOf().worth; $('#rk-me').innerHTML = `<div class="rk-me__txt"><b>💎 Clube dos 100 milhões</b><span class="small">Só entra quem passa de ${money(C1.min)} de patrimônio. Faltam <b class="good">${money(Math.max(0, C1.min - w))}</b> para você.</span></div>`; }
   if (!pageRows.length) $('#rk-list').innerHTML = `<li class="muted rk-empty">${query ? 'Nenhum jogador com esse nome.' : C1.min ? 'Ninguém chegou aos R$ 100 milhões ainda. Seja o primeiro.' : C1.has ? 'Ninguém pontuou aqui ainda: o mundo acabou de recomeçar. Seja o primeiro.' : 'Ninguém online agora.'}</li>`;
   last = now;
-  const onCount = Math.max(NPC.onlineCount(Live.now()), every.filter(r => r.online && !String(r.pid).startsWith('npc:')).length);   // total do mundo (68 a 159), com os jogadores de verdade dentro
+  const onCount = NPC.onlineTotal(Live.now());   // o mesmo total do chat e do salão (bots online + jogadores de verdade)
   $('#rk-count').innerHTML = `<b>${every.length}</b> jogadores no ranking · <b class="good">${onCount}</b> online agora <button class="btn btn--glass btn--sm" data-act="rk-online" aria-pressed="${onlyOn}">${onlyOn ? 'mostrar todos' : 'só quem está online'}</button>`;
   const nums = Array.from({ length: pages }, (_, k) => k).filter(k => k === 0 || k === pages - 1 || Math.abs(k - page) <= 2);
   $('#rk-pages').innerHTML = pages > 1 ? `<button class="btn btn--glass btn--sm" data-act="rk-page" data-id="${page - 1}" ${page ? '' : 'disabled'}>‹ anterior</button>${nums.map((k, j) => `${j && k - nums[j - 1] > 1 ? '<span class="muted">…</span>' : ''}<button class="rk-pg${k === page ? ' is-on' : ''}" data-act="rk-page" data-id="${k}">${k + 1}</button>`).join('')}<button class="btn btn--glass btn--sm" data-act="rk-page" data-id="${page + 1}" ${page < pages - 1 ? '' : 'disabled'}>próxima ›</button>` : '';

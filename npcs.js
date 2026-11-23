@@ -2,6 +2,7 @@
 // Tudo é calculado pelo horário e pelo mês do mundo, então é igual para todos os aparelhos.
 import { T } from './tune.js';
 import { rank, CARS } from './logic.js';
+import { current, DEFAULT as WORLD0 } from './world.js';
 
 // [nick, patrimônio inicial, crescimento por mês, pele, cabelo, cor do cabelo, barba, roupa, cor da roupa, acessório, frase]
 const RAW = [
@@ -83,8 +84,8 @@ for (const n of [...BASE, ...EXTRA]) {
   Object.defineProperty(n, 'nick', { enumerable: true, get() { return this.gnick && Date.now() >= this.renameAt ? this.gnick : this.orig; } });
 }
 // mundo recomeçado: as bios antigas falavam de time, haras, galgo, fazenda e carta que ninguém tem mais. Todo bot começa com uma frase de quem acabou de chegar
-const FRESH = ['comecei agora, bora', 'recomeçando do zero kkk', 'primeiro dia por aqui', 'sem nada ainda, vamos ver', 'rumo ao primeiro milhão', 'recomecei do zero, sem drama', 'novo por aqui, pega leve', 'meta: sair dos 10 mil'];
-export const NPCS = [...BASE, ...EXTRA].map(n => ({ ...n, bio: FRESH[n.i % FRESH.length] }));
+const FRESH = ['bora', 'sem tempo, só passando', 'foco no gado', 'aceito parceria', 'chama no pv', 'devagar e sempre', '🐂', 'só no 21 hoje', 'comecei agora, bora', 'recomeçando do zero kkk', 'primeiro dia por aqui', 'sem nada ainda, vamos ver', 'rumo ao primeiro milhão', 'recomecei do zero, sem drama', 'novo por aqui, pega leve', 'meta: sair dos 10 mil'];
+export const NPCS = [...BASE, ...EXTRA].map(n => ({ ...n, bio: hash(n.i * 59 + 11) < 0.45 ? '' : FRESH[Math.floor(hash(n.i * 61 + 3) * FRESH.length)] }));   // ~45% sem recado no perfil
 // folga: jogadores fora do jogo até a hora indicada (UTC). 12:20 de Brasília = 15:20 UTC. Apague a linha para voltarem antes.
 export const AWAY = { 'ReiDoGado': Date.UTC(2026, 10, 21, 15, 20), 'A Boiadeira': Date.UTC(2026, 10, 21, 15, 20) };
 export const isAway = (n, now = Date.now()) => (AWAY[typeof n === 'string' ? byNick(n)?.orig ?? n : n?.orig ?? n?.nick] || 0) > now;
@@ -109,7 +110,11 @@ export function form(n, t = Date.now()) {
 const peakOf = n => (hash(n.i * 7 + 3) < 0.3 ? 22 + hash(n.i * 7 + 4) * 5 : 11 + hash(n.i * 7 + 4) * 11) % 24;   // 30% corujas
 function hourFit(n, t) { const h = ((t / 36e5 - 3) % 24 + 24) % 24, x = Math.abs(h - peakOf(n)), dist = Math.min(x, 24 - x); return Math.max(0, 1 - dist / 7); }
 export const propensity = (n, t) => hourFit(n, t) * 0.55 + drive(n, t) * 0.6 + hash(n.i * 97 + Math.floor(t / 1200000)) * 0.3;
-const byPropensity = t => [...NPCS].filter(n => !isAway(n, t)).sort((a, b) => propensity(b, t) - propensity(a, t));
+// relógio do mundo (live.js troca pela config do servidor) e quantos jogadores de verdade estão no salão (casino.js atualiza):
+// online = só quem já chegou ao mundo (está no ranking), e os bots completam o total junto com as pessoas de verdade
+export const CLOCK = { world: WORLD0, real: 1 };
+const arrived = (n, t) => current(CLOCK.world, t) >= startMonth(n);
+const byPropensity = t => [...NPCS].filter(n => !isAway(n, t) && arrived(n, t)).sort((a, b) => propensity(b, t) - propensity(a, t));
 
 // largada: nos primeiros 288 meses do mundo (2 dias reais) os bots crescem 6x mais devagar e não caçam ninguém (rivals.js)
 export const EARLY = 288;
@@ -179,9 +184,11 @@ export function onlineCount(now = Date.now()) {
   return Math.max(ONLINE_MIN, Math.min(ONLINE_MAX, Math.round(68 + (base - 30) / 72 * 83 + (smooth(now / 420000) - 0.5) * 10 + (smooth(now / 90000) - 0.5) * 4)));   // gente entrando e saindo a cada poucos minutos
 }
 export const ONLINE_MIN = 68, ONLINE_MAX = 159;
+// total que todas as telas mostram: bots online + jogadores de verdade (ranking, chat, salão)
+export const onlineTotal = (now = Date.now()) => onlineSet(now).size + CLOCK.real;
 // quem está online agora (rodízio a cada 20 min; sempre os mesmos para todos os aparelhos)
-export function onlineSet(now = Date.now()) {
-  return new Set(byPropensity(now).slice(0, Math.min(NPCS.length, onlineCount(now))).map(n => n.id));
+export function onlineSet(now = Date.now(), real = CLOCK.real) {
+  return new Set(byPropensity(now).slice(0, Math.max(0, onlineCount(now) - real)).map(n => n.id));
 }
 export function onlineNow(now = Date.now(), max = 12) {
   const want = Math.min(NPCS.length, Math.max(4, Math.round(onlineCount(now) / 5)));

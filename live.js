@@ -5,6 +5,7 @@ import { G, $, esc, brl, int, say, save, note, badge, levelUp, blankState, profi
 import * as P from './progress.js';
 import * as Auth from './auth.js';
 import * as W from './world.js';
+import { CLOCK as NPC_CLOCK } from './npcs.js';
 import * as L from './logic.js';
 
 export const CFG = { xp_mult: 1, daily_mult: 1, job_mult: 1, prize_mult: 1, maintenance: false, maintenance_msg: '', event: '' };
@@ -109,7 +110,7 @@ async function loadConfig(sb) {
   const { data, error } = await sb.from('game_config').select('data').eq('id', 1).maybeSingle();
   if (error || !data) return;
   const d = data.data || {};
-  CFG.world = W.sanitize(d.world || W.DEFAULT);
+  CFG.world = W.sanitize(d.world || W.DEFAULT); NPC_CLOCK.world = CFG.world;
   Object.assign(CFG, { xp_mult: num(d.xp_mult, 1), daily_mult: num(d.daily_mult, 1), job_mult: num(d.job_mult, 1), prize_mult: num(d.prize_mult, 1),
     maintenance: !!d.maintenance, maintenance_msg: String(d.maintenance_msg || '').slice(0, 280), event: String(d.event || '').slice(0, 120) });
   P.setXpMult(CFG.xp_mult);

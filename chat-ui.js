@@ -92,7 +92,7 @@ function drawPeople() {
     + row('tv', icon('<i class="tv__dot"></i>'), 'TV 21', tv ? esc(`${tv.name} ${tv.what}`) : 'últimas notícias do mundo', 0, 0);
   const ranked = list.filter(p => !f || p.name.toLowerCase().includes(f)).map(p => ({ p, last: lastOf(p.id) }))
     .sort((a, b) => (b.last?.at || 0) - (a.last?.at || 0) || a.p.name.localeCompare(b.p.name));
-  html += `<li class="rz__sec">online agora · ${ranked.length}</li>`;
+  html += `<li class="rz__sec">online agora · ${f ? ranked.length : list.length + 1}</li>`;
   html += ranked.map(({ p, last }) => row(p.id, mini(p.look, p.name), p.name, typing.has(p.id) ? '<i class="rz__typing">digitando...</i>' : last ? esc(`${last.mine ? 'você: ' : ''}${last.text}`) : `nível ${p.level} · toque para conversar`, last?.at, unread.get(p.id) || 0, '<i class="rz__dot" aria-label="online"></i>')).join('')
     || `<li class="rz__empty">Ninguém com esse nome online.</li>`;
   el.innerHTML = html;
