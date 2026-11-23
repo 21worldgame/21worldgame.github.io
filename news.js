@@ -9,7 +9,7 @@ import { turnOf } from './npcs.js';
 export const ANCHORS = ['Willian Borner', 'Retana Rater'];
 export const NEWS_MIN = 30000;        // movimentos a partir de R$ 30 mil viram notícia
 export const NEWS_GAP = 70000;        // notícia dos jogadores do mundo: uma a cada ~70 s (algumas janelas sem notícia)
-export const KINDS = { compra: 'COMPRA', venda: 'VENDA', troca: 'TROCA', premio: 'PRÊMIO', negocio: 'NEGÓCIO', economia: 'ECONOMIA', alerta: 'ALERTA' };
+export const KINDS = { compra: 'COMPRA', venda: 'VENDA', troca: 'TROCA', premio: 'PRÊMIO', negocio: 'NEGÓCIO', economia: 'ECONOMIA', alerta: 'ALERTA', fortuna: 'FORTUNA', edicao: 'JORNAL 21', cidade: 'CIDADE' };
 
 // R$ 3,6 mi · R$ 850 mil · R$ 12.500
 export const short = v => { v = Math.abs(Math.round(v)); const f = (x, u) => `R$ ${String(+x.toFixed(x < 10 ? 1 : 0)).replace('.', ',')} ${u}`;

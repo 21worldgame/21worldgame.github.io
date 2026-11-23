@@ -124,7 +124,7 @@ mount(); draw();
 // ---------- Jornal 21: abertura em clima de telejornal quando o jogo abre (uma vez por edição) ----------
 // O âncora abre, apresenta cada reportagem da edição especial (foto, chamada, manchete e texto) e encerra.
 const J_KEY = '21world.jornal';
-let jEds = [], jI = 0, jAnchor = '';
+let jEds = [], jI = 0, jAnchor = '', jIntro = null;   // jIntro: { greet, name, text } das edições programadas (cidade-ui.js)
 const jSpeak = t => { try { if (!window.speechSynthesis) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'pt-BR'; u.rate = 1.05; speechSynthesis.speak(u); } catch {} };
 const jStop = () => { try { speechSynthesis.cancel(); } catch {} };
 function jMount() {
@@ -146,8 +146,8 @@ function jSlide() {
   const tops = jEds.slice(0, 3).map(x => x.title.split(':')[0].toLowerCase()).join('; ');
   if (intro) {
     $('#jn-img').src = 'assets/photo-vegas.webp'; $('#jn-kick').textContent = 'boa noite';
-    $('#jn-title').textContent = `Boa noite. Eu sou ${who}, e este é o Jornal 21.`;
-    $('#jn-lead').textContent = `Numa edição especial, as mudanças que mexem com o bolso de todo mundo no 21 World: ${tops}. São ${n} reportagens. Fique com a gente.`;
+    $('#jn-title').textContent = jIntro ? `${jIntro.greet}. Eu sou ${who}, e este é o ${jIntro.name}.` : `Boa noite. Eu sou ${who}, e este é o Jornal 21.`;
+    $('#jn-lead').textContent = jIntro ? `${jIntro.text} São ${n} reportagens. Fique com a gente.` : `Numa edição especial, as mudanças que mexem com o bolso de todo mundo no 21 World: ${tops}. São ${n} reportagens. Fique com a gente.`;
     $('#jn-by').textContent = 'Redação TV 21';
   } else if (outro) {
     $('#jn-img').src = 'assets/photo-vegas.webp'; $('#jn-kick').textContent = 'até a próxima';
@@ -169,9 +169,19 @@ export function jornal(force = false) {
   let seen = ''; try { seen = localStorage.getItem(J_KEY) || ''; } catch {}
   const seenAt = Number(seen) || (seen === 'jornal-v153' ? (N.EDITORIAL.find(e => e.id === 'ed152-15')?.at || 0) : 0);
   jEds = N.editorial().filter(e => force || e.at > seenAt); if (!jEds.length) return false;
+  jIntro = null;
   try { localStorage.setItem(J_KEY, String(Math.max(...N.editorial().map(e => e.at)))); } catch {}
   jMount(); jI = 0; jAnchor = N.ANCHORS[Math.floor(Date.now() / 864e5) % N.ANCHORS.length];
+  { const ed = document.querySelector('.jn__ed'); if (ed) ed.textContent = 'edição especial'; }
   jSlide(); const d = $('#dlg-jornal'); if (!d.open) d.showModal();
+  return true;
+}
+// edição programada da cidade (Bom dia 21, Meio-Dia, Noite): mesmas telas do jornal, com as páginas e a abertura da edição
+export function boletim(slides, intro) {
+  if (!slides.length || $('#dlg-jornal')?.open) return false;
+  jMount(); jEds = slides; jIntro = intro; jI = 0; jAnchor = N.ANCHORS[Math.floor(Date.now() / 36e5) % N.ANCHORS.length];
+  const ed = document.querySelector('.jn__ed'); if (ed) ed.textContent = intro.name.toLowerCase();
+  jSlide(); $('#dlg-jornal').showModal();
   return true;
 }
 document.addEventListener('click', e => {

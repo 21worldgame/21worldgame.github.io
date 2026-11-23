@@ -15,6 +15,7 @@ import { editorial } from './news.js';
 import * as CTR from './contratos.js';
 import { brl } from './store.js';
 import * as INVU from './invest-ui.js';
+import { gazetaHTML } from './cidade-ui.js';
 
 const IMG = n => `assets/news/news-${n}.webp`;
 // o que vem aí (sem data marcada)
@@ -132,6 +133,7 @@ export function render() {
   <header class="portal__mast"><div><span class="portal__brand">21 World <b>Notícias</b></span><span class="portal__date">${esc(W.monthName(m))}, ano ${year} · edição de hoje</span></div>
     <span class="portal__live"><i></i> ao vivo</span></header>
   ${panelHTML(s)}
+  <section class="gz" id="gz" aria-label="Gazeta 21, o jornal da cidade">${gazetaHTML()}</section>
   <div class="portal__top">${card(SOON[1], 'pn--hero')}<div class="portal__side">${card(SOON[2])}${card(SOON[3])}</div></div>
   <section class="portal__trend" style="--bg:url(${IMG('safra')})">
     <div class="portal__trend-in"><span class="pn__tag">mercado · ano ${year}</span>
