@@ -1587,6 +1587,10 @@ import * as CT from './contador.js';
   console.log('giro da sorte ok');
 }
 
+// investimento do banco rende nos meses em que o jogador ficou fora
+{ const INVx = await import('./invest.js'), s = { money: 1e6, invest: [], month: 1, nextId: 1 };
+  assert.equal(INVx.apply(s, 'poupanca', 100000, 1e6), null); for (let k = 0; k < 100; k++) INVx.monthly(s);
+  assert.equal(Math.round(s.invest[0].acc), Math.round(100000 * 0.0055 * 100), 'poupança rende 0,55% por mês, mês a mês, sem parar'); console.log('investimento rende fora ok'); }
 // ---------- produtos no inventário: unidade e preço de referência ----------
 {
   const TDx = await import('./trade.js'), s = { cars: [], stable: { animals: [] }, lands: [], cards: [], stock: { soja: 10, laranja: 10 }, prices: { soja: 150 } };

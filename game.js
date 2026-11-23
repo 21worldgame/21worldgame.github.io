@@ -1556,7 +1556,11 @@ function worldMonths0() {
   if (s.worldSync !== true) { s.month = target; s.worldSync = true; CD.setMonth(s.month); save(); render(); return; }     // primeira vez: entra no mês atual do mundo
   const p = W.plan(s.month, target);
   if (!p.ticks || C.busyRound() || SUI.isRunning()) return;
-  if (p.skipped) { s.month += p.skipped; note(`o mundo avançou ${p.skipped} meses enquanto você esteve fora (sem cobranças)`); }
+  if (p.skipped) {
+    s.month += p.skipped; note(`o mundo avançou ${p.skipped} meses enquanto você esteve fora (sem cobranças)`);
+    // investimento no banco não para quando a pessoa some: rende (e vence) todos os meses que ela ficou fora, igual à vida real
+    for (let k = 0; k < p.skipped; k++) for (const l of INV.monthly(s)) note(l.txt, l.val);
+  }
   const before = s.money, logBefore = s.log.length; let harvests = 0;
   const closes = [];   // o que cada fechamento lançou (o contador mostra exatamente isso)
   for (let i = 0; i < p.ticks; i++) {
@@ -1646,7 +1650,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 179;
+const APP_VERSION = 180;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

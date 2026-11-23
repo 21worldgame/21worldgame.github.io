@@ -74,7 +74,7 @@ export async function initCasino() {
   renderLobby();
   G.onLogin = loadGlobalRanking; loadGlobalRanking(); setInterval(loadGlobalRanking, 5000);
   Auth.onRankChange(loadGlobalRanking);
-  setInterval(() => { if (!$('#lobby').hidden && $('#lobby-hero')) $('#lobby-hero').innerHTML = lobbyHero(NPC.onlineSet(Live.now()).size + (lobby?.peers.size || 0) + 1); renderRanking(); if (lobby) $('#online').innerHTML = `<i class="is-on"></i>${NPC.onlineSet(Live.now()).size + lobby.peers.size + 1} jogadores online`; }, 4000);   // os números do mundo andam sozinhos
+  setInterval(() => { if (!$('#lobby').hidden && $('#lobby-hero')) $('#lobby-hero').innerHTML = lobbyHero(Math.max(NPC.onlineSet(Live.now()).size, (lobby?.peers.size || 0) + 1)); renderRanking(); if (lobby) $('#online').innerHTML = `<i class="is-on"></i>${NPC.onlineSet(Live.now()).size + lobby.peers.size + 1} jogadores online`; }, 4000);   // os números do mundo andam sozinhos
   G.onRender = renderRanking;
   const code = new URLSearchParams(location.search).get('mesa');
   if (code) { G.goto('mesa'); joinOnline(code); }
