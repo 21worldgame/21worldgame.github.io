@@ -18,7 +18,7 @@ export const KB = [
     'Ganha XP jogando mesas, vencendo, comprando terra e carro, plantando, colhendo, vendendo gado e cumprindo missões.'] },
   { t: 'prêmio diário e passe', k: ['diario', 'roleta de premio', 'sequencia', 'passe', 'temporada', 'missao', 'missoes'], a: [
     'Prêmio diário: 200 fichas × dias seguidos (até 7), e o 7º dia vale o dobro. Faltou um dia, a sequência recomeça.',
-    'Passe de temporada: 30 níveis de 120 XP cada. Missões do dia dão fichas e XP.'] },
+    'Passe de temporada: 30 níveis de 120 XP cada, e cada nível paga 100 fichas. No 21 só 2% das vitórias dão XP. Missões do dia dão fichas e XP.'] },
   { t: 'fichas', k: ['ficha', 'fichas', 'caixa', 'trocar fichas', 'resgate'], a: [
     '1 ficha vale R$ 10. Você compra fichas no caixa do salão e pode trocar de volta por dinheiro.',
     'Nas mesas entre jogadores, a casa fica com 5% do pote.'] },

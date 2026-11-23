@@ -170,8 +170,8 @@ export function levelUp(level) {
 }
 
 // registra um evento de progresso e comemora o que destravou
-export function award(ev, n = 1) {
-  const out = P.track(G.S, ev, n);
+export function award(ev, n = 1, xp = true) {
+  const out = P.track(G.S, ev, n, xp);
   out.missions.forEach(m => badge('Missão cumprida', `${m.txt}. Resgate ${int(m.reward)} fichas.`, 'mission'));
   out.ach.forEach(a => badge('Conquista desbloqueada', a.txt));
   if (out.levels.length) levelUp(out.levels.at(-1));

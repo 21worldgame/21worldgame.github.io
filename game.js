@@ -97,7 +97,7 @@ function rollTo(el, to, fmt) {
 function renderPass() {
   const s = S(), tier = P.passTier(s), into = (s.pass.xp % P.PASS_XP) / P.PASS_XP;
   const end = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
-  $('#ps-sub').textContent = `Temporada de ${new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}. Termina em ${Math.ceil((end - Date.now()) / 864e5)} dias. Todo XP ganho no jogo avança o passe.`;
+  $('#ps-sub').textContent = `Temporada de ${new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}. Termina em ${Math.ceil((end - Date.now()) / 864e5)} dias. Todo XP ganho no jogo avança o passe (no 21, só 2% das vitórias dão XP). Cada nível paga ${P.PASS_CHIPS} fichas.`;
   $('#ps-bar').style.transform = `scaleX(${tier >= P.PASS_TIERS ? 1 : into})`;
   $('#ps-xp').textContent = tier >= P.PASS_TIERS ? 'Passe completo!' : `nível ${tier}, faltam ${P.PASS_XP - (s.pass.xp % P.PASS_XP)} XP para o ${tier + 1}`;
   $('#ps-track').innerHTML = Array.from({ length: P.PASS_TIERS }, (_, k) => {
@@ -1683,7 +1683,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 193;
+const APP_VERSION = 194;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

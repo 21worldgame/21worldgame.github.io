@@ -87,7 +87,9 @@ export function ensure(s, today) {
 }
 
 // registra um evento; devolve o que destravou para a interface comemorar
-export function track(s, ev, n = 1) {
+export const BJ_XP_CHANCE = 0.02;   // no 21 só 2% das vitórias dão XP (e passe): mão mínima repetida não sobe mais o passe
+// xp = false: conta para missões e conquistas, mas não dá XP nem passe
+export function track(s, ev, n = 1, xp = true) {
   const out = { levels: [], ach: [], missions: [] };
   s.counts[ev] = (s.counts[ev] || 0) + n;
   for (const m of s.missions.list) {
@@ -96,7 +98,7 @@ export function track(s, ev, n = 1) {
     m.prog = Math.min(def.goal, m.prog + n);
     if (m.prog >= def.goal) out.missions.push(def);
   }
-  const gained = Math.round((XP[ev] || 0) * n * XP_MULT * PK.mult(s, 'xp'));
+  const gained = xp ? Math.round((XP[ev] || 0) * n * XP_MULT * PK.mult(s, 'xp')) : 0;
   s.xp += gained;
   passGain(s, gained);
   while (s.xp >= xpNeed(s.level)) {
@@ -148,11 +150,8 @@ export function claimDaily(s, today, yesterday, payChips = true) {
 
 // ---------- passe da temporada: 30 níveis por mês; todo XP ganho também avança o passe ----------
 export const PASS_TIERS = 30, PASS_XP = 120;
-export function passReward(tier) {          // nível de 1 a 30
-  if (tier % 10 === 0) return { kind: 'chips', amount: 2500 * (tier / 10) };
-  if (tier % 5 === 0) return { kind: 'money', amount: 30000 * (tier / 5) };
-  return tier % 2 ? { kind: 'chips', amount: 150 + tier * 20 } : { kind: 'money', amount: 4000 + tier * 800 };
-}
+export const PASS_CHIPS = 100;
+export const passReward = () => ({ kind: 'chips', amount: PASS_CHIPS });   // todo nível do passe paga 100 fichas
 export function passEnsure(s, month) {
   if (s.pass?.month !== month) s.pass = { month, xp: 0, claimed: [] };
   return s.pass;

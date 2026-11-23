@@ -10,6 +10,7 @@ import * as Live from './live.js';
 import { botsFor, sitting } from './botpool.js';
 import * as W from './world.js';
 import { luck } from './perks.js';
+import { BJ_XP_CHANCE } from './progress.js';
 import * as RV from './rivals.js';
 import * as SH from './shop.js';
 import * as NPC from './npcs.js';
@@ -525,10 +526,11 @@ function accounting(v, me) {
     G.S.chips += s.pay + luck(G.S, s.pay - s.bet);
     const st = G.S.stats;
     st.hands++; if (s.pay > s.bet) { st.wins++; st.best = Math.max(st.best, s.pay - s.bet); }
-    award('hand');
-    if (s.pay > s.bet) award('win');
-    if (s.hands.some(h => BJ.value(h.cards) === 21)) award('21');
-    if (!cur?.local) award('onlineHand');
+    const xp = s.pay > s.bet && Math.random() < BJ_XP_CHANCE;   // XP e passe só em 2% das vitórias
+    award('hand', 1, xp);
+    if (s.pay > s.bet) award('win', 1, xp);
+    if (s.hands.some(h => BJ.value(h.cards) === 21)) award('21', 1, xp);
+    if (!cur?.local) award('onlineHand', 1, xp);
     save(); G.render(); announce();
   }
 }

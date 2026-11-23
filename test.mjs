@@ -409,7 +409,11 @@ import * as TD from './trade.js';
   const r1 = P.passClaim(s, 1); assert.ok(r1 && (s.chips > 0 || s.money > 0));
   assert.equal(P.passClaim(s, 1), null); assert.equal(P.passClaim(s, 30), null);
   P.passEnsure(s, '2026-12'); assert.equal(s.pass.xp, 0); assert.equal(s.pass.claimed.length, 0);
-  assert.equal(P.passReward(10).kind, 'chips'); assert.equal(P.passReward(5).kind, 'money');
+  for (const t of [1, 5, 10, 30]) assert.deepEqual(P.passReward(t), { kind: 'chips', amount: 100 }, 'todo nível paga 100 fichas');
+  // 21: mão jogada conta para missão, mas XP e passe só quando liberado (2% das vitórias)
+  const xp0 = s.pass.xp, c0 = s.counts.hand || 0; P.track(s, 'hand', 1, false); P.track(s, 'win', 1, false);
+  assert.equal(s.pass.xp, xp0, 'sem XP no passe'); assert.equal(s.counts.hand, c0 + 1, 'missão continua contando');
+  assert.equal(P.BJ_XP_CHANCE, 0.02);
 }
 console.log('ok');
 // feira dos bots: comprar e revender na hora nunca dá lucro
