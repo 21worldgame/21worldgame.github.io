@@ -7,6 +7,7 @@ import * as Auth from './auth.js';
 import * as W from './world.js';
 import { CLOCK as NPC_CLOCK } from './npcs.js';
 import * as L from './logic.js';
+import { avatarSVG } from './avatar.js';
 
 export const CFG = { xp_mult: 1, daily_mult: 1, job_mult: 1, prize_mult: 1, maintenance: false, maintenance_msg: '', event: '' };
 const num = (v, d) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Math.min(10, Number(v)) : d);
@@ -73,6 +74,9 @@ function aviso24h(s) {
   if (s.dia24[2] || w - s.dia24[1] <= 3e5) return;
   s.dia24[2] = 1; save();
   $("#rf24-gain").textContent = brl(w - s.dia24[1]);
+  // agente federal: avatar de terno + quepe azul-marinho com distintivo dourado desenhado por cima da cabeça
+  const cap = '<g stroke="var(--ink-line)" stroke-width="2" stroke-linejoin="round"><path d="M64 46 C62 14 138 14 136 46 Z" fill="#0b1d3a"/><rect x="62" y="38" width="76" height="10" rx="2" fill="#13294f"/><path d="M62 47 Q100 58 138 47 L134 52 Q100 62 66 52 Z" fill="#05070d"/><path d="M100 20 l4 7 8 1 -6 5 2 8 -8 -4 -8 4 2 -8 -6 -5 8 -1 Z" fill="#facc15"/></g>';
+  $("#rf24-cop").innerHTML = avatarSVG({ skin: 3, hair: "raspado", beard: "nenhuma", eyes: 1, outfit: "terno", cloth: 1, acc: ["óculos escuros"] }, { label: "agente da Polícia Federal" }).replace("</svg>", cap + "</svg>");
   const d = $("#dlg-receita24"); if (d && !d.open) d.showModal();
 }
 export const admin = () => isAdmin;

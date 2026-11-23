@@ -3647,3 +3647,14 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .dlg--pro h3 { margin: 16px 0 6px; }
 @media (max-width: 40rem) { .pro-ph { flex-direction: column; text-align: center; } .pro-ph .pro-seals { justify-content: center; } }
 .dlg--pro > .dlg__x { position: sticky; top: 0; float: right; z-index: 3; margin: -8px -8px 0 8px; }
+
+/* aviso da Polícia Federal (Receita, R$ 300 mil/dia): agente com quepe e letreiro piscando */
+.dlg--pf { width: min(560px, calc(100vw - 20px)); padding: 0; overflow: hidden; border: 1px solid rgba(59,130,246,.55); background: linear-gradient(180deg, #0b1020, #05070d); box-shadow: 0 0 0 1px rgba(239,68,68,.25), 0 30px 80px -20px rgba(59,130,246,.5); }
+.pf-top { display: flex; justify-content: space-between; gap: 8px; padding: 9px 14px; font: 800 .8rem var(--font-display); letter-spacing: .08em; color: #fff; background: repeating-linear-gradient(135deg, #b91c1c 0 14px, #1d4ed8 14px 28px); text-shadow: 0 1px 3px #000; }
+.pf-top__live { animation: lpPulse 1.2s infinite; }
+.pf-stage { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 12px; padding: 14px 14px 0; align-items: end; background: radial-gradient(120% 80% at 20% 0, rgba(59,130,246,.3), transparent 60%); }
+.pf-cop { width: 130px; height: 150px; overflow: hidden; display: grid; align-items: end; animation: efIn .5s ease-out both; } .pf-cop svg { width: 130px; height: auto; }
+.pf-say h2 { margin: 0 0 6px; color: #fca5a5; font: 800 1.3rem var(--font-display); letter-spacing: .04em; } .pf-say p { margin: 0 0 8px; line-height: 1.5; font-size: .92rem; color: #e2e8f0; }
+.pf-body { padding: 10px 16px 14px; border-top: 3px solid #1d4ed8; background: rgba(255,255,255,.03); } .pf-body p { margin: 0 0 8px; line-height: 1.5; font-size: .9rem; color: #cbd5e1; }
+.pf-fim { color: #fca5a5 !important; font-weight: 800; }
+@media (prefers-reduced-motion: reduce) { .pf-top__live, .pf-cop { animation: none; } }
