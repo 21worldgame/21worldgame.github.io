@@ -55,6 +55,7 @@
   </script>
   <script type="module" src="game.js"></script>
   <script type="module" src="pix.js"></script>
+  <script type="module" src="pro-ui.js"></script>
 </head>
 <body>
   <div class="splash" id="splash" aria-hidden="true"><img src="assets/brand/logo-anim.svg" width="120" height="120" alt=""><span>carregando a mesa</span></div>
@@ -142,6 +143,7 @@
         <button role="tab" id="t-banco" data-tab="banco" aria-controls="p-banco" aria-selected="false" tabindex="-1"><svg><use href="#i-bank"/></svg>banco</button>
         <button role="tab" id="t-livro" data-tab="livro" aria-controls="p-livro" aria-selected="false" tabindex="-1"><svg><use href="#i-book"/></svg>livro-caixa</button>
         <button role="tab" id="t-equipe" data-tab="equipe" aria-controls="p-equipe" aria-selected="false" tabindex="-1"><svg><use href="#i-book"/></svg>equipe<span class="pill pill--team" id="team-badge" hidden>0</span></button>
+        <button role="tab" id="t-pro" data-tab="pro" aria-controls="p-pro" aria-selected="false" tabindex="-1"><svg><use href="#i-user"/></svg>profissionais<span class="pill" id="pro-badge" hidden>0</span></button>
       </div>
     </nav>
     <div class="ann-bar" id="ann-bar" role="status" hidden></div>
@@ -719,6 +721,8 @@
       <div class="eq-sec" id="ct-body"></div>
     </section>
 
+    <section id="p-pro" role="tabpanel" aria-labelledby="t-pro" class="panel" hidden></section>
+
     <section id="p-livro" role="tabpanel" aria-labelledby="t-livro" class="panel">
       <h2>livro-caixa</h2>
       <div class="glass scroll"><table>
@@ -802,6 +806,11 @@
   </dialog>
 
   <!-- perfil -->
+  <dialog class="dlg dlg--pro" id="dlg-pro" aria-labelledby="pro-dlg-t">
+    <button class="dlg__x btn btn--glass btn--sm" data-close>fechar</button>
+    <div id="pro-dlg"></div>
+  </dialog>
+
   <dialog class="dlg" id="dlg-profile" aria-labelledby="pf-name">
     <button class="dlg__x btn btn--glass btn--sm" data-close>fechar</button>
     <div class="pf" id="pf"></div>

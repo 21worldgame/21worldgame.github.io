@@ -1374,7 +1374,7 @@ for (const ev of ['mouseover', 'mouseout', 'focusin', 'focusout']) {
 const tabs = [...document.querySelectorAll('[role="tab"]')];
 // menu por categoria: a linha de cima escolhe a categoria, a de baixo mostra só as páginas dela
 const CATS = { inicio: ['inicio'], jogos: ['mesa', 'corridas', 'cartas', 'futebol'], fazenda: ['terras', 'gado', 'granja', 'suinos', 'laranja', 'cana', 'haras'],
-  negocios: ['negocios', 'trader', 'mercado', 'banco', 'livro', 'equipe'], voce: ['personagem', 'inventario', 'loja', 'ranking'] };
+  negocios: ['negocios', 'trader', 'mercado', 'banco', 'livro', 'equipe', 'pro'], voce: ['personagem', 'inventario', 'loja', 'ranking'] };
 const CAT_NAME = { inicio: 'início', jogos: 'jogos', fazenda: 'fazenda', negocios: 'negócios', voce: 'você' };
 const catOf = n => Object.keys(CATS).find(c => CATS[c].includes(n)) || 'jogos';
 const lastIn = {};
@@ -1650,7 +1650,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 187;
+const APP_VERSION = 189;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
