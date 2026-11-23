@@ -82,3 +82,42 @@ export function economy(saves, months = 36) {
     return { ...B, margin, alert: exp != null && B.in >= ALERT_MIN && margin != null && margin > exp + ALERT_GAP }; }).sort((a, b) => b.lucro - a.lucro);
   return { ...tot, rows };
 }
+
+// ---------- vigilância: quem enriqueceu rápido demais para o tempo que ficou jogando ----------
+// p = { id, name, created, banned, online, s (save), hist: [{ t, money }] (24 h), pixIn/pixOut: [{ amount, other, at }], receita (casos), gifts (R$ do admin) }
+// O ritmo justo é a mediana de R$ por hora jogada de quem já jogou 1 h+; quem passa de 4x isso, ou recebeu muito Pix, entra na lista.
+export const START = 10000, FAIR_X = 4;
+const dayKey = t => new Date(t - 3 * 36e5).toISOString().slice(0, 10);   // dia de Brasília
+export function watch(players, now = Date.now()) {
+  const today = dayKey(now), week = Array.from({ length: 7 }, (_, k) => dayKey(now - k * 864e5));
+  const rows = players.map(p => {
+    const s = p.s || {}, play = s.play || null, worth = s.money == null ? 0 : L.netWorth({ ...blank, ...s });
+    const playH = play ? play.ms / 36e5 : null, sum = a => a.reduce((t, x) => t + (Number(x.amount) || 0), 0);
+    const h = [...(p.hist || [])].sort((a, b) => a.t - b.t), money24 = h.length ? (Number(s.money) || 0) - h[0].money : null;
+    let casino = 0; try { casino = pnl(s).rows.find(x => x.key === 'jogos')?.lucro || 0; } catch {}
+    let warn = []; try { if (s.money != null) warn = alerts(s); } catch {}
+    return { ...p, worth, playH, todayH: (play?.days?.[today] || 0) / 36e5, weekH: week.reduce((t, d) => t + (play?.days?.[d] || 0), 0) / 36e5,
+      perHour: playH >= 0.25 ? (worth - START) / playH : null, money24, pixInSum: sum(p.pixIn || []), pixOutSum: sum(p.pixOut || []), casino, warn };
+  });
+  const rates = rows.filter(r => r.playH >= 1 && r.perHour > 0).map(r => r.perHour).sort((a, b) => a - b);
+  const fair = rates.length >= 3 ? rates[Math.floor(rates.length / 2)] : null;
+  for (const r of rows) {
+    const why = [], add = (pts, txt) => { r.score = (r.score || 0) + pts; why.push(txt); };
+    r.score = 0;
+    if (fair && r.perHour > fair * FAIR_X && r.worth > 200000) add(3, `ganha ${brlShort(r.perHour)} por hora jogada, ${Math.round(r.perHour / fair)}x o normal (${brlShort(fair)}/h)`);
+    if (r.playH != null && r.playH < 2 && r.worth > 1e6) add(3, `${brlShort(r.worth)} com só ${r.playH.toFixed(1).replace('.', ',')} h jogadas`);
+    if (r.playH == null && r.worth > 1e6) add(1, 'tempo jogado ainda não medido (jogo dele está em versão antiga)');
+    if (r.pixInSum > Math.max(100000, r.worth * 0.3)) add(3, `${brlShort(r.pixInSum)} recebidos por Pix (${Math.round(r.pixInSum / Math.max(1, r.worth) * 100)}% do patrimônio): pode ser outra conta dele mandando dinheiro`);
+    if (r.pixOutSum > Math.max(100000, (r.worth + r.pixOutSum) * 0.5)) add(2, `mandou ${brlShort(r.pixOutSum)} por Pix, mais da metade do que tinha (conta "laranja"?)`);
+    if (r.casino > Math.max(500000, r.worth * 0.2)) add(2, `cassino e apostas deram ${brlShort(r.casino)} de lucro`);
+    if (r.money24 != null && r.money24 > Math.max(1e6, r.worth * 0.5)) add(2, `dinheiro subiu ${brlShort(r.money24)} nas últimas 24 h`);
+    if (r.receita) add(Math.min(3, r.receita), `pego ${r.receita}x pela Receita Federal (subiu rápido demais em 10 min)`);
+    if (r.gifts > 0) why.push(`recebeu ${brlShort(r.gifts)} do administrador (não conta como suspeita)`);
+    for (const w of r.warn) add(1, w);
+    r.why = why;
+    // excesso: o que passa de 2x o ritmo justo pelo tempo jogado (presente do admin não entra)
+    r.excess = fair && r.playH != null ? Math.max(0, Math.round(r.worth - (r.gifts || 0) - (START + fair * 2 * r.playH))) : 0;
+  }
+  rows.sort((a, b) => b.score - a.score || b.worth - a.worth);
+  return { rows, fair, today };
+}

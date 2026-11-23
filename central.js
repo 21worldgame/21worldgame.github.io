@@ -52,7 +52,7 @@ async function enter(user) {
   }
   $('#ad-login').hidden = true; $('#ad-app').hidden = false;
   $('#ad-who').textContent = `Conectado como ${user.email}`;
-  show('overview');
+  show('vigia');
   pwBadge(); setInterval(pwBadge, 60000);
   watchOnline();
 }
@@ -104,7 +104,7 @@ for (const id of ['#ad-logout', '#ad-logout2']) $(id).addEventListener('click', 
 function show(tab) {
   document.querySelectorAll('.ad-nav button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === tab));
   document.querySelectorAll('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== tab; });
-  ({ overview: loadOverview, players: loadUsers, economy: loadConfig, news: loadAnns, log: loadLog, passwords: loadPw, terras: loadLands, livros: () => { if (!book.length) loadBook(); } })[tab]?.();
+  ({ vigia: loadVigia, overview: loadOverview, players: loadUsers, economy: loadConfig, news: loadAnns, log: loadLog, passwords: loadPw, terras: loadLands, livros: () => { if (!book.length) loadBook(); } })[tab]?.();
 }
 document.querySelector('.ad-nav').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) show(b.dataset.tab); });
 
@@ -202,7 +202,8 @@ async function openPlayer(id) {
     ['terras', (s.lands || []).filter(l => l.own).length], ['gado', int((s.herd || []).reduce((a, h) => a + h.heads, 0))],
     ['carros', (s.cars || []).length], ['animais de corrida', (s.stable?.animals || []).length], ['mãos de 21', int(s.stats?.hands)], ['clube de futebol', s.fut?.club ? esc(s.fut.club) : '—'],
     ['empresas', CAT_KEYS.filter(c => c !== 'usinas').reduce((t, c) => t + (s.biz?.[c] || []).length, 0)], ['usinas', (s.biz?.usinas || []).length], ['mina de ouro', s.mina ? 'sim' : 'não'],
-    ['troféus', (s.trophies || []).length], ['perfil', s.privateProfile ? 'privado' : 'público']];
+    ['troféus', (s.trophies || []).length], ['perfil', s.privateProfile ? 'privado' : 'público'],
+    ['horas jogadas', s.play ? hrs(s.play.ms / 36e5) : 'não medido'], ['jogou hoje', s.play ? hrs((s.play.days?.[new Date(Date.now() - 3 * 36e5).toISOString().slice(0, 10)] || 0) / 36e5) : '—'], ['dias que jogou (de 30)', s.play ? Object.keys(s.play.days || {}).length : '—']];
   $('#ap-body').innerHTML = `
     <h2 id="ap-name">${esc(u.name || '(sem nome)')}</h2>
     <p class="muted small">${esc(u.email || '')}, cadastro em ${when(u.created_at)}, último acesso em ${when(u.last_sign_in_at)}, save salvo em ${when(save?.updated_at)}</p>
@@ -587,4 +588,88 @@ document.addEventListener('click', async e => {
   const { data, error } = bm ? await sb.rpc('admin_release_mine') : await sb.rpc('admin_release_company', { p_brand: bb.dataset.freeBrand });
   if (error || data !== 'ok') return fail(error || data, 'liberar (rode supabase/admin-extra.sql)');
   await log('release_owner', null, { what }); toast(`${what} voltou para a loja.`); loadOwners();
+});
+
+// ---------- vigilância (admin-econ.js watch): quem enriqueceu rápido demais, Pix, cassino, Receita, tempo jogado ----------
+const hrs = h => (h == null ? '—' : h < 1 ? `${Math.round(h * 60)} min` : `${h.toFixed(1).replace('.', ',')} h`);
+async function pageAll(q) { const out = []; for (let f = 0; ; f += 500) { const { data, error } = await q().range(f, f + 499); if (error) throw error; out.push(...(data || [])); if (!data || data.length < 500) return out; } }
+let vg = null;
+async function loadVigia() {
+  const st = $('#ad-vg-st'); st.textContent = 'lendo saves, Pix e histórico...'; $('#ad-vg-reload').disabled = true;
+  try {
+    if (!users.length) await loadUsers('');
+    const ago = d => new Date(Date.now() - d * 864e5).toISOString(), soft = p => p.catch(() => []);
+    const [saves, hist, rc, gifts, pix] = await Promise.all([
+      pageAll(() => sb.from('saves').select('user_id, data, updated_at')),
+      soft(pageAll(() => sb.from('save_history').select('user_id, saved_at, money').gt('saved_at', ago(1)))),
+      soft(pageAll(() => sb.from('receita_casos').select('user_id'))),
+      soft(pageAll(() => sb.from('admin_grants').select('user_id, amount').eq('kind', 'money').gt('amount', 0))),
+      soft(pageAll(() => sb.from('pix').select('from_id, from_name, to_id, to_name, amount, memo, kind, at').gt('at', ago(7)).order('at', { ascending: false }))),
+    ]);
+    const by = (list, k) => list.reduce((m, x) => ((m[x[k]] ||= []).push(x), m), {});
+    const H = by(hist, 'user_id'), R = by(rc, 'user_id'), Gf = by(gifts, 'user_id'), Pin = by(pix, 'to_id'), Pout = by(pix, 'from_id'), U = Object.fromEntries(users.map(u => [u.user_id, u]));
+    const players = saves.map(x => { const u = U[x.user_id] || {}; return { id: x.user_id, name: u.name || x.data?.avatar?.name || '(sem nome)', created: u.created_at, banned: u.banned, s: x.data || {},
+      hist: (H[x.user_id] || []).map(h => ({ t: Date.parse(h.saved_at), money: Number(h.money) || 0 })), pixIn: Pin[x.user_id] || [], pixOut: Pout[x.user_id] || [],
+      receita: (R[x.user_id] || []).length, gifts: (Gf[x.user_id] || []).reduce((t, g) => t + Number(g.amount), 0) }; });
+    vg = { ...AE.watch(players), pix, saves };
+    st.textContent = `${players.length} contas analisadas às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    drawVigia();
+  } catch (e) { fail(e, 'carregar a vigilância'); st.textContent = ''; } finally { $('#ad-vg-reload').disabled = false; }
+}
+function drawVigia() {
+  if (!vg) return;
+  const on = new Set(online.map(p => p.uid).filter(Boolean)), R = vg.rows, sus = R.filter(r => r.score >= 3);
+  const active = R.filter(r => r.weekH > 0), pixSum = vg.pix.reduce((t, p) => t + Number(p.amount), 0);
+  const tiles = [['contas com save', int(R.length)], ['online agora', int(on.size)], ['suspeitos', int(sus.length)], ['chamaram atenção', int(R.filter(r => r.score > 0).length)],
+    ['ritmo justo', vg.fair ? `${AE.brlShort(vg.fair)}/h` : 'pouca medição'], ['horas jogadas hoje (todos)', hrs(R.reduce((t, r) => t + r.todayH, 0))],
+    ['média por jogador ativo', active.length ? `${hrs(active.reduce((t, r) => t + r.weekH, 0) / 7 / active.length)}/dia` : '—'], ['jogaram nos últimos 7 dias', int(active.length)],
+    ['Pix em 7 dias', `${int(vg.pix.length)} · ${AE.brlShort(pixSum)}`], ['casos da Receita', int(R.reduce((t, r) => t + r.receita, 0))],
+    ['patrimônio somado', AE.brlShort(R.reduce((t, r) => t + r.worth, 0))], ['sem tempo medido', int(R.filter(r => r.playH == null).length)]];
+  $('#ad-vg-tiles').innerHTML = tiles.map(([k, v]) => `<div class="ad-tile"><span>${k}</span><strong>${v}</strong></div>`).join('');
+  const b = $('#ad-vg-badge'); b.textContent = sus.length; b.hidden = !sus.length;
+  const only = $('#ad-vg-only').checked, q = $('#ad-vg-q').value.trim().toLowerCase();
+  const rows = R.filter(r => (!only || r.score > 0) && (!q || r.name.toLowerCase().includes(q)));
+  const tone = r => (r.score >= 3 ? 'red' : r.score > 0 ? 'gold' : 'green'), money = v => (v == null ? '—' : `<span class="${v < 0 ? 'bad' : 'good'}">${AE.brlShort(v)}</span>`);
+  $('#ad-vg').innerHTML = rows.map(r => `<tr${r.score >= 3 ? ' class="ad-alert"' : ''}><td><span class="tag tag--${tone(r)}">${r.score >= 3 ? 'alta' : r.score > 0 ? 'média' : 'ok'} · ${r.score}</span></td>
+    <td><a href="#" data-vg-user="${esc(r.id)}"><strong>${esc(r.name)}</strong></a>${on.has(r.id) ? ' <span class="tag tag--green">online</span>' : ''}${r.banned ? ' <span class="tag tag--red">suspenso</span>' : ''}<br><small class="muted">conta de ${when(r.created)}</small></td>
+    <td class="num">${AE.brlShort(r.worth)}</td><td class="num">${hrs(r.playH)} · ${hrs(r.todayH)} · ${hrs(r.weekH)}</td><td class="num">${r.perHour == null ? '—' : AE.brlShort(r.perHour)}</td>
+    <td class="num">${money(r.money24)}</td><td class="num">${AE.brlShort(r.pixInSum)} / ${AE.brlShort(r.pixOutSum)}</td><td class="num">${money(r.casino)}</td>
+    <td class="small">${r.why.length ? `<ul class="ad-why">${r.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : '<span class="muted">nada</span>'}</td>
+    <td>${r.excess > 0 ? `<button class="btn btn--gold btn--sm" data-vg-take="${esc(r.id)}">tirar excesso ${AE.brlShort(r.excess)}</button> ` : ''}${r.score > 0 && !r.banned ? `<button class="btn btn--danger btn--sm" data-vg-ban="${esc(r.id)}">suspender 1 dia</button>` : ''}</td></tr>`).join('')
+    || `<tr><td colspan="10" class="muted">${only ? 'Ninguém fora do normal agora.' : 'Nenhum jogador.'}</td></tr>`;
+  const W0 = Object.fromEntries(R.map(r => [r.id, r.worth])), pair = {}, pk = p => [p.from_id, p.to_id].sort().join();
+  for (const p of vg.pix) pair[pk(p)] = (pair[pk(p)] || 0) + 1;
+  $('#ad-vg-pix').innerHTML = vg.pix.slice(0, 200).map(p => { const bad = Number(p.amount) > Math.max(100000, (W0[p.to_id] || 0) * 0.3) || pair[pk(p)] >= 3;
+    return `<tr${bad ? ' class="ad-alert"' : ''}><td>${when(p.at)}</td><td><a href="#" data-vg-user="${esc(p.from_id)}">${esc(p.from_name)}</a></td><td><a href="#" data-vg-user="${esc(p.to_id)}">${esc(p.to_name)}</a></td>
+      <td class="num">${brl(p.amount)}</td><td>${esc(p.kind)}</td><td>${esc(p.memo || '')}</td></tr>`; }).join('') || '<tr><td colspan="6" class="muted">Nenhum Pix nos últimos 7 dias.</td></tr>';
+  const days = Array.from({ length: 7 }, (_, k) => new Date(Date.now() - 3 * 36e5 - (6 - k) * 864e5).toISOString().slice(0, 10));
+  $('#ad-vg-play').innerHTML = [...R].filter(r => r.weekH > 0).sort((a, b) => b.weekH - a.weekH).slice(0, 30).map(r => `<tr><td><a href="#" data-vg-user="${esc(r.id)}">${esc(r.name)}</a>${on.has(r.id) ? ' <span class="tag tag--green">online</span>' : ''}</td>
+    <td class="num">${hrs(r.weekH)}</td><td class="num">${hrs(r.todayH)}</td><td class="small">${days.map(d => hrs((r.s.play?.days?.[d] || 0) / 36e5)).join(' · ')}</td><td class="num">${hrs(r.playH)}</td></tr>`).join('')
+    || '<tr><td colspan="5" class="muted">Ainda sem tempo medido (aparece quando os jogadores abrirem a versão nova do jogo).</td></tr>';
+  const cur = Math.max(0, ...R.map(r => Number(r.s.month) || 0)), nm = Object.fromEntries(R.map(r => [r.id, r.name]));
+  const moves = vg.saves.flatMap(x => (Array.isArray(x.data?.log) ? x.data.log : []).filter(e => Number(e.m) >= cur - 1 && e.val).map(e => ({ u: x.user_id, ...e })))
+    .sort((a, b) => Math.abs(b.val) - Math.abs(a.val)).slice(0, 40);
+  $('#ad-vg-moves').innerHTML = moves.map(e => `<tr><td><a href="#" data-vg-user="${esc(e.u)}">${esc(nm[e.u] || '?')}</a></td><td>${e.m}</td><td>${esc(e.txt)}</td><td class="num ${e.val < 0 ? 'bad' : 'good'}">${brl(e.val)}</td></tr>`).join('')
+    || '<tr><td colspan="4" class="muted">Sem movimentos.</td></tr>';
+}
+$('#ad-vg-reload').addEventListener('click', loadVigia);
+$('#ad-vg-only').addEventListener('change', drawVigia);
+$('#ad-vg-q').addEventListener('input', drawVigia);
+setInterval(() => { if (!$('#ad-app').hidden && !$('[data-panel="vigia"]').hidden) loadVigia(); }, 120000);   // relê tudo a cada 2 min
+document.addEventListener('click', async e => {
+  const u = e.target.closest('[data-vg-user]'); if (u) { e.preventDefault(); return openPlayer(u.dataset.vgUser); }
+  const t = e.target.closest('[data-vg-take]'), bn = e.target.closest('[data-vg-ban]'); if (!t && !bn) return;
+  const r = vg?.rows.find(x => x.id === (t ? t.dataset.vgTake : bn.dataset.vgBan)); if (!r) return;
+  if (t) {
+    if (!confirm(`Tirar ${brl(r.excess)} do caixa de ${r.name}?\n\nMotivo: ${r.why.join('; ')}\n\nO caixa dele pode ficar negativo.`)) return;
+    const { error } = await sb.from('admin_grants').insert({ user_id: r.id, kind: 'money', amount: -r.excess, note: 'ajuste: ganho acima do ritmo normal do jogo' });
+    if (error) return fail(error, 'tirar o excesso');
+    await log('take_excess', r.id, { amount: r.excess, why: r.why }); toast('Ordem enviada. Sai do caixa dele quando o jogo sincronizar.');
+  } else {
+    if (!confirm(`Suspender ${r.name} por 1 dia?\n\nMotivo: ${r.why.join('; ')}`)) return;
+    const reason = `Em análise: ${r.why[0] || 'ganho fora do normal'}`.slice(0, 200);
+    const { error } = await sb.from('bans').upsert({ user_id: r.id, reason, until: new Date(Date.now() + 864e5).toISOString() });
+    if (error) return fail(error, 'suspender');
+    await log('ban', r.id, { reason, days: 1, from: 'vigilância' }); toast('Conta suspensa por 1 dia.'); await loadUsers(''); r.banned = true; drawVigia();
+  }
 });

@@ -79,3 +79,4 @@ tr.is-done { opacity: .55; }
 .good { color: var(--color-success, #34d399); } .bad { color: var(--color-error); }
 ul.ad-err { padding-left: 28px; } ul.ad-err li + li { margin-top: 4px; }
 tr.ad-alert td { background: color-mix(in oklab, var(--color-error) 10%, transparent); }
+.ad-why { margin: 0; padding-left: 1.1em; display: grid; gap: 2px; min-width: 16rem; }

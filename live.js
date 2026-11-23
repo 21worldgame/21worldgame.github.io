@@ -198,3 +198,14 @@ async function applyGrants(sb) {
   }
   save(); G.render();
 }
+
+// tempo jogado de verdade (painel admin, aba vigilância): soma 30 s só com a aba visível e alguém mexendo nos últimos 3 min.
+// s.play = { ms: total, days: { 'AAAA-MM-DD' (Brasília): ms } }, guarda os últimos 30 dias
+let lastAct = Date.now();
+for (const ev of ['pointerdown', 'keydown', 'touchstart', 'wheel']) addEventListener(ev, () => { lastAct = Date.now(); }, { passive: true });
+setInterval(() => {
+  const s = G.S; if (!s || document.visibilityState !== 'visible' || Date.now() - lastAct > 180000) return;
+  const p = (s.play ||= { ms: 0, days: {} }), d = new Date(now() - 3 * 36e5).toISOString().slice(0, 10);
+  p.ms += 30000; p.days[d] = (p.days[d] || 0) + 30000;
+  const ks = Object.keys(p.days).sort(); while (ks.length > 30) delete p.days[ks.shift()];
+}, 30000);
