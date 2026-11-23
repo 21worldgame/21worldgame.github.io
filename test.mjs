@@ -1480,7 +1480,7 @@ import * as CT from './contador.js';
   assert.match(ask('como funciona o estádio?'), /nível 1 ao 5/);
   assert.match(ask('como funciona a granja?'), /galpão vazio não paga/);
   assert.match(ask('o que acontece se eu não pagar o banco?'), /banco toma/);
-  assert.match(ask('quanto dura um mês do mundo?'), /10 minutos/);
+  assert.match(ask('quanto dura um mês do mundo?'), /5 minutos/);
   assert.match(ask('como funciona o arrendamento?'), /0,4%/);
   assert.match(ask('qual time compensa mais comprar?'), /não posso dizer/);
   for (const e of KBm.KB) for (const l of e.a) assert.ok(!/compensa|vale a pena|melhor investimento|recomendo|você deve (comprar|investir)/i.test(l), `base não aconselha: ${l}`);
@@ -1623,3 +1623,13 @@ import * as CT from './contador.js';
 { const t = Date.now(); NP.CLOCK.real = 4; const s = NP.onlineSet(t), m = WD.current(NP.CLOCK.world, t);
   assert.ok([...s].every(id => NP.startMonth(NP.byId(id)) <= m), 'bot online já chegou ao mundo (está no ranking)');
   assert.equal(NP.onlineTotal(t), s.size + 4); assert.ok(NP.NPCS.some(n => !n.bio) && NP.NPCS.some(n => n.bio)); NP.CLOCK.real = 1; console.log('online alinhado ok'); }
+
+// canavial plantado quando o primeiro corte era mais tarde: não perde o corte quando o tempo diminui
+{
+  const CNt = await import('./cana.js');
+  const s = { money: 1e9, month: 3, prices: {}, lands: [{ id: 'x', own: true, ha: 10, region: 'r', uf: 'sp', cane: { age: CNt.CANE.first + 1, cuts: 0, care: true, pest: 0, health: 1 } }] };
+  const out = CNt.monthly(s, () => 0.99);
+  assert.ok(out.some(o => /corte de cana/.test(o.txt)), 'cana atrasada corta no mês seguinte');
+  assert.equal(s.lands[0].cane.age, CNt.CANE.first, 'e volta para o ritmo normal da soca');
+  console.log('cana com tempo novo ok');
+}

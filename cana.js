@@ -7,8 +7,8 @@ import { ownsUsina } from './negocios.js';
 import { mult, bonus } from './perks.js';
 export const CANE = {
   plant: 11000,       // R$ por hectare (mudas, preparo do solo, plantio)
-  first: 10,          // meses até o primeiro corte (cana-planta)
-  cycle: 10,          // meses entre os cortes seguintes (soca)
+  first: 9,           // meses até o primeiro corte (cana-planta)
+  cycle: 9,           // meses entre os cortes seguintes (soca)
   yield: 100,         // toneladas por hectare no primeiro corte (média de ~79 t/ha em 5 cortes, como em SP)
   decline: 0.88,      // cada corte rende 12% menos que o anterior
   care: 280,          // R$ por hectare por mês (tratos culturais)
@@ -50,7 +50,7 @@ export function plant(s, land) {
 }
 export function uproot(land) { delete land.cane; }
 export function toggleCare(land) { if (land.cane) land.cane.care = !land.cane.care; return land.cane?.care; }
-export const nextCut = c => (c.cuts === 0 ? CANE.first - c.age : CANE.cycle - ((c.age - CANE.first) % CANE.cycle));
+export const nextCut = c => (c.cuts === 0 ? Math.max(0, CANE.first - c.age) : CANE.cycle - ((c.age - CANE.first) % CANE.cycle));
 export const expectedTons = (land, c = land.cane, cut = 0) => Math.round(land.ha * CANE.yield * CANE.decline ** c.cuts * c.health * Math.min(1, PEST_YIELD[Math.min(6, c.pest)] + cut));   // cut: coleção Prosperidade
 export const caneValue = (s, land) => (land.cane ? Math.round(land.ha * CANE.plant * 0.6 * land.cane.health * Math.max(0, 1 - land.cane.cuts / (CANE.reform + 1))) : 0);
 const dryMonth = month => [7, 8, 9, 10].includes(((month - 1) % 12) + 1);
@@ -72,12 +72,12 @@ export function monthly(s, rng = Math.random) {
     if (dryMonth(s.month || 1) && rng() < (c.care ? 0.015 : 0.05)) { burnt = true; add(`canavial: fogo na cana em ${l.region} (seca)`); }
     if (c.health < 0.2) { delete l.cane; add(`canavial perdido em ${l.region}: a cana não rebrota mais.`); continue; }
     c.age++;
-    const due = c.cuts === 0 ? c.age === CANE.first : c.age > CANE.first && (c.age - CANE.first) % CANE.cycle === 0;
+    const due = c.cuts === 0 ? c.age >= CANE.first : c.age > CANE.first && (c.age - CANE.first) % CANE.cycle === 0;
     if (due || burnt && c.age >= CANE.first - 2 && nextCut(c) <= 2) {
       const tons = Math.round(expectedTons(l, l.cane, -bonus(s, 'perda')) * (0.9 + rng() * 0.2) * (burnt ? 0.75 : 1));
       const mine = ownsUsina(s, 'cana'), price = (s.prices.cana || CANE.price) * (burnt ? 0.85 : 1) * (mine ? 1.12 : 1) * mult(s, 'cana');
       const lg = logistics(s, l), net = Math.round(tons * (price - lg.total + (mine ? lg.freight / 2 : 0)));
-      c.cuts++; if (!due) c.age = c.cuts === 1 ? CANE.first : CANE.first + (c.cuts - 1) * CANE.cycle;   // corte antecipado pelo fogo
+      c.cuts++; if (!due || c.cuts === 1) c.age = c.cuts === 1 ? CANE.first : CANE.first + (c.cuts - 1) * CANE.cycle;   // corte antecipado pelo fogo
       add(`corte de cana: ${tons} t para ${mine ? 'a SUA usina (+12% e frete pela metade)' : `a usina a ${lg.km} km`}, ${l.region}${burnt ? ' (cana queimada, com desconto)' : ''} · logística R$ ${lg.total.toFixed(2).replace('.', ',')}/t`, net);
       if (c.cuts >= CANE.reform) out.push({ txt: `canavial de ${l.region}: já são ${c.cuts} cortes, pense em reformar`, val: 0 });
     }

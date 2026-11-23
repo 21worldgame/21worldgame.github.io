@@ -6,7 +6,7 @@
 export const KB = [
   // ---------- mundo e conta ----------
   { t: 'tempo do mundo', k: ['tempo', 'mes', 'meses', 'mundo', 'relogio', 'passa', 'dura', 'virada', 'ano'], a: [
-    'O mundo tem um relógio só, igual para todos. Por padrão, 1 mês do mundo dura uns 10 minutos reais (o administrador pode ajustar).',
+    'O mundo tem um relógio só, igual para todos. Por padrão, 1 mês do mundo dura uns 5 minutos reais (o administrador pode ajustar).',
     'Na virada do mês rodam as contas: ração, energia, salários, arrendamento, IPVA, parcelas do banco, crescimento do gado, lavouras e preços.',
     'Quem fica fora do jogo paga no máximo 6 meses de uma vez quando volta. O resto o mundo perdoa.'] },
   { t: 'celular e computador', k: ['celular', 'computador', 'pc', 'sincroniz', 'aparelho', 'dois', 'sumiu', 'sumindo', 'perdi'], a: [
@@ -85,14 +85,14 @@ export const KB = [
     'Na revenda o barracão vale 70% do preço.'] },
   // ---------- lavouras ----------
   { t: 'lavoura', k: ['lavoura', 'plantar', 'plantio', 'colheita', 'colher', 'soja', 'milho', 'cafe', 'saca', 'sacas', 'safra'], a: [
-    'Soja: R$ 6.300 por ha, 6 meses, uns 60 sacas por ha. Milho: R$ 4.800 por ha, 5 meses, uns 100 sacas. Café: R$ 34.000 por ha, 12 meses, uns 30 sacas. São os custos reais de produção.',
+    'Soja: R$ 6.300 por ha, 5 meses, uns 60 sacas por ha. Milho: R$ 4.800 por ha, 4 meses, uns 100 sacas. Café: R$ 34.000 por ha, 10 meses, uns 30 sacas. São os custos reais de produção.',
     'Com trator o plantio sai 10% mais barato. A colheita vai para o armazém e você vende quando quiser, pelo preço do dia.'] },
   { t: 'laranja', k: ['laranja', 'pomar', 'pomares', 'caixa', 'caixas', 'greening', 'pulverizador', 'praga'], a: [
-    'Pomar só em terra própria: R$ 30 mil por ha para plantar, 6 meses até a primeira colheita e depois uma colheita a cada 4 meses.',
+    'Pomar só em terra própria: R$ 30 mil por ha para plantar, 5 meses até a primeira colheita e depois uma colheita a cada 4 meses.',
     'Pomar adulto e sadio: uns 330 caixas (40,8 kg) por ha por colheita. Manutenção de R$ 1.800 por ha por mês (defensivo, adubo e mão de obra).',
     'Sem defensivo a praga (greening) cresce e derruba a safra, até perder tudo. Cada pulverizador cobre 150 ha e cada plataforma 200 ha.'] },
   { t: 'cana', k: ['cana', 'canavial', 'usina', 'corte', 'colhedora', 'broca'], a: [
-    'Canavial só em terra própria: R$ 11 mil por ha, primeiro corte em 10 meses e depois a cada 10 meses.',
+    'Canavial só em terra própria: R$ 11 mil por ha, primeiro corte em 9 meses e depois a cada 9 meses.',
     'O primeiro corte rende uns 85 t por ha e cada corte seguinte uns 12% menos. Depois de 5 cortes o canavial pede reforma.',
     'Tratos de R$ 280 por ha por mês. A cana vai para a usina, e o frete depende da distância do seu estado. Colhedora própria: R$ 1,2 mi.'] },
   // ---------- veículos e acessórios ----------

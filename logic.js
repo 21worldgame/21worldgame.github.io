@@ -121,9 +121,9 @@ const IMPROV = [['casa sede', 0.06], ['curral', 0.03], ['galpão', 0.04], ['cerc
 // Com os preços do Cepea de nov/2026 a margem fica: soja ~30%, milho ~25%, café ~33% ao ano
 // (até a v150 o custo era bem menor e a lavoura dava 70% a 250% de lucro por safra, muito acima da vida real)
 export const CROPS = {
-  soja: { label: 'soja', cost: 6300, months: 6, yield: 60, good: 'soja' },   // uma safra de soja por ano na janela de chuva (+ milho safrinha no resto)     // sacas por hectare
-  milho: { label: 'milho', cost: 4800, months: 5, yield: 100, good: 'milho' },
-  cafe: { label: 'café', cost: 34000, months: 12, yield: 30, good: 'cafe' },   // ~R$ 1.130 por saca produzida   // arábica: uma safra por ano
+  soja: { label: 'soja', cost: 6300, months: 5, yield: 60, good: 'soja' },   // uma safra de soja por ano na janela de chuva (+ milho safrinha no resto)     // sacas por hectare
+  milho: { label: 'milho', cost: 4800, months: 4, yield: 100, good: 'milho' },
+  cafe: { label: 'café', cost: 34000, months: 10, yield: 30, good: 'cafe' },   // ~R$ 1.130 por saca produzida   // arábica: uma safra por ano
 };
 // máquina emprestada a parceiro (lentTo) não trabalha para você; a que você pegou emprestada (amigos.tools) trabalha
 export const hasVehicle = (s, type) => (s.cars || []).some(c => !c.lentTo && CARS[c.model]?.type === type) || (s.amigos?.tools || []).some(t => t.type === type);

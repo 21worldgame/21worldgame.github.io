@@ -131,14 +131,14 @@
         <button role="tab" id="t-loja" data-tab="loja" aria-controls="p-loja" aria-selected="false" tabindex="-1"><svg><use href="#i-shop"/></svg>loja</button>
         <button role="tab" id="t-negocios" data-tab="negocios" aria-controls="p-negocios" aria-selected="false" tabindex="-1"><svg><use href="#i-bank"/></svg>negócios</button>
         <button role="tab" id="t-cartas" data-tab="cartas" aria-controls="p-cartas" aria-selected="false" tabindex="-1"><svg><use href="#i-gem"/></svg>coleções de cartas</button>
-        <button role="tab" id="t-haras" data-tab="haras" aria-controls="p-haras" aria-selected="false" tabindex="-1"><svg><use href="#i-horse"/></svg>canil e haras</button>
         <button role="tab" id="t-personagem" data-tab="personagem" aria-controls="p-personagem" aria-selected="false" tabindex="-1"><svg><use href="#i-user"/></svg>personagem</button>
-        <button role="tab" id="t-terras" data-tab="terras" aria-controls="p-terras" aria-selected="false" tabindex="-1"><svg><use href="#i-map"/></svg>terras</button>
+        <button role="tab" id="t-terras" data-tab="terras" aria-controls="p-terras" aria-selected="false" tabindex="-1" title="terras e lavoura: soja, milho e café"><svg><use href="#i-map"/></svg>terras e soja</button>
         <button role="tab" id="t-gado" data-tab="gado" aria-controls="p-gado" aria-selected="false" tabindex="-1"><svg><use href="#i-herd"/></svg>gado</button>
         <button role="tab" id="t-granja" data-tab="granja" aria-controls="p-granja" aria-selected="false" tabindex="-1"><svg><use href="#i-chick"/></svg>granja</button>
         <button role="tab" id="t-suinos" data-tab="suinos" aria-controls="p-suinos" aria-selected="false" tabindex="-1"><svg><use href="#i-herd"/></svg>suínos</button>
         <button role="tab" id="t-laranja" data-tab="laranja" aria-controls="p-laranja" aria-selected="false" tabindex="-1"><svg><use href="#i-orange"/></svg>laranja</button>
         <button role="tab" id="t-cana" data-tab="cana" aria-controls="p-cana" aria-selected="false" tabindex="-1"><svg><use href="#i-cane"/></svg>cana</button>
+        <button role="tab" id="t-haras" data-tab="haras" aria-controls="p-haras" aria-selected="false" tabindex="-1"><svg><use href="#i-horse"/></svg>canil e haras</button>
         <button role="tab" id="t-mercado" data-tab="mercado" aria-controls="p-mercado" aria-selected="false" tabindex="-1"><svg><use href="#i-chart"/></svg>mercado</button>
         <button role="tab" id="t-banco" data-tab="banco" aria-controls="p-banco" aria-selected="false" tabindex="-1"><svg><use href="#i-bank"/></svg>banco</button>
         <button role="tab" id="t-livro" data-tab="livro" aria-controls="p-livro" aria-selected="false" tabindex="-1"><svg><use href="#i-book"/></svg>livro-caixa</button>
@@ -595,7 +595,7 @@
     <!-- TERRAS -->
     <section id="p-terras" role="tabpanel" aria-labelledby="t-terras" class="panel">
       <div class="glass mapbox">
-        <div class="mapbox__head"><h3 id="map-title">satélite</h3><span class="muted small">💰 à venda · ⭐ sua · 📜 arrendada · 🐂🌾☕🏡 fazendas de outros donos. Passe o mouse para ver o dono; clique para aproximar.</span><button class="btn btn--glass btn--sm" id="map-back">ver o brasil</button></div>
+        <div class="mapbox__head"><h3 id="map-title">satélite</h3><span class="muted small">💰 à venda · ⭐ sua · 📜 arrendada · cada produtor tem o seu emblema e a sua cor. Passe o mouse para ver o dono; clique para ver as terras dele.</span><select id="map-find" class="map-find" aria-label="encontrar produtor no mapa"><option value="">🔎 encontrar produtor</option></select><button class="btn btn--glass btn--sm" id="map-back">ver o brasil</button></div>
         <div class="map" id="map"></div>
       </div>
       <div class="listhead"><h2>suas terras</h2><span class="muted small" id="lands-sum"></span></div>

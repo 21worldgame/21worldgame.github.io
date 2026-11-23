@@ -3,7 +3,7 @@
 import { bonus } from './perks.js';
 export const ORANGE = {
   plant: 30000,       // R$ por hectare (mudas, covas, adubação de plantio; implantação real ~R$ 30 mil)
-  grow: 6,            // meses de formação até a primeira colheita
+  grow: 5,            // meses de formação até a primeira colheita
   cycle: 4,           // meses entre colheitas
   yield: 330,         // caixas de 40,8 kg por hectare por colheita (pomar adulto e sadio)
   spray: 1800,        // R$ por hectare por mês (defensivo, adubação, mão de obra: ~R$ 22 por caixa, custo real)

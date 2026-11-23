@@ -305,7 +305,7 @@ export async function mapLands(maxAge = 60000) {
   if (mapCache && Date.now() - mapCache.at < maxAge) return mapCache.rows;
   const { data, error } = await sb.from('public_profiles').select('user_id, name, ml:card->mapLands').not('card->mapLands', 'is', null).limit(300);
   if (error) return mapCache?.rows || [];
-  const rows = data.filter(p => p.user_id !== user.id && Array.isArray(p.ml)).flatMap(p => p.ml.map(l => ({ owner: p.name, region: String(l.r || ''), city: String(l.c || ''), use: String(l.u || ''), ha: Number(l.ha) || 0, lat: Number(l.lat), lon: Number(l.lon) }))).filter(l => Number.isFinite(l.lat) && Number.isFinite(l.lon));
+  const rows = data.filter(p => p.user_id !== user.id && Array.isArray(p.ml)).flatMap(p => p.ml.map(l => ({ owner: p.name, pid: `u:${p.user_id}`, region: String(l.r || ''), city: String(l.c || ''), use: String(l.u || ''), ha: Number(l.ha) || 0, lat: Number(l.lat), lon: Number(l.lon) }))).filter(l => Number.isFinite(l.lat) && Number.isFinite(l.lon));
   mapCache = { at: Date.now(), rows };
   return rows;
 }

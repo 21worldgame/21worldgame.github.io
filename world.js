@@ -2,7 +2,7 @@
 // O mês do jogo não é mais um botão: ele passa sozinho a cada `monthMs` de tempo real, igual para todo mundo.
 // A config (epoch, base, monthMs) fica no Supabase e o administrador pode acelerar o mundo para todos.
 export const DEFAULT = { epoch: 1795380251110, base: 1,   // vida nova (22/11/2026): sem o servidor, o relógio não volta para o mundo antigo
-  monthMs: 10 * 60 * 1000 };   // 1 mês do mundo = 10 min reais
+  monthMs: 5 * 60 * 1000 };   // 1 mês do mundo = 5 min reais
 export const MAX_CATCHUP = 6;                  // quem ficou fora joga no máximo 6 meses de uma vez (o resto o mundo "perdoa")
 export const MIN_MONTH_MS = 10 * 1000, MAX_MONTH_MS = 24 * 3600 * 1000;
 

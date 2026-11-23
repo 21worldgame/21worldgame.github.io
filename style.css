@@ -3688,3 +3688,10 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .gz__wire h4 { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font: 800 .75rem/1 var(--font-body); text-transform: uppercase; letter-spacing: .1em; color: #fca5a5; }
 .gz__wire li { display: grid; grid-template-columns: 3.2rem auto minmax(0, 1fr); gap: 8px; align-items: center; font-size: .88rem; } .gz__wire time { color: var(--color-muted); font-variant-numeric: tabular-nums; } .gz__wire p { margin: 0; }
 @media (max-width: 56rem) { .gz__grid { grid-template-columns: 1fr; } .gz__col { border-right: 0; border-bottom: 1px solid var(--glass-edge); } .gz__col:last-child { border-bottom: 0; } .gz__lead { grid-template-columns: 64px minmax(0, 1fr); } .gz__lead .gz__av { width: 64px; height: 64px; } .gz__wire li { grid-template-columns: 3rem minmax(0, 1fr); } .gz__wire li .tv__kick { display: none; } }
+
+/* mapa: emblema de cada produtor (a cor vem no style do pino) e busca de produtor */
+.lpin--prod { border-color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.lpin--sede { width: 36px; height: 36px; margin: -3px; font-size: 18px; border-width: 3px; }
+.map-find { max-width: 260px; padding: 6px 10px; border-radius: 10px; background: rgba(15,23,42,.85); color: #fff; border: 1px solid rgba(255,255,255,.2); font: inherit; font-size: .85rem; }
+.lpin.is-dim { opacity: .3; filter: grayscale(.7); }
+.lpin.is-focus { transform: scale(1.35); border-color: #facc15; box-shadow: 0 0 0 4px rgba(250,204,21,.45), 0 3px 10px rgba(0,0,0,.6); }
