@@ -1600,3 +1600,8 @@ import * as CT from './contador.js';
   assert.equal(TDx.describe({ kind: 'good', good: 'laranja', qty: 3 }), '3 caixas de laranja');
   console.log('produtos do inventário ok');
 }
+
+// save restaurado depois do zeramento não é zerado de novo; save antigo continua sendo
+{ const AR = await import('./authrules.js'), old = { updated_at: '2026-11-20T10:00:00Z', data: { money: 5e6 } }, back = { updated_at: '2026-11-23T10:00:00Z', data: { money: 5e6 } };
+  assert.equal(AR.keepRestored(old).data.z161, undefined, 'save de antes do zeramento segue valendo o zeramento'); assert.equal(AR.keepRestored(back).data.z161, 1); assert.equal(AR.keepRestored(back).data.money, 5e6);
+  assert.equal(AR.keepRestored(null), null); console.log('save restaurado ok'); }

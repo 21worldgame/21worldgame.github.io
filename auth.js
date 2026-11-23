@@ -3,7 +3,7 @@ import { SUPABASE } from './supabase-config.js';
 import { adopt, G, $, save, say, writeSave, forgetUser, blankState, currentUid, keyFor, profileOf } from './store.js';
 import * as L from './logic.js';
 import { merge3 } from './sync-merge.js';
-import { cleanName, validateSignup, validateLogin, validatePassword, translateError, isNameTaken, withSuffix, MIN_PASSWORD } from './authrules.js';
+import { keepRestored, cleanName, validateSignup, validateLogin, validatePassword, translateError, isNameTaken, withSuffix, MIN_PASSWORD } from './authrules.js';
 
 const LIB = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/+esm';
 export const configured = () => !!(SUPABASE.url && SUPABASE.anonKey);
@@ -142,7 +142,7 @@ async function saveNewPassword(e) {
 async function pull() {
   const { data, error } = await sb.from('saves').select('data, updated_at').eq('user_id', user.id).maybeSingle();
   if (error) throw error;
-  return data;
+  return keepRestored(data);   // save restaurado pelo administrador depois do zeramento não é zerado de novo
 }
 // card = o perfil completo que os outros veem ao clicar (coluna nova: supabase/perfil.sql). Privado: só os troféus.
 let noCardUntil = 0;   // coluna card faltando: tenta de novo em 5 min (não desiste para sempre)
@@ -206,6 +206,7 @@ function loadBaseData() { try { baseData = JSON.parse(localStorage.getItem(baseK
 // o outro aparelho gravou enquanto este tinha coisa não enviada: junta os dois (nada é descartado) e envia o resultado
 function mergeRemote(row) {
   if (newerThanMe(row.data)) return;
+  if (row.restored) return takeRemote(row);   // administrador restaurou o save: vale a nuvem, não a junção com o que o aparelho zerou sozinho
   const m = dirty() && baseData ? merge3(baseData, G.S, row.data) : null;
   if (!m) return takeRemote(row);   // takeRemote guarda cópia do que este aparelho tinha
   backup(G.S, 'antes de juntar com o outro aparelho');
@@ -346,7 +347,7 @@ async function afterLogin() {
       backup(cloud.data, 'save da nuvem (este aparelho tinha mais progresso)');
       base = cloud.updated_at; setBaseData(cloud.data); pushed = 0; saveMeta();   // este aparelho tem mais progresso: grava por cima (a nuvem ficou na cópia)
     } else if (!sameAt(cloud.updated_at, base)) {                // outro aparelho gravou depois que este sincronizou
-      if (!dirty() || !baseData || !merge3(baseData, G.S, cloud.data)) { if (dirty()) backup(G.S, 'mudanças deste aparelho que não deu para juntar'); return useCloud(); }   // nada pendente aqui: a nuvem vale
+      if (cloud.restored || !dirty() || !baseData || !merge3(baseData, G.S, cloud.data)) { if (dirty()) backup(G.S, 'mudanças deste aparelho que não deu para juntar'); return useCloud(); }   // nada pendente aqui: a nuvem vale
       mergeRemote(cloud);                                           // havia coisa não enviada neste aparelho: junta com a nuvem
     }
   } else if (base) { base = ''; saveMeta(); }                       // não há save na nuvem: este aparelho cria

@@ -51,3 +51,11 @@ export function translateError(err) {
 // nome já em uso (índice único em public_profiles): tenta de novo com um sufixo
 export const isNameTaken = err => err?.code === '23505' || /duplicate key|unique constraint/i.test(String(err?.message ?? ''));
 export const withSuffix = (name, n) => `${cleanName(name).slice(0, 15)}${String(n).padStart(2, '0')}`.slice(0, 18);
+
+// zeramento geral (v161): save da nuvem gravado ANTES desta hora é do mundo antigo e é zerado ao abrir; gravado DEPOIS (por exemplo,
+// restaurado pelo administrador) já é do mundo novo e NÃO pode ser zerado de novo. Marca as flags que o store.js usa para decidir.
+export const WIPE_AT = Date.parse('2026-11-22T21:21:00Z');
+export function keepRestored(row) {
+  if (!row?.data || row.data.z161 || !(Date.parse(row.updated_at) > WIPE_AT)) return row;
+  return { ...row, restored: true, data: { ...row.data, z161: 1, l165: row.data.l165 || 1, m10k: row.data.m10k || 1 } };
+}
