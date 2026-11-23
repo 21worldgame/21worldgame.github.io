@@ -121,3 +121,41 @@ export function watch(players, now = Date.now()) {
   rows.sort((a, b) => b.score - a.score || b.worth - a.worth);
   return { rows, fair, today };
 }
+
+// ---------- diário (supabase/diario.sql): tudo o que cada jogador fez, com hora e botão clicado ----------
+// rows: [{ user_id, at, m, kind, txt, val, money, chips, worth, tab, acts }]. Mostra de onde vem o dinheiro e onde está o furo:
+// "gap" é dinheiro que mudou sem lançamento no livro-caixa; o botão clicado antes de cada gap aponta a tela com defeito.
+export const pattern = t => String(t || '').replace(/\d[\d.,]*/g, '#').replace(/\s+/g, ' ').trim().slice(0, 80);   // "venda de 500 bois" → "venda de # bois"
+const actNames = a => [...new Set(String(a || '').split(', ').map(x => x.replace(/ x\d+$/, '').replace(/[:=].*$/, '')).filter(Boolean))];
+export function diaryReport(rows, names = {}) {
+  const P = {}, src = {}, gapBy = {}, chipBy = {}, jumps = [];
+  const nm = id => names[id] || String(id).slice(0, 8);
+  const sorted = [...rows].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+  const last = {};
+  for (const r of sorted) {
+    const id = r.user_id, p = (P[id] ??= { id, name: nm(id), in: 0, out: 0, gap: 0, gapN: 0, chips: 0, n: 0, sessions: 0, first: r, last: r, src: {} });
+    const v = Number(r.val) || 0; p.n++; p.last = r;
+    if (r.kind === 'inicio') {
+      p.sessions++;
+      const prev = last[id]; if (prev && Math.abs((Number(r.money) || 0) - (Number(prev.money) || 0)) >= 1000) jumps.push({ id, name: p.name, at: r.at, why: r.txt, from: Number(prev.money) || 0, to: Number(r.money) || 0, diff: (Number(r.money) || 0) - (Number(prev.money) || 0), prevAt: prev.at });
+    } else if (r.kind === 'gap') {
+      p.gap += v; p.gapN++;
+      for (const a of actNames(r.acts).concat(r.tab ? [`tela: ${r.tab}`] : [])) { const G = (gapBy[a] ??= { act: a, val: 0, n: 0, players: new Set() }); G.val += v; G.n++; G.players.add(p.name); }
+    } else if (r.kind === 'fichas') {
+      p.chips += v;
+      for (const a of actNames(r.acts)) { const C = (chipBy[a] ??= { act: a, val: 0, n: 0, players: new Set() }); C.val += v; C.n++; C.players.add(p.name); }
+    } else if (v) {
+      if (v > 0) p.in += v; else p.out -= v;
+      const k = pattern(r.txt), S = (src[k] ??= { k, in: 0, out: 0, n: 0, players: {}, ex: r.txt }), Q = (p.src[k] ??= { k, net: 0, n: 0 });
+      if (v > 0) S.in += v; else S.out -= v; S.n++; S.players[p.name] = (S.players[p.name] || 0) + v; Q.net += v; Q.n++;
+    }
+    last[id] = r;
+  }
+  const list = o => Object.values(o).map(x => ({ ...x, players: [...x.players] })).sort((a, b) => b.val - a.val);
+  const players = Object.values(P).map(p => {
+    const h = Math.max(1 / 60, (Date.parse(p.last.at) - Date.parse(p.first.at)) / 36e5), dw = (Number(p.last.worth) || 0) - (Number(p.first.worth) || 0);
+    return { ...p, hours: h, worthGain: dw, perHour: dw / h, top: Object.values(p.src).sort((a, b) => b.net - a.net).slice(0, 5) };
+  }).sort((a, b) => b.perHour - a.perHour);
+  const sources = Object.values(src).map(S => ({ ...S, net: S.in - S.out, top: Object.entries(S.players).sort((a, b) => b[1] - a[1])[0] || null, nPlayers: Object.keys(S.players).length })).sort((a, b) => b.net - a.net);
+  return { players, sources, gapBy: list(gapBy), chipBy: list(chipBy), jumps: jumps.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)) };
+}

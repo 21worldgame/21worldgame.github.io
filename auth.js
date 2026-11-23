@@ -3,6 +3,7 @@ import { SUPABASE } from './supabase-config.js';
 import { adopt, G, $, save, say, writeSave, forgetUser, blankState, currentUid, keyFor, profileOf } from './store.js';
 import * as L from './logic.js';
 import { merge3 } from './sync-merge.js';
+import * as D from './diario.js';
 import { keepRestored, cleanName, validateSignup, validateLogin, validatePassword, translateError, isNameTaken, withSuffix, MIN_PASSWORD } from './authrules.js';
 
 const LIB = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/+esm';
@@ -210,7 +211,7 @@ function mergeRemote(row) {
   const m = dirty() && baseData ? merge3(baseData, G.S, row.data) : null;
   if (!m) return takeRemote(row);   // takeRemote guarda cópia do que este aparelho tinha
   backup(G.S, 'antes de juntar com o outro aparelho');
-  adopt(m); base = row.updated_at; setBaseData(row.data); saveMeta();
+  try { D.take(G.S, user?.id); } catch {} adopt(m); try { D.rebase(G.S, 'juntou com o save de outro aparelho', Date.now(), location.hash.slice(1), user?.id); } catch {} base = row.updated_at; setBaseData(row.data); saveMeta();
   save(); G.render();                                              // save marca como não enviado: o próximo push grava a junção
 }
 const sameAt = (a, b) => !!a && !!b && Date.parse(a) === Date.parse(b);
@@ -222,13 +223,15 @@ function takeRemote(row, msg = true) {
   if (newerThanMe(row.data)) return;                              // não aplica com código velho: espera a atualização
   if (dirty() && progressOf(G.S) > progressOf(row.data) * 1.001) { backup(G.S, 'versão deste aparelho (a nuvem chegou junto)'); }
   else if (dirty()) backup(G.S, 'mudanças deste aparelho antes de atualizar');
-  adopt(row.data); base = row.updated_at; setBaseData(row.data); pushed = G.S.savedAt || 0; lastPush = pushed; saveMeta(); syncedAt = Date.now(); G.render();
+  try { D.take(G.S, user?.id); } catch {}
+  adopt(row.data); try { D.rebase(G.S, 'pegou o save da nuvem (outro aparelho)', Date.now(), location.hash.slice(1), user?.id); } catch {} base = row.updated_at; setBaseData(row.data); pushed = G.S.savedAt || 0; lastPush = pushed; saveMeta(); syncedAt = Date.now(); G.render();
   if (msg) say('Atualizado com o que você fez no outro aparelho.');
 }
 export async function push() {
   if (!sb || !user || pushing || outdated) return false;
   pushing = true;
   try {
+    try { D.take(G.S, user.id, G.now?.() ?? Date.now()); } catch {}   // diário do admin: o que mudou desde o último envio
     const stamp = G.S.savedAt || 0, at = serverIso(), data = { ...G.S, dev: DEV, appV: G.appV || 0 }, snap = JSON.stringify(data);
     let res;
     if (base) res = await sb.from('saves').update({ data, updated_at: at }).eq('user_id', user.id).eq('updated_at', base).select('updated_at');
@@ -242,6 +245,7 @@ export async function push() {
       mergeRemote(row); return false;
     }
     base = res.data[0].updated_at; setBaseData(snap); pushed = stamp; lastPush = stamp; saveMeta(); syncedAt = Date.now();
+    D.flush(sb, user.id);
     try { bc?.send({ type: 'broadcast', event: 'saved', payload: { dev: DEV } })?.catch?.(() => {}); } catch {}   // avisa o outro aparelho na hora
     let row = profileRow(), r = await sb.from('public_profiles').upsert(row);
     if (r.error && /card/i.test(r.error.message || '')) { noCardUntil = Date.now() + 300000; row = profileRow(); r = await sb.from('public_profiles').upsert(row); }   // coluna card ainda não criada no servidor

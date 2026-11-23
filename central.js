@@ -104,7 +104,7 @@ for (const id of ['#ad-logout', '#ad-logout2']) $(id).addEventListener('click', 
 function show(tab) {
   document.querySelectorAll('.ad-nav button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === tab));
   document.querySelectorAll('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== tab; });
-  ({ vigia: loadVigia, overview: loadOverview, players: loadUsers, economy: loadConfig, news: loadAnns, log: loadLog, passwords: loadPw, terras: loadLands, livros: () => { if (!book.length) loadBook(); } })[tab]?.();
+  ({ vigia: loadVigia, diario: () => { if (!dj) loadDiario(); }, overview: loadOverview, players: loadUsers, economy: loadConfig, news: loadAnns, log: loadLog, passwords: loadPw, terras: loadLands, livros: () => { if (!book.length) loadBook(); } })[tab]?.();
 }
 document.querySelector('.ad-nav').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) show(b.dataset.tab); });
 
@@ -205,7 +205,7 @@ async function openPlayer(id) {
     ['troféus', (s.trophies || []).length], ['perfil', s.privateProfile ? 'privado' : 'público'],
     ['horas jogadas', s.play ? hrs(s.play.ms / 36e5) : 'não medido'], ['jogou hoje', s.play ? hrs((s.play.days?.[new Date(Date.now() - 3 * 36e5).toISOString().slice(0, 10)] || 0) / 36e5) : '—'], ['dias que jogou (de 30)', s.play ? Object.keys(s.play.days || {}).length : '—']];
   $('#ap-body').innerHTML = `
-    <h2 id="ap-name">${esc(u.name || '(sem nome)')}</h2>
+    <h2 id="ap-name">${esc(u.name || '(sem nome)')} <button class="btn btn--glass btn--sm" type="button" data-dj-open="${esc(u.name || '')}">ver diário completo</button></h2>
     <p class="muted small">${esc(u.email || '')}, cadastro em ${when(u.created_at)}, último acesso em ${when(u.last_sign_in_at)}, save salvo em ${when(save?.updated_at)}</p>
     ${u.banned ? `<p class="ad-err">Suspenso${u.ban_reason ? `: ${esc(u.ban_reason)}` : ''}.</p>` : ''}
     <div class="ad-tiles ad-tiles--sm">${facts.map(([k, v]) => `<div class="ad-tile"><span>${k}</span><strong>${v}</strong></div>`).join('')}</div>
@@ -593,6 +593,60 @@ document.addEventListener('click', async e => {
 // ---------- vigilância (admin-econ.js watch): quem enriqueceu rápido demais, Pix, cassino, Receita, tempo jogado ----------
 const hrs = h => (h == null ? '—' : h < 1 ? `${Math.round(h * 60)} min` : `${h.toFixed(1).replace('.', ',')} h`);
 async function pageAll(q) { const out = []; for (let f = 0; ; f += 500) { const { data, error } = await q().range(f, f + 499); if (error) throw error; out.push(...(data || [])); if (!data || data.length < 500) return out; } }
+// ---------- diário: tudo o que cada jogador fez (supabase/diario.sql) ----------
+let dj = null;
+const djName = id => (users.find(u => u.user_id === id)?.name) || String(id).slice(0, 8);
+const hm = t => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const sgn = v => `<span class="${v > 0 ? 'good' : v < 0 ? 'bad' : ''}">${v > 0 ? '+' : ''}${brl(v)}</span>`;
+const ACT = { 'rl-spin': 'roleta', 'av-press': 'aviator', bet: 'blackjack: apostar', hit: 'blackjack: pedir', stand: 'blackjack: parar', double: 'blackjack: dobrar', 'race-go': 'corrida', 'buy-chips': 'comprar fichas', 'sell-chips': 'resgatar fichas',
+  'sell-land': 'vender terra', 'buy-land': 'comprar terra', 'tr-buy': 'trader: comprar', 'tr-sell': 'trader: vender', 'fe-buy': 'feira: comprar', 'fe-sell': 'feira: vender', 'shop-buy': 'loja: comprar', 'shop-sell': 'loja: vender', 'trade-confirm': 'troca entre jogadores', 'spin-daily': 'giro diário', 'pass-claim': 'passe: resgatar' };
+const actLabel = a => (ACT[a] ? `${esc(a)} <small class="muted">(${ACT[a]})</small>` : esc(a));
+async function loadDiario() {
+  const st = $('#ad-dj-st'), who = $('#ad-dj-who').value.trim().toLowerCase(); st.textContent = 'lendo o diário...'; $('#ad-dj-load').disabled = true;
+  try {
+    if (!users.length) await loadUsers('');
+    $('#ad-dj-names').innerHTML = users.map(u => `<option value="${esc(u.name || '')}">`).join('');
+    const ids = who ? users.filter(u => (u.name || '').toLowerCase() === who || (u.email || '').toLowerCase() === who).map(u => u.user_id) : [];
+    if (who && !ids.length) { st.textContent = 'jogador não encontrado'; return; }
+    const since = new Date(Date.now() - Number($('#ad-dj-per').value) * 36e5).toISOString();
+    const rows = await pageAll(() => { let q = sb.from('diario').select('user_id, at, m, kind, txt, val, money, chips, worth, tab, acts').gt('at', since).order('at', { ascending: false }); if (ids.length) q = q.in('user_id', ids); return q; });
+    dj = { rows, rep: AE.diaryReport(rows, Object.fromEntries(users.map(u => [u.user_id, u.name]))) };
+    st.textContent = `${int(rows.length)} registros às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    drawDiario();
+  } catch (e) { fail(e, 'carregar o diário (rode supabase/diario.sql)'); st.textContent = ''; } finally { $('#ad-dj-load').disabled = false; }
+}
+function drawDiario() {
+  if (!dj) return;
+  const { rows, rep: R } = dj, gapT = R.players.reduce((t, p) => t + p.gap, 0), chipT = R.players.reduce((t, p) => t + p.chips, 0);
+  $('#ad-dj-tiles').innerHTML = [['registros', int(rows.length)], ['jogadores', int(R.players.length)], ['dinheiro sem lançamento', brl(gapT)], ['vezes sem lançamento', int(R.players.reduce((t, p) => t + p.gapN, 0))],
+    ['fichas ganhas (R$)', brl(chipT)], ['mudou entre sessões', int(R.jumps.length)]].map(([k, v]) => `<div class="ad-tile"><span>${k}</span><strong>${v}</strong></div>`).join('');
+  const none = n => `<tr><td colspan="${n}" class="muted">Nada no período.</td></tr>`, ppl = a => esc(a.slice(0, 6).join(', ') + (a.length > 6 ? ` +${a.length - 6}` : ''));
+  const who = n => `<a href="#" data-dj-who="${esc(n)}">${esc(n)}</a>`;
+  $('#ad-dj-gap').innerHTML = R.gapBy.slice(0, 40).map(g => `<tr><td>${actLabel(g.act)}</td><td class="num">${sgn(g.val)}</td><td class="num">${int(g.n)}</td><td>${ppl(g.players)}</td></tr>`).join('') || none(4);
+  $('#ad-dj-jump').innerHTML = R.jumps.slice(0, 40).map(j => `<tr><td>${who(j.name)}</td><td>${hm(j.prevAt)} → ${hm(j.at)}</td><td>${esc(j.why)}</td><td class="num">${brl(j.from)} → ${brl(j.to)}</td><td class="num">${sgn(j.diff)}</td></tr>`).join('') || none(5);
+  $('#ad-dj-src').innerHTML = R.sources.slice(0, 60).map(x => `<tr><td title="${esc(x.ex)}">${esc(x.k)}</td><td class="num">${brl(x.in)}</td><td class="num">${brl(x.out)}</td><td class="num">${sgn(x.net)}</td><td class="num">${int(x.n)}</td><td class="num">${int(x.nPlayers)}</td><td>${x.top ? `${who(x.top[0])} (${brl(x.top[1])})` : ''}</td></tr>`).join('') || none(7);
+  $('#ad-dj-chip').innerHTML = R.chipBy.slice(0, 30).map(g => `<tr><td>${actLabel(g.act)}</td><td class="num">${sgn(g.val)}</td><td class="num">${int(g.n)}</td><td>${ppl(g.players)}</td></tr>`).join('') || none(4);
+  $('#ad-dj-pl').innerHTML = R.players.map(p => `<tr><td><strong>${who(p.name)}</strong></td><td class="num">${p.hours.toFixed(1).replace('.', ',')}</td><td class="num">${sgn(p.worthGain)}</td><td class="num">${sgn(Math.round(p.perHour))}</td>
+    <td class="num">${brl(p.in)} / ${brl(p.out)}</td><td class="num">${p.gapN ? `${sgn(p.gap)} <small>(${p.gapN}x)</small>` : '—'}</td><td class="num">${p.chips ? sgn(p.chips) : '—'}</td><td class="num">${p.sessions}</td>
+    <td><small>${p.top.filter(t => t.net > 0).slice(0, 3).map(t => `${esc(t.k)}: ${brl(t.net)}`).join('<br>')}</small></td></tr>`).join('') || none(9);
+  drawTimeline();
+}
+function drawTimeline() {
+  if (!dj) return;
+  const kind = $('#ad-dj-kind').value, min = Number($('#ad-dj-min').value) || 0, q = $('#ad-dj-q').value.trim().toLowerCase();
+  const list = dj.rows.filter(r => (!kind || r.kind === kind) && Math.abs(Number(r.val) || 0) >= min && (!q || `${r.txt} ${r.acts} ${r.tab}`.toLowerCase().includes(q))).slice(0, 1500);
+  const tag = { gap: '<span class="tag tag--red">sem lançamento</span> ', fichas: '<span class="tag tag--gold">fichas</span> ', inicio: '<span class="tag tag--green">sessão</span> ' };
+  $('#ad-dj-tl').innerHTML = list.map(r => `<tr><td>${hm(r.at)}</td><td>${esc(djName(r.user_id))}</td><td>${esc(r.tab || '')}</td><td class="num">${r.m ?? ''}</td><td>${tag[r.kind] || ''}${esc(r.txt)}</td><td class="num">${r.val ? sgn(Number(r.val)) : ''}</td>
+    <td class="num">${brl(r.money)}</td><td class="num">${int(r.chips)}</td><td class="num">${brl(r.worth)}</td><td><small>${esc(r.acts || '')}</small></td></tr>`).join('') || '<tr><td colspan="10" class="muted">Nada com esse filtro.</td></tr>';
+}
+$('#ad-dj-load').addEventListener('click', loadDiario);
+for (const id of ['#ad-dj-kind', '#ad-dj-min', '#ad-dj-q']) $(id).addEventListener('input', drawTimeline);
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-dj-who], [data-dj-open]'); if (!a) return;
+  e.preventDefault(); e.stopPropagation();
+  $('#ad-dj-who').value = a.dataset.djWho ?? a.dataset.djOpen; $('#ad-player')?.close?.(); show('diario'); loadDiario();
+}, true);
+
 let vg = null;
 async function loadVigia() {
   const st = $('#ad-vg-st'); st.textContent = 'lendo saves, Pix e histórico...'; $('#ad-vg-reload').disabled = true;
@@ -673,3 +727,62 @@ document.addEventListener('click', async e => {
     await log('ban', r.id, { reason, days: 1, from: 'vigilância' }); toast('Conta suspensa por 1 dia.'); await loadUsers(''); r.banned = true; drawVigia();
   }
 });
+
+// ---------- Central de Profissionais (supabase/profissionais.sql): denúncias, profissionais e contratos ----------
+let proData = null;
+const PRO_REASON = { nao_entregou: 'não entregou', fraude: 'golpe / fraude', abuso: 'abuso', outro: 'outro' };
+async function loadPro() {
+  const st = $('#ad-pro-st'); st.textContent = 'carregando...';
+  const [p, r, c] = await Promise.all([sb.from('pro_profiles').select('*').order('updated_at', { ascending: false }).limit(500),
+    sb.from('pro_reports').select('*').order('at', { ascending: false }).limit(200), sb.from('pro_contracts').select('*').order('updated_at', { ascending: false }).limit(150)]);
+  if (p.error) { st.textContent = ''; $('#ad-pro-rep').innerHTML = '<tr><td colspan="7" class="muted">Rode o supabase/profissionais.sql no SQL Editor para ligar a Central de Profissionais.</td></tr>'; return; }
+  proData = { pros: p.data || [], reports: r.data || [], contracts: c.data || [] };
+  st.textContent = `${proData.pros.length} profissionais · ${proData.reports.filter(x => x.status === 'aberta').length} denúncia(s) aberta(s)`;
+  drawPro();
+}
+function drawPro() {
+  const { pros, reports, contracts } = proData, C = Object.fromEntries(contracts.map(c => [c.id, c])), open = reports.filter(r => r.status === 'aberta');
+  const b = $('#ad-pro-badge'); b.textContent = open.length; b.hidden = !open.length;
+  const held = c => c ? Math.max(0, c.paid - c.released - c.refunded) : 0;
+  $('#ad-pro-tiles').innerHTML = [['profissionais', pros.length], ['aceitando contratos', pros.filter(p => p.active).length], ['suspensos agora', pros.filter(p => p.suspended_until && new Date(p.suspended_until) > new Date()).length],
+    ['denúncias abertas', open.length], ['contratos ativos', contracts.filter(c => c.status === 'ativo').length], ['em disputa', contracts.filter(c => c.status === 'disputa').length],
+    ['em custódia (contratos recentes)', brl(contracts.reduce((t, c) => t + held(c), 0))], ['faturado por todos', brl(pros.reduce((t, p) => t + Number(p.earned), 0))]]
+    .map(([k, v]) => `<div class="ad-tile"><span>${k}</span><strong>${v}</strong></div>`).join('');
+  $('#ad-pro-rep').innerHTML = reports.slice(0, 100).map(r => { const c = C[r.contract_id];
+    return `<tr${r.status === 'aberta' ? ' class="ad-alert"' : ''}><td>${when(r.at)}</td><td>#${r.contract_id} ${esc(c?.service?.title || '')}<br><small class="muted">${c ? `${esc(c.client_name)} contratou ${esc(c.pro_name)} · ${brl(c.price)} · ${esc(c.status)}` : ''}</small></td>
+      <td>${esc(PRO_REASON[r.reason] || r.reason)}</td><td class="small">${esc(r.text || '')}</td><td class="num">${brl(held(c))}</td>
+      <td>${r.status === 'aberta' ? '<span class="tag tag--red">aberta</span>' : `<span class="tag tag--${r.status === 'procedente' ? 'gold' : 'green'}">${esc(r.status)}</span><br><small class="muted">${esc(r.decision || '')}</small>`}</td>
+      <td>${r.status === 'aberta' ? `<button class="btn btn--danger btn--sm" data-prodec="${r.id}" data-fav="1">procedente: devolver ao contratante</button> <button class="btn btn--glass btn--sm" data-prodec="${r.id}" data-fav="0">improcedente: segue o contrato</button>` : ''}</td></tr>`; }).join('')
+    || '<tr><td colspan="7" class="muted">Nenhuma denúncia.</td></tr>';
+  const susp = p => p.suspended_until && new Date(p.suspended_until) > new Date();
+  $('#ad-pro-list').innerHTML = pros.map(p => `<tr><td><a href="#" data-vg-user="${esc(p.user_id)}"><strong>${esc(p.name)}</strong></a><br><small class="muted">${esc(p.title)}</small></td>
+    <td class="num">${Number(p.stars).toFixed(2)} <small class="muted">(${p.rating_n})</small></td><td class="num">${p.done}</td><td class="num">${p.delivered} / ${p.late}</td><td class="num">${p.strikes60}</td><td class="num">${brl(p.earned)}</td>
+    <td>${susp(p) ? `<span class="tag tag--red">suspenso até ${when(p.suspended_until)}</span>` : p.active ? '<span class="tag tag--green">atendendo</span>' : '<span class="tag">pausado</span>'}${p.verified ? ' <span class="tag tag--gold">verificado</span>' : ''}</td>
+    <td>${susp(p) ? `<button class="btn btn--glass btn--sm" data-proset="${esc(p.user_id)}" data-days="0">liberar</button>` : `<button class="btn btn--danger btn--sm" data-proset="${esc(p.user_id)}" data-days="7">suspender 7 dias</button>`}
+      <button class="btn btn--glass btn--sm" data-proset="${esc(p.user_id)}" data-ver="${p.verified ? 0 : 1}">${p.verified ? 'tirar selo' : 'dar selo verificado'}</button></td></tr>`).join('')
+    || '<tr><td colspan="8" class="muted">Ninguém criou perfil profissional ainda.</td></tr>';
+  $('#ad-pro-ct').innerHTML = contracts.map(c => `<tr${c.status === 'disputa' ? ' class="ad-alert"' : ''}><td>#${c.id}<br><small class="muted">${when(c.created_at)}</small></td><td>${esc(c.service?.title || '')}<br><small class="muted">${brl(c.price)} ${esc(c.period)} · ${c.settled}/${c.periods} períodos</small></td>
+    <td><a href="#" data-vg-user="${esc(c.client_id)}">${esc(c.client_name)}</a> → <a href="#" data-vg-user="${esc(c.pro_id)}">${esc(c.pro_name)}</a></td>
+    <td class="num">${brl(c.paid)}</td><td class="num">${brl(c.released)}</td><td class="num">${brl(c.refunded)}</td><td class="num">${brl(held(c))}</td><td>${esc(c.status)}<br><small class="muted">${esc(c.last_event || '')}</small></td></tr>`).join('')
+    || '<tr><td colspan="8" class="muted">Nenhum contrato ainda.</td></tr>';
+}
+$('#ad-pro-reload').addEventListener('click', loadPro);
+document.querySelector('[data-tab="pro"]').addEventListener('click', loadPro);
+document.addEventListener('click', async e => {
+  const d = e.target.closest('[data-prodec]'), s = e.target.closest('[data-proset]'); if (!d && !s) return;
+  if (d) {
+    const fav = d.dataset.fav === '1', note = prompt(fav ? 'Denúncia procedente: o dinheiro em custódia volta ao contratante e o profissional leva 1 penalidade. Motivo (aparece no registro):' : 'Denúncia improcedente: o contrato segue e os períodos vencidos são pagos ao profissional. Motivo:');
+    if (note === null) return;
+    const { data, error } = await sb.rpc('admin_pro_decide', { p_report: Number(d.dataset.prodec), p_favor_client: fav, p_note: note });
+    if (error || data !== 'ok') return fail(error || { message: data }, 'decidir a denúncia');
+    toast('Denúncia decidida. Os dois jogadores recebem o resultado em até 30 s.');
+  } else {
+    const days = s.dataset.days != null ? Number(s.dataset.days) : null, ver = s.dataset.ver != null ? s.dataset.ver === '1' : null;
+    if (days === 7 && !confirm('Suspender este profissional da Central por 7 dias? Ele some da busca e não pode ser contratado; os contratos atuais continuam.')) return;
+    const { data, error } = await sb.rpc('admin_pro_set', { p_pro: s.dataset.proset, p_days: days, p_verified: ver });
+    if (error || data !== 'ok') return fail(error || { message: data }, 'atualizar o profissional');
+    toast('Feito.');
+  }
+  loadPro();
+});
+setInterval(async () => { if ($('#ad-app').hidden) return; const { data } = await sb.from('pro_reports').select('id').eq('status', 'aberta'); const b = $('#ad-pro-badge'); if (b && data) { b.textContent = data.length; b.hidden = !data.length; } }, 60000);
