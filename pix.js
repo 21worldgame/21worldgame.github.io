@@ -72,7 +72,7 @@ async function send() {
   try {
     const { data, error } = await Auth.sbClient().rpc('send_pix', { p_to: to.id, p_amount: v, p_name: profileOf().name, p_memo: memo, p_kind: kind });
     const sid = Number(String(data || '').match(/^ok:(\d+)$/)?.[1]) || 0;
-    if (error || !sid) return say({ nouser: 'Esse jogador não existe mais.', self: 'Não dá para mandar para você mesmo.', worth: 'O valor passa do seu patrimônio.', limit: 'Muitos envios em pouco tempo: espere um pouco.', invalid: 'Valor inválido.', login: 'Entre na sua conta para usar o Pix.' }[data] || 'Não foi possível enviar agora. Tente de novo.', true);
+    if (error || !sid) return say({ nouser: 'Esse jogador não existe mais.', self: 'Não dá para mandar para você mesmo.', worth: 'O valor passa do seu patrimônio.', new: 'O Pix libera quando a conta tem 3 dias e chega ao nível 5.', limit: 'Muitos envios em pouco tempo: espere um pouco.', invalid: 'Valor inválido.', login: 'Entre na sua conta para usar o Pix.' }[data] || 'Não foi possível enviar agora. Tente de novo.', true);
     G.S.money -= v; (G.S.pixOut ||= []).push(sid); G.S.pixOut = G.S.pixOut.slice(-300);   // o id vai no save: se o desconto se perder na sincronização, reconcile() desconta de novo
     note(`${kind === 'pagamento' ? 'pagamento' : 'Pix'} para ${to.name}${memo ? `: ${memo}` : ''}`, -v); save();
     say(`${kind === 'pagamento' ? 'Pagamento' : 'Pix'} de ${brl(v)} enviado para ${to.name}.`);

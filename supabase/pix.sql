@@ -33,6 +33,9 @@ begin
   if p_amount is null or p_amount < 1 or p_amount > 1000000000000 then return 'invalid'; end if;
   select name into dest from public.public_profiles where user_id = p_to;
   if dest is null then return 'nouser'; end if;
+  -- conta nova não manda Pix: fecha a fazenda de contas que nascem com R$ 10 mil e mandam tudo para uma só
+  if (select created_at from auth.users where id = auth.uid()) > now() - interval '3 days'
+     or coalesce((select level from public.public_profiles where user_id = auth.uid()), 1) < 5 then return 'new'; end if;
   select worth into w from public.public_profiles where user_id = auth.uid();
   if w is null or p_amount > greatest(w, 0) then return 'worth'; end if;                     -- não manda mais do que o próprio patrimônio
   if (select count(*) from public.pix where from_id = auth.uid() and at > now() - interval '1 hour') >= 30 then return 'limit'; end if;

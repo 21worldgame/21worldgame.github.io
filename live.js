@@ -208,6 +208,7 @@ async function applyGrants(sb) {
     if (g.kind === 'reset') {
       const name = G.S.avatar?.name;
       const pioneer = G.S.pioneer; G.S = blankState(name && name !== 'você' ? name : ''); if (pioneer) G.S.pioneer = true;   // o selo de pioneiro fica
+      if (amt > 0) G.S.money = amt;   // reset com valor: recomeça com esse dinheiro
       say('O administrador reiniciou o seu progresso.', true);
     }
   }
