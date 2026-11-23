@@ -238,9 +238,9 @@ export function landMarket(l) {
   const bonus = IMPROV.filter(([n]) => (l.improv || []).includes(n)).reduce((a, [, b]) => a + b, 0) + (l.water === 'sem água' ? -0.12 : 0);
   return Math.round(reg.perHa * T.landPremium * (Number(l.ha) || 0) * (1 + bonus) * (REGION_K[reg.name] || 1));
 }
-// preço de venda da terra: 8% de corretagem, ITBI e cartório; e o ganho sobre o que pagou é no máximo 0,5% por mês de posse
-// (~6% ao ano, como a terra real). Comprar barato e revender logo não dá lucro.
-export const LAND_FEE = 0.08, LAND_GAIN = 0.005;
+// preço de venda da terra: 8% de corretagem, ITBI e cartório; e o ganho sobre o que pagou é no máximo 0,01% por mês de posse
+// (v186: antes 0,5%). Vender para a loja sempre dá prejuízo: o ganho nunca cobre os 8%.
+export const LAND_FEE = 0.08, LAND_GAIN = 0.0001;
 export function landSale(s, l) {
   const held = Math.max(0, (s.month || 0) - (l.bought ?? s.month)), cap = l.cost ? l.cost * (1 + LAND_GAIN * held) : Infinity;
   return Math.round(Math.min(l.value, cap) * (1 - LAND_FEE));

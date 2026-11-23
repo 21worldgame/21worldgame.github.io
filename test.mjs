@@ -1608,7 +1608,7 @@ import * as CT from './contador.js';
   assert.equal(AR.keepRestored(null), null); console.log('save restaurado ok'); }
 { const s = { month: 10 }, l = { value: 1.3e6, cost: 1e6, bought: 10 };
   assert.equal(L.landSale(s, l), 920000, 'revenda na hora: no máximo o que pagou, menos 8%');
-  s.month = 22; assert.equal(L.landSale(s, l), Math.round(1e6 * 1.06 * 0.92), 'um ano depois: até 6% de ganho');
+  s.month = 22; assert.equal(L.landSale(s, l), Math.round(1e6 * 1.0012 * 0.92), 'um ano depois: só 0,12% de ganho, ainda prejuízo');
   assert.equal(L.landSale(s, { value: 5e5 }), 460000, 'terra sem preço de compra: valor menos 8%'); console.log('venda de terra ok'); }
 { const t = Date.now(); NP.CLOCK.real = 4; const s = NP.onlineSet(t), m = WD.current(NP.CLOCK.world, t);
   assert.ok([...s].every(id => NP.startMonth(NP.byId(id)) <= m), 'bot online já chegou ao mundo (está no ranking)');
