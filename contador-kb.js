@@ -56,7 +56,7 @@ export const KB = [
   { t: 'terras', k: ['terra', 'terras', 'hectare', 'ha', 'fazenda', 'comprar terra', 'regiao', 'mapa', 'satelite'], a: [
     'Cada terra tem região, uso (pasto, lavoura ou café), hectares, água e benfeitorias. Isso mexe no preço e em quantos bois cabem.',
     'Por hectare cabem uns 1,2 boi no pasto, 0,9 na lavoura e 0,6 no café (menos se a terra não tem água).',
-    'Terra própria entra no patrimônio pelo valor dela. Vender devolve 95% do valor (pomar e canavial entram no preço).'] },
+    'Terra própria entra no patrimônio pelo valor dela. Vender paga 8% de corretagem, ITBI e cartório, e a terra valoriza no máximo 0,5% ao mês sobre o que você pagou (~6% ao ano): comprar e revender logo não dá lucro. Pomar e canavial entram no preço.'] },
   { t: 'arrendamento', k: ['arrendar', 'arrendamento', 'aluguel', 'alugar', 'arrendada', 'arrendei'], a: [
     'Arrendar (alugar) terra de outro: você paga 0,4% do valor da terra por mês, com reajuste de 8% a cada 12 meses de contrato.',
     'Lavoura em terra arrendada só com trator, e os insumos custam 20% a mais. Pomar e canavial só em terra própria.',

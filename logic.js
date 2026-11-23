@@ -145,7 +145,7 @@ export function buyRented(s, land) {
   const price = buyRentedPrice(land);
   if (price > s.money) return 'dinheiro insuficiente para comprar essa terra.';
   s.money -= price;
-  land.own = true; land.leasedOut = false; delete land.age; delete land.paid;
+  land.own = true; land.leasedOut = false; delete land.age; delete land.paid; land.cost = land.value; land.bought = s.month;
   return null;
 }
 // seguro agrícola (vida real: seguro rural com prêmio de ~3% a 8% do custo): cobre a produção até 80% do esperado.
@@ -237,6 +237,13 @@ export function landMarket(l) {
   const reg = REGIONS.find(r => r.name === l.region); if (!reg) return 0;   // região desconhecida (save antigo): sem laudo, mantém o valor
   const bonus = IMPROV.filter(([n]) => (l.improv || []).includes(n)).reduce((a, [, b]) => a + b, 0) + (l.water === 'sem água' ? -0.12 : 0);
   return Math.round(reg.perHa * T.landPremium * (Number(l.ha) || 0) * (1 + bonus) * (REGION_K[reg.name] || 1));
+}
+// preço de venda da terra: 8% de corretagem, ITBI e cartório; e o ganho sobre o que pagou é no máximo 0,5% por mês de posse
+// (~6% ao ano, como a terra real). Comprar barato e revender logo não dá lucro.
+export const LAND_FEE = 0.08, LAND_GAIN = 0.005;
+export function landSale(s, l) {
+  const held = Math.max(0, (s.month || 0) - (l.bought ?? s.month)), cap = l.cost ? l.cost * (1 + LAND_GAIN * held) : Infinity;
+  return Math.round(Math.min(l.value, cap) * (1 - LAND_FEE));
 }
 export function refreshOffers(s, rng = Math.random) {
   const used = [];   // ofertas espalhadas pelo Brasil: regiões diferentes e longe umas das outras
@@ -349,7 +356,8 @@ export function tick(s, rng = Math.random) {
     s.prices[k] = v < 100 ? Math.round(v * 100) / 100 : Math.round(v); }   // preço pequeno (frango, ração) anda em centavos
   // terra acompanha o mercado: volta 10% por mês para o valor de laudo e oscila ±2% (antes subia 0,6% todo mês para sempre;
   // com o mês de 10 minutos, terra comprada há poucos dias já valia mais que o dobro do mercado)
-  for (const l of s.lands) { const mk = landMarket(l); if (!mk) continue; const v = walk(l.value + (mk - l.value) * 0.1, rng, 0.02); l.value = Math.round(Math.min(mk * 1.25, Math.max(mk * 0.8, v))); }
+  // v183: valoriza devagar (3% do caminho até o laudo por mês, oscilação de 1%, teto de 5% acima do laudo): comprar e vender não vira máquina de dinheiro
+  for (const l of s.lands) { const mk = landMarket(l); if (!mk) continue; const v = walk(l.value + (mk - l.value) * 0.03, rng, 0.01); l.value = Math.round(Math.min(mk * 1.05, Math.max(mk * 0.8, v))); }
 
   // gado: engorda no pasto; o excedente come ração
   const cap = capacity(s), n = heads(s), over = Math.max(0, n - cap);

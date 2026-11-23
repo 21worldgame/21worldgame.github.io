@@ -1163,7 +1163,7 @@ const ACTS = {
     const al = o && EC.saturationAlert(o.region, REG_INFO, L.REGIONS);   // região saturada: avisa com os números e sugere outras
     if (al && !confirm(`${al.title}\n\n${al.text}${al.alt.length ? `\n\nTalvez seja hora de explorar outras regiões:\n${al.alt.map(a => `• ${a.name} (${a.use}): ${a.why}`).join('\n')}` : ''}\n\nComprar mesmo assim?`)) return;
     if (o && pay(o.value, `compra de ${o.ha} ha, ${o.region}`)) {
-      S().offers.splice(S().offers.indexOf(o), 1); S().lands.push({ ...o, own: true, leasedOut: false }); say('Terra registrada no seu nome.'); award('land');
+      S().offers.splice(S().offers.indexOf(o), 1); S().lands.push({ ...o, own: true, leasedOut: false, cost: o.value, bought: S().month }); say('Terra registrada no seu nome.'); award('land');
     }
   },
   'buy-land-cards'(idv) {
@@ -1171,7 +1171,7 @@ const ACTS = {
     if (!confirm(`Pagar ${brl(o.value)} com cartas? Cada carta vale ${Math.round(CD.LAND_RATE * 100)}% do valor dela e o troco volta em dinheiro.`)) return;
     const r = CD.payWith(S(), o.value);
     if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true);
-    S().offers.splice(S().offers.indexOf(o), 1); S().lands.push({ ...o, own: true, leasedOut: false });
+    S().offers.splice(S().offers.indexOf(o), 1); S().lands.push({ ...o, own: true, leasedOut: false, cost: o.value, bought: S().month });
     note(`compra de ${o.ha} ha com ${r.used.length} cartas`, r.change); award('land'); confetti(50);
     say(`Terra comprada com ${r.used.length} carta${r.used.length > 1 ? 's' : ''}.${r.change ? ` Troco: ${brl(r.change)}.` : ''}`);
   },
@@ -1201,7 +1201,7 @@ const ACTS = {
   lease(idv) { const l = find(S().lands, idv), busy = !l.leasedOut && L.pastureBusy(S(), l); if (busy) return say(busy[0].toUpperCase() + busy.slice(1), true); if (l.leaseTo && AM.isPeer(S(), l.leaseTo)) AMU.peerMsg(l.leaseTo, { t: 'pback', what: 'land', oid: l.id, owner: false }); l.leasedOut = !l.leasedOut; delete l.leaseTo; say(l.leasedOut ? 'Contrato de arrendamento assinado.' : 'Terra de volta para o seu uso.'); },
   'sell-land'(idv) {
     const l = find(S().lands, idv);
-    const v = Math.round(l.value * 0.95 + (PM.orchardValue(S(), l) + CN.caneValue(S(), l)) * 0.9);
+    const v = L.landSale(S(), l) + Math.round((PM.orchardValue(S(), l) + CN.caneValue(S(), l)) * 0.9);
     if (!confirm(`Vender ${l.ha} ha em ${l.region} por ${brl(v)}?${l.crop ? ' A lavoura plantada vai junto.' : ''}${l.orchard ? ' O pomar vai junto (já está no preço).' : ''}`)) return;
     S().lands.splice(S().lands.indexOf(l), 1); S().money += v; note(`venda de ${l.ha} ha, ${l.region}`, v); say('Terra vendida.');
   },
@@ -1650,7 +1650,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 182;
+const APP_VERSION = 183;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

@@ -1606,3 +1606,7 @@ import * as CT from './contador.js';
 { const AR = await import('./authrules.js'), old = { updated_at: '2026-11-20T10:00:00Z', data: { money: 5e6 } }, back = { updated_at: '2026-11-23T10:00:00Z', data: { money: 5e6 } };
   assert.equal(AR.keepRestored(old).data.z161, undefined, 'save de antes do zeramento segue valendo o zeramento'); assert.equal(AR.keepRestored(back).data.z161, 1); assert.equal(AR.keepRestored(back).data.money, 5e6);
   assert.equal(AR.keepRestored(null), null); console.log('save restaurado ok'); }
+{ const s = { month: 10 }, l = { value: 1.3e6, cost: 1e6, bought: 10 };
+  assert.equal(L.landSale(s, l), 920000, 'revenda na hora: no máximo o que pagou, menos 8%');
+  s.month = 22; assert.equal(L.landSale(s, l), Math.round(1e6 * 1.06 * 0.92), 'um ano depois: até 6% de ganho');
+  assert.equal(L.landSale(s, { value: 5e5 }), 460000, 'terra sem preço de compra: valor menos 8%'); console.log('venda de terra ok'); }

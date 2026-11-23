@@ -34,6 +34,7 @@ function normalize(s) {
   const oldLog = !!s && typeof s === 'object' && !s.l165;   // v165: livro-caixa zerado para todos (sem lançamento nenhum) até a reinauguração
   s = s && typeof s === 'object' ? Object.assign(L.newState(), s) : L.newState();
   if (oldLog) { s.log = []; s.l165 = 1; s.borrowers = []; }
+  for (const l of s?.lands || []) if (l.own && l.cost == null) { l.cost = l.value; l.bought = s.month; }   // v183: terra comprada antes passa a ter preço de compra (trava a revenda com lucro rápido)
   for (const k of ['lands', 'herd', 'loans', 'lent', 'offers', 'borrowers', 'log']) if (!Array.isArray(s[k])) s[k] = [];
   s.stock = { soja: 0, milho: 0, cafe: 0, ...(s.stock || {}) };
   s.avatar ??= { ...DEFAULT };
