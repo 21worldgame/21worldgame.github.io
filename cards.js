@@ -1,6 +1,8 @@
 // Cartas colecionáveis e coleções (regras puras).
-// A loja paga um valor FIXO por raridade (comum 3 mil, rara 5 mil, lendária 8 mil, exclusiva 10 mil): é simbólico,
+// Cada raridade tem um valor de base (comum 3 mil, rara 5 mil, lendária 8 mil, exclusiva 10 mil) que sobe bem devagar
+// enquanto a carta fica com o dono (GROWTH ao dia, até +50%). A loja do jogo paga pouco (SELL do valor):
 // o valor de verdade de cada carta sai da negociação entre os jogadores (loja, Feirão e trocas).
+// Pacote pode vir vazio: cada um mostra só a chance de vir carta, nunca quantas vêm.
 // Coleções: cada carta conta uma vez só (repetidas não somam) e cada coleção é completada uma vez só.
 // Completar dá um emblema no perfil, sobe no ranking de colecionadores e libera a vantagem da coleção para sempre.
 // Padrões saem nos pacotes o ano todo; sazonais só saem no período delas (calendário de verdade), em pacote próprio
@@ -33,8 +35,9 @@ export const RARITY = {
 };
 const TIER_RAR = { bronze: 'comum', prata: 'comum', esmeralda: 'rara', diamante: 'rara', mestre: 'lendaria', challenger: 'lendaria' };
 const RAR_TIERS = { comum: [['bronze', 64], ['prata', 36]], rara: [['esmeralda', 75], ['diamante', 25]], lendaria: [['mestre', 85], ['challenger', 15]] };
-export const SELL = 1;            // a loja paga o valor fixo da raridade
-export const LAND_RATE = 0.9;     // como pagamento de terra, a carta vale 90% do valor fixo
+export const SELL = 0.4;          // a loja do jogo paga só 40% do valor da carta
+export const LAND_RATE = SELL;    // pagar terra com carta é vender para a loja: mesma taxa (senão vira atalho)
+export const GROWTH = 0.005, GROWTH_MAX = 1.5;   // +0,5% por dia real com o mesmo dono, no máximo +50%
 export const PACK_PRICE = 18000;  // pacote ouro (mantido para compatibilidade)
 
 // ---------- coleções ----------
@@ -78,17 +81,19 @@ export const ART = new Set(["campeoes:brasa", "campeoes:cristal", "campeoes:ecli
 export const artOf = c => (ART.has(`${setOf(c)}:${keyOf(c)}`) ? `assets/cards/art/${setOf(c)}-${keyOf(c)}.webp` : '');
 export const itemOf = c => SETS[setOf(c)].cards.find(x => x.key === keyOf(c));
 export const rarityOf = c => (c?.set ? (SETS[c.set]?.kind === 'sazonal' ? 'exclusiva' : itemOf(c)?.rar || 'comum') : TIER_RAR[tier(c?.tier).id]);
-export const value = c => RARITY[rarityOf(c)].value;
-export const growth = () => 1;                 // não valorizam mais com o tempo
-export const baseValue = c => value(c);
-export const setMonth = () => {};
-export const ensure = s => { s.colls ??= {}; };
+let month = 0;   // mês do mundo agora (o jogo avisa em setMonth)
+export const setMonth = m => { month = m || 0; };
+export const baseValue = c => RARITY[rarityOf(c)].value;
+export const growth = c => Math.min(GROWTH_MAX, 1 + Math.max(0, month - (c?.born ?? month)) / PACK_DAY * GROWTH);
+export const value = c => Math.round(baseValue(c) * growth(c));
+export const ensure = s => { s.colls ??= {}; for (const c of s.cards || []) c.born ??= s.month || 0; };
 export const label = c => (c?.set ? `${itemOf(c)?.name || 'carta'} (${SETS[c.set].name}, ${RARITY[rarityOf(c)].label})` : `${champ(c.champ).name} (${tier(c.tier).label})`);
 
 export function give(s, card) {
   s.cards ??= [];
   const id = `k${(s.nextId = (s.nextId || 1) + 1)}`;
   const c = card?.set ? { id, set: card.set, key: card.key } : { id, tier: tier(card.tier).id, champ: champ(card.champ).id };
+  c.born = s.month || 0;   // começa a valorizar a partir de agora (carta que chega de troca recomeça com o novo dono)
   s.cards.push(c);
   return c;
 }
@@ -107,19 +112,24 @@ const drawSeasonal = (set, rng) => ({ set, key: pickW(SETS[set].cards.map(c => [
 export function draw(rng = Math.random, minTier = 0) { return drawStd(minTier >= 1 ? pickW([['rara', 85], ['lendaria', 15]], rng) : pickW(Object.entries(W_STD), rng), rng); }
 
 // ---------- pacotes ----------
-const W_STD = { comum: 90, rara: 9, lendaria: 1 };   // carta boa é rara de verdade
+export const W_STD = { comum: 90, rara: 9, lendaria: 1 };   // carta boa é rara de verdade
+// hit: chance de o pacote trazer carta (senão vem vazio). Quantas vêm não aparece: a primeira vem sempre, as outras com EXTRA de chance cada
+export const EXTRA = 0.5;
+const hint = hit => `${Math.round(hit * 100)}% de chance de vir carta`;
 export const PACKS = {
-  simples: { label: 'pacote simples', price: 6000, stock: 3, slots: [W_STD], hint: '1 carta' },
-  ouro: { label: 'pacote ouro', price: 18000, stock: 1, slots: [W_STD, W_STD, { rara: 93, lendaria: 7 }], hint: '3 cartas, 1 rara ou melhor garantida' },
-  lendario: { label: 'pacote lendário', price: 35000, stock: 1, slots: [W_STD, W_STD, W_STD, { rara: 85, lendaria: 15 }, { lendaria: 100 }], hint: '5 cartas, 1 lendária garantida' },
+  simples: { label: 'pacote simples', price: 6000, stock: 3, hit: 0.35, slots: [W_STD] },
+  ouro: { label: 'pacote ouro', price: 18000, stock: 1, hit: 0.55, slots: [{ rara: 93, lendaria: 7 }, W_STD, W_STD] },
+  lendario: { label: 'pacote lendário', price: 35000, stock: 1, hit: 0.75, slots: [{ lendaria: 100 }, { rara: 85, lendaria: 15 }, W_STD, W_STD, W_STD] },
 };
-export const SEASON_PACK = { price: 25000, stock: 1, hint: '3 cartas: 1 da coleção da temporada garantida + 2 das coleções do ano' };
+for (const P of Object.values(PACKS)) P.hint = hint(P.hit);
+export const SEASON_PACK = { price: 25000, stock: 1, hit: 0.6, hint: `${hint(0.6)}: a primeira é da coleção da temporada` };
 export const SEASON_CHANCE = 0.04;   // pacotes comuns na temporada: 4% de chance de vir uma carta sazonal no lugar da primeira
 export const packInfo = id => (id.startsWith('sazonal:') ? { label: `pacote ${SETS[id.slice(8)]?.name || ''}`, ...SEASON_PACK } : PACKS[id]);
 // valor médio na loja (fixo por raridade)
 export function packEV(id) {
-  if (id.startsWith('sazonal:')) return RARITY.exclusiva.value + 2 * packEV('simples');
-  return PACKS[id].slots.reduce((sum, w) => { const tot = Object.values(w).reduce((a, b) => a + b, 0); return sum + Object.entries(w).reduce((a, [r, x]) => a + RARITY[r].value * x / tot, 0); }, 0);
+  const ev = w => { const tot = Object.values(w).reduce((a, b) => a + b, 0); return Object.entries(w).reduce((a, [r, x]) => a + RARITY[r].value * x / tot, 0); };
+  if (id.startsWith('sazonal:')) return SEASON_PACK.hit * (RARITY.exclusiva.value + 2 * EXTRA * ev(W_STD));
+  return PACKS[id].hit * PACKS[id].slots.reduce((sum, w, i) => sum + ev(w) * (i ? EXTRA : 1), 0);
 }
 export const PACK_DAY = 144;   // estoque dos pacotes renova a cada 144 meses do mundo (1 dia real), não a cada mês
 export function packsLeft(s, id) { const m = Math.floor((s.month || 0) / PACK_DAY); if (s.packs?.m !== m) s.packs = { m, n: {} }; return packInfo(id).stock - (s.packs.n[id] || 0); }
@@ -133,8 +143,9 @@ export function openPack(s, id = 'ouro', rng = Math.random, now = Date.now(), fr
     if (s.money < P.price) return { err: 'dinheiro insuficiente para o pacote.' };
     s.money -= P.price; s.packs.n[id] = (s.packs.n[id] || 0) + 1;
   }
-  const out = season ? [drawSeasonal(season, rng), drawStd(pickW(Object.entries(W_STD), rng), rng), drawStd(pickW(Object.entries(W_STD), rng), rng)]
-    : P.slots.map(w => drawStd(pickW(Object.entries(w), rng), rng));
+  if (rng() >= P.hit) return { cards: [] };   // veio vazio
+  const slots = season ? [null, W_STD, W_STD] : P.slots, out = [];
+  slots.forEach((w, i) => { if (i && rng() >= EXTRA) return; out.push(w ? drawStd(pickW(Object.entries(w), rng), rng) : drawSeasonal(season, rng)); });
   const open = openSeasons(now);
   if (!season && open.length && rng() < SEASON_CHANCE) out[0] = drawSeasonal(open[Math.floor(rng() * open.length)], rng);
   return { cards: out.map(c => give(s, c)) };

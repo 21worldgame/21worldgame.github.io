@@ -880,7 +880,8 @@ function renderCartas() {
   const packBtn = (id, P, extra = '') => `<button class="cd-packbtn cd-packbtn--${id.startsWith('sazonal:') ? 'sazonal' : id}" data-act="card-pack" data-id="${id}"><b>${esc(P.label)}</b><span>${esc(P.hint)}</span>${extra}<span class="cd-packbtn__price">${brl(P.price)}</span><small>${CD.packsLeft(s, id)} no estoque do mês</small></button>`;
   $('#cd-packs').innerHTML = open.map(k => packBtn(`sazonal:${k}`, CD.packInfo(`sazonal:${k}`), `<span class="cd-packbtn__season">${CD.SETS[k].icon} temporada ${esc(CD.seasonLabel(k))}</span>`)).join('')
     + Object.entries(CD.PACKS).map(([k, P]) => packBtn(k, P)).join('');
-  $('#cd-odds').innerHTML = Object.entries(CD.RARITY).map(([k, R]) => `<div class="cd-odd cd-odd--${R.frame}"><b>${R.label}</b><span>loja paga ${brl(R.value)}</span><small>${k === 'exclusiva' ? 'só coleções sazonais' : `${{ comum: 82, rara: 15, lendaria: 3 }[k]}% por carta`}</small></div>`).join('')
+  $('#cd-odds').innerHTML = Object.entries(CD.RARITY).map(([k, R]) => `<div class="cd-odd cd-odd--${R.frame}"><b>${R.label}</b><span>vale ${brl(R.value)} e sobe aos poucos</span><small>${k === 'exclusiva' ? 'só coleções sazonais' : `${CD.W_STD[k]}% por carta`} · loja paga ${brl(R.value * CD.SELL)}</small></div>`).join('')
+    + `<p class="small cd-odds__note">Pacote pode vir vazio: cada um mostra a chance de vir carta. Quem guarda a carta vê ela valorizar ${String(CD.GROWTH * 100).replace('.', ',')}% por dia (até +${Math.round((CD.GROWTH_MAX - 1) * 100)}%). A loja do jogo paga só ${Math.round(CD.SELL * 100)}% do valor: o bom negócio é vender para outros jogadores.</p>`
     + (open.length ? `<p class="small cd-odds__note">Temporada aberta: ${open.map(k => `<b>${esc(CD.SETS[k].name)}</b> (${esc(CD.seasonLabel(k))})`).join(', ')}. Nos pacotes comuns há ${Math.round(CD.SEASON_CHANCE * 100)}% de chance de vir uma carta da temporada.</p>` : '');
   $('#cd-colls').innerHTML = Object.entries(CD.SETS).map(([id, S0]) => {
     const p = CD.progress(s, id), season = S0.kind === 'sazonal', live = season && open.includes(id);
@@ -1450,7 +1451,14 @@ document.addEventListener('pointerdown', e => {
 
 // revelação de carta nova (pacote ou roleta)
 function showCard(cs) {
-  const list = Array.isArray(cs) ? cs : [cs], rk = c => Object.keys(CD.RARITY).indexOf(CD.rarityOf(c));
+  const list = Array.isArray(cs) ? cs : [cs];
+  if (!list.length) {   // pacote vazio
+    const d = $('#dlg-card'); $('#cd-reveal').className = 'cd-reveal'; $('#cd-reveal').innerHTML = '<div class="cd-pack"><span>21 WORLD<br>pacote de cartas</span></div>';
+    $('#cd-reveal-txt').innerHTML = 'abrindo...'; if (!d.open) d.showModal(); sfx.play('handle', 0.6);
+    setTimeout(() => { $('#cd-reveal').innerHTML = '<div class="cd-pack"><span>vazio</span></div>'; $('#cd-reveal-txt').innerHTML = '<strong>Não veio carta desta vez.</strong><br>Fica para o próximo pacote.'; }, RM.matches ? 0 : 950);
+    save(); render(); return;
+  }
+  const rk = c => Object.keys(CD.RARITY).indexOf(CD.rarityOf(c));
   const best = [...list].sort((a, b) => rk(b) - rk(a))[0], br = CD.rarityOf(best), frame = CD.RARITY[br].frame;
   const d = $('#dlg-card'), box = $('#cd-reveal'), high = br === 'lendaria' || br === 'exclusiva';
   const total = list.reduce((t, c) => t + CD.value(c), 0);
@@ -1650,7 +1658,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 191;
+const APP_VERSION = 192;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
