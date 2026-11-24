@@ -60,7 +60,10 @@ function fly(html, from, to, { dur = 520, delay = 0, sound = 'chip' } = {}) {
 
 // ---------- salão ----------
 const myPid = () => (cur?.local ? 'me' : selfId);
-const seatInfo = () => { const p = profileOf(); return { name: p.name, look: p.look, profile: p }; };
+// mãos ganhas no ano do mundo: passou de BJ.WINS_PER_YEAR, a banca leva todas (bj.js)
+const bjYear = () => Math.floor(((G.S.month || 1) - 1) / 12);
+const bjLucky = () => { const w = G.S.bjWin; return !w || w.y !== bjYear() || w.n < BJ.WINS_PER_YEAR; };
+const seatInfo = () => { const p = profileOf(); return { name: p.name, look: p.look, profile: p, lucky: bjLucky() }; };
 const rid = () => Math.random().toString(36).slice(2, 8);
 
 export async function initCasino() {
@@ -525,7 +528,8 @@ function accounting(v, me) {
     marks.pay = `${v.id}:${v.round}`;
     G.S.chips += s.pay + luck(G.S, s.pay - s.bet);
     const st = G.S.stats;
-    st.hands++; if (s.pay > s.bet) { st.wins++; st.best = Math.max(st.best, s.pay - s.bet); }
+    st.hands++; if (s.pay > s.bet) { st.wins++; st.best = Math.max(st.best, s.pay - s.bet); const y = bjYear(); G.S.bjWin = { y, n: (G.S.bjWin?.y === y ? G.S.bjWin.n : 0) + 1 }; }
+    updateInfo();   // avisa a mesa se ainda tem mão para ganhar no ano (e quando o ano vira)
     const xp = s.pay > s.bet && Math.random() < BJ_XP_CHANCE;   // XP e passe só em 2% das vitórias
     award('hand', 1, xp);
     if (s.pay > s.bet) award('win', 1, xp);

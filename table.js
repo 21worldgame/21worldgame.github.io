@@ -57,8 +57,8 @@ export class Table {
   update(pid, info) {
     const i = this.seatOf(pid);
     if (i < 0 || !info) return;
-    const { name, look, profile } = info;
-    Object.assign(this.seats[i], { name: String(name || 'jogador').slice(0, 18), look, profile });
+    const { name, look, profile, lucky } = info;
+    Object.assign(this.seats[i], { name: String(name || 'jogador').slice(0, 18), look, profile, lucky: !!lucky });
     this.emit();
   }
 
@@ -108,6 +108,7 @@ export class Table {
     for (const s of this.seats) {
       if (s.kind === 'bot') s.bet = this.here.has(s.name) ? this.minBet * (1 + Math.floor(this.rng() * 4)) : 0;
       s.out = !s.bet; s.pay = 0; s.done = false;
+      s.rig = s.kind === 'human' && (!s.lucky || this.rng() < BJ.RIG_P);   // banca (bj.js): quem já ganhou as mãos do ano sempre perde
       s.hands = s.out ? [] : [{ cards: [], bet: s.bet }];
     }
     this.emit();
@@ -115,7 +116,9 @@ export class Table {
     for (let r = 0; r < 2; r++) {
       for (let i = 0; i < SEATS; i++) {
         if (this.seats[i].out) continue;
-        this.seats[i].hands[0].cards.push(this.draw()); this.emit(); await this.wait(380);
+        const cs = this.seats[i].hands[0].cards;
+        if (!this.shoe.cards.length) this.shoe = BJ.newShoe(this.rng);
+        cs.push(r && this.seats[i].rig ? BJ.noBJ(cs[0], this.shoe) : this.draw()); this.emit(); await this.wait(380);
       }
       this.dealer.push(this.draw()); this.emit(); await this.wait(380);
     }
@@ -147,9 +150,11 @@ export class Table {
     }
 
     // dealer revela e compra até 17 (só se alguma mão ainda está viva)
+    const live = this.seats.filter(s => !s.out && s.rig).flatMap(s => s.hands.map(h => BJ.value(h.cards))).filter(v => v <= 21), need = live.length ? Math.max(...live) : -1;
+    if (need >= 0 && !dealerBJ) { if (this.shoe.cards.length < 20) this.shoe.cards.unshift(...BJ.newShoe(this.rng).cards); BJ.rigHole(this.dealer, this.shoe, need); }   // carta escondida trocada antes de virar
     this.phase = 'reveal'; this.emit(); await this.wait(700);
     const alive = this.seats.some(s => !s.out && s.hands.some(h => BJ.value(h.cards) <= 21 && !BJ.isBlackjack(h.cards, h.split)));
-    if (alive && !dealerBJ) while (BJ.dealerPlays(this.dealer)) { this.dealer.push(this.draw()); this.emit(); await this.wait(650); }
+    if (alive && !dealerBJ) while (BJ.dealerPlays(this.dealer)) { this.dealer.push(need >= 0 ? BJ.rigDraw(this.dealer, this.shoe, need) : this.draw()); this.emit(); await this.wait(650); }
 
     for (const s of this.seats) {
       if (s.out) continue;

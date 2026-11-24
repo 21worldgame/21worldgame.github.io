@@ -65,3 +65,23 @@ export function botAction(hand, up, handsCount, chipsOk = true) {
   if (t === 12 && u >= 4 && u <= 6) return 'stand';
   return 'hit';
 }
+
+// ---------- banca ----------
+// Quem tem conta ganha no máximo WINS_PER_YEAR mãos por ano do mundo; antes disso a banca já leva RIG_P das rodadas.
+// A banca escolhe a carta escondida do dealer e as que ele compra, sempre dentro da regra (compra até 16, para no 17),
+// para ele terminar acima da maior mão viva dos jogadores marcados. Nada aparece diferente na mesa.
+export const WINS_PER_YEAR = 2, RIG_P = 0.75;
+const take = (shoe, ok) => { for (let i = shoe.cards.length - 1; i >= 0; i--) if (ok(shoe.cards[i])) return shoe.cards.splice(i, 1)[0]; return null; };
+// a melhor carta para o dealer com `cs`: termina acima de need, senão empata, senão continua comprando sem estourar
+function best(shoe, cs, need, bad = () => false) {
+  const v = c => value([...cs, c]), end = c => !bad(c) && v(c) >= 17 && v(c) <= 21;
+  return take(shoe, c => end(c) && v(c) > need) || take(shoe, c => end(c) && v(c) === need) || take(shoe, c => !bad(c) && v(c) < 17);
+}
+// troca a carta escondida (escondida até a revelação) e diz qual carta o dealer compra
+export function rigHole(dealer, shoe, need) {
+  const peeked = dealerPeeks(dealer[0]), c = best(shoe, [dealer[0]], need, x => peeked && value([dealer[0], x]) === 21);   // conferiu blackjack e não tinha: não pode virar blackjack
+  if (c) { shoe.cards.unshift(dealer[1]); dealer[1] = c; }
+}
+export const rigDraw = (dealer, shoe, need) => best(shoe, dealer, need) || shoe.cards.pop();
+// segunda carta de quem está marcado nunca fecha blackjack
+export const noBJ = (first, shoe) => take(shoe, c => value([first, c]) !== 21) || shoe.cards.pop();

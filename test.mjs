@@ -144,6 +144,19 @@ for (let round = 0; round < 25; round++) {
     assert.ok(!t.bet('me', 100));
   });
 }
+// banca: quem já ganhou as mãos do ano não ganha mais (e o dealer segue a regra); antes disso, ganha pouco
+{ const run = (lucky, n) => new Promise(done => { let wins = 0, k = 0;
+    const t = new Table({ id: 'r', name: 'banca', minBet: 50, speed: 0.00001, onChange: v => {
+      if (v.phase === 'play' && v.turn === 0) t.act('me', 'stand');
+      if (v.phase === 'done' && v.round > k) { k = v.round; const s = v.seats[0]; if (s.pay > s.bet) wins++;
+        if (!lucky && !BJ2.isBlackjack(v.dealer) && s.hands.some(h => BJ2.value(h.cards) <= 21)) assert.ok(BJ2.value(v.dealer) >= 17 && BJ2.value(v.dealer) <= 21, 'dealer na regra ' + JSON.stringify([v.dealer, s.hands[0].cards, lucky]));
+        if (k >= n) { t.close(); done(wins); } }
+      if (v.phase === 'bet' && !v.seats[0].bet && k < n) t.bet('me', 100);
+    } });
+    t.join('me', { name: 'eu', lucky }); t.bet('me', 100); });
+  const lost = await run(false, 150), lucky = await run(true, 150);
+  assert.ok(lost <= 3, `marcado ganhou ${lost} de 150`); assert.ok(lucky < 40, `com sorte ganhou ${lucky} de 150`);
+  console.log(`banca ok (marcado ${lost}/150, com sorte ${lucky}/150)`); }
 // jogos novos
 import * as GM from './games.js';
 let rs = 1; const lcg = () => ((rs = (rs * 16807) % 2147483647) / 2147483647);
