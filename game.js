@@ -1062,7 +1062,7 @@ const ACTS = {
   'race-next'() { RC.nextRace(); },
   mute() { const off = sfx.toggleMute(); $('#mute-btn').classList.toggle('is-off', off); say(off ? 'Som desligado.' : 'Som ligado.'); },
   'open-pass'() { renderPass(); $('#dlg-pass').showModal(); },
-  'pass-claim'(id) { const r = P.passClaim(S(), Number(id)); if (r) { say(`Passe: +${r.kind === 'chips' ? `${int(r.amount)} fichas` : brl(r.amount)}.`); confetti(40); renderPass(); } },
+  'pass-claim'(id) { const r = P.passClaim(S(), Number(id)); if (r) { note(`passe: prêmio do nível ${id} (+${r.kind === 'chips' ? `${int(r.amount)} fichas` : brl(r.amount)})`, r.kind === 'chips' ? 0 : r.amount); say(`Passe: +${r.kind === 'chips' ? `${int(r.amount)} fichas` : brl(r.amount)}.`); confetti(40); renderPass(); } },
   'open-missions'() { renderMissions(); $('#dlg-missions').showModal(); },
   'claim-mission'(id) {
     const r = P.claimMission(S(), id);
@@ -1684,7 +1684,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 200;
+const APP_VERSION = 201;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
