@@ -14,12 +14,14 @@ export const sbClient = () => sb;
 export const sbReady = () => client().catch(() => null);   // rede das mesas (net.js) usa o mesmo cliente
 export const account = () => (user ? { id: user.id, email: user.email } : null);
 
-async function client() {
-  if (!configured()) return null;
-  if (sb) return sb;
-  const lib = await import(LIB);
-  sb = lib.createClient(SUPABASE.url, SUPABASE.anonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
-  return sb;
+// um cliente só: duas chamadas ao mesmo tempo na abertura criavam dois, e os dois renovavam o login juntos
+// (no celular, ao voltar do segundo plano, um derrubava a sessão do outro e telas como profissionais ficavam sem carregar)
+let making = null;
+function client() {
+  if (!configured()) return Promise.resolve(null);
+  if (sb) return Promise.resolve(sb);
+  return (making ||= import(LIB).then(lib => (sb ||= lib.createClient(SUPABASE.url, SUPABASE.anonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } })))
+    .catch(e => { making = null; throw e; }));
 }
 
 // ---------- tela de entrada ----------

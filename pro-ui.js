@@ -22,7 +22,7 @@ async function loadPros() {
   if (error) { off = missing(error); return; }
   off = false; pros = data || []; mine = pros.find(p => p.user_id === me()) || null; loaded = Date.now();
   const ids = pros.map(p => p.user_id).filter(id => !(id in looks));
-  if (ids.length) { const { data: lk } = await sb().from('public_profiles').select('user_id, look').in('user_id', ids.slice(0, 300)); for (const r of lk || []) looks[r.user_id] = r.look; }
+  for (let i = 0; i < Math.min(ids.length, 300); i += 80) { const { data: lk } = await sb().from('public_profiles').select('user_id, look').in('user_id', ids.slice(i, i + 80)); for (const r of lk || []) looks[r.user_id] = r.look; }   // de 80 em 80: endereço longo demais falha em rede de celular
   if (mine) trophyCheck(mine);
 }
 async function loadContracts() {
@@ -87,7 +87,13 @@ export async function open() {
   unseen = 0; paintBadge();
   if (!p.dataset.ready) { p.dataset.ready = '1'; p.innerHTML = shell(); }
   paint(true);
-  if (sb()) { await Promise.all([Date.now() - loaded > 20000 ? loadPros() : null, loadContracts()]); paint(); }
+  if (!sb()) await Auth.sbReady();   // abriu a aba antes do login terminar de subir (celular lento)
+  if (!sb()) return paint();
+  // rede caiu ou demorou: mostra o que tiver em vez de ficar em "Carregando…" para sempre
+  const slow = new Promise(r => setTimeout(r, 12000));
+  try { await Promise.race([Promise.all([Date.now() - loaded > 20000 ? loadPros() : null, loadContracts()]), slow]); } catch {}
+  if (!pros.length && !loaded) { const b = $('#pro-body'); if (b) b.innerHTML = '<p class="pro-empty">Não deu para carregar a Central agora (internet fraca?). <button type="button" class="btn btn--gold btn--sm" data-pro="retry">tentar de novo</button></p>'; loaded = 0; return; }
+  paint();
 }
 const shell = () => `<div class="pro-hero"><div><span class="pro-hero__k">negócios · entre jogadores</span><h2>Central de Profissionais</h2>
   <p>Ofereça o que você sabe fazer ou contrate quem sabe. O pagamento fica guardado pela Central e só vai para o profissional quando ele entrega: período sem entrega volta para quem contratou.</p></div>
@@ -274,6 +280,7 @@ async function saveProfile(f) {
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-pro]'); if (!b) return;
   const a = b.dataset.pro, id = b.dataset.id, n = Number(id);
+  if (a === 'retry') return open();
   if (a === 'view') { view = id; paint(); if (id === 'contratos') loadContracts().then(paint); }
   else if (a === 'open') openProfile(id);
   else if (a === 'edit') { document.getElementById('dlg-pro')?.close(); view = 'perfil'; paint(); }
@@ -302,7 +309,11 @@ document.addEventListener('change', e => {
   if (t.name === 'active' && t.form?.id === 'pro-form' && draft) draft.active = t.checked;
 });
 document.addEventListener('submit', e => { if (e.target.id === 'pro-form') { e.preventDefault(); saveProfile(e.target); } });
-document.addEventListener('click', e => { if (e.target.closest('[data-tab="pro"]')) setTimeout(open, 50); });
-addEventListener('hashchange', () => { if (location.hash === '#pro') setTimeout(open, 50); });
-setTimeout(() => { if (location.hash === '#pro') open(); sync(); }, 5000);
+// abre sempre que a aba aparece, venha de onde vier (menu de baixo do celular, atalho, recarga já em #pro);
+// antes só o clique no menu do computador ou a troca de endereço carregavam, e no celular a aba ficava vazia
+const watchPanel = () => { const p = panel(); if (!p) return setTimeout(watchPanel, 500);
+  new MutationObserver(() => { if (!p.hidden) open(); }).observe(p, { attributes: true, attributeFilter: ['hidden'] });
+  if (!p.hidden) open(); };
+watchPanel();
+setTimeout(sync, 5000);
 setInterval(sync, 30000);

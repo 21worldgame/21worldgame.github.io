@@ -118,6 +118,9 @@ document.addEventListener('click', e => {
   if (a === 'send') send();
 });
 // abre o inventário: atualiza saldo e extrato
-document.addEventListener('click', e => { if (e.target.closest('[data-tab="inventario"], [data-tab-go="inventario"]')) setTimeout(() => { render(); loadHist(); }, 50); });
+// (sempre que a aba aparece: no celular ela abre pelo menu de baixo, que não tem data-tab)
+const watchInv = () => { const p = document.getElementById('p-inventario'); if (!p) return setTimeout(watchInv, 500);
+  new MutationObserver(() => { if (!p.hidden) setTimeout(() => { render(); loadHist(); }, 50); }).observe(p, { attributes: true, attributeFilter: ['hidden'] }); };
+watchInv();
 setInterval(claim, 15000);
 setTimeout(() => { render(); loadHist(); claim(); }, 4000);

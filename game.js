@@ -902,7 +902,7 @@ function renderCartas() {
   const s = S(); CD.ensure(s);
   const cs = [...(s.cards || [])].sort((a, b) => CD.value(b) - CD.value(a)), dup = CD.duplicates(s), now = Live.now(), open = CD.openSeasons(now);
   $('#cd-sum').textContent = cs.length ? `${cs.length} cartas (${dup.size} repetidas) · ${CD.completed(s).length} de ${Object.keys(CD.SETS).length} coleções completas · ${CD.prestige(s)} pontos de prestígio` : 'nenhuma carta ainda';
-  const packBtn = (id, P, extra = '') => `<button class="cd-packbtn cd-packbtn--${id.startsWith('sazonal:') ? 'sazonal' : id}" data-act="card-pack" data-id="${id}"><b>${esc(P.label)}</b><span>${esc(P.hint)}</span>${extra}<span class="cd-packbtn__price">${brl(P.price)}</span><small>${CD.packsLeft(s, id)} no estoque do mês</small></button>`;
+  const packBtn = (id, P, extra = '') => `<button class="cd-packbtn cd-packbtn--${id.startsWith('sazonal:') ? 'sazonal' : id}" data-act="card-pack" data-id="${id}"><b>${esc(P.label)}</b><span>${esc(P.hint)}</span>${extra}<span class="cd-packbtn__price">${brl(P.price)}</span><small>${CD.packsLeft(s, id)} no estoque de hoje</small></button>`;
   $('#cd-packs').innerHTML = open.map(k => packBtn(`sazonal:${k}`, CD.packInfo(`sazonal:${k}`), `<span class="cd-packbtn__season">${CD.SETS[k].icon} temporada ${esc(CD.seasonLabel(k))}</span>`)).join('')
     + Object.entries(CD.PACKS).map(([k, P]) => packBtn(k, P)).join('');
   $('#cd-odds').innerHTML = Object.entries(CD.RARITY).map(([k, R]) => `<div class="cd-odd cd-odd--${R.frame}"><b>${R.label}</b><span>vale ${brl(R.value)} e sobe aos poucos</span><small>${k === 'exclusiva' ? 'só coleções sazonais' : `${CD.W_STD[k]}% por carta`} · loja paga ${brl(R.value * CD.SELL)}</small></div>`).join('')
@@ -1684,7 +1684,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 201;
+const APP_VERSION = 202;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
