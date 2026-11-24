@@ -906,20 +906,25 @@ document.addEventListener('click', e => {
     ${sug.length ? `<div class="row">${sug.map(([k, v, why]) => `<button type="button" class="btn btn--glass btn--xs" data-sug="${Math.round(v)}" data-why="${esc(why)}">${k}: ${AE.brlShort(v)}</button>`).join('')}</div>` : ''}
     <label class="field"><span>valor a descontar (R$)</span><input class="input" type="number" name="amount" min="1" step="1" required value="${Math.round(sug[0]?.[1] || 0) || ''}" autofocus></label>
     <label class="field"><span>motivo</span><input class="input" name="why" maxlength="120" value="${esc(sug[0]?.[2] || 'trapaça')}"></label>
-    <label class="ad-pun__opt"><input type="checkbox" name="rf" checked> lançar como aviso da Receita Federal</label>
+    <label class="field"><span>quem manda o aviso (dentro do jogo; o jogador nunca vê "administrador")</span><select class="input" name="org">
+      <option value="rf">Receita Federal: auto de infração</option><option value="bc">Banco Central: Pix bloqueado por fraude</option><option value="pf">Polícia Federal: bens apreendidos</option></select></label>
     <label class="field"><span>como vai aparecer no livro-caixa dele (pode editar)</span><textarea class="input" name="txt" maxlength="200" rows="3"></textarea></label>
     <div class="row"><button class="btn btn--glass" value="cancel" formnovalidate>cancelar</button><button class="btn btn--danger" value="ok">descontar</button></div></form>`;
   const q = n => d.querySelector(`[name=${n}]`);
   const suggest = () => { const v = brl(Math.floor(Number(q('amount').value) || 0)), w = (q('why').value || 'trapaça').trim().replace(/\.$/, '');
-    q('txt').value = (q('rf').checked ? `Receita Federal: auto de infração. ${v} recolhidos por ${w.charAt(0).toLowerCase() + w.slice(1)}. Reincidência leva à suspensão da conta.` : w).slice(0, 200); };
+    const lw = w.charAt(0).toLowerCase() + w.slice(1);
+    q('txt').value = ({ rf: `Receita Federal: auto de infração. ${v} recolhidos por ${lw}. Reincidência leva à suspensão da conta.`,
+      bc: `Banco Central: ${v} bloqueados e devolvidos ao sistema por ${lw}. Movimentação sob monitoramento.`,
+      pf: `Polícia Federal: ${v} apreendidos em operação contra ${lw}. O caso segue em investigação.` }[q('org').value]).slice(0, 200); };
   d.addEventListener('click', ev => { const s2 = ev.target.closest('[data-sug]'); if (!s2) return; q('amount').value = s2.dataset.sug; q('why').value = s2.dataset.why; suggest(); });
   d.addEventListener('input', ev => { if (ev.target.name !== 'txt') suggest(); });
-  d.addEventListener('change', ev => { if (ev.target.name === 'rf') suggest(); });
+  d.addEventListener('change', ev => { if (ev.target.name === 'org') suggest(); });
   document.body.append(d); suggest(); d.showModal();
   d.addEventListener('close', async () => {
     const f = Object.fromEntries(new FormData(d.querySelector('form'))); d.remove();
     const amt = Math.floor(Number(f.amount) || 0); if (d.returnValue !== 'ok' || amt <= 0) return;
-    const why = (f.txt || f.why || 'trapaça').trim().slice(0, 200), shown = /^Receita Federal/.test(why) ? why : `ajuste do administrador: ${why}`;
+    let why = (f.txt || f.why || 'trapaça').trim().slice(0, 200); if (!ORG_RE.test(why)) why = `Receita Federal: ${why}`.slice(0, 200);   // sempre imersivo
+    const shown = why;
     if (!confirm(`Descontar ${brl(amt)} do caixa de ${name}?\n\nNo livro-caixa dele:\n"${shown}"`)) return;
     const { error } = await sb.from('admin_grants').insert({ user_id: id, kind: 'money', amount: -amt, note: why });
     if (error) return fail(error, 'descontar');
@@ -929,6 +934,7 @@ document.addEventListener('click', e => {
 }, true);
 // recursos: o jogador contestou um desconto pelo livro-caixa (supabase/recursos.sql). Aceitar devolve o valor; negar manda a resposta.
 let RECS = [];
+const ORG_RE = /^(Receita Federal|Banco Central|Polícia Federal):/;   // avisos imersivos (o jogo mostra sem "administrador")
 async function loadRecursos() {
   const { data, error } = await sb.from('recursos').select('*').order('at', { ascending: false }).limit(80);
   if (error) { $('#ad-rec').innerHTML = ''; return; }
@@ -947,7 +953,7 @@ document.addEventListener('click', async e => {
   const ok = e.target.closest('[data-rec-ok]'), no = e.target.closest('[data-rec-no]'); if (!ok && !no) return;
   e.preventDefault(); e.stopPropagation();
   const r = RECS.find(x => String(x.id) === (ok ? ok.dataset.recOk : no.dataset.recNo)); if (!r) return;
-  const rf = /^Receita Federal/.test(r.entry || ''), who = rf ? 'Receita Federal' : 'Administrador';
+  const who = (r.entry || '').match(ORG_RE)?.[1] || 'Receita Federal';
   const answer = prompt(ok ? `Aceitar o recurso de ${r.name} e devolver ${brl(r.amount)}?\n\nResposta para ele (opcional):` : `Negar o recurso de ${r.name}?\n\nResposta para ele (aparece no livro-caixa):`,
     ok ? 'Analisamos o seu caso e o desconto foi cancelado.' : 'Analisamos o seu caso e o desconto foi mantido.');
   if (answer === null) return;

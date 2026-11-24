@@ -200,8 +200,8 @@ export async function appeal(gid, msg) {
   if (!sb || !Auth.account()?.id) return say('Entre na sua conta para recorrer.', true), false;
   if (!e) return false;
   const { error } = await sb.from('recursos').insert({ name: (profileOf().name || '').slice(0, 40), grant_id: gid, amount: -e.val, entry: String(e.txt).slice(0, 220), msg: msg.slice(0, 800) });
-  if (error) return say(/duplicate|unique/i.test(error.message) ? 'Você já recorreu deste desconto.' : 'Não deu para enviar o recurso agora. Tente de novo.', true), false;
-  e.appeal = 'enviado'; save(); say('Recurso enviado. A resposta chega aqui no livro-caixa.'); return true;
+  if (error) return say(/duplicate|unique/i.test(error.message) ? 'Já existe um pedido de revisão para esta cobrança.' : 'Não deu para enviar o recurso agora. Tente de novo.', true), false;
+  e.appeal = 'enviado'; save(); say('Pedido de revisão protocolado. A resposta chega aqui no livro-caixa.'); return true;
 }
 async function applyGrants(sb) {
   const me = Auth.account().id;
@@ -213,11 +213,12 @@ async function applyGrants(sb) {
   if (e2 || !rows?.length) return;
   for (const g of rows) {
     const amt = Number(g.amount) || 0, why = g.note ? `: ${g.note}` : '';
-    if (g.kind === 'money' && /^Receita Federal/.test(g.note || '')) { G.S.money += amt; note(g.note, amt); if (amt < 0) G.S.log[0].gid = g.id; badge('Receita Federal', g.note.replace(/^Receita Federal:\s*/, ''), 'mission'); continue; }   // aviso da Receita no livro-caixa
+    const org = (g.note || '').match(/^(Receita Federal|Banco Central|Polícia Federal):\s*/);   // aviso imersivo: órgão do jogo, sem "administrador"
+    if (g.kind === 'money' && org) { G.S.money += amt; note(g.note, amt); if (amt < 0) G.S.log[0].gid = g.id; badge(org[1], g.note.slice(org[0].length), 'mission'); continue; }   // aviso da Receita no livro-caixa
     if (g.kind === 'money') { G.S.money += amt; note(`ajuste do administrador${why}`, amt); if (amt < 0) G.S.log[0].gid = g.id; badge('Administrador', `${amt >= 0 ? 'Você recebeu' : 'Foram retirados'} ${brl(Math.abs(amt))}${why}.`, 'mission'); }
     if (g.kind === 'chips') { G.S.chips = Math.max(0, G.S.chips + amt); note(`fichas do administrador${why}`); badge('Administrador', `${amt >= 0 ? '+' : ''}${int(amt)} fichas${why}.`, 'mission'); }
     if (g.kind === 'xp') { P.addXp(G.S, amt).forEach(levelUp); badge('Administrador', `+${int(amt)} XP${why}.`, 'mission'); }
-    if (g.kind === 'message' && /^Receita Federal/.test(g.note || '')) { note(g.note, 0); badge('Receita Federal', g.note.replace(/^Receita Federal:\s*/, ''), 'mission'); continue; }   // resposta de recurso
+    if (g.kind === 'message' && org) { note(g.note, 0); badge(org[1], g.note.slice(org[0].length), 'mission'); continue; }   // resposta de recurso
     if (g.kind === 'message') badge('Mensagem do administrador', g.note || '', 'mission');
     if (g.kind === 'land' && g.item?.id != null && !(G.S.lands || []).some(l => String(l.id) === String(g.item.id))) {
       G.S.lands.push({ ...g.item, own: true }); note(`terra devolvida pelo administrador: ${g.item.ha} ha, ${g.item.region}`);

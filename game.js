@@ -1684,7 +1684,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 210;
+const APP_VERSION = 211;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
@@ -1810,9 +1810,9 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-appeal]'); if (!b) return;
   const gid = Number(b.dataset.appeal), en = S().log.find(x => x.gid === gid); if (!en) return;
   const d = document.createElement('dialog'); d.className = 'dlg';
-  d.innerHTML = `<form method="dialog" style="display:grid;gap:10px;max-width:28rem"><h3 style="margin:0">recorrer do desconto</h3>
+  d.innerHTML = `<form method="dialog" style="display:grid;gap:10px;max-width:28rem"><h3 style="margin:0">${esc((en.txt.match(/^(Receita Federal|Banco Central|Polícia Federal)/) || ['', 'Receita Federal'])[1])}: pedido de revisão</h3>
     <p class="small" style="margin:0">${esc(dots(en.txt))} <b class="bad">${brl(en.val)}</b></p>
-    <label class="field"><span>explique por que o desconto está errado (o administrador lê e responde aqui no livro-caixa)</span>
+    <label class="field"><span>explique por que a cobrança está errada (o órgão analisa o caso e responde aqui no livro-caixa)</span>
     <textarea class="input" name="msg" rows="5" minlength="5" maxlength="800" required></textarea></label>
     <div class="row"><button class="btn btn--glass" value="cancel" formnovalidate>cancelar</button><button class="btn btn--gold" value="ok">enviar recurso</button></div></form>`;
   document.body.append(d); d.showModal();
