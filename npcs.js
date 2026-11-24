@@ -89,7 +89,10 @@ const FRESH = ['bora', 'sem tempo, só passando', 'foco no gado', 'aceito parcer
 export const NPCS = [...BASE, ...EXTRA].map(n => ({ ...n, bio: hash(n.i * 59 + 11) < 0.45 ? '' : FRESH[Math.floor(hash(n.i * 61 + 3) * FRESH.length)] }));   // ~45% sem recado no perfil
 // 24/11/2026 13:40: a fortuna de cassino do ReiDoGado e da A Boiadeira foi tomada (TV 21: "mafioso do cassino", sem nomes).
 // Caem para o 13º/14º lugar e voltam bem devagar, só com gado, terra e negócios (rivals.js calcula e guarda aqui). Perfil sempre aberto.
-export const FALL = Date.UTC(2026, 10, 24, 16, 40), FALLEN = new Set(['n0', 'n1']), FALLEN_W = new Map();
+export const FALL = Date.UTC(2026, 10, 24, 16, 40), FALLEN = new Set(['n0', 'n1']);
+// fortuna que o ranking mostra agora (rivals.js: caçadores do topo, vizinhos e os dois caídos). worthAt devolve esta para o "agora",
+// então nível, perfil, chat, mesas e amigos batem com o ranking. raw = true: a fortuna de base, sem o ranking (só rivals.js usa)
+export const SHOWN = new Map();
 // todos os jogadores do mundo perdem 25% em 3 h reais a partir daí (devagar, sem salto): mais disputa para quem tem conta
 const ss = x => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 export const dropOf = t => 1 - 0.25 * ss((t - FALL) / (3 * 36e5));
@@ -131,8 +134,9 @@ export const NPC_RAMP_START = 440;   // força final e dias da rampa: painel adm
 // resultado das escolhas de cada um na economia do mundo (econ.js liga isto): quem apostou no produto que caiu perde, quem pegou a alta ganha
 export const PERF = { fn: null };
 // fortuna no mês do mundo (pode ser fracionário: anda devagar entre um mês e outro)
-export function worthAt(n, month, t = Date.now()) {
-  const fell = FALLEN.has(n.id) && t >= FALL; if (fell && FALLEN_W.has(n.id)) return FALLEN_W.get(n.id);   // valor que o ranking calculou (rivals.js)
+export function worthAt(n, month, t = Date.now(), raw = false) {
+  if (!raw && SHOWN.has(n.id) && Math.abs(t - Date.now()) < 120000) return SHOWN.get(n.id);   // agora: o mesmo número do ranking
+  const fell = FALLEN.has(n.id) && t >= FALL;
   const m = Math.min(48, Math.max(0, month - 1) * 48 / EARLY);   // arrancada esticada pela largada inteira (2 dias reais)
   const late = Math.min(NPC_LATE_CAP, NPC_LATE ** Math.max(0, month - 49)), NPC_RAMP = T.npcRampDays * 144;   // depois seguem crescendo devagar, até 6x
   const wave = 1 + 0.07 * Math.sin(month * 0.7 + n.i * 2.1) + 0.03 * Math.sin(month * 2.3 + n.i);
