@@ -2,7 +2,7 @@
 -- Cada vez que o save de alguém muda, a versão anterior fica guardada: no máximo uma a cada 5 min por jogador,
 -- e SEMPRE que o dinheiro cair 30% ou mais, alguma terra sumir, ou o save for apagado/reiniciado.
 -- Guarda as 200 últimas por jogador + a última de cada dia dos últimos 60 dias + as cópias feitas pelo administrador.
--- Restaurar (admin_restore_save) guarda antes uma cópia do estado atual e devolve ao jogo o que saiu do save:
+-- Restaurar (admin_restore_save) guarda antes uma cópia do estado atual e devolve ao jogo o que saiu do save (Pix que ele mandou depois da cópia é desfeito: cancelado ou retirado de quem recebeu):
 -- marcas (bancos, provedores, mercados, usinas), mina de ouro, frigorífico e o estoque dos acessórios.
 -- Rodar inteiro no SQL Editor do Supabase. Pode rodar de novo sem problema. Depende de public.is_admin() (admin.sql).
 
@@ -85,6 +85,7 @@ declare
   h public.save_history; cur jsonb; nd jsonb; ms bigint := (extract(epoch from now()) * 1000)::bigint;
   brands text[]; r record; freed text[] := '{}'; taken text[] := '{}'; conflict text[] := '{}';
   mine text := null; frig boolean := false; acc int := 0; pix_in numeric := 0; pix_out numeric := 0; lands_gone int := 0;
+  pix_cancel numeric := 0; pix_back numeric := 0; back_to text[] := '{}'; out_ids jsonb := '[]'::jsonb; nm text;
 begin
   if not public.is_admin() then return jsonb_build_object('ok', false, 'err', 'forbidden'); end if;
   select * into h from public.save_history where id = p_id;
@@ -93,6 +94,22 @@ begin
   if cur is not null then perform public.hist_keep(h.user_id, 'antes de restaurar (cópia automática)', cur); end if;
 
   nd := h.data || jsonb_build_object('savedAt', ms, 'adminRestoreAt', ms);
+  -- Pix que ele mandou depois da cópia: a cópia ainda tem esse dinheiro, então o Pix é desfeito dos dois lados
+  -- (não recebido: cancelado; já recebido: sai de quem recebeu). O id vai para pixOut da cópia para o jogo dele não descontar de novo.
+  if to_regclass('public.pix') is not null then
+    select name into nm from public.public_profiles where user_id = h.user_id;
+    for r in select * from public.pix where from_id = h.user_id and at > h.saved_at and to_id <> h.user_id loop
+      if not r.claimed then delete from public.pix where id = r.id; pix_cancel := pix_cancel + r.amount;
+      else
+        insert into public.admin_grants (user_id, kind, amount, note) values (r.to_id, 'money', -r.amount,
+          left('Pix de ' || coalesce(nm, 'outro jogador') || ' desfeito: a conta dele voltou no tempo', 200));
+        pix_back := pix_back + r.amount; back_to := back_to || coalesce(r.to_name, 'jogador'); out_ids := out_ids || to_jsonb(r.id);
+      end if;
+    end loop;
+    if jsonb_array_length(out_ids) > 0 then
+      nd := jsonb_set(nd, '{pixOut}', coalesce(case when jsonb_typeof(nd->'pixOut') = 'array' then nd->'pixOut' end, '[]'::jsonb) || out_ids);
+    end if;
+  end if;
   insert into public.saves (user_id, data, updated_at) values (h.user_id, nd, now())
     on conflict (user_id) do update set data = excluded.data, updated_at = excluded.updated_at;
 
@@ -150,7 +167,7 @@ begin
 
   -- Pix depois da cópia (só para informar: recebidos somem do saldo dele; enviados voltam para ele e o outro fica com o dele)
   if to_regclass('public.pix') is not null then
-    select coalesce(sum(amount) filter (where to_id = h.user_id), 0), coalesce(sum(amount) filter (where from_id = h.user_id), 0) into pix_in, pix_out
+    select coalesce(sum(amount) filter (where to_id = h.user_id), 0), 0 into pix_in, pix_out
       from public.pix where at > h.saved_at and (to_id = h.user_id or from_id = h.user_id);
   end if;
 
@@ -158,9 +175,10 @@ begin
   if h.worth is not null then update public.public_profiles set worth = h.worth, level = coalesce(h.level, level) where user_id = h.user_id; end if;
 
   insert into public.admin_log (action, target, details) values ('restore_save', h.user_id,
-    jsonb_build_object('copia', h.id, 'de', h.saved_at, 'marcas_devolvidas', freed, 'mina', mine, 'frigorifico_fechado', frig, 'acessorios_devolvidos', acc));
+    jsonb_build_object('copia', h.id, 'de', h.saved_at, 'marcas_devolvidas', freed, 'mina', mine, 'frigorifico_fechado', frig, 'acessorios_devolvidos', acc, 'pix_cancelado', pix_cancel, 'pix_retirado_de_quem_recebeu', pix_back));
   return jsonb_build_object('ok', true, 'from', h.saved_at, 'freed', freed, 'taken', taken, 'conflict', conflict, 'mine', mine, 'frig', frig,
-                            'acc', acc, 'lands', lands_gone, 'pixIn', pix_in, 'pixOut', pix_out);
+                            'acc', acc, 'lands', lands_gone, 'pixIn', pix_in, 'pixOut', pix_out,
+                            'pixCancel', pix_cancel, 'pixBack', pix_back, 'pixBackTo', (select coalesce(array_agg(distinct x), '{}') from unnest(back_to) x));
 end $$;
 revoke all on function public.admin_restore_save(bigint) from public, anon;
 grant execute on function public.admin_restore_save(bigint) to authenticated;

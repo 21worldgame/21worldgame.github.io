@@ -39,3 +39,11 @@ revoke all on function public.take_acc(text) from public, anon;
 revoke all on function public.give_acc(text) from public, anon;
 grant execute on function public.take_acc(text) to authenticated;
 grant execute on function public.give_acc(text) to authenticated;
+
+-- estoque de agora = 35 menos quantos jogadores têm cada acessório (o save guarda 'acc:<id>' em owned).
+-- Pode rodar de novo a qualquer hora: acerta o estoque pelo que existe nos saves.
+insert into public.acc_stock (id, left_qty)
+select substr(x, 5), greatest(0, 35 - count(*)) from public.saves s,
+  jsonb_array_elements_text(case when jsonb_typeof(s.data->'owned') = 'array' then s.data->'owned' else '[]'::jsonb end) x
+where x like 'acc:%' and length(substr(x, 5)) <= 40 group by 1
+on conflict (id) do update set left_qty = excluded.left_qty;

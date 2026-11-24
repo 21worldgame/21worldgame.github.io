@@ -210,7 +210,7 @@ const detailsTxt = d => (d && typeof d === 'object' ? Object.entries(d).filter((
 // voltar a conta para uma cópia e mostrar, em palavras, o que saiu dela e o que voltou para a loja
 async function restoreTo(uid, histId, whenTxt, moneyTxt) {
   const nm = users.find(u => u.user_id === uid)?.name || 'este jogador';
-  if (!confirm(`Voltar a conta de ${nm} para a cópia de ${whenTxt || 'antes'} (${moneyTxt || ''} em caixa)?\n\nTudo o que ele ganhou e comprou depois sai da conta. Marcas, mina, frigorífico e acessórios que ele não tinha naquela hora voltam para a loja. O estado de agora fica guardado (dá para desfazer).`)) return null;
+  if (!confirm(`Voltar a conta de ${nm} para a cópia de ${whenTxt || 'antes'} (${moneyTxt || ''} em caixa)?\n\nA conta fica exatamente como era naquela hora: dinheiro, fichas, nível, terras, itens e as vantagens que vêm deles. Tudo o que ele comprou depois volta para a loja (marcas, mina, frigorífico, acessórios) e o dinheiro que ele gastou volta como estava. Pix que ele mandou depois é desfeito (cancelado ou retirado de quem recebeu). O jogo dele recarrega na hora. O estado de agora fica guardado (dá para desfazer).`)) return null;
   const { data, error } = await sb.rpc('admin_restore_save', { p_id: Number(histId) });
   const ok = data === 'ok' || data?.ok;
   if (ok) try {   // avisa o aparelho dele na hora (o mesmo aviso que um aparelho manda ao outro): troca em ~1 s, não em 5
@@ -226,7 +226,8 @@ async function restoreTo(uid, histId, whenTxt, moneyTxt) {
   if (r.acc > 0) li.push(`<b>${r.acc}</b> acessório(s) voltaram para o estoque da loja.`); else if (r.acc < 0) li.push(`${-r.acc} acessório(s) que ele tinha naquela hora saíram de novo do estoque da loja.`);
   if (r.lands) li.push(`${r.lands} terra(s) saíram da conta (marcadas como "save restaurado", não como sumiço).`);
   if (Number(r.pixIn)) li.push(`Pix que ele recebeu depois dessa hora: <b>${brl(r.pixIn)}</b>. Esse dinheiro saiu da conta dele. Quem mandou não recebe de volta (se foram contas falsas dele, o dinheiro some do jogo).`);
-  if (Number(r.pixOut)) li.push(`Pix que ele mandou depois dessa hora: ${brl(r.pixOut)}. O dinheiro voltou para ele e quem recebeu continua com o dele: confira se precisa voltar também a conta de quem recebeu.`);
+  if (Number(r.pixCancel)) li.push(`Pix que ele mandou depois dessa hora e ninguém tinha recebido ainda: <b>${brl(r.pixCancel)}</b>, cancelados (o dinheiro ficou com ele, como na cópia).`);
+  if (Number(r.pixBack)) li.push(`Pix que ele mandou depois dessa hora e já tinham sido recebidos: <b>${brl(r.pixBack)}</b>. Esse valor sai de quem recebeu (${esc((r.pixBackTo || []).join(', ') || 'outros jogadores')}) na próxima vez que abrirem o jogo, porque na cópia o dinheiro ainda é dele.`);
   if (r.conflict?.length) li.push(`<span class="bad">Atenção: naquela hora ele tinha ${r.conflict.map(esc).join(', ')}. Hoje já é de outro jogador; quando o jogo dele abrir, ele recebe o valor de volta em dinheiro no lugar.</span>`);
   toast('Conta voltou para a cópia escolhida.');
   await openPlayer(uid);
