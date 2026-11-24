@@ -11,7 +11,7 @@
 // devolve null e quem chamou fica com a nuvem (como era antes; acontece raramente, só nessa janela de segundos).
 const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
 const same = (a, b) => a === b || JSON.stringify(a) === JSON.stringify(b);
-const MAXKEY = /(^|_)(at|month|level|seen|day|week|year|nameAt|savedAt|appV)$|At$|Month$|^v$/;   // year: ano do giro da sorte (dois aparelhos girando juntos contam um ano só)
+const MAXKEY = /(^|_)(at|month|level|seen|day|week|year|nameAt|savedAt|appV|rod|cooler)$|At$|Month$|^v$|^(lagoa|pesqueiro|represa)$/;   // rod/cooler/tickets da pesca: fica o maior   // year: ano do giro da sorte (dois aparelhos girando juntos contam um ano só)
 const hasIds = arr => arr.length > 0 && arr.every(x => isObj(x) && x.id != null);
 
 function mergeNum(key, b, l, r) {

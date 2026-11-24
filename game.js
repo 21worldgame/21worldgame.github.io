@@ -1005,6 +1005,7 @@ function uiError(e, where) {
   if (Date.now() - uiErrAt > 20000) { uiErrAt = Date.now(); say('Algo não carregou direito nesta tela. Seu progresso está salvo; se continuar, troque de aba ou recarregue.', true); }
 }
 function render() {
+  for (const el of document.querySelectorAll('#t-pesca, [data-mnav="pesca"]')) el.hidden = !Live.admin();   // pesqueiro em teste: só o administrador vê (para liberar a todos, tirar esta linha)
   try { checkCollections(); } catch (e) { console.error('coleções', e); }
   { const n = SF.active(S()).length, b = document.getElementById('team-badge'); if (b) { b.hidden = !n; b.textContent = n; } }
   for (const [f, w] of [[renderHud, 'hud'], [renderMissions, 'missões'], [PANELS[currentTab], currentTab], [() => CTU.inject(currentTab), 'contador']]) { try { f?.(); } catch (e) { uiError(e, w); } }
@@ -1420,7 +1421,7 @@ const catOf = n => Object.keys(CATS).find(c => CATS[c].includes(n)) || 'jogos';
 const lastIn = {};
 document.getElementById('cats')?.addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (b) G.goto(lastIn[b.dataset.cat] || CATS[b.dataset.cat][0]); });
 function show(name, focus = false) {
-  if (!tabs.some(t => t.dataset.tab === name)) name = 'inicio';
+  if (!tabs.some(t => t.dataset.tab === name) || (name === 'pesca' && !Live.admin())) name = 'inicio';
   const cat = catOf(name); lastIn[cat] = name;
   for (const t of tabs) t.classList.toggle('is-off', catOf(t.dataset.tab) !== cat);
   for (const b of document.querySelectorAll('#cats [data-cat]')) b.setAttribute('aria-current', String(b.dataset.cat === cat));
@@ -1698,7 +1699,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 219;
+const APP_VERSION = 220;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

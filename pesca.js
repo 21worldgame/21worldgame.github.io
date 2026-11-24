@@ -18,14 +18,14 @@ export const SPECIES = {
 export const SPOTS = {
   lagoa: { label: 'lagoa da fazenda', fee: 0, rod: 0, fish: { lambari: 20, tilapia: 55, traira: 25 }, txt: 'De graça. Peixe pequeno, bom para treinar a mão.' },
   pesqueiro: { label: 'pesque-pague', fee: 150, rod: 1, fish: { tilapia: 30, pacu: 25, tambacu: 22, carpa: 18, pintado: 5 }, txt: 'Tanques cheios de pacu, tambacu e carpa. De vez em quando sai um pintado.' },
-  represa: { label: 'represa', fee: 600, rod: 2, fish: { tucunare: 32, pintado: 28, dourado: 22, tambacu: 15, pirarucu: 3 }, txt: 'Peixe esportivo e caro. Pede vara boa e sai até pirarucu.' },
+  represa: { label: 'represa', fee: 1500, rod: 2, fish: { tucunare: 32, pintado: 28, dourado: 22, tambacu: 15, pirarucu: 3 }, txt: 'Peixe esportivo e caro. Pede vara boa e sai até pirarucu.' },
 };
 export const TICKET_MS = 30 * 60 * 1000;
 // força = quanto a linha aguenta antes de arrebentar · recolhe = velocidade de puxar · maxKg = acima disso a vara não segura
 export const RODS = [
   { label: 'vara de bambu', price: 0, force: 0.45, reel: 0.8, maxKg: 4 },
   { label: 'vara com molinete', price: 1200, force: 0.7, reel: 1, maxKg: 18 },
-  { label: 'carretilha de arremesso', price: 7500, force: 0.9, reel: 1.2, maxKg: 40 },
+  { label: 'carretilha de arremesso', price: 25000, force: 0.9, reel: 1.2, maxKg: 40 },
   { label: 'vara pesada (multifilamento)', price: 32000, force: 1.15, reel: 1.35, maxKg: 200 },
 ];
 // isca: puxa a chance de cada peixe (x) e quanto aumenta o peso (big)
@@ -41,6 +41,13 @@ export const COOLERS = [
   { label: 'freezer na caminhonete', price: 18000, cap: 400 },
 ];
 export const SPOIL = 0.18, SPOIL_MAX = 4;   // perde 18% do preço a cada mês do mundo no gelo; no 5º mês estraga
+// cansaço: depois de 2 h de pesca no mesmo dia real o peixe belisca cada vez menos (segura robô de clique e o dia inteiro na beira)
+export const TIRED_H = 2;
+export function fatigue(s, day) {
+  const p = ensure(s); if (p.day?.d !== day) p.day = { d: day, sec: 0 };
+  return Math.min(6, 1 + Math.max(0, p.day.sec / 3600 - TIRED_H) * 3);   // multiplica a espera pela beliscada
+}
+export const fished = (s, day, sec) => { fatigue(s, day); s.pesca.day.sec = Math.round((s.pesca.day.sec + sec) * 10) / 10; };
 export const TROPHY = 0.8, TROPHY_BONUS = 0.5;   // peixe com 80% do peso máximo vale 50% a mais (vai para restaurante)
 
 export function ensure(s) {
@@ -49,6 +56,13 @@ export function ensure(s) {
   p.n ??= 0; p.kg ??= 0; p.earned ??= 0; p.best ??= {};
   for (const k of Object.keys(SPECIES)) p.mkt[k] ??= 1;
   p.box = p.box.filter(f => f && SPECIES[f.sp]);
+  // celular e computador juntos: a junção soma números mexidos nos dois lados; aqui volta para um valor válido
+  p.rods = [...new Set(p.rods.filter(i => RODS[i]))]; if (!p.rods.includes(0)) p.rods.unshift(0);
+  if (!p.rods.includes(p.rod)) p.rod = Math.max(...p.rods);
+  p.cooler = Math.max(0, Math.min(COOLERS.length - 1, Math.floor(p.cooler) || 0));
+  for (const k of Object.keys(p.baits)) p.baits[k] = Math.max(0, Math.floor(p.baits[k]) || 0);
+  for (const k of Object.keys(p.best)) if (SPECIES[k]) p.best[k] = Math.min(SPECIES[k].max, p.best[k]); else delete p.best[k];
+  for (const k of Object.keys(p.mkt)) p.mkt[k] = Math.min(1.35, Math.max(0.7, Number(p.mkt[k]) || 1));
   return p;
 }
 export const boxKg = s => ensure(s).box.reduce((t, f) => t + f.kg, 0);
@@ -78,7 +92,7 @@ export function buyBait(s, k, packs = 1) {
   const cost = B.price * packs; if (s.money < cost) return err('dinheiro insuficiente para a isca.');
   s.money -= cost; p.baits[k] = (p.baits[k] || 0) + B.pack * packs; return { cost, n: B.pack * packs };
 }
-export const ticketLeft = (s, spot, now = Date.now()) => Math.max(0, (ensure(s).tickets[spot] || 0) - now);
+export const ticketLeft = (s, spot, now = Date.now()) => Math.min(TICKET_MS, Math.max(0, (ensure(s).tickets[spot] || 0) - now));   // min: dois aparelhos pagando juntos não somam horário
 export function enter(s, spot, now = Date.now()) {
   const p = ensure(s), S = SPOTS[spot]; if (!S) return err('lugar inválido.');
   if (!p.rods.some(i => i >= S.rod)) return err(`aqui precisa de ${RODS[S.rod].label} ou melhor.`);

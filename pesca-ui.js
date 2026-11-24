@@ -2,7 +2,7 @@
 // Precisa estar com a tela aberta: a espera só conta com a aba visível e, se sair no meio da briga, o peixe escapa.
 import * as PE from './pesca.js';
 import * as sfx from './sfx.js';
-import { G, $, esc, brl, int, say, save, note, confetti } from './store.js';
+import { G, $, esc, brl, int, say, save, note, confetti, today } from './store.js';
 
 // estado da pescaria na tela (não vai para o save: fechar a página no meio perde só a isca)
 const T = { st: 'idle', spot: 'lagoa', bait: 'minhoca', fish: null, fight: null, wait: 0, nib: 0, bite: 0, land: null, miss: 0, msg: '', t: 0, splash: 0 };
@@ -62,9 +62,10 @@ function doCast() {
   if (e.cost) note(`pesca: entrada do ${PE.SPOTS[T.spot].label}`, -e.cost);
   const c = PE.cast(s, T.spot, T.bait); if (c.err) { if (e.cost) save(); return say(c.err[0].toUpperCase() + c.err.slice(1), true); }
   save();
-  T.fish = PE.roll(T.spot, T.bait); T.wait = rnd(5, 20); T.nib = rnd(1.5, 4); T.bite = 0; T.miss = 0; T.splash = 1;
+  const tired = PE.fatigue(s, today());
+  T.fish = PE.roll(T.spot, T.bait); T.wait = rnd(5, 20) * tired; T.nib = rnd(1.5, 4); T.bite = 0; T.miss = 0; T.splash = 1;
   sfx.play('chip', 0.3);
-  setMsg('Linha na água. Espere a boia <b>afundar de vez</b>: beliscada pequena não é peixe.', 'wait');
+  setMsg(tired > 1 ? 'Linha na água. Você já pescou mais de 2 horas hoje: o peixe anda desconfiado e demora mais para beliscar.' : 'Linha na água. Espere a boia <b>afundar de vez</b>: beliscada pequena não é peixe.', 'wait');
   G.render();
 }
 function hook() {
@@ -138,6 +139,7 @@ function loop(ts) {
   raf = requestAnimationFrame(loop);
 }
 function tickGame(dt) {
+  if (T.st !== 'idle' && T.st !== 'caught') PE.fished(G.S, today(), dt);   // tempo na beira conta para o cansaço (vai no save junto com a próxima pesca)
   if (T.st === 'wait') {
     T.nibOn = Math.max(0, (T.nibOn || 0) - dt);
     if (T.bite > 0) { T.bite -= dt; if (T.bite <= 0) { T.fish = null; setMsg('Demorou para fisgar: o peixe comeu a isca e foi embora.', 'idle'); render(); } return; }
