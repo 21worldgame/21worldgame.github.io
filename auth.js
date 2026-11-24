@@ -236,14 +236,14 @@ function takeRemote(row, msg = true) {
 // o administrador voltou a conta no tempo: o aparelho troca na hora, mesmo no meio de uma mão, sem guardar cópia do estado
 // que foi desfeito (senão o jogador restaurava a cópia pelo perfil) e recarrega para não sobrar nada do estado velho na tela
 let forcing = false;
-function forceRestore(row) {
+function forceRestore(row, why = 'O administrador voltou a sua conta para um estado anterior. O jogo vai recarregar.') {
   if (forcing) return; forcing = true;
   const at = Number(row.data.adminRestoreAt) || Date.now();
   try { localStorage.setItem(bkKey(), JSON.stringify(backups().filter(b => b.at >= at))); } catch {}
   adopt(row.data); base = row.updated_at; setBaseData(row.data); pushed = G.S.savedAt || 0; lastPush = pushed; saveMeta(); syncedAt = Date.now();
   try { D.rebase(G.S, 'conta voltada no tempo pelo administrador', Date.now(), location.hash.slice(1), user?.id); } catch {}
   try { localStorage.setItem('21world.restoredMsg', String(at)); } catch {}
-  say('O administrador voltou a sua conta para um estado anterior. O jogo vai recarregar.', true);
+  say(why, true);
   setTimeout(() => location.reload(), 1500);
 }
 export async function push() {
@@ -257,6 +257,7 @@ export async function push() {
     else res = await sb.from('saves').insert({ user_id: user.id, data, updated_at: at }).select('updated_at');
     if (res.error || !res.data?.length) {
       // outro aparelho gravou antes (ou a linha já existia): a nuvem vale; este aparelho se atualiza
+      if (res.error && /sem explicacao/i.test(res.error.message || '')) { const r = await pull(); if (r) forceRestore(r, 'O servidor recusou um dinheiro que não veio do jogo. A sua conta voltou para a última gravação válida.'); return false; }   // trava de dinheiro (teto-dinheiro.sql)
       if (res.error && /restaurad/i.test(res.error.message || '')) { const r = await pull(); if (r?.restored) forceRestore(r); return false; }   // o servidor recusou: a conta foi voltada no tempo
       if (res.error && (base || !/duplicate|conflict|23505/i.test(`${res.error.code} ${res.error.message}`))) { lastErrAt = Date.now(); setTimeout(() => { if (dirty()) scheduleSync(); }, 8000); return false; }   // erro de rede: tenta de novo sozinho
       const row = await pull();
