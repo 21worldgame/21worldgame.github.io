@@ -891,39 +891,55 @@ document.addEventListener('click', async e => {
     await log('ban_farm', f.id, { count: f.senders.length, why: reason }); toast(`${f.senders.length} conta(s) suspensa(s) por 30 dias.`); await loadUsers(''); loadVigia();
   }
 }, true);
+// o que a vigilância viu, dito como a fiscalização do jogo diria ao jogador (sem termos do painel)
+function findings(r, f) {
+  const k = AE.brlShort, out = [];
+  if (f) out.push(`recebimento de ${k(f.total)} em ${f.n} Pix vindos de ${f.senders.length} ${f.senders.length === 1 ? 'conta recém-aberta' : 'contas recém-abertas'} (${f.senders.slice(0, 4).map(x => x.name).join(', ')}), prática conhecida como conta laranja`);
+  if (r.gap > 50000) out.push(`${k(r.gap)} no seu caixa sem origem declarada`);
+  if (r.jump > 50000) out.push(`aumento de ${k(r.jump)} no saldo sem nenhuma movimentação registrada`);
+  if (r.farmSender) out.push(`envio de ${k(r.farmSender.total)} por Pix para ${r.farmSender.to} logo depois de abrir a conta`);
+  if (!f && r.pixInSum > Math.max(100000, r.worth * 0.3)) out.push(`${k(r.pixInSum)} recebidos por Pix, ${Math.round(r.pixInSum / Math.max(1, r.worth) * 100)}% do seu patrimônio`);
+  if (r.pixOutSum > Math.max(100000, (r.worth + r.pixOutSum) * 0.5)) out.push(`envio de ${k(r.pixOutSum)} por Pix, mais da metade do que você tinha`);
+  if (vg?.fair && r.perHour > vg.fair * AE.FAIR_X && r.worth > 200000) out.push(`rendimento de ${k(r.perHour)} por hora, muito acima dos outros produtores`);
+  if (r.playH != null && r.playH < 2 && r.worth > 1e6) out.push(`patrimônio de ${k(r.worth)} acumulado em pouco tempo de atividade`);
+  if (r.casino > Math.max(500000, r.worth * 0.2)) out.push(`lucro de ${k(r.casino)} em jogos e apostas`);
+  if (r.money24 != null && r.money24 > Math.max(1e6, r.worth * 0.5)) out.push(`saldo subiu ${k(r.money24)} em 24 horas`);
+  return out.length ? out : ['movimentação incompatível com a sua renda'];
+}
 // descontar do caixa do jogador: vira ordem do administrador e aparece no livro-caixa dele ("ajuste do administrador: motivo")
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-desc]'); if (!b) return;
   e.preventDefault(); e.stopPropagation();
-  const id = b.dataset.desc, r = vg?.rows.find(x => x.id === id) || {}, name = r.name || vg?.farm.find(f => f.id === id)?.name || 'jogador';
+  const id = b.dataset.desc, r = vg?.rows.find(x => x.id === id) || {}, fm = vg?.farm.find(f => f.id === id), name = r.name || fm?.name || 'jogador';
+  const found = findings(r, fm);
   const sug = [['Pix de contas novas', Number(b.dataset.descPix) || vg?.farm.find(f => f.id === id)?.total || 0, 'Pix recebidos de contas falsas'],
     ['Pix recebidos', r.pixInSum || 0, 'Pix recebidos de forma irregular'], ['dinheiro sem lançamento', r.gap || 0, 'dinheiro que apareceu sem lançamento'],
     ['acima do ritmo', r.excess || 0, 'ganho acima do ritmo normal do jogo'], ['ganho em 24 h', Math.max(0, r.money24 || 0), 'ganho irregular nas últimas 24 h']]
     .filter(x => x[1] > 0).filter((x, i, a) => a.findIndex(y => Math.round(y[1]) === Math.round(x[1])) === i);
   const d = document.createElement('dialog'); d.className = 'ad-pun';
   d.innerHTML = `<form method="dialog"><h3>descontar de ${esc(name)}</h3>
-    <p class="small">Caixa hoje: <b>${r.s?.money != null ? brl(r.s.money) : '—'}</b> · patrimônio ${r.worth != null ? brl(r.worth) : '—'}. Sai do caixa quando o jogo dele sincronizar e aparece no livro-caixa como <i>ajuste do administrador</i>. O caixa pode ficar negativo.</p>
+    <p class="small">Caixa hoje: <b>${r.s?.money != null ? brl(r.s.money) : '—'}</b> · patrimônio ${r.worth != null ? brl(r.worth) : '—'}. Sai do caixa quando o jogo dele sincronizar e aparece no livro-caixa como aviso do órgão escolhido (ele nunca vê "administrador"). O caixa pode ficar negativo.</p>
     ${sug.length ? `<div class="row">${sug.map(([k, v, why]) => `<button type="button" class="btn btn--glass btn--xs" data-sug="${Math.round(v)}" data-why="${esc(why)}">${k}: ${AE.brlShort(v)}</button>`).join('')}</div>` : ''}
     <label class="field"><span>valor a descontar (R$)</span><input class="input" type="number" name="amount" min="1" step="1" required value="${Math.round(sug[0]?.[1] || 0) || ''}" autofocus></label>
-    <label class="field"><span>motivo</span><input class="input" name="why" maxlength="120" value="${esc(sug[0]?.[2] || 'trapaça')}"></label>
+    <label class="field"><span>o que foi encontrado (em palavras do jogo; um item por linha)</span><textarea class="input" name="why" rows="4">${esc(found.join('\n'))}</textarea></label>
     <label class="field"><span>quem manda o aviso (dentro do jogo; o jogador nunca vê "administrador")</span><select class="input" name="org">
       <option value="rf">Receita Federal: auto de infração</option><option value="bc">Banco Central: Pix bloqueado por fraude</option><option value="pf">Polícia Federal: bens apreendidos</option></select></label>
-    <label class="field"><span>como vai aparecer no livro-caixa dele (pode editar)</span><textarea class="input" name="txt" maxlength="200" rows="3"></textarea></label>
+    <label class="field"><span>como vai aparecer no livro-caixa dele (pode editar)</span><textarea class="input" name="txt" maxlength="500" rows="5"></textarea></label>
     <div class="row"><button class="btn btn--glass" value="cancel" formnovalidate>cancelar</button><button class="btn btn--danger" value="ok">descontar</button></div></form>`;
   const q = n => d.querySelector(`[name=${n}]`);
-  const suggest = () => { const v = brl(Math.floor(Number(q('amount').value) || 0)), w = (q('why').value || 'trapaça').trim().replace(/\.$/, '');
-    const lw = w.charAt(0).toLowerCase() + w.slice(1);
-    q('txt').value = ({ rf: `Receita Federal: auto de infração. ${v} recolhidos por ${lw}. Reincidência leva à suspensão da conta.`,
-      bc: `Banco Central: ${v} bloqueados e devolvidos ao sistema por ${lw}. Movimentação sob monitoramento.`,
-      pf: `Polícia Federal: ${v} apreendidos em operação contra ${lw}. O caso segue em investigação.` }[q('org').value]).slice(0, 200); };
-  d.addEventListener('click', ev => { const s2 = ev.target.closest('[data-sug]'); if (!s2) return; q('amount').value = s2.dataset.sug; q('why').value = s2.dataset.why; suggest(); });
+  const suggest = () => { const v = brl(Math.floor(Number(q('amount').value) || 0));
+    const items = q('why').value.split('\n').map(x => x.trim().replace(/[.;]$/, '')).filter(Boolean), list = items.length ? items.join('; ') : 'movimentação incompatível com a sua renda';
+    q('txt').value = ({ rf: `Receita Federal: auto de infração. A fiscalização encontrou ${list}. Foram recolhidos ${v}. Se discordar, peça revisão aqui no livro-caixa. Reincidência leva à suspensão da conta.`,
+      bc: `Banco Central: ${v} bloqueados e devolvidos ao sistema. Motivo: ${list}. Suas transferências seguem em monitoramento. Se discordar, peça revisão aqui no livro-caixa.`,
+      pf: `Polícia Federal: ${v} apreendidos em operação. Foram encontrados ${list}. O caso segue em investigação. Se discordar, peça revisão aqui no livro-caixa.` }[q('org').value]).slice(0, 500); };
+  d.addEventListener('click', ev => { const s2 = ev.target.closest('[data-sug]'); if (!s2) return; q('amount').value = s2.dataset.sug; suggest(); });
   d.addEventListener('input', ev => { if (ev.target.name !== 'txt') suggest(); });
   d.addEventListener('change', ev => { if (ev.target.name === 'org') suggest(); });
   document.body.append(d); suggest(); d.showModal();
   d.addEventListener('close', async () => {
     const f = Object.fromEntries(new FormData(d.querySelector('form'))); d.remove();
     const amt = Math.floor(Number(f.amount) || 0); if (d.returnValue !== 'ok' || amt <= 0) return;
-    let why = (f.txt || f.why || 'trapaça').trim().slice(0, 200); if (!ORG_RE.test(why)) why = `Receita Federal: ${why}`.slice(0, 200);   // sempre imersivo
+    let why = (f.txt || 'movimentação incompatível com a sua renda').trim().slice(0, 500); if (!ORG_RE.test(why)) why = `Receita Federal: ${why}`.slice(0, 500);   // sempre imersivo
     const shown = why;
     if (!confirm(`Descontar ${brl(amt)} do caixa de ${name}?\n\nNo livro-caixa dele:\n"${shown}"`)) return;
     const { error } = await sb.from('admin_grants').insert({ user_id: id, kind: 'money', amount: -amt, note: why });

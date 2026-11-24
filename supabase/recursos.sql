@@ -6,7 +6,7 @@ create table if not exists public.recursos (
   name        text check (char_length(name) <= 40),
   grant_id    bigint,                                   -- a ordem (admin_grants) que tirou o dinheiro
   amount      numeric not null default 0,               -- quanto foi descontado (positivo)
-  entry       text check (char_length(entry) <= 220),   -- o texto do livro-caixa
+  entry       text check (char_length(entry) <= 520),   -- o texto do livro-caixa
   msg         text not null check (char_length(msg) between 5 and 800),
   status      text not null default 'aberto' check (status in ('aberto', 'aceito', 'negado')),
   answer      text check (char_length(answer) <= 400),
@@ -25,3 +25,13 @@ create policy recursos_insert on public.recursos for insert to authenticated wit
   auth.uid() = user_id and status = 'aberto' and answer is null and answered_at is null
   and (select (g.amount < 0 and -g.amount = recursos.amount) from public.admin_grants g where g.id = recursos.grant_id and g.user_id = auth.uid()));
 create policy recursos_admin on public.recursos for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+-- avisos imersivos mais longos (o texto da Receita lista o que foi encontrado): nota da ordem até 500, lançamento até 520
+do $$ declare c text; begin
+  for c in select conname from pg_constraint where conrelid = 'public.admin_grants'::regclass and contype = 'c' and pg_get_constraintdef(oid) like '%char_length(note)%' loop
+    execute format('alter table public.admin_grants drop constraint %I', c); end loop;
+  for c in select conname from pg_constraint where conrelid = 'public.recursos'::regclass and contype = 'c' and pg_get_constraintdef(oid) like '%char_length(entry)%' loop
+    execute format('alter table public.recursos drop constraint %I', c); end loop;
+end $$;
+alter table public.admin_grants add constraint admin_grants_note_len check (char_length(note) <= 500);
+alter table public.recursos add constraint recursos_entry_len check (char_length(entry) <= 520);

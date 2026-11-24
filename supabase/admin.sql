@@ -61,7 +61,7 @@ create table if not exists public.admin_grants (
   user_id    uuid not null references auth.users(id) on delete cascade,
   kind       text not null check (kind in ('money', 'chips', 'xp', 'reset', 'message')),
   amount     numeric not null default 0 check (amount between -1e12 and 1e12),
-  note       text check (char_length(note) <= 200),
+  note       text check (char_length(note) <= 500),
   created_at timestamptz not null default now(),
   applied_at timestamptz
 );

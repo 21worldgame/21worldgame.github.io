@@ -199,7 +199,7 @@ export async function appeal(gid, msg) {
   const sb = Auth.sbClient(), e = (G.S.log || []).find(x => x.gid === gid);
   if (!sb || !Auth.account()?.id) return say('Entre na sua conta para recorrer.', true), false;
   if (!e) return false;
-  const { error } = await sb.from('recursos').insert({ name: (profileOf().name || '').slice(0, 40), grant_id: gid, amount: -e.val, entry: String(e.txt).slice(0, 220), msg: msg.slice(0, 800) });
+  const { error } = await sb.from('recursos').insert({ name: (profileOf().name || '').slice(0, 40), grant_id: gid, amount: -e.val, entry: String(e.txt).slice(0, 520), msg: msg.slice(0, 800) });
   if (error) return say(/duplicate|unique/i.test(error.message) ? 'Já existe um pedido de revisão para esta cobrança.' : 'Não deu para enviar o recurso agora. Tente de novo.', true), false;
   e.appeal = 'enviado'; save(); say('Pedido de revisão protocolado. A resposta chega aqui no livro-caixa.'); return true;
 }
