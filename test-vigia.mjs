@@ -23,3 +23,16 @@ console.log('vigilância ok');
   assert.equal(R.chipBy[0].act, 'av-press'); assert.equal(R.sources[0].k, 'venda de # bois');
   assert.equal(R.jumps[0].diff, 2e6 - 951000, 'dinheiro que mudou entre uma sessão e outra');
   console.log('diário ok'); }
+// fazenda de contas: 3 contas novas mandam R$ 10 mil para a mesma pessoa
+{ const { pixFarm, watch: W2 } = await import('./admin-econ.js'), t = i => new Date(Date.UTC(2026, 10, 23, 12, i)).toISOString(), day = Date.UTC(2026, 10, 23, 10);
+  const users = { b: { name: 'Basso', created: new Date(day - 10 * 864e5).toISOString() }, a1: { name: 'alt1', created: new Date(day).toISOString() }, a2: { name: 'alt2', created: new Date(day).toISOString() }, a3: { name: 'alt3', created: new Date(day).toISOString() }, v: { name: 'Velho', created: new Date(day - 30 * 864e5).toISOString() } };
+  const pix = [1, 2, 3].map(i => ({ from_id: `a${i}`, from_name: `alt${i}`, to_id: 'b', to_name: 'Basso', amount: 10000, at: t(i) })).concat([{ from_id: 'v', from_name: 'Velho', to_id: 'a1', to_name: 'alt1', amount: 300, at: t(9) }]);
+  const F = pixFarm(pix, users);
+  assert.equal(F.length, 1, 'só o Basso aparece'); assert.equal(F[0].name, 'Basso'); assert.equal(F[0].senders.length, 3); assert.equal(F[0].total, 30000); assert.ok(F[0].sure);
+  assert.ok(F[0].senders.every(x => x.ageDays < 1), 'contas criadas no mesmo dia');
+  const { rows } = W2([{ id: 'b', name: 'Basso', s: { money: 40000 }, farm: F[0] }, { id: 'a1', name: 'alt1', s: { money: 0 }, farmSender: { total: 10000, to: 'Basso' } }, { id: 'g', name: 'Furo', s: { money: 900000 }, gap: 800000, gapN: 4 }]);
+  const by = Object.fromEntries(rows.map(r => [r.id, r]));
+  assert.ok(by.b.score >= 6 && /3 contas novas/.test(by.b.why[0]), by.b.why.join(' | '));
+  assert.ok(by.a1.score >= 4 && /criada só para isso/.test(by.a1.why.join(' ')));
+  assert.ok(by.g.score >= 5 && /sem nenhum lançamento/.test(by.g.why.join(' ')));
+  console.log('fazenda de contas ok'); }

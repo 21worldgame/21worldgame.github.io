@@ -80,3 +80,18 @@ tr.is-done { opacity: .55; }
 ul.ad-err { padding-left: 28px; } ul.ad-err li + li { margin-top: 4px; }
 tr.ad-alert td { background: color-mix(in oklab, var(--color-error) 10%, transparent); }
 .ad-why { margin: 0; padding-left: 1.1em; display: grid; gap: 2px; min-width: 16rem; }
+/* menus com descrição embaixo; textos de ajuda visíveis; cartões de alerta de trapaça */
+.ad-nav button { display: grid; gap: 4px; align-content: center; padding: 10px 12px; line-height: 1.15; }
+.ad-nav button small { font: 500 var(--text-xs)/1.3 var(--font-body); text-transform: none; opacity: .8; }
+.ad-help { margin: 0 0 var(--space-sm); padding: 12px 14px; border-left: 4px solid var(--hud-accent); border-radius: 10px; background: var(--glass); color: var(--color-ink); font-size: var(--text-sm); line-height: 1.5; }
+.ad-cheats { display: grid; gap: var(--space-sm); grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr)); margin-bottom: var(--space-lg); }
+.ad-cheat { padding: 14px 16px; border-radius: 14px; border: 2px solid; background: var(--glass); display: grid; gap: 8px; margin-bottom: var(--space-sm); }
+.ad-cheat--red { border-color: var(--color-error); background: color-mix(in oklab, var(--color-error) 12%, var(--glass)); }
+.ad-cheat--gold { border-color: var(--hud-accent); }
+.ad-cheat header { font-size: var(--text-md); line-height: 1.4; }
+.ad-cheat__name { font: 700 1.25em/1 var(--font-display); }
+.ad-cheat ul { margin: 0; padding-left: 20px; font-size: var(--text-sm); line-height: 1.5; }
+.ad-cheat p { margin: 0; font-size: var(--text-sm); }
+.ad-done { padding: 12px 16px; border-radius: 12px; border: 2px solid var(--money); background: color-mix(in oklab, var(--money) 12%, transparent); margin-bottom: var(--space-sm); }
+.ad-done h4 { margin: 0 0 6px; } .ad-done ul { margin: 0; padding-left: 20px; line-height: 1.55; }
+tr.ad-mark td { background: color-mix(in oklab, var(--hud-accent) 10%, transparent); }

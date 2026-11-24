@@ -143,7 +143,9 @@ async function saveNewPassword(e) {
 async function pull() {
   const { data, error } = await sb.from('saves').select('data, updated_at').eq('user_id', user.id).maybeSingle();
   if (error) throw error;
-  return keepRestored(data);   // save restaurado pelo administrador depois do zeramento não é zerado de novo
+  const row = keepRestored(data);   // save restaurado pelo administrador depois do zeramento não é zerado de novo
+  if (row?.data && (Number(row.data.adminRestoreAt) || 0) > (Number(G.S?.adminRestoreAt) || 0)) row.restored = true;   // o admin voltou o save: vale a nuvem inteira, sem juntar com este aparelho
+  return row;
 }
 // card = o perfil completo que os outros veem ao clicar (coluna nova: supabase/perfil.sql). Privado: só os troféus.
 let noCardUntil = 0;   // coluna card faltando: tenta de novo em 5 min (não desiste para sempre)
@@ -345,6 +347,7 @@ async function afterLogin() {
   }
   if (cloud) {
     if (newerThanMe(cloud.data)) { if (!base) { base = 'velho'; saveMeta(); } }   // não grava nem aplica: a versão nova, ao abrir, vê que a nuvem mudou e usa a nuvem
+    else if (cloud.restored) { if (dirty()) backup(G.S, 'antes da restauração do administrador'); return useCloud(); }
     else if (!base) {   // primeira vez com a sincronização nova neste aparelho: vale o mais novo (regra antiga, uma vez só)
       const pc = progressOf(cloud.data), pl = progressOf(G.S);
       if (pc >= pl) { backup(G.S, 'save deste aparelho (a nuvem tinha mais progresso)'); return useCloud(); }

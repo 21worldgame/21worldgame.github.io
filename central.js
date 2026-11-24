@@ -36,7 +36,7 @@ $('#ad-form').addEventListener('submit', async e => {
   err.hidden = true; $('#ad-submit').disabled = true;
   const { data, error } = await sb.auth.signInWithPassword({ email: String(f.email).trim(), password: f.password });
   $('#ad-submit').disabled = false;
-  if (error) { err.textContent = /invalid login/i.test(error.message) ? 'E-mail ou senha incorretos.' : /not confirmed/i.test(error.message) ? 'Conta ainda não confirmada: rode o admin.sql novo no SQL Editor (ele confirma as contas).' : error.message; err.hidden = false; return; }
+  if (error) { err.textContent = /invalid login/i.test(error.message) ? 'E-mail ou senha incorretos.' : /not confirmed/i.test(error.message) ? 'Conta ainda não confirmada no banco do jogo.' : error.message; err.hidden = false; return; }
   e.target.reset();
   enter(data.user);
 });
@@ -81,7 +81,7 @@ async function pwBadge() {
 }
 async function loadPw() {
   const { data, error } = await sb.rpc('admin_password_requests');
-  if (error) return fail(error, 'carregar os pedidos (rode o admin.sql novo)');
+  if (error) return fail(error, 'carregar os pedidos');
   $('#ad-pw').innerHTML = (data || []).map(r => `<tr class="${r.status !== 'pendente' ? 'is-done' : ''}">
     <td>${when(r.created_at)}</td><td>${esc(r.email)}</td><td>${esc(r.name)}</td><td>${esc(r.details)}</td>
     <td>${r.account_exists ? `${esc(r.real_name || 'sem perfil')}, nível ${r.real_level ?? '?'}, ${brl(r.real_worth)}, último acesso ${when(r.last_sign_in_at)}` : '<b class="bad">não existe conta com esse e-mail</b>'}</td>
@@ -101,10 +101,17 @@ document.addEventListener('click', async e => {
 for (const id of ['#ad-logout', '#ad-logout2']) $(id).addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
 
 // ---------- navegação ----------
+// poucos menus: cada um junta várias partes do painel, uma embaixo da outra
+const MENU = { alertas: ['vigia', 'overview'], jogadores: ['players'], investigar: ['diario', 'terras', 'livros'], mundo: ['economy', 'rules', 'owners', 'news'], delegacia: ['bo'], pedidos: ['pro', 'passwords', 'log'] };
+let tuneLoad = null;
+const LOAD = { vigia: () => loadVigia(), overview: () => loadOverview(), players: () => loadUsers(), diario: () => { if (!dj) loadDiario(); }, terras: () => loadLands(),
+  economy: () => { loadConfig(); loadEconomy(); }, rules: () => tuneLoad?.(), owners: () => loadOwners(), news: () => loadAnns(), bo: () => loadBo(), pro: () => loadPro(), passwords: () => loadPw(), log: () => loadLog() };
 function show(tab) {
-  document.querySelectorAll('.ad-nav button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === tab));
-  document.querySelectorAll('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== tab; });
-  ({ vigia: loadVigia, diario: () => { if (!dj) loadDiario(); }, overview: loadOverview, players: loadUsers, economy: loadConfig, news: loadAnns, log: loadLog, passwords: loadPw, terras: loadLands, livros: () => { if (!book.length) loadBook(); } })[tab]?.();
+  const g = MENU[tab] ? tab : Object.keys(MENU).find(k => MENU[k].includes(tab)) || 'alertas';
+  document.querySelectorAll('.ad-nav button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === g));
+  document.querySelectorAll('[data-panel]').forEach(p => { p.hidden = !MENU[g].includes(p.dataset.panel); });
+  for (const p of MENU[g]) LOAD[p]?.();
+  window.scrollTo?.(0, 0);
 }
 document.querySelector('.ad-nav').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) show(b.dataset.tab); });
 
@@ -187,7 +194,41 @@ async function loadEconomy() {
     ${bad.length ? `<ul class="ad-err">${bad.map(r => `<li>${esc(r.label)}: margem de ${pct(r.margin)} em ${AE.brlShort(r.in)} (normal até ~${pct(AE.EXPECT[r.key])}). Vale revisar custo/preço dessa atividade.</li>`).join('')}</ul>` : '<p class="good small">Todas as atividades com margem dentro do normal.</p>'}
     ${pnlTable(e.rows, true)}`;
 }
-document.addEventListener('click', e => { if (e.target.closest('[data-tab="economy"], #ad-econ-reload')) loadEconomy(); });
+document.addEventListener('click', e => { if (e.target.closest('#ad-econ-reload')) loadEconomy(); });
+
+// ---------- textos em palavras (nada de código na tela) ----------
+const GRANT_TXT = { money: 'dinheiro', chips: 'fichas', xp: 'XP', message: 'mensagem', reset: 'reiniciar a conta', setmoney: 'definir o dinheiro', land: 'devolver terra', pioneer: 'selo de pioneiro' };
+const WHY_TXT = { 'cópia periódica': 'cópia automática', 'antes de mudar': 'cópia automática', 'dinheiro caiu muito': 'o dinheiro caiu muito (cópia de antes)', 'terra a menos': 'sumiu uma terra (cópia de antes)', 'save apagado ou reiniciado': 'a conta foi apagada ou reiniciada (cópia de antes)' };
+const ACTION_TXT = { grant_money: 'deu ou tirou dinheiro', grant_chips: 'deu ou tirou fichas', grant_xp: 'deu XP', grant_message: 'mandou mensagem', grant_cancel: 'cancelou uma ordem', rename: 'trocou o nome', ban: 'suspendeu', unban: 'reativou a conta',
+  reset: 'reiniciou a conta', wipe: 'apagou save e perfil', restore_save: 'voltou a conta para uma cópia', restore_land: 'devolveu terra', refund_land: 'devolveu o valor de uma terra', world: 'mudou o tempo do mundo', config: 'mudou eventos e manutenção',
+  gift_all: 'presente para todos', announcement: 'publicou aviso', announcement_delete: 'apagou aviso', tuning: 'mudou as regras do jogo', release_owner: 'liberou marca ou mina para a loja', take_excess: 'tirou o excesso', receita_solta: 'soltou da Receita',
+  pro_decide: 'decidiu denúncia de profissional', pro_set: 'mudou um profissional', ban_farm: 'suspendeu contas da fazenda de Pix' };
+const KEY_TXT = { amount: 'valor', note: 'mensagem', reason: 'motivo', days: 'dias', name: 'nome', what: 'o quê', kind: 'tipo', count: 'jogadores', copia: 'cópia', de: 'de', marcas_devolvidas: 'marcas devolvidas', mina: 'mina', frigorifico_fechado: 'frigorífico fechado', acessorios_devolvidos: 'acessórios devolvidos', why: 'motivo', land: 'terra', from: 'de onde' };
+const detailsTxt = d => (d && typeof d === 'object' ? Object.entries(d).filter(([, v]) => v != null && v !== '' && !(Array.isArray(v) && !v.length)).slice(0, 6)
+  .map(([k, v]) => `${KEY_TXT[k] || k.replace(/_/g, ' ')}: ${typeof v === 'number' ? int(v) : typeof v === 'boolean' ? (v ? 'sim' : 'não') : Array.isArray(v) ? v.map(x => (typeof x === 'object' ? x?.region || x?.ha || '' : BRAND_NAMES[x] || x)).join(', ') : typeof v === 'object' ? (v.region ? `${v.ha} ha em ${v.region}` : '…') : String(v).slice(0, 60)}`).join(' · ') : '');
+
+// voltar a conta para uma cópia e mostrar, em palavras, o que saiu dela e o que voltou para a loja
+async function restoreTo(uid, histId, whenTxt, moneyTxt) {
+  const nm = users.find(u => u.user_id === uid)?.name || 'este jogador';
+  if (!confirm(`Voltar a conta de ${nm} para a cópia de ${whenTxt || 'antes'} (${moneyTxt || ''} em caixa)?\n\nTudo o que ele ganhou e comprou depois sai da conta. Marcas, mina, frigorífico e acessórios que ele não tinha naquela hora voltam para a loja. O estado de agora fica guardado (dá para desfazer).`)) return null;
+  const { data, error } = await sb.rpc('admin_restore_save', { p_id: Number(histId) });
+  const ok = data === 'ok' || data?.ok;
+  if (error || !ok) { fail(error || { message: data?.err || data }, 'voltar a conta (o código novo das cópias já foi colado no banco?)'); return null; }
+  const r = typeof data === 'object' ? data : {}, li = [];
+  li.push(`A conta voltou a ser exatamente como estava em <b>${esc(whenTxt || when(r.from))}</b>. Se ${esc(nm)} estiver jogando, o jogo dele troca em segundos; se não, na próxima vez que abrir.`);
+  if (r.freed?.length) li.push(`Voltaram para a loja (qualquer um pode comprar): <b>${r.freed.map(b => esc(BRAND_NAMES[b] || b)).join(', ')}</b>.`);
+  if (r.mine) li.push(`Mina de ouro: <b>${esc(r.mine)}</b>.`);
+  if (r.frig) li.push('O frigorífico dele saiu da lista de frigoríficos abertos para os outros jogadores.');
+  if (r.acc > 0) li.push(`<b>${r.acc}</b> acessório(s) voltaram para o estoque da loja.`); else if (r.acc < 0) li.push(`${-r.acc} acessório(s) que ele tinha naquela hora saíram de novo do estoque da loja.`);
+  if (r.lands) li.push(`${r.lands} terra(s) saíram da conta (marcadas como "save restaurado", não como sumiço).`);
+  if (Number(r.pixIn)) li.push(`Pix que ele recebeu depois dessa hora: <b>${brl(r.pixIn)}</b>. Esse dinheiro saiu da conta dele. Quem mandou não recebe de volta (se foram contas falsas dele, o dinheiro some do jogo).`);
+  if (Number(r.pixOut)) li.push(`Pix que ele mandou depois dessa hora: ${brl(r.pixOut)}. O dinheiro voltou para ele e quem recebeu continua com o dele: confira se precisa voltar também a conta de quem recebeu.`);
+  if (r.conflict?.length) li.push(`<span class="bad">Atenção: naquela hora ele tinha ${r.conflict.map(esc).join(', ')}. Hoje já é de outro jogador; quando o jogo dele abrir, ele recebe o valor de volta em dinheiro no lugar.</span>`);
+  toast('Conta voltou para a cópia escolhida.');
+  await openPlayer(uid);
+  const box = $('#ap-restored'); if (box) { box.innerHTML = `<div class="ad-done"><h4>✅ feito</h4><ul>${li.map(x => `<li>${x}</li>`).join('')}</ul></div>`; box.scrollIntoView({ block: 'center' }); }
+  return r;
+}
 
 async function openPlayer(id) {
   if (!users.length) await loadUsers('');
@@ -195,7 +236,7 @@ async function openPlayer(id) {
   const [{ data: save }, { data: grants }, hist] = await Promise.all([
     sb.from('saves').select('data, updated_at').eq('user_id', id).maybeSingle(),
     sb.from('admin_grants').select('id, kind, amount, note, created_at, applied_at').eq('user_id', id).order('created_at', { ascending: false }).limit(20),
-    sb.from('save_history').select('id, saved_at, why, money, lands').eq('user_id', id).order('saved_at', { ascending: false }).limit(60),
+    sb.from('save_history').select('*').eq('user_id', id).order('saved_at', { ascending: false }).limit(260).then(r => (r.error && /column/.test(r.error.message) ? sb.from('save_history').select('id, saved_at, why, money, lands').eq('user_id', id).order('saved_at', { ascending: false }).limit(260) : r)),
   ]);
   const s = save?.data || {};
   const facts = [['dinheiro', brl(s.money)], ['fichas', int(s.chips)], ['nível', s.level ?? '—'], ['mês do jogo', s.month ?? '—'],
@@ -208,6 +249,7 @@ async function openPlayer(id) {
     <h2 id="ap-name">${esc(u.name || '(sem nome)')} <button class="btn btn--glass btn--sm" type="button" data-dj-open="${esc(u.name || '')}">ver diário completo</button></h2>
     <p class="muted small">${esc(u.email || '')}, cadastro em ${when(u.created_at)}, último acesso em ${when(u.last_sign_in_at)}, save salvo em ${when(save?.updated_at)}</p>
     ${u.banned ? `<p class="ad-err">Suspenso${u.ban_reason ? `: ${esc(u.ban_reason)}` : ''}.</p>` : ''}
+    ${cheatBox(id)}
     <div class="ad-tiles ad-tiles--sm">${facts.map(([k, v]) => `<div class="ad-tile"><span>${k}</span><strong>${v}</strong></div>`).join('')}</div>
     ${econHTML(s)}
     <h3>dar ou tirar</h3>
@@ -233,16 +275,20 @@ async function openPlayer(id) {
     </div>
     <h3>ordens enviadas</h3>
     <div class="ad-tablewrap"><table><thead><tr><th>quando</th><th>o quê</th><th class="num">quanto</th><th>mensagem</th><th>situação</th></tr></thead><tbody>
-      ${(grants || []).map(g => `<tr><td>${when(g.created_at)}</td><td>${esc(g.kind)}</td><td class="num">${int(g.amount)}</td><td>${esc(g.note || '')}</td>
+      ${(grants || []).map(g => `<tr><td>${when(g.created_at)}</td><td>${esc(GRANT_TXT[g.kind] || g.kind)}</td><td class="num">${int(g.amount)}</td><td>${esc(g.note || '')}</td>
         <td>${g.applied_at ? `aplicada ${when(g.applied_at)}` : `pendente <button class="btn btn--glass btn--sm" data-cancel="${g.id}">cancelar</button>`}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nenhuma ordem ainda.</td></tr>'}
     </tbody></table></div>
-    <h3>histórico do save <small class="muted">(só o painel vê; o servidor guarda a versão anterior a cada mudança importante)</small></h3>
-    ${hist.error ? '<p class="muted small">Histórico ainda não ligado: rode <b>supabase/historico.sql</b> uma vez no SQL Editor do Supabase.</p>'
-      : `<div class="ad-tablewrap"><table><thead><tr><th>quando</th><th>motivo</th><th class="num">dinheiro</th><th class="num">terras</th><th></th></tr></thead><tbody>
-      ${(hist.data || []).map(h => `<tr><td>${when(h.saved_at)}</td><td>${esc(h.why)}</td><td class="num">${brl(h.money)}</td><td class="num">${int(h.lands)}</td><td><button class="btn btn--glass btn--sm" data-restore="${h.id}">restaurar</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nenhuma versão guardada ainda.</td></tr>'}
+    <h3 id="ap-hist">voltar a conta para um estado anterior</h3>
+    <p class="ad-help">O servidor guarda uma cópia da conta a cada 5 minutos de jogo, sempre que o dinheiro cai muito ou some uma terra, e quando você clica em <b>guardar cópia agora</b>. Ficam as 200 mais recentes, a última de cada dia dos últimos 60 dias e as cópias que você guardou.<br>
+      <b>Voltar para esta cópia</b> faz a conta ficar exatamente como estava naquela hora: o dinheiro, as fichas, as terras e tudo o que ele comprou depois <b>saem da conta</b>. Marcas (bancos, provedores, mercados, usinas), a mina de ouro, o frigorífico e os acessórios que ele não tinha naquela hora <b>voltam para a loja</b> na mesma hora, para outro jogador poder comprar. Antes de voltar, o estado de agora é guardado aqui também (dá para desfazer). Se ele estiver jogando, o jogo dele troca para a cópia em segundos.</p>
+    ${hist.error ? '<p class="muted small">As cópias da conta ainda não foram ligadas no banco.</p>'
+      : `<form class="row" id="ap-snap"><label class="field ad-grow"><span>anotação da cópia (opcional)</span><input class="input" name="note" maxlength="80" placeholder="ex.: antes de investigar o Pix"></label><button class="btn btn--gold" type="submit">guardar cópia agora</button></form>
+      <div id="ap-restored"></div>
+      <div class="ad-tablewrap ad-ledger"><table><thead><tr><th>quando</th><th>por que foi guardada</th><th class="num">dinheiro</th><th class="num">fichas</th><th class="num">patrimônio</th><th class="num">terras</th><th class="num">nível</th><th></th></tr></thead><tbody>
+      ${(hist.data || []).map(h => `<tr class="${/administrador|restaurar/.test(h.why) ? 'ad-mark' : ''}"><td>${when(h.saved_at)}</td><td>${esc(WHY_TXT[h.why] || h.why)}</td><td class="num">${brl(h.money)}</td><td class="num">${h.chips != null ? int(h.chips) : '—'}</td><td class="num">${h.worth != null ? brl(h.worth) : '—'}</td><td class="num">${int(h.lands)}</td><td class="num">${h.level ?? '—'}</td>
+        <td><button class="btn btn--glass btn--sm" data-restore="${h.id}" data-when="${esc(when(h.saved_at))}" data-money="${esc(brl(h.money))}">voltar para esta cópia</button></td></tr>`).join('') || '<tr><td colspan="8" class="muted">Nenhuma cópia guardada ainda.</td></tr>'}
       </tbody></table></div>`}
-    ${ledger(s)}
-    <details><summary>ver o save completo</summary><pre class="ad-json">${esc(JSON.stringify(s, null, 1).slice(0, 60000))}</pre></details>`;
+    ${ledger(s)}`;
   const d = $('#ad-player'); if (!d.open) d.showModal();
 
   $('#ap-grant').onsubmit = async e => {
@@ -287,12 +333,13 @@ async function openPlayer(id) {
     if (a.error || b.error) return fail(a.error || b.error, 'apagar');
     await log('wipe', id); toast('Save e perfil apagados.'); d.close(); loadUsers('');
   };
-  $('#ap-body').querySelectorAll('[data-restore]').forEach(b => b.addEventListener('click', async () => {
-    if (!confirm('Restaurar esta versão do save? Ela vira o save atual do jogador (a de agora também fica no histórico). Peça para ele fechar o jogo antes, se estiver jogando.')) return;
-    const { data, error } = await sb.rpc('admin_restore_save', { p_id: Number(b.dataset.restore) });
-    if (error || data !== 'ok') return fail(error || { message: data }, 'restaurar');
-    await log('restore_save', id, { hist: b.dataset.restore }); toast('Save restaurado. O jogo dele puxa a versão da nuvem em segundos.'); openPlayer(id);
-  }));
+  $('#ap-body').querySelectorAll('[data-restore]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); restoreTo(id, b.dataset.restore, b.dataset.when, b.dataset.money); }, true));
+  $('#ap-snap')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const { data, error } = await sb.rpc('admin_snapshot_save', { p_user: id, p_note: new FormData(e.target).get('note') || null });
+    if (error || data !== 'ok') return fail(error || { message: data === 'missing' ? 'este jogador ainda não tem save na nuvem' : data }, 'guardar a cópia (falta ligar esta parte no banco?)');
+    toast('Cópia guardada. Ela fica no topo da lista.'); openPlayer(id);
+  });
   $('#ap-body').querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', async () => {
     const { error } = await sb.from('admin_grants').delete().eq('id', Number(b.dataset.cancel)).is('applied_at', null);
     if (error) return fail(error, 'cancelar');
@@ -389,7 +436,7 @@ let lands = [];
 async function loadLands() {
   if (!users.length) await loadUsers('');
   const { data, error } = await sb.from('land_audit').select('id, user_id, at, land, reason, money_before, money_after, month_before, month_after, dev, restored_at').order('at', { ascending: false }).limit(300);
-  if (error) { $('#ad-lands').innerHTML = `<tr><td colspan="7" class="muted">${/land_audit/.test(error.message) ? 'Rode o supabase/terras.sql no SQL Editor do Supabase para ligar a auditoria.' : esc(error.message)}</td></tr>`; return; }
+  if (error) { $('#ad-lands').innerHTML = `<tr><td colspan="7" class="muted">${/land_audit/.test(error.message) ? 'A auditoria de terras ainda não foi ligada no banco.' : esc(error.message)}</td></tr>`; return; }
   lands = data || []; drawLands();
 }
 function drawLands() {
@@ -399,14 +446,14 @@ function drawLands() {
     <td>${int(r.land?.ha)} ha · ${esc(r.land?.region || '?')}${r.land?.use ? ` · ${esc(r.land.use)}` : ''}<br><small class="muted">valor ${brl(r.land?.value)}</small></td>
     <td>${r.reason ? `<span class="tag tag--green">${esc(r.reason)}</span>` : '<span class="tag tag--red">sem explicação</span>'}</td>
     <td class="num">${brl(r.money_before)} → ${brl(r.money_after)}</td><td>${r.month_before ?? '—'} → ${r.month_after ?? '—'}</td>
-    <td>${r.restored_at ? `<small class="muted">devolvida ${when(r.restored_at)}</small>` : `<button class="btn btn--gold btn--sm" data-restore="${r.id}">devolver</button>`}</td></tr>`).join('')
+    <td>${r.restored_at ? `<small class="muted">devolvida ${when(r.restored_at)}</small>` : `<button class="btn btn--gold btn--sm" data-land-restore="${r.id}">devolver</button>`}</td></tr>`).join('')
     || `<tr><td colspan="7" class="muted">${only ? 'Nenhuma terra sumiu sem explicação.' : 'Nada registrado ainda.'}</td></tr>`;
 }
 $('#ad-lands-only')?.addEventListener('change', drawLands);
 document.addEventListener('click', async e => {
   const u = e.target.closest('#ad-lands [data-user]'); if (u) { e.preventDefault(); return openPlayer(u.dataset.user); }
-  const b = e.target.closest('[data-restore]'); if (!b) return;
-  const r = lands.find(x => String(x.id) === b.dataset.restore); if (!r || !confirm(`Devolver ${r.land?.ha} ha em ${r.land?.region} para este jogador?`)) return;
+  const b = e.target.closest('[data-land-restore]'); if (!b) return;
+  const r = lands.find(x => String(x.id) === b.dataset.landRestore); if (!r || !confirm(`Devolver ${r.land?.ha} ha em ${r.land?.region} para este jogador?`)) return;
   b.disabled = true;
   const { error } = await sb.from('admin_grants').insert({ user_id: r.user_id, kind: 'land', amount: 0, item: r.land, note: 'terra que sumiu na sincronização' });
   if (error) { b.disabled = false; return fail(error, 'devolver a terra'); }
@@ -512,8 +559,8 @@ async function loadLog() {
   const { data, error } = await sb.from('admin_log').select('created_at, admin, action, target, details').order('created_at', { ascending: false }).limit(150);
   if (error) return fail(error, 'carregar o registro');
   const name = id => users.find(u => u.user_id === id)?.name || (id ? id.slice(0, 8) : '—');
-  $('#ad-log').innerHTML = (data || []).map(l => `<tr><td>${when(l.created_at)}</td><td>${esc(l.admin)}</td><td>${esc(l.action)}</td><td>${esc(name(l.target))}</td>
-    <td class="small">${esc(JSON.stringify(l.details || '')).slice(0, 160)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nada registrado.</td></tr>';
+  $('#ad-log').innerHTML = (data || []).map(l => `<tr><td>${when(l.created_at)}</td><td>${esc(l.admin)}</td><td>${esc(ACTION_TXT[l.action] || String(l.action).replace(/_/g, ' '))}</td><td>${esc(name(l.target))}</td>
+    <td class="small">${esc(detailsTxt(l.details))}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nada registrado.</td></tr>';
 }
 
 boot().catch(e => fail(e, 'iniciar o painel'));
@@ -550,7 +597,7 @@ import('./tune.js').then(({ DEFAULTS }) => {
     if (error) return fail(error, 'salvar as regras');
     await log('tuning', null, { what, ...tuning }); fill(tuning); toast('Regras salvas. Todos os jogos aplicam em até 1 minuto.');
   };
-  document.querySelector('[data-tab="rules"]')?.addEventListener('click', async () => { const { data } = await sb.from('game_config').select('data').eq('id', 1).maybeSingle(); fill(data?.data?.tuning); });
+  tuneLoad = async () => { const { data } = await sb.from('game_config').select('data').eq('id', 1).maybeSingle(); fill(data?.data?.tuning); };
   f.addEventListener('submit', e => { e.preventDefault(); save(read(), 'manual'); });
   $('#ad-tune-reset').addEventListener('click', () => { if (confirm('Voltar todas as regras ao padrão?')) save({ ...DEFAULTS }, 'padrão'); });
   document.querySelectorAll('[data-tune-preset]').forEach(b => b.addEventListener('click', () => {
@@ -570,23 +617,22 @@ const BRAND_NAMES = { roxinho: 'Roxinho Bank', enter: 'Banco Enter', santandre: 
 async function loadOwners() {
   const [m, c] = await Promise.all([sb.from('gold_mine').select('owner, owner_name, since').eq('id', 1).maybeSingle(), sb.from('company_owner').select('brand, owner, owner_name, since').order('since', { ascending: false })]);
   const rows = [];
-  if (m.error) rows.push('<tr><td>mina de ouro</td><td colspan="3" class="muted">tabela ainda não criada: rode supabase/mina.sql</td></tr>');
+  if (m.error) rows.push('<tr><td>mina de ouro</td><td colspan="3" class="muted">ainda não ligada no banco</td></tr>');
   else rows.push(`<tr><td>⛏️ mina de ouro</td><td>${m.data?.owner ? esc(m.data.owner_name || 'jogador') : '<span class="muted">à venda</span>'}</td><td>${when(m.data?.since)}</td><td>${m.data?.owner ? '<button class="btn btn--danger btn--sm" data-free-mine>liberar</button>' : ''}</td></tr>`);
-  if (c.error) rows.push('<tr><td>empresas</td><td colspan="3" class="muted">tabela ainda não criada: rode supabase/empresas.sql</td></tr>');
+  if (c.error) rows.push('<tr><td>empresas</td><td colspan="3" class="muted">ainda não ligadas no banco</td></tr>');
   else {
     const owned = new Map((c.data || []).map(r => [r.brand, r]));
     for (const [id, name] of Object.entries(BRAND_NAMES)) { const r = owned.get(id); rows.push(`<tr><td>${esc(name)}</td><td>${r ? esc(r.owner_name || 'jogador') : '<span class="muted">à venda</span>'}</td><td>${r ? when(r.since) : '—'}</td><td>${r ? `<button class="btn btn--danger btn--sm" data-free-brand="${id}">liberar</button>` : ''}</td></tr>`); }
   }
   $('#ad-owners').innerHTML = rows.join('');
 }
-document.querySelector('[data-tab="owners"]')?.addEventListener('click', loadOwners);
 $('#ad-own-reload')?.addEventListener('click', loadOwners);
 document.addEventListener('click', async e => {
   const bm = e.target.closest('[data-free-mine]'), bb = e.target.closest('[data-free-brand]'); if (!bm && !bb) return;
   const what = bm ? 'a mina de ouro' : BRAND_NAMES[bb.dataset.freeBrand];
   if (!confirm(`Liberar ${what} para a loja? O dono atual perde e recebe o valor de volta quando o jogo dele sincronizar.`)) return;
   const { data, error } = bm ? await sb.rpc('admin_release_mine') : await sb.rpc('admin_release_company', { p_brand: bb.dataset.freeBrand });
-  if (error || data !== 'ok') return fail(error || data, 'liberar (rode supabase/admin-extra.sql)');
+  if (error || data !== 'ok') return fail(error || data, 'liberar (falta ligar esta parte no banco)');
   await log('release_owner', null, { what }); toast(`${what} voltou para a loja.`); loadOwners();
 });
 
@@ -600,7 +646,11 @@ const hm = t => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-
 const sgn = v => `<span class="${v > 0 ? 'good' : v < 0 ? 'bad' : ''}">${v > 0 ? '+' : ''}${brl(v)}</span>`;
 const ACT = { 'rl-spin': 'roleta', 'av-press': 'aviator', bet: 'blackjack: apostar', hit: 'blackjack: pedir', stand: 'blackjack: parar', double: 'blackjack: dobrar', 'race-go': 'corrida', 'buy-chips': 'comprar fichas', 'sell-chips': 'resgatar fichas',
   'sell-land': 'vender terra', 'buy-land': 'comprar terra', 'tr-buy': 'trader: comprar', 'tr-sell': 'trader: vender', 'fe-buy': 'feira: comprar', 'fe-sell': 'feira: vender', 'shop-buy': 'loja: comprar', 'shop-sell': 'loja: vender', 'trade-confirm': 'troca entre jogadores', 'spin-daily': 'giro diário', 'pass-claim': 'passe: resgatar' };
-const actLabel = a => (ACT[a] ? `${esc(a)} <small class="muted">(${ACT[a]})</small>` : esc(a));
+const actWord = a => { const k = String(a || '').replace(/ x\d+$/, '').replace(/[:=].*$/, ''), n = String(a || '').match(/ x(\d+)$/)?.[1];
+  const w = k.startsWith('tela: ') ? k : ACT[k] || k.replace(/^[a-z]{2}-/, '').replace(/[-_]/g, ' ');
+  return n ? `${w} (${n}x)` : w; };
+const actLabel = a => esc(actWord(a));
+const actsText = s => String(s || '').split(', ').filter(Boolean).map(actWord).join(' · ');
 async function loadDiario() {
   const st = $('#ad-dj-st'), who = $('#ad-dj-who').value.trim().toLowerCase(); st.textContent = 'lendo o diário...'; $('#ad-dj-load').disabled = true;
   try {
@@ -613,7 +663,7 @@ async function loadDiario() {
     dj = { rows, rep: AE.diaryReport(rows, Object.fromEntries(users.map(u => [u.user_id, u.name]))) };
     st.textContent = `${int(rows.length)} registros às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
     drawDiario();
-  } catch (e) { fail(e, 'carregar o diário (rode supabase/diario.sql)'); st.textContent = ''; } finally { $('#ad-dj-load').disabled = false; }
+  } catch (e) { fail(e, 'carregar o diário (falta ligar esta parte no banco)'); st.textContent = ''; } finally { $('#ad-dj-load').disabled = false; }
 }
 function drawDiario() {
   if (!dj) return;
@@ -634,10 +684,10 @@ function drawDiario() {
 function drawTimeline() {
   if (!dj) return;
   const kind = $('#ad-dj-kind').value, min = Number($('#ad-dj-min').value) || 0, q = $('#ad-dj-q').value.trim().toLowerCase();
-  const list = dj.rows.filter(r => (!kind || r.kind === kind) && Math.abs(Number(r.val) || 0) >= min && (!q || `${r.txt} ${r.acts} ${r.tab}`.toLowerCase().includes(q))).slice(0, 1500);
+  const list = dj.rows.filter(r => (!kind || r.kind === kind) && Math.abs(Number(r.val) || 0) >= min && (!q || `${r.txt} ${r.acts} ${actsText(r.acts)} ${r.tab}`.toLowerCase().includes(q))).slice(0, 1500);
   const tag = { gap: '<span class="tag tag--red">sem lançamento</span> ', fichas: '<span class="tag tag--gold">fichas</span> ', inicio: '<span class="tag tag--green">sessão</span> ' };
   $('#ad-dj-tl').innerHTML = list.map(r => `<tr><td>${hm(r.at)}</td><td>${esc(djName(r.user_id))}</td><td>${esc(r.tab || '')}</td><td class="num">${r.m ?? ''}</td><td>${tag[r.kind] || ''}${esc(r.txt)}</td><td class="num">${r.val ? sgn(Number(r.val)) : ''}</td>
-    <td class="num">${brl(r.money)}</td><td class="num">${int(r.chips)}</td><td class="num">${brl(r.worth)}</td><td><small>${esc(r.acts || '')}</small></td></tr>`).join('') || '<tr><td colspan="10" class="muted">Nada com esse filtro.</td></tr>';
+    <td class="num">${brl(r.money)}</td><td class="num">${int(r.chips)}</td><td class="num">${brl(r.worth)}</td><td><small>${esc(actsText(r.acts))}</small></td></tr>`).join('') || '<tr><td colspan="10" class="muted">Nada com esse filtro.</td></tr>';
 }
 $('#ad-dj-load').addEventListener('click', loadDiario);
 for (const id of ['#ad-dj-kind', '#ad-dj-min', '#ad-dj-q']) $(id).addEventListener('input', drawTimeline);
@@ -653,19 +703,28 @@ async function loadVigia() {
   try {
     if (!users.length) await loadUsers('');
     const ago = d => new Date(Date.now() - d * 864e5).toISOString(), soft = p => p.catch(() => []);
-    const [saves, hist, rc, gifts, pix] = await Promise.all([
+    const [saves, hist, rc, gifts, pix, pix30, diary] = await Promise.all([
       pageAll(() => sb.from('saves').select('user_id, data, updated_at')),
       soft(pageAll(() => sb.from('save_history').select('user_id, saved_at, money').gt('saved_at', ago(1)))),
       soft(pageAll(() => sb.from('receita_casos').select('user_id'))),
       soft(pageAll(() => sb.from('admin_grants').select('user_id, amount').eq('kind', 'money').gt('amount', 0))),
       soft(pageAll(() => sb.from('pix').select('from_id, from_name, to_id, to_name, amount, memo, kind, at').gt('at', ago(7)).order('at', { ascending: false }))),
+      soft(pageAll(() => sb.from('pix').select('from_id, from_name, to_id, to_name, amount, at').gt('at', ago(30)))),
+      soft(pageAll(() => sb.from('diario').select('user_id, at, kind, txt, val, money, worth, acts, tab').in('kind', ['gap', 'inicio']).gt('at', ago(7)))),
     ]);
+    // fazenda de contas (30 dias) e dinheiro sem lançamento (diário, 7 dias)
+    const UI = Object.fromEntries(users.map(u => [u.user_id, { name: u.name, created: u.created_at }]));
+    const farm = AE.pixFarm(pix30, UI), F = Object.fromEntries(farm.map(f => [f.id, f])), FS = {};
+    for (const f of farm) for (const x of f.senders) if (x.ageDays != null && x.ageDays < AE.NEW_DAYS) FS[x.id] = { total: (FS[x.id]?.total || 0) + x.total, to: f.name };
+    const DR = AE.diaryReport(diary, {}), GP = Object.fromEntries(DR.players.map(p => [p.id, p])), JP = {};
+    for (const j of DR.jumps) if (j.diff > 0) JP[j.id] = Math.max(JP[j.id] || 0, j.diff);
     const by = (list, k) => list.reduce((m, x) => ((m[x[k]] ||= []).push(x), m), {});
     const H = by(hist, 'user_id'), R = by(rc, 'user_id'), Gf = by(gifts, 'user_id'), Pin = by(pix, 'to_id'), Pout = by(pix, 'from_id'), U = Object.fromEntries(users.map(u => [u.user_id, u]));
     const players = saves.map(x => { const u = U[x.user_id] || {}; return { id: x.user_id, name: u.name || x.data?.avatar?.name || '(sem nome)', created: u.created_at, banned: u.banned, s: x.data || {},
       hist: (H[x.user_id] || []).map(h => ({ t: Date.parse(h.saved_at), money: Number(h.money) || 0 })), pixIn: Pin[x.user_id] || [], pixOut: Pout[x.user_id] || [],
-      receita: (R[x.user_id] || []).length, gifts: (Gf[x.user_id] || []).reduce((t, g) => t + Number(g.amount), 0) }; });
-    vg = { ...AE.watch(players), pix, saves };
+      receita: (R[x.user_id] || []).length, gifts: (Gf[x.user_id] || []).reduce((t, g) => t + Number(g.amount), 0),
+      farm: F[x.user_id], farmSender: FS[x.user_id], gap: GP[x.user_id]?.gap || 0, gapN: GP[x.user_id]?.gapN || 0, jump: JP[x.user_id] || 0 }; });
+    vg = { ...AE.watch(players), pix, saves, farm, UI };
     st.textContent = `${players.length} contas analisadas às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
     drawVigia();
   } catch (e) { fail(e, 'carregar a vigilância'); st.textContent = ''; } finally { $('#ad-vg-reload').disabled = false; }
@@ -681,6 +740,7 @@ function drawVigia() {
     ['patrimônio somado', AE.brlShort(R.reduce((t, r) => t + r.worth, 0))], ['sem tempo medido', int(R.filter(r => r.playH == null).length)]];
   $('#ad-vg-tiles').innerHTML = tiles.map(([k, v]) => `<div class="ad-tile"><span>${k}</span><strong>${v}</strong></div>`).join('');
   const b = $('#ad-vg-badge'); b.textContent = sus.length; b.hidden = !sus.length;
+  drawCheats(on);
   const only = $('#ad-vg-only').checked, q = $('#ad-vg-q').value.trim().toLowerCase();
   const rows = R.filter(r => (!only || r.score > 0) && (!q || r.name.toLowerCase().includes(q)));
   const tone = r => (r.score >= 3 ? 'red' : r.score > 0 ? 'gold' : 'green'), money = v => (v == null ? '—' : `<span class="${v < 0 ? 'bad' : 'good'}">${AE.brlShort(v)}</span>`);
@@ -693,9 +753,12 @@ function drawVigia() {
     || `<tr><td colspan="10" class="muted">${only ? 'Ninguém fora do normal agora.' : 'Nenhum jogador.'}</td></tr>`;
   const W0 = Object.fromEntries(R.map(r => [r.id, r.worth])), pair = {}, pk = p => [p.from_id, p.to_id].sort().join();
   for (const p of vg.pix) pair[pk(p)] = (pair[pk(p)] || 0) + 1;
-  $('#ad-vg-pix').innerHTML = vg.pix.slice(0, 200).map(p => { const bad = Number(p.amount) > Math.max(100000, (W0[p.to_id] || 0) * 0.3) || pair[pk(p)] >= 3;
+  $('#ad-vg-pix').innerHTML = vg.pix.slice(0, 200).map(p => { const v = Number(p.amount), age = (Date.parse(p.at) - Date.parse(vg.UI[p.from_id]?.created || '')) / 864e5;
+    const isNew = Number.isFinite(age) && age < AE.NEW_DAYS, start = v >= 5000 && v <= 20000, big = v > Math.max(100000, (W0[p.to_id] || 0) * 0.3), bad = isNew || start || big || pair[pk(p)] >= 3;
+    const tags = [isNew ? `<span class="tag tag--red">conta nova (${age < 1 ? `${Math.max(1, Math.round(age * 24))} h` : `${Math.floor(age)} dia(s)`} de criada)</span>` : '', start ? '<span class="tag tag--red">valor do dinheiro inicial</span>' : '',
+      pair[pk(p)] >= 3 ? `<span class="tag tag--gold">mesma dupla ${pair[pk(p)]}x</span>` : '', big ? '<span class="tag tag--gold">grande para quem recebeu</span>' : ''].join(' ');
     return `<tr${bad ? ' class="ad-alert"' : ''}><td>${when(p.at)}</td><td><a href="#" data-vg-user="${esc(p.from_id)}">${esc(p.from_name)}</a></td><td><a href="#" data-vg-user="${esc(p.to_id)}">${esc(p.to_name)}</a></td>
-      <td class="num">${brl(p.amount)}</td><td>${esc(p.kind)}</td><td>${esc(p.memo || '')}</td></tr>`; }).join('') || '<tr><td colspan="6" class="muted">Nenhum Pix nos últimos 7 dias.</td></tr>';
+      <td class="num"><b>${brl(p.amount)}</b></td><td>${p.kind === 'pagamento' ? 'pagamento' : 'Pix'} ${tags}</td><td>${esc(p.memo || '')}</td></tr>`; }).join('') || '<tr><td colspan="6" class="muted">Nenhum Pix nos últimos 7 dias.</td></tr>';
   const days = Array.from({ length: 7 }, (_, k) => new Date(Date.now() - 3 * 36e5 - (6 - k) * 864e5).toISOString().slice(0, 10));
   $('#ad-vg-play').innerHTML = [...R].filter(r => r.weekH > 0).sort((a, b) => b.weekH - a.weekH).slice(0, 30).map(r => `<tr><td><a href="#" data-vg-user="${esc(r.id)}">${esc(r.name)}</a>${on.has(r.id) ? ' <span class="tag tag--green">online</span>' : ''}</td>
     <td class="num">${hrs(r.weekH)}</td><td class="num">${hrs(r.todayH)}</td><td class="small">${days.map(d => hrs((r.s.play?.days?.[d] || 0) / 36e5)).join(' · ')}</td><td class="num">${hrs(r.playH)}</td></tr>`).join('')
@@ -706,6 +769,54 @@ function drawVigia() {
   $('#ad-vg-moves').innerHTML = moves.map(e => `<tr><td><a href="#" data-vg-user="${esc(e.u)}">${esc(nm[e.u] || '?')}</a></td><td>${e.m}</td><td>${esc(e.txt)}</td><td class="num ${e.val < 0 ? 'bad' : 'good'}">${brl(e.val)}</td></tr>`).join('')
     || '<tr><td colspan="4" class="muted">Sem movimentos.</td></tr>';
 }
+// cartões de alerta: o mais grave primeiro, com o motivo em palavras e os botões para agir
+const certainty = s => (s >= 6 ? ['quase certeza', 'red'] : s >= 4 ? ['muito provável', 'red'] : ['vale conferir', 'gold']);
+function drawCheats(on) {
+  const ago = t => { const h = (Date.now() - Date.parse(t)) / 36e5; return h < 1 ? `${Math.max(1, Math.round(h * 60))} min` : h < 48 ? `${Math.round(h)} h` : `${Math.round(h / 24)} dias`; };
+  const farms = vg.farm.filter(f => f.sure || f.n >= 2);
+  $('#ad-farm').innerHTML = farms.length ? `<h3>💸 fazenda de contas: várias contas mandando Pix para a mesma pessoa</h3>
+    <p class="ad-help">Cada conta nova começa com dinheiro. Quem cria várias contas e manda esse dinheiro por Pix para a conta principal fica rico sem jogar. Abaixo, quem recebeu esses Pix nos últimos 30 dias e as contas que mandaram (com quantos dias de criada a conta tinha quando mandou).</p>
+    ${farms.map(f => `<article class="ad-cheat ad-cheat--red"><header><span class="tag tag--red">${f.sure ? 'quase certeza' : 'muito provável'}</span> <b class="ad-cheat__name">${esc(f.name)}</b> recebeu <b>${brl(f.total)}</b> em ${f.n} Pix ${on.has(f.id) ? '<span class="tag tag--green">online agora</span>' : ''}</header>
+      <p>${esc(f.story)} Primeiro Pix há ${ago(f.first)}, último há ${ago(f.last)}.</p>
+      <div class="ad-tablewrap"><table><thead><tr><th>conta que mandou</th><th>idade da conta quando mandou</th><th class="num">Pix</th><th class="num">total</th></tr></thead><tbody>${f.senders.map(x => `<tr><td><a href="#" data-vg-user="${esc(x.id)}">${esc(x.name)}</a></td><td>${x.ageDays == null ? '—' : x.ageDays < 1 ? '<b class="bad">criada no mesmo dia</b>' : x.ageDays < AE.NEW_DAYS ? `<b class="bad">${Math.floor(x.ageDays)} dia(s)</b>` : `${Math.floor(x.ageDays)} dias`}</td><td class="num">${x.n}</td><td class="num">${brl(x.total)}</td></tr>`).join('')}</tbody></table></div>
+      <div class="row"><button class="btn btn--gold btn--sm" data-vg-user="${esc(f.id)}">abrir a ficha de ${esc(f.name)}</button>
+        <button class="btn btn--danger btn--sm" data-farm-back="${esc(f.id)}">voltar ${esc(f.name)} para antes do 1º Pix</button>
+        <button class="btn btn--danger btn--sm" data-farm-ban="${esc(f.id)}">suspender as ${f.senders.length} conta(s) que mandaram</button></div>
+      <p class="muted small"><b>Voltar para antes do 1º Pix</b>: a conta dele fica como estava antes de receber, e tudo o que ele comprou depois volta para a loja. <b>Suspender</b>: as contas que mandaram ficam 30 dias sem entrar.</p></article>`).join('')}` : '';
+  const list = vg.rows.filter(r => r.score >= 4 && !(farms.some(f => f.id === r.id) && r.why.length === 1)).slice(0, 12);
+  $('#ad-cheat-st').textContent = `${farms.length} fazenda(s) de contas · ${list.length} jogador(es) com sinais fortes`;
+  $('#ad-cheat').innerHTML = list.map(r => { const [lv, tone] = certainty(r.score);
+    return `<article class="ad-cheat ad-cheat--${tone}"><header><span class="tag tag--${tone}">${lv}</span> <b class="ad-cheat__name">${esc(r.name)}</b> · patrimônio ${brl(r.worth)} · ${r.playH == null ? 'tempo jogado não medido' : `${hrs(r.playH)} jogadas`}${on.has(r.id) ? ' <span class="tag tag--green">online agora</span>' : ''}${r.banned ? ' <span class="tag tag--red">suspenso</span>' : ''}</header>
+      <ul>${r.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul>
+      <div class="row"><button class="btn btn--gold btn--sm" data-vg-user="${esc(r.id)}">abrir a ficha e voltar o save</button>
+        ${r.excess > 0 ? `<button class="btn btn--glass btn--sm" data-vg-take="${esc(r.id)}">tirar o excesso (${AE.brlShort(r.excess)})</button>` : ''}
+        ${!r.banned ? `<button class="btn btn--danger btn--sm" data-vg-ban="${esc(r.id)}">suspender 1 dia</button>` : ''}</div></article>`; }).join('')
+    || (farms.length ? '' : '<p class="good">Nenhum sinal forte de trapaça agora. 👍</p>');
+}
+// na ficha do jogador: o que a vigilância viu sobre ele
+function cheatBox(id) {
+  const r = vg?.rows.find(x => x.id === id); if (!r || !r.score) return '';
+  const [lv, tone] = certainty(r.score);
+  return `<div class="ad-cheat ad-cheat--${tone}"><header><span class="tag tag--${tone}">${lv}</span> <b>o que a vigilância viu</b></header><ul>${r.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul>
+    <p class="small">Para desfazer, use <a href="#ap-hist">voltar a conta para um estado anterior</a>, mais abaixo nesta ficha.</p></div>`;
+}
+document.addEventListener('click', async e => {
+  const bk = e.target.closest('[data-farm-back]'), bn = e.target.closest('[data-farm-ban]'); if (!bk && !bn) return;
+  e.preventDefault(); e.stopPropagation();
+  const f = vg?.farm.find(x => x.id === (bk ? bk.dataset.farmBack : bn.dataset.farmBan)); if (!f) return;
+  if (bk) {
+    const { data, error } = await sb.from('save_history').select('id, saved_at, money').eq('user_id', f.id).lt('saved_at', f.first).order('saved_at', { ascending: false }).limit(1);
+    if (error) return fail(error, 'procurar a cópia');
+    if (!data?.length) return toast(`Não há cópia da conta de ${f.name} de antes do primeiro Pix. Abra a ficha e escolha a mais antiga, ou tire o valor em "dar ou tirar".`, true);
+    await restoreTo(f.id, data[0].id, when(data[0].saved_at), brl(data[0].money));
+  } else {
+    if (!confirm(`Suspender por 30 dias estas contas que mandaram Pix para ${f.name}?\n\n${f.senders.map(x => `${x.name}: ${brl(x.total)}`).join('\n')}`)) return;
+    const reason = `Conta usada para mandar Pix para ${f.name}`.slice(0, 200), until = new Date(Date.now() + 30 * 864e5).toISOString();
+    const { error } = await sb.from('bans').upsert(f.senders.map(x => ({ user_id: x.id, reason, until })));
+    if (error) return fail(error, 'suspender as contas');
+    await log('ban_farm', f.id, { count: f.senders.length, why: reason }); toast(`${f.senders.length} conta(s) suspensa(s) por 30 dias.`); await loadUsers(''); loadVigia();
+  }
+}, true);
 $('#ad-vg-reload').addEventListener('click', loadVigia);
 $('#ad-vg-only').addEventListener('change', drawVigia);
 $('#ad-vg-q').addEventListener('input', drawVigia);
@@ -735,7 +846,7 @@ async function loadPro() {
   const st = $('#ad-pro-st'); st.textContent = 'carregando...';
   const [p, r, c] = await Promise.all([sb.from('pro_profiles').select('*').order('updated_at', { ascending: false }).limit(500),
     sb.from('pro_reports').select('*').order('at', { ascending: false }).limit(200), sb.from('pro_contracts').select('*').order('updated_at', { ascending: false }).limit(150)]);
-  if (p.error) { st.textContent = ''; $('#ad-pro-rep').innerHTML = '<tr><td colspan="7" class="muted">Rode o supabase/profissionais.sql no SQL Editor para ligar a Central de Profissionais.</td></tr>'; return; }
+  if (p.error) { st.textContent = ''; $('#ad-pro-rep').innerHTML = '<tr><td colspan="7" class="muted">A Central de Profissionais ainda não foi ligada no banco.</td></tr>'; return; }
   proData = { pros: p.data || [], reports: r.data || [], contracts: c.data || [] };
   st.textContent = `${proData.pros.length} profissionais · ${proData.reports.filter(x => x.status === 'aberta').length} denúncia(s) aberta(s)`;
   drawPro();
@@ -767,7 +878,6 @@ function drawPro() {
     || '<tr><td colspan="8" class="muted">Nenhum contrato ainda.</td></tr>';
 }
 $('#ad-pro-reload').addEventListener('click', loadPro);
-document.querySelector('[data-tab="pro"]').addEventListener('click', loadPro);
 document.addEventListener('click', async e => {
   const d = e.target.closest('[data-prodec]'), s = e.target.closest('[data-proset]'); if (!d && !s) return;
   if (d) {
@@ -785,4 +895,37 @@ document.addEventListener('click', async e => {
   }
   loadPro();
 });
+// ---------- Delegacia (supabase/delegacia.sql): B.O. que os jogadores registram uns contra os outros ----------
+const BO_KIND = { golpe: 'estelionato', calote: 'calote', ofensa: 'injúria / ameaça', trapaca: 'fraude no jogo', multiconta: 'contas falsas', outro: 'outra' };
+const BO_ST = { registrado: ['tag--red', 'novo'], investigando: ['tag--gold', 'em investigação'], procedente: ['tag--red', 'procedente'], arquivado: ['tag--green', 'arquivado'] };
+const boNum = c => `${new Date(c.at).getFullYear()}/${String(c.id).padStart(6, '0')}`;
+async function loadBo() {
+  const st = $('#ad-bo-st'); st.textContent = 'carregando...';
+  let q = sb.from('bo_casos').select('*').order('at', { ascending: false }).limit(200);
+  if ($('#ad-bo-f').value === 'abertos') q = q.in('status', ['registrado', 'investigando']);
+  const { data, error } = await q;
+  if (error) { st.textContent = ''; $('#ad-bo').innerHTML = '<tr><td colspan="7" class="muted">A delegacia ainda não foi ligada no banco (rode supabase/delegacia.sql).</td></tr>'; return; }
+  const novos = data.filter(c => c.status === 'registrado').length, b = $('#ad-bo-badge'); b.textContent = novos; b.hidden = !novos;
+  const vezes = {}; for (const c of data) vezes[c.target] = (vezes[c.target] || 0) + 1;
+  st.textContent = `${data.length} boletim(ns) · ${novos} novo(s)`;
+  $('#ad-bo').innerHTML = data.map(c => { const s = BO_ST[c.status] || BO_ST.registrado, open = c.status === 'registrado' || c.status === 'investigando';
+    return `<tr${c.status === 'registrado' ? ' class="ad-alert"' : ''}><td><b>${boNum(c)}</b><br><small class="muted">${when(c.at)}${c.fact_when ? `<br>fato: ${esc(c.fact_when)}` : ''}</small></td>
+      <td><a href="#" data-vg-user="${esc(c.author)}">${esc(c.author_name)}</a> →<br><a href="#" data-vg-user="${esc(c.target)}"><strong>${esc(c.target_name)}</strong></a>${vezes[c.target] > 1 ? ` <span class="tag tag--red">${vezes[c.target]} B.O.</span>` : ''}</td>
+      <td>${esc(BO_KIND[c.kind] || c.kind)}</td><td class="small" style="white-space:pre-wrap;max-width:22rem">${esc(c.story)}</td><td class="small" style="white-space:pre-wrap;max-width:18rem">${esc(c.proofs || '—')}</td>
+      <td><span class="tag ${s[0]}">${s[1]}</span>${c.note ? `<br><small class="muted">“${esc(c.note)}”</small>` : ''}</td>
+      <td>${open ? `${c.status === 'registrado' ? `<button class="btn btn--gold btn--sm" data-boset="${c.id}" data-st="investigando">abrir inquérito</button> ` : ''}<button class="btn btn--danger btn--sm" data-boset="${c.id}" data-st="procedente">procedente</button> <button class="btn btn--glass btn--sm" data-boset="${c.id}" data-st="arquivado">arquivar</button>` : `<button class="btn btn--glass btn--sm" data-boset="${c.id}" data-st="investigando">reabrir</button>`}</td></tr>`; }).join('')
+    || '<tr><td colspan="7" class="muted">Nenhum boletim.</td></tr>';
+}
+const BO_MSG = { investigando: 'Inquérito instaurado. As provas estão sendo analisadas e o investigado será averiguado.', procedente: 'Ocorrência confirmada. O investigado foi responsabilizado conforme as regras do 21 World.', arquivado: 'Após análise, não foram encontradas provas suficientes. O caso foi arquivado.' };
+$('#ad-bo-reload').addEventListener('click', loadBo);
+$('#ad-bo-f').addEventListener('change', loadBo);
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-boset]'); if (!b) return;
+  const note = prompt('Resposta da delegacia ao noticiante (ele lê em "meus boletins"):', BO_MSG[b.dataset.st] || '');
+  if (note === null) return;
+  const { data, error } = await sb.rpc('admin_bo_set', { p_id: Number(b.dataset.boset), p_status: b.dataset.st, p_note: note });
+  if (error || data !== 'ok') return fail(error || { message: data }, 'atualizar o B.O.');
+  await log('bo', null, { id: Number(b.dataset.boset), status: b.dataset.st }); toast('B.O. atualizado.'); loadBo();
+});
+setInterval(async () => { if ($('#ad-app').hidden) return; const { data } = await sb.from('bo_casos').select('id').eq('status', 'registrado'); const b = $('#ad-bo-badge'); if (b && data) { b.textContent = data.length; b.hidden = !data.length; } }, 60000);
 setInterval(async () => { if ($('#ad-app').hidden) return; const { data } = await sb.from('pro_reports').select('id').eq('status', 'aberta'); const b = $('#ad-pro-badge'); if (b && data) { b.textContent = data.length; b.hidden = !data.length; } }, 60000);

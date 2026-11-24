@@ -113,6 +113,11 @@ export function watch(players, now = Date.now()) {
     if (r.money24 != null && r.money24 > Math.max(1e6, r.worth * 0.5)) add(2, `dinheiro subiu ${brlShort(r.money24)} nas últimas 24 h`);
     if (r.receita) add(Math.min(3, r.receita), `pego ${r.receita}x pela Receita Federal (subiu rápido demais em 10 min)`);
     if (r.gifts > 0) why.push(`recebeu ${brlShort(r.gifts)} do administrador (não conta como suspeita)`);
+    // sinais fortes (quase certeza): fazenda de contas mandando Pix, conta que só existe para mandar Pix, dinheiro que apareceu sem lançamento
+    if (r.farm) add(r.farm.senders.length >= 2 ? 6 : 3, `recebeu ${r.farm.n} Pix "de início" (${brlShort(r.farm.total)}) de ${r.farm.senders.length} ${r.farm.senders.length === 1 ? 'conta nova' : 'contas novas diferentes'}: ${r.farm.senders.slice(0, 5).map(x => x.name).join(', ')}`);
+    if (r.farmSender) add(4, `conta nova que mandou ${brlShort(r.farmSender.total)} por Pix para ${r.farmSender.to}: parece conta criada só para isso`);
+    if (r.gap > 50000) add(r.gap > 500000 ? 5 : 3, `${brlShort(r.gap)} apareceram no caixa sem nenhum lançamento (${r.gapN} vezes): o jogo não sabe de onde veio`);
+    if (r.jump > 50000) add(3, `abriu o jogo com ${brlShort(r.jump)} a mais do que tinha quando saiu (save mexido ou outro aparelho)`);
     for (const w of r.warn) add(1, w);
     r.why = why;
     // excesso: o que passa de 2x o ritmo justo pelo tempo jogado (presente do admin não entra)
@@ -120,6 +125,28 @@ export function watch(players, now = Date.now()) {
   }
   rows.sort((a, b) => b.score - a.score || b.worth - a.worth);
   return { rows, fair, today };
+}
+
+// ---------- fazenda de contas: várias contas novas mandando o dinheiro inicial por Pix para a mesma pessoa ----------
+// pix: [{ from_id, from_name, to_id, to_name, amount, at }]; users: { id: { name, created } }
+// "Pix de início" = mandado por conta com menos de 3 dias, ou de R$ 5 mil a R$ 20 mil (o dinheiro inicial inteiro).
+export const NEW_DAYS = 3;
+export function pixFarm(pix, users = {}) {
+  const startish = p => { const c = Date.parse(users[p.from_id]?.created || ''), age = (Date.parse(p.at) - c) / 864e5, v = Number(p.amount) || 0;
+    return (Number.isFinite(age) && age < NEW_DAYS) || (v >= 5000 && v <= 20000); };
+  const by = {};
+  for (const p of pix) {
+    if (!startish(p)) continue;
+    const R = (by[p.to_id] ??= { id: p.to_id, name: p.to_name || users[p.to_id]?.name || '?', n: 0, total: 0, first: p.at, last: p.at, from: {} });
+    const age = (Date.parse(p.at) - Date.parse(users[p.from_id]?.created || '')) / 864e5;
+    const S = (R.from[p.from_id] ??= { id: p.from_id, name: p.from_name || users[p.from_id]?.name || '?', n: 0, total: 0, ageDays: Number.isFinite(age) ? age : null });
+    R.n++; R.total += Number(p.amount) || 0; S.n++; S.total += Number(p.amount) || 0;
+    if (p.at < R.first) R.first = p.at; if (p.at > R.last) R.last = p.at;
+  }
+  return Object.values(by).map(R => { const senders = Object.values(R.from).sort((a, b) => b.total - a.total);
+    const sure = senders.length >= 2 || R.total >= 50000;
+    return { ...R, senders, sure, story: `${senders.length} ${senders.length === 1 ? 'conta mandou' : 'contas diferentes mandaram'} ${R.n} Pix somando ${brlShort(R.total)} para ${R.name}. ${senders.filter(x => x.ageDays != null && x.ageDays < NEW_DAYS).length} delas tinham menos de ${NEW_DAYS} dias de criadas quando mandaram.` };
+  }).filter(R => R.n >= 2 || R.total >= 20000).sort((a, b) => b.total - a.total);
 }
 
 // ---------- diário (supabase/diario.sql): tudo o que cada jogador fez, com hora e botão clicado ----------
