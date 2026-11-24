@@ -835,7 +835,7 @@ function drawCheats(on) {
     ${farms.map(f => { let acc = 0; const rows = (f.list || []).map((x, i) => ({ ...x, i: i + 1, acc: acc += x.amount })).reverse();
       return `<div class="ad-sheet ad-sheet--red"><div class="ad-sheet__top"><span class="tag tag--red">${f.sure ? 'quase certeza' : 'muito provável'}</span>
         <b>${esc(f.name)}</b> recebeu <b>${brl(f.total)}</b> em ${f.n} Pix de ${f.senders.length} conta(s) · 1º ${dt(f.first)} · último ${dt(f.last)} (há ${ago(f.last)})${on.has(f.id) ? ' <span class="tag tag--green">online</span>' : ''}
-        <span class="ad-sheet__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(f.id)}">ficha</button><button class="btn btn--danger btn--xs" data-farm-back="${esc(f.id)}" title="a conta volta para antes do 1º Pix e o que comprou depois volta para a loja">voltar antes do 1º Pix</button><button class="btn btn--danger btn--xs" data-farm-ban="${esc(f.id)}" title="as contas que mandaram ficam 30 dias sem entrar">suspender ${f.senders.length} remetente(s)</button></span></div>
+        <span class="ad-sheet__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(f.id)}">ficha</button><button class="btn btn--danger btn--xs" data-farm-back="${esc(f.id)}" title="a conta volta para antes do 1º Pix e o que comprou depois volta para a loja">voltar antes do 1º Pix</button><button class="btn btn--danger btn--xs" data-pun="${esc(f.id)}" data-pun-who="${esc(f.name)}" data-pun-why="recebeu Pix de contas falsas">banir / excluir ${esc(f.name)}</button><button class="btn btn--danger btn--xs" data-pun="${esc(f.senders.map(x => x.id).join(','))}" data-pun-who="${esc(f.senders.map(x => x.name).join(', '))}" data-pun-why="conta usada para mandar Pix para ${esc(f.name)}">banir / excluir ${f.senders.length} remetente(s)</button></span></div>
         <div class="ad-tablewrap"><table class="ad-xl"><thead><tr><th>#</th><th>data e hora do Pix</th><th>conta que mandou</th><th>conta criada em</th><th>idade</th><th class="num">valor</th><th class="num">acumulado</th><th>mensagem</th></tr></thead><tbody>
         ${rows.map(x => `<tr><td class="num">${x.i}</td><td>${dt(x.at)}</td><td><a href="#" data-vg-user="${esc(x.id)}">${esc(x.name)}</a></td><td>${dt(x.created)}</td><td>${age(x.ageDays)}</td><td class="num">${brl(x.amount)}</td><td class="num">${brl(x.acc)}</td><td>${esc(x.memo)}</td></tr>`).join('')}
         </tbody></table></div></div>`; }).join('')}` : '';
@@ -852,7 +852,7 @@ function drawCheats(on) {
         <td>${AE.brlShort(r.pixInSum)} / ${AE.brlShort(r.pixOutSum)}${lastPix([...(r.pixIn || []), ...(r.pixOut || [])]) ? `<br><small class="muted">${dt(lastPix([...(r.pixIn || []), ...(r.pixOut || [])]))}</small>` : ''}</td>
         <td class="num">${r.casino == null ? '—' : AE.brlShort(r.casino)}</td>
         <td class="ad-xl__why">${r.why.map(w => esc(w)).join('<br>')}</td>
-        <td class="ad-xl__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(r.id)}">ficha</button>${r.excess > 0 ? `<button class="btn btn--glass btn--xs" data-vg-take="${esc(r.id)}">tirar ${AE.brlShort(r.excess)}</button>` : ''}${!r.banned ? `<button class="btn btn--danger btn--xs" data-vg-ban="${esc(r.id)}">suspender 1 dia</button>` : ''}</td></tr>`; }).join('')}
+        <td class="ad-xl__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(r.id)}">ficha</button>${r.excess > 0 ? `<button class="btn btn--glass btn--xs" data-vg-take="${esc(r.id)}">tirar ${AE.brlShort(r.excess)}</button>` : ''}<button class="btn btn--danger btn--xs" data-pun="${esc(r.id)}" data-pun-who="${esc(r.name)}" data-pun-why="${esc(r.why[0] || 'trapaça')}">banir / excluir</button></td></tr>`; }).join('')}
     </tbody></table></div>` : (farms.length ? '' : '<p class="good">Nenhum sinal forte de trapaça agora. 👍</p>');
 }
 // na ficha do jogador: o que a vigilância viu sobre ele
@@ -878,6 +878,40 @@ document.addEventListener('click', async e => {
     if (error) return fail(error, 'suspender as contas');
     await log('ban_farm', f.id, { count: f.senders.length, why: reason }); toast(`${f.senders.length} conta(s) suspensa(s) por 30 dias.`); await loadUsers(''); loadVigia();
   }
+}, true);
+// banir ou excluir direto dos alertas: um jogador ou todas as contas de uma fazenda de uma vez
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-pun]'); if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const ids = b.dataset.pun.split(',').filter(Boolean), who = b.dataset.punWho;
+  const d = document.createElement('dialog'); d.className = 'ad-pun';
+  d.innerHTML = `<form method="dialog"><h3>banir ou excluir</h3><p class="small"><b>${esc(who)}</b>${ids.length > 1 ? ` (${ids.length} contas)` : ''}</p>
+    <label class="ad-pun__opt"><input type="radio" name="how" value="days" checked> suspender por <input class="input" type="number" name="days" min="1" max="36500" value="365" style="width:6em"> dias</label>
+    <label class="ad-pun__opt"><input type="radio" name="how" value="perm"> suspender para sempre (permanente)</label>
+    <label class="ad-pun__opt ad-pun__opt--bad"><input type="radio" name="how" value="del"> excluir a conta de vez (apaga login, save, perfil e Pix; não tem volta)</label>
+    <label class="field"><span>motivo (o jogador vê ao tentar entrar)</span><input class="input" name="reason" maxlength="200" value="${esc(b.dataset.punWhy || '')}"></label>
+    <div class="row"><button class="btn btn--glass" value="cancel">cancelar</button><button class="btn btn--danger" value="ok">aplicar</button></div></form>`;
+  document.body.append(d); d.showModal();
+  d.addEventListener('close', async () => {
+    const f = Object.fromEntries(new FormData(d.querySelector('form'))); d.remove();
+    if (d.returnValue !== 'ok') return;
+    const reason = (f.reason || 'trapaça').slice(0, 200), days = Math.max(1, Math.min(36500, Math.floor(Number(f.days) || 365)));
+    if (f.how === 'del') {
+      if (!confirm(`EXCLUIR DE VEZ ${ids.length > 1 ? `${ids.length} contas` : 'a conta'} de ${who}?\n\nApaga o login, o save, o perfil, os Pix e tudo o que é dele. Não tem como desfazer.`)) return;
+      let ok = 0; const bad = [];
+      for (const id of ids) { const { data, error } = await sb.rpc('admin_delete_account', { p_user: id }); if (data === 'ok') ok++; else bad.push(error?.message || (data === 'admin' ? 'é administrador' : data)); }
+      await log('delete_account', ids[0], { ids, who, reason });
+      toast(`${ok} conta(s) excluída(s).${bad.length ? ` Falhou: ${bad.join('; ')}` : ''}`, !!bad.length);
+    } else {
+      const until = f.how === 'perm' ? null : new Date(Date.now() + days * 864e5).toISOString();
+      if (!confirm(`Suspender ${who} ${until ? `por ${days} dias (até ${when(until)})` : 'PARA SEMPRE'}?\n\nMotivo: ${reason}`)) return;
+      const { error } = await sb.from('bans').upsert(ids.map(id => ({ user_id: id, reason, until })));
+      if (error) return fail(error, 'suspender');
+      await log('ban', ids[0], { ids, who, reason, days: until ? days : 'permanente', from: 'alertas de trapaça' });
+      toast(`${ids.length} conta(s) suspensa(s) ${until ? `por ${days} dias` : 'para sempre'}.`);
+    }
+    await loadUsers(''); loadVigia();
+  });
 }, true);
 $('#ad-vg-reload').addEventListener('click', loadVigia);
 $('#ad-vg-only').addEventListener('change', drawVigia);
