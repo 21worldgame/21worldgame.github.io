@@ -1,1 +1,1 @@
-{"v": 199, "msg": "Investimentos: cada tempo paga diferente (1 min 1,7x, 5 min 1,8x, 10 min 1,88x) e o gráfico troca para velas do mesmo tempo da operação."}
+{"v": 200, "msg": "Investimentos: mudar as velas do gráfico também muda o tempo da operação na boleta (e o contrário)."}

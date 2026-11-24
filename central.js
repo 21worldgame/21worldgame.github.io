@@ -69,7 +69,7 @@ function renderOnline() {
   const list = [...online].sort((a, b) => (b.worth || 0) - (a.worth || 0));
   $('#ad-on-n').textContent = list.length;
   el.innerHTML = list.map(p => `<tr ${p.uid ? `data-user="${esc(p.uid)}"` : ''}><td><strong>${esc(p.name)}</strong></td><td>${p.uid ? '<span class="tag tag--green">conta logada</span> <small class="muted">clique para ver</small>' : '<span class="tag tag--gold">visitante sem conta</span>'}</td>
-    <td class="num">${int(p.level)}</td><td class="num">${brl(p.worth || 0)}</td><td>${esc(p.tab || '')}</td><td>${p.mobile ? 'celular' : 'computador'}</td><td>${mins(p.since)}</td></tr>`).join('')
+    <td class="num">${int(p.level)}</td><td class="num">${brl(p.worth || 0)}</td><td>${esc(tela(p.tab || ''))}</td><td>${p.mobile ? 'celular' : 'computador'}</td><td>${mins(p.since)}</td></tr>`).join('')
     || '<tr><td colspan="7" class="muted">Ninguém com o jogo aberto agora.</td></tr>';
 }
 // ---------- pedidos de senha ----------
@@ -644,11 +644,60 @@ let dj = null;
 const djName = id => (users.find(u => u.user_id === id)?.name) || String(id).slice(0, 8);
 const hm = t => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
 const sgn = v => `<span class="${v > 0 ? 'good' : v < 0 ? 'bad' : ''}">${v > 0 ? '+' : ''}${brl(v)}</span>`;
-const ACT = { 'rl-spin': 'roleta', 'av-press': 'aviator', bet: 'blackjack: apostar', hit: 'blackjack: pedir', stand: 'blackjack: parar', double: 'blackjack: dobrar', 'race-go': 'corrida', 'buy-chips': 'comprar fichas', 'sell-chips': 'resgatar fichas',
-  'sell-land': 'vender terra', 'buy-land': 'comprar terra', 'tr-buy': 'trader: comprar', 'tr-sell': 'trader: vender', 'fe-buy': 'feira: comprar', 'fe-sell': 'feira: vender', 'shop-buy': 'loja: comprar', 'shop-sell': 'loja: vender', 'trade-confirm': 'troca entre jogadores', 'spin-daily': 'giro diário', 'pass-claim': 'passe: resgatar' };
-const actWord = a => { const k = String(a || '').replace(/ x\d+$/, '').replace(/[:=].*$/, ''), n = String(a || '').match(/ x(\d+)$/)?.[1];
-  const w = k.startsWith('tela: ') ? k : ACT[k] || k.replace(/^[a-z]{2}-/, '').replace(/[-_]/g, ' ');
-  return n ? `${w} (${n}x)` : w; };
+// cada botão que o jogador clicou, em palavras (o valor depois de ":" ou "=" diz qual: tela, ativo, minutos...)
+const TELA = { inicio: 'início', mesa: 'salão de jogos', corridas: 'corrida de galgos', cartas: 'cartas', futebol: 'futebol', terras: 'terras e soja', gado: 'gado', suinos: 'suínos',
+  granja: 'granja', laranja: 'laranja', cana: 'cana', haras: 'canil e haras', banco: 'banco', inventario: 'inventário', loja: 'loja', personagem: 'personagem', ranking: 'ranking',
+  pro: 'profissionais', negocios: 'empresas', trader: 'investimentos', mercado: 'mercado de grãos', livro: 'livro-caixa', equipe: 'equipe', menu: 'menu', voce: 'você', fazenda: 'fazenda', jogos: 'jogos', '': 'desconhecida' };
+const tela = v => TELA[v] ?? v;
+const ATIVO = { btc: 'bitcoin', ibov: 'Ibovespa', petr: 'Petrobras', vale: 'Vale', itau: 'Itaú', dol: 'dólar', boi: 'boi gordo', soja: 'soja' };
+const pick = (o, v) => o[v] || v;
+const ROLETA = v => String(v).replace('n:', 'número ').replace('red', 'vermelho').replace('black', 'preto').replace('even', 'par').replace('odd', 'ímpar').replace('low', '1 a 18').replace('high', '19 a 36').replace(/^dz(\d)/, '$1ª dúzia');
+const ACT = {
+  tab: v => `abriu a tela ${tela(v)}`, tabGo: v => `abriu a tela ${tela(v)}`, mnav: v => (v === 'close' ? 'fechou o menu' : `abriu a tela ${tela(v)} pelo menu`), cat: v => `abriu o grupo ${tela(v)} do menu`,
+  close: () => 'fechou uma janela', fechar: () => 'fechou uma janela', '×': () => 'fechou uma janela', entendi: () => 'fechou um aviso (entendi)', '‹': () => 'voltou',
+  'open-pass': () => 'abriu o passe', 'pass-claim': v => `resgatou o prêmio do passe${v ? ` (nível ${v})` : ''}`, 'open-missions': () => 'abriu as missões', 'claim-mission': () => 'resgatou prêmio de missão',
+  'open-chipx': () => 'abriu o caixa de fichas', 'chipx-go': () => 'confirmou a troca de fichas', cxDir: v => (v === 'in' ? 'caixa: escolheu comprar fichas' : 'caixa: escolheu trocar fichas por dinheiro'),
+  cxPct: v => `caixa: escolheu ${Math.round(Number(v) * 100)}%`, cxClose: () => 'fechou o caixa de fichas',
+  'buy-chips': () => 'comprou fichas', 'sell-chips': () => 'trocou fichas por dinheiro', 'cash-chips': () => 'trocou fichas por dinheiro', rchip: v => `escolheu ficha de ${v}`, add: v => `pôs ${v} fichas na aposta`,
+  'spin-daily': () => 'girou a roleta do dia', 'close-daily': () => 'fechou a roleta do dia', 'sorte-open': () => 'abriu a sorte do dia', 'sorte-spin': () => 'girou a sorte do dia', 'sorte-close': () => 'fechou a sorte do dia',
+  sub: v => `entrou no jogo ${pick({ 21: '21 (blackjack)' }, v)}`, bet: () => '21: apostou', hit: () => '21: pediu carta', stand: () => '21: parou', double: () => '21: dobrou', 'bet-clear': () => '21: limpou a aposta',
+  sit: () => 'sentou numa mesa', 'leave-table': () => 'saiu da mesa',
+  'rl-spin': () => 'roleta: girou', 'rl-clear': () => 'roleta: limpou as apostas', rbet: v => `roleta: apostou em ${ROLETA(v)}`,
+  'av-press': () => 'aviator: apostou ou parou', avQuick: v => `aviator: aposta rápida de ${v}`, 'agora! (espaço)': () => 'aviator: parou (espaço)',
+  pk: v => `pôquer: ${pick({ create: 'criou mesa', house: 'jogou contra a casa', invite: 'convidou', call: 'pagou', raise: 'aumentou', check: 'deu mesa', fold: 'desistiu', allin: 'all-in', rebuy: 'comprou mais fichas' }, v)}`,
+  'race-go': () => 'corrida: apostou e largou', 'race-pick': v => `corrida: escolheu o cachorro ${Number(v) + 1}`, 'race-next': () => 'corrida: próxima',
+  'tr-asset': v => `investimentos: escolheu ${pick(ATIVO, v)}`, 'tr-tf': v => `investimentos: velas de ${v} min`, 'tr-dur': v => `investimentos: operação de ${v} min`,
+  'tr-buy': () => 'investimentos: apostou que sobe', 'tr-sell': () => 'investimentos: apostou que desce',
+  invApply: v => `aplicou em ${pick({ cdb: 'CDB', poupanca: 'poupança', previdencia: 'previdência', lca: 'LCA' }, v)}`, invOut: () => 'resgatou uma aplicação', invcat: v => `inventário: filtrou ${v === 'all' ? 'tudo' : v}`,
+  'buy-land': v => `comprou a terra ${v}`, 'sell-land': v => `vendeu a terra ${v}`, lease: v => `arrendou a terra ${v}`, 'rent-land': v => `alugou a terra ${v}`, 'return-land': v => `devolveu a terra arrendada ${v}`,
+  plant: v => `plantou na terra ${v}`, 'cn-plant': v => `plantou cana na terra ${v}`,
+  'buy-good': v => `comprou ${v}`, 'sell-good': v => `vendeu ${v}`, 'buy-calves': () => 'comprou bezerros', 'ab-kill': v => `abateu ${v} bois`,
+  'shop-sell': v => `vendeu para a loja ${String(v).startsWith('card') ? 'uma carta' : String(v).replace('good:', '')}`, 'shop-buy': () => 'comprou na loja', 'shop-cat': v => `loja: seção ${v === 'all' ? 'tudo' : v}`, loja: v => `loja: seção ${v}`,
+  'card-sell': () => 'vendeu uma carta', 'card-pack': v => `abriu pacote de cartas ${v}`, 'card-close': () => 'fechou a carta', 'fe-buy': () => 'feira: comprou', 'fe-sell': () => 'feira: vendeu',
+  'trade-confirm': () => 'confirmou troca com outro jogador', pix: v => pick({ pick: 'Pix: escolheu quem recebe', send: 'Pix: mandou', kind: 'Pix: escolheu o tipo' }, v), borrow: () => 'pegou empréstimo',
+  profile: v => (v === 'me' ? 'abriu o próprio perfil' : 'abriu o perfil de outro jogador'), pftab: v => `perfil: aba ${v}`,
+  'rk-cat': v => `ranking: categoria ${pick({ farm: 'fazendeiros', worth: 'patrimônio', clube: 'clubes', level: 'nível', casino: 'cassino', colls: 'colecionadores' }, v)}`, 'rk-page': v => `ranking: página ${Number(v) + 1}`,
+  pro: v => `profissionais: ${pick({ view: 'viu um serviço', open: 'abriu', hire: 'contratou', confirm: 'confirmou', rate: 'avaliou', 'svc-add': 'cadastrou serviço' }, v)}`,
+  'salvar perfil profission': () => 'salvou o perfil de profissional', agente: () => 'abriu o agente',
+  fbSel: () => 'futebol: escolheu um palpite', fbMk: v => `futebol: aposta em ${pick({ res: 'resultado', cart: 'cartões', kick: 'saída de bola' }, v)}`, fbBet: () => 'futebol: apostou', fbQ: v => `futebol: valor rápido ${v}`,
+  fbDiv: v => `futebol: série ${'ABC'[Number(v)] || v}`, fsub: v => `futebol: ${v === 'live' ? 'ao vivo' : 'meu clube'}`,
+  'st-kind': v => `haras: ${v === 'horse' ? 'cavalos' : 'galgos'}`, 'st-train': () => 'haras: treinou', 'st-treat': () => 'haras: veterinário', 'st-buy': () => 'haras: comprou animal', 'st-premium': () => 'haras: ração premium',
+  'char-tab': v => `personagem: aba ${v}`, look: () => 'personagem: trocou o visual', eq: () => 'abriu a equipe', jn: v => (v === 'sair' ? 'fechou o jornal' : 'jornal: próxima notícia'),
+  tvMode: () => 'minimizou a TV', conv: () => 'abriu a conversa da TV', econOpen: () => 'abriu o painel da economia', chatOpen: () => 'abriu o chat', rzClose: () => 'fechou o aviso da Receita',
+  cotações: () => 'abriu as cotações', fs: () => 'tela cheia', reset: () => 'clicou em reiniciar', logout: () => 'saiu da conta',
+  'menu na lateral': () => 'mudou o menu para a lateral', 'menu no topo': () => 'mudou o menu para o topo',
+};
+const actWord = a => {
+  const s = String(a || ''), n = s.match(/ x(\d+)$/)?.[1], r = s.replace(/ x\d+$/, ''), m = r.match(/^([^:=]+)[:=](.*)$/), k = m ? m[1] : r, v = m ? m[2] : '';
+  let w;
+  if (r.startsWith('tela: ')) w = `na tela ${tela(r.slice(6))}`;
+  else if (ACT[k]) w = ACT[k](v);
+  else if (/^avisos\d/.test(k)) w = 'mexeu nos avisos';
+  else if (/^mundo|^ano \d/.test(k)) w = 'clicou no relógio do mundo';
+  else if (/^\p{Extended_Pictographic}/u.test(k)) w = 'clicou num atalho do menu';
+  else w = `clicou em "${k.replace(/^[a-z]{2}-/, '').replace(/[-_]/g, ' ')}"`;
+  return n ? `${w} (${n}x)` : w;
+};
 const actLabel = a => esc(actWord(a));
 const actsText = s => String(s || '').split(', ').filter(Boolean).map(actWord).join(' · ');
 async function loadDiario() {
@@ -686,7 +735,7 @@ function drawTimeline() {
   const kind = $('#ad-dj-kind').value, min = Number($('#ad-dj-min').value) || 0, q = $('#ad-dj-q').value.trim().toLowerCase();
   const list = dj.rows.filter(r => (!kind || r.kind === kind) && Math.abs(Number(r.val) || 0) >= min && (!q || `${r.txt} ${r.acts} ${actsText(r.acts)} ${r.tab}`.toLowerCase().includes(q))).slice(0, 1500);
   const tag = { gap: '<span class="tag tag--red">sem lançamento</span> ', fichas: '<span class="tag tag--gold">fichas</span> ', inicio: '<span class="tag tag--green">sessão</span> ' };
-  $('#ad-dj-tl').innerHTML = list.map(r => `<tr><td>${hm(r.at)}</td><td>${esc(djName(r.user_id))}</td><td>${esc(r.tab || '')}</td><td class="num">${r.m ?? ''}</td><td>${tag[r.kind] || ''}${esc(r.txt)}</td><td class="num">${r.val ? sgn(Number(r.val)) : ''}</td>
+  $('#ad-dj-tl').innerHTML = list.map(r => `<tr><td>${hm(r.at)}</td><td>${esc(djName(r.user_id))}</td><td>${esc(tela(r.tab || ''))}</td><td class="num">${r.m ?? ''}</td><td>${tag[r.kind] || ''}${esc(r.txt)}</td><td class="num">${r.val ? sgn(Number(r.val)) : ''}</td>
     <td class="num">${brl(r.money)}</td><td class="num">${int(r.chips)}</td><td class="num">${brl(r.worth)}</td><td><small>${esc(actsText(r.acts))}</small></td></tr>`).join('') || '<tr><td colspan="10" class="muted">Nada com esse filtro.</td></tr>';
 }
 $('#ad-dj-load').addEventListener('click', loadDiario);

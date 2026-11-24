@@ -38,10 +38,15 @@ function settleNow() {
 }
 
 export function pickAsset(a) { cur = a; document.querySelectorAll('.tr-asset').forEach(b => b.classList.toggle('is-on', b.dataset.id === a)); render(); }
-export function pickTf(v) { tf = Number(v); document.querySelectorAll('[data-act="tr-tf"]').forEach(b => b.classList.toggle('is-on', Number(b.dataset.id) === tf)); render(); }
 const x = v => String(v).replace('.', ',') + 'x';
-// escolher o tempo da operação troca as velas para o mesmo tempo: o gráfico mostra o que vale para aquela operação
-export function pickDur(v) { dur = Number(v); document.querySelectorAll('[data-act="tr-dur"]').forEach(b => { const m = Number(b.dataset.id); b.classList.toggle('is-on', m === dur); b.innerHTML = `${m} min <small>paga ${x(MK.payout(m))}</small>`; }); pickTf(dur); }
+// velas e tempo da operação andam juntos: mudar um muda o outro (o gráfico mostra o tempo que vale para a boleta)
+export function pickTf(v) {
+  tf = dur = Number(v);
+  document.querySelectorAll('[data-act="tr-tf"]').forEach(b => b.classList.toggle('is-on', Number(b.dataset.id) === tf));
+  document.querySelectorAll('[data-act="tr-dur"]').forEach(b => { const m = Number(b.dataset.id); b.classList.toggle('is-on', m === dur); b.innerHTML = `${m} min <small>paga ${x(MK.payout(m))}</small>`; });
+  render();
+}
+export const pickDur = pickTf;
 export const pickLev = () => {};
 
 export function open(side) {
