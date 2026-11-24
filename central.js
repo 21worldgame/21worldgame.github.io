@@ -764,7 +764,7 @@ async function loadVigia() {
       soft(pageAll(() => sb.from('admin_grants').select('user_id, amount').eq('kind', 'money').gt('amount', 0))),
       soft(pageAll(() => sb.from('pix').select('from_id, from_name, to_id, to_name, amount, memo, kind, at').gt('at', ago(7)).order('at', { ascending: false }))),
       soft(pageAll(() => sb.from('pix').select('from_id, from_name, to_id, to_name, amount, memo, at').gt('at', ago(30)))),
-      soft(pageAll(() => sb.from('diario').select('user_id, at, kind, txt, val, money, worth, acts, tab').in('kind', ['gap', 'inicio']).gt('at', ago(7)))),
+      soft(pageAll(() => sb.from('diario').select('user_id, at, created, kind, txt, val, money, worth, acts, tab').in('kind', ['gap', 'inicio', 'log']).gt('at', ago(7)))),   // com 'log': o salto compara com o último lançamento, não com a abertura anterior
       soft(pageAll(() => sb.from('bans').select('user_id, reason, until'))),
       soft(pageAll(() => sb.from('vigia_ok').select('*'))),
       soft(pageAll(() => sb.from('admin_grants').select('user_id, amount, created_at').eq('kind', 'money').lt('amount', 0).gt('created_at', ago(30)))),
@@ -777,13 +777,13 @@ async function loadVigia() {
     const farm = AE.pixFarm(pix30, UI), F = Object.fromEntries(farm.map(f => [f.id, f])), FS = {};
     for (const f of farm) for (const x of f.senders) if (x.ageDays != null && x.ageDays < AE.NEW_DAYS) FS[x.id] = { total: (FS[x.id]?.total || 0) + x.total, to: f.name };
     const DR = AE.diaryReport(diary, {}), GP = Object.fromEntries(DR.players.map(p => [p.id, p])), JP = {};
-    for (const j of DR.jumps) if (j.diff > 0) JP[j.id] = Math.max(JP[j.id] || 0, j.diff);
+    const JA = {}, JC = {}; for (const j of DR.jumps) { if (/nuvem/.test(j.why || '')) { JC[j.id] = Math.max(JC[j.id] || 0, j.diff); continue; } if (j.diff > (JP[j.id] || 0)) { JP[j.id] = j.diff; JA[j.id] = j.at; } }   // nuvem: a venda foi no outro aparelho dele
     const by = (list, k) => list.reduce((m, x) => ((m[x[k]] ||= []).push(x), m), {});
     const H = by(hist, 'user_id'), R = by(rc, 'user_id'), Gf = by(gifts, 'user_id'), Pin = by(pix, 'to_id'), Pout = by(pix, 'from_id'), U = Object.fromEntries(users.map(u => [u.user_id, u]));
     const players = saves.map(x => { const u = U[x.user_id] || {}; return { id: x.user_id, name: u.name || x.data?.avatar?.name || '(sem nome)', created: u.created_at, banned: u.banned, s: x.data || {},
       hist: (H[x.user_id] || []).map(h => ({ t: Date.parse(h.saved_at), money: Number(h.money) || 0 })), pixIn: Pin[x.user_id] || [], pixOut: Pout[x.user_id] || [],
       receita: (R[x.user_id] || []).length, gifts: (Gf[x.user_id] || []).reduce((t, g) => t + Number(g.amount), 0),
-      farm: F[x.user_id], farmSender: FS[x.user_id], gap: GP[x.user_id]?.gap || 0, gapN: GP[x.user_id]?.gapN || 0, jump: JP[x.user_id] || 0 }; });
+      farm: F[x.user_id], farmSender: FS[x.user_id], gap: GP[x.user_id]?.gap || 0, gapN: GP[x.user_id]?.gapN || 0, gapPass: GP[x.user_id]?.gapPass || 0, gapOld: GP[x.user_id]?.gapOld || 0, gapOther: GP[x.user_id]?.gapOther || 0, gapList: GP[x.user_id]?.gapList || [], jump: JP[x.user_id] || 0, jumpAt: JA[x.user_id], jumpCloud: JC[x.user_id] || 0 }; });
     vg = { ...AE.watch(players), pix, saves, farm, UI };
     st.textContent = `${players.length} contas analisadas às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
     await handled(takes);
@@ -906,7 +906,7 @@ document.addEventListener('click', async e => {
 function findings(r, f) {
   const k = AE.brlShort, out = [];
   if (f) out.push(`recebimento de ${k(f.total)} em ${f.n} Pix vindos de ${f.senders.length} ${f.senders.length === 1 ? 'conta recém-aberta' : 'contas recém-abertas'} (${f.senders.slice(0, 4).map(x => x.name).join(', ')}), prática conhecida como conta laranja`);
-  if (r.gap > 50000) out.push(`${k(r.gap)} no seu caixa sem origem declarada`);
+  if ((r.gapOther ?? r.gap) > 50000) out.push(`${k(r.gapOther ?? r.gap)} no seu caixa sem origem declarada`);
   if (r.jump > 50000) out.push(`aumento de ${k(r.jump)} no saldo sem nenhuma movimentação registrada`);
   if (r.farmSender) out.push(`envio de ${k(r.farmSender.total)} por Pix para ${r.farmSender.to} logo depois de abrir a conta`);
   if (!f && r.pixInSum > Math.max(100000, r.worth * 0.3)) out.push(`${k(r.pixInSum)} recebidos por Pix, ${Math.round(r.pixInSum / Math.max(1, r.worth) * 100)}% do seu patrimônio`);

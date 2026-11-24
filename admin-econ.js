@@ -104,7 +104,8 @@ export function watch(players, now = Date.now()) {
   for (const r of rows) {
     const why = [], add = (pts, txt) => { r.score = (r.score || 0) + pts; why.push(txt); };
     r.score = 0;
-    if (fair && r.perHour > fair * FAIR_X && r.worth > 200000) add(3, `ganha ${brlShort(r.perHour)} por hora jogada, ${Math.round(r.perHour / fair)}x o normal (${brlShort(fair)}/h)`);
+    const oldAcc = r.created && Date.parse(r.created) < PLAY_SINCE;   // conta de antes da medição: o patrimônio antigo entra como se fosse ganho nas horas medidas
+    if (fair && r.perHour > fair * FAIR_X && r.worth > 200000) add(oldAcc ? 1 : 3, `ganha ${brlShort(r.perHour)} por hora jogada, ${Math.round(r.perHour / fair)}x o normal (${brlShort(fair)}/h)${oldAcc ? `; atenção: a conta é de ${new Date(r.created).toLocaleDateString('pt-BR')} e o tempo só é medido desde 23/11 13:06 (v184), então só ${r.playH.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} h contaram e a conta fica exagerada` : ''}`);
     if (r.playH != null && r.playH < 2 && r.worth > 1e6) add(3, `${brlShort(r.worth)} com só ${r.playH.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h jogadas`);
     if (r.playH == null && r.worth > 1e6) add(1, 'tempo jogado ainda não medido (jogo dele está em versão antiga)');
     if (r.pixInSum > Math.max(100000, r.worth * 0.3)) add(3, `${brlShort(r.pixInSum)} recebidos por Pix (${Math.round(r.pixInSum / Math.max(1, r.worth) * 100)}% do patrimônio): pode ser outra conta dele mandando dinheiro`);
@@ -116,8 +117,14 @@ export function watch(players, now = Date.now()) {
     // sinais fortes (quase certeza): fazenda de contas mandando Pix, conta que só existe para mandar Pix, dinheiro que apareceu sem lançamento
     if (r.farm) add(r.farm.senders.length >= 2 ? 6 : 3, `recebeu ${r.farm.n} Pix "de início" (${brlShort(r.farm.total)}) de ${r.farm.senders.length} ${r.farm.senders.length === 1 ? 'conta nova' : 'contas novas diferentes'}: ${r.farm.senders.slice(0, 5).map(x => x.name).join(', ')}`);
     if (r.farmSender) add(4, `conta nova que mandou ${brlShort(r.farmSender.total)} por Pix para ${r.farmSender.to}: parece conta criada só para isso`);
-    if (r.gap > 50000) add(r.gap > 500000 ? 5 : 3, `${brlShort(r.gap)} apareceram no caixa sem nenhum lançamento (${r.gapN} vezes): o jogo não sabe de onde veio`);
-    if (r.jump > 50000) add(3, `abriu o jogo com ${brlShort(r.jump)} a mais do que tinha quando saiu (save mexido ou outro aparelho)`);
+    if (r.gap > 50000) {   // separa a causa: passe antigo (defeito já corrigido, não é trapaça dele) x sem causa achada
+      const old = (r.gapPass || 0) + (r.gapOld || 0), other = r.gapOther ?? r.gap - old, at = t => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      const parts = (r.gapList || []).map(g => `${at(g.at)} ${brlShort(g.val)} ${g.cause === 'pass' ? '(resgate do passe)' : g.cause === 'old' ? '(versão antiga)' : `(tela ${g.tab || '?'})`}`).join(', ');
+      if (other > 50000) add(other > 500000 ? 5 : 3, `${brlShort(other)} entraram no caixa sem lançamento depois da correção do passe (v201): causa não achada. ${parts}`);
+      if (old > 50000) add(1, `${brlShort(old)} vieram do passe da versão antiga, que pagava sem lançar no livro-caixa (defeito do jogo, corrigido na v201; não é trapaça dele). ${other > 50000 ? '' : parts}`);
+    }
+    if (r.jumpCloud > 200000 && !(r.jump > 50000)) add(1, `${brlShort(r.jumpCloud)} chegaram com o save de outro aparelho dele: normalmente é venda feita lá (confira no livro-caixa da ficha)`);
+    if (r.jump > 50000) add(3, `abriu o jogo com ${brlShort(r.jump)} a mais do que tinha no último registro do diário, sem nenhum lançamento no meio (save mexido ou outro aparelho)${r.jumpAt ? `: ${new Date(r.jumpAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : ''}`);
     for (const w of r.warn) add(1, w);
     r.why = why;
     // excesso: o que passa de 2x o ritmo justo pelo tempo jogado (presente do admin não entra)
@@ -155,19 +162,24 @@ export function pixFarm(pix, users = {}) {
 // "gap" é dinheiro que mudou sem lançamento no livro-caixa; o botão clicado antes de cada gap aponta a tela com defeito.
 export const pattern = t => String(t || '').replace(/\d[\d.,]*/g, '#').replace(/\s+/g, ' ').trim().slice(0, 80);   // "venda de 500 bois" → "venda de # bois"
 const actNames = a => [...new Set(String(a || '').split(', ').map(x => x.replace(/ x\d+$/, '').replace(/[:=].*$/, '')).filter(Boolean))];
+// a v201 (23/11/2026 22:39) acabou com o passe pagando dinheiro sem lançamento: antes disso, dinheiro sem lançamento quase sempre é ele
+export const PLAY_SINCE = Date.parse('2026-11-23T13:06:39-03:00');   // v184: o jogo começou a medir o tempo jogado
+export const PASS_FIX_AT = Date.parse('2026-11-23T22:39:25-03:00');
+export const gapCause = r => (/pass-claim/.test(r.acts || '') ? 'pass' : Date.parse(r.at) < PASS_FIX_AT ? 'old' : 'other');
 export function diaryReport(rows, names = {}) {
   const P = {}, src = {}, gapBy = {}, chipBy = {}, jumps = [];
   const nm = id => names[id] || String(id).slice(0, 8);
-  const sorted = [...rows].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+  const when = r => Date.parse(r.created || r.at);   // hora em que aconteceu no aparelho (a fila offline manda atrasado)
+  const sorted = [...rows].sort((a, b) => when(a) - when(b));
   const last = {};
   for (const r of sorted) {
-    const id = r.user_id, p = (P[id] ??= { id, name: nm(id), in: 0, out: 0, gap: 0, gapN: 0, chips: 0, n: 0, sessions: 0, first: r, last: r, src: {} });
+    const id = r.user_id, p = (P[id] ??= { id, name: nm(id), in: 0, out: 0, gap: 0, gapN: 0, gapPass: 0, gapOld: 0, gapOther: 0, gapList: [], chips: 0, n: 0, sessions: 0, first: r, last: r, src: {} });
     const v = Number(r.val) || 0; p.n++; p.last = r;
     if (r.kind === 'inicio') {
       p.sessions++;
-      const prev = last[id]; if (prev && Math.abs((Number(r.money) || 0) - (Number(prev.money) || 0)) >= 1000) jumps.push({ id, name: p.name, at: r.at, why: r.txt, from: Number(prev.money) || 0, to: Number(r.money) || 0, diff: (Number(r.money) || 0) - (Number(prev.money) || 0), prevAt: prev.at });
+      const prev = last[id]; if (prev && prev.kind !== 'fichas' && Math.abs((Number(r.money) || 0) - (Number(prev.money) || 0)) >= 1000) jumps.push({ id, name: p.name, at: r.at, why: r.txt, from: Number(prev.money) || 0, to: Number(r.money) || 0, diff: (Number(r.money) || 0) - (Number(prev.money) || 0), prevAt: prev.at });
     } else if (r.kind === 'gap') {
-      p.gap += v; p.gapN++;
+      p.gap += v; p.gapN++; const cz = gapCause(r); p[cz === 'pass' ? 'gapPass' : cz === 'old' ? 'gapOld' : 'gapOther'] += v; p.gapList.push({ at: r.at, val: v, cause: cz, tab: r.tab, acts: r.acts });
       for (const a of actNames(r.acts).concat(r.tab ? [`tela: ${r.tab}`] : [])) { const G = (gapBy[a] ??= { act: a, val: 0, n: 0, players: new Set() }); G.val += v; G.n++; G.players.add(p.name); }
     } else if (r.kind === 'fichas') {
       p.chips += v;
