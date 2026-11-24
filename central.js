@@ -368,7 +368,7 @@ const world = () => W.sanitize(cfg.world || W.DEFAULT);
 function showWorld() {
   const w = world(), f = $('#ad-world');
   f.min.value = +(w.monthMs / 60000).toFixed(2);
-  $('#ad-world-now').textContent = `Mês ${W.current(w)} do mundo. Cada mês dura ${+(w.monthMs / 60000).toFixed(2)} min reais; o próximo chega em ${W.fmt(W.msLeft(w))}.`;
+  $('#ad-world-now').textContent = `Mês ${W.current(w)} do mundo. Cada mês dura ${+(w.monthMs / 60000).toFixed(2)} min reais de dia e ${+(w.nightMs / 60000).toFixed(2)} min de madrugada (01:00 às 09:00)${W.isNight() ? ', agora é madrugada' : ''}; o próximo chega em ${W.fmt(W.msLeft(w))}.`;
 }
 async function saveWorld(next, what) {
   const data = { ...cfg, world: next };

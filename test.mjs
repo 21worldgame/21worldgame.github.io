@@ -509,6 +509,12 @@ import * as WD from './world.js';
   assert.equal(WD.current(WD.advance(f, 5), now), 16);
   assert.equal(WD.sanitize({ monthMs: 5 }).monthMs, WD.MIN_MONTH_MS); assert.equal(WD.sanitize(null).base, WD.DEFAULT.base);
   assert.equal(WD.fmt(61000), '1:01'); assert.equal(WD.fmt(3700000), '1h01');
+  // madrugada (01:00 às 09:00 de Brasília) o mês dura o dobro: 5 min de dia, 10 min de madrugada, 240 meses por dia real
+  const d0 = Date.UTC(2026, 10, 24, 3), v = WD.sanitize({ epoch: d0, base: 100, monthMs: 300000, nightMs: 600000 });   // 00:00 de Brasília
+  assert.equal(WD.msLeft(v, d0), 300000); assert.equal(WD.msLeft(v, d0 + 2 * 36e5), 600000); assert.equal(WD.msLeft(v, d0 + 10 * 36e5), 300000);
+  assert.equal(WD.current(v, d0 + 36e5), 112); assert.equal(WD.current(v, d0 + 9 * 36e5), 160); assert.equal(WD.current(v, d0 + 864e5), 340);
+  assert.ok(WD.isNight(d0 + 2 * 36e5) && !WD.isNight(d0 + 10 * 36e5));
+  assert.equal(WD.msUntil(v, d0 + 36e5 - 60000, 2), 60000 + 600000);   // 1 min para virar e o mês seguinte já é de madrugada
 }
 console.log('mundo ok');
 // mercado ao vivo: preço determinístico, aposta por tempo, sem devolução se errar

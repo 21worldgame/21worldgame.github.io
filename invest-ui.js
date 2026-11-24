@@ -2,11 +2,12 @@
 import * as INV from './invest.js';
 import * as L from './logic.js';
 import * as Live from './live.js';
+import * as W from './world.js';
 import * as TV from './news-ui.js';
 import { G, $, esc, brl, say, save, note, feed } from './store.js';
 
 const pct = v => `${(v * 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/0$/, '')}%`;
-const real = months => { let mm = 300000; try { mm = Live.world().monthMs; } catch {} const m = Math.round(months * mm / 60000); return m < 60 ? `~${m} min` : m < 2880 ? `~${Math.round(m / 60)} h` : `~${Math.round(m / 1440)} dias`; };
+const real = months => { let ms = months * 300000; try { ms = W.msUntil(Live.world(), Live.now(), months); } catch {} const m = Math.round(ms / 60000); return m < 60 ? `~${m} min` : m < 2880 ? `~${Math.round(m / 60)} h` : `~${Math.round(m / 1440)} dias`; };
 const worth = () => L.netWorth(G.S);
 
 export function render() {

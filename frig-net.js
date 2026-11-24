@@ -2,10 +2,12 @@
 // Quem abate num frigorífico de jogador paga a taxa do dono; o dono recebe taxa + couro mesmo desligado (fica guardado até ele abrir).
 import * as Auth from './auth.js';
 import * as AB from './abate.js';
+import * as Live from './live.js';
+import * as W from './world.js';
 import { G, say, note, save, brl, int, profileOf } from './store.js';
 
 export let plants = [];   // frigoríficos abertos de outros jogadores, com vagas do mês
-const bucket = () => Math.floor(Date.now() / 300000);   // "mês" de 5 min, igual ao servidor
+const bucket = () => W.current(Live.world(), Live.now());   // o mês do mundo, igual ao servidor (world_month)
 export async function refresh() {
   const sb = Auth.sbClient(); if (!sb) return;
   const { data, error } = await sb.from('abate_plant').select('owner, owner_name, fee, cap, used, bucket').eq('open', true);
