@@ -847,7 +847,7 @@ function drawCheats(on) {
     ${farms.map(f => { let acc = 0; const rows = (f.list || []).map((x, i) => ({ ...x, i: i + 1, acc: acc += x.amount })).reverse();
       return `<div class="ad-sheet ad-sheet--red"><div class="ad-sheet__top"><span class="tag tag--red">${f.sure ? 'quase certeza' : 'muito provável'}</span>
         <b>${esc(f.name)}</b> ${status(f.id)} recebeu <b>${brl(f.total)}</b> em ${f.n} Pix de ${f.senders.length} conta(s) · 1º ${dt(f.first)} · último ${dt(f.last)} (há ${ago(f.last)})${on.has(f.id) ? ' <span class="tag tag--green">online</span>' : ''}
-        <span class="ad-sheet__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(f.id)}">ficha</button><button class="btn btn--danger btn--xs" data-farm-back="${esc(f.id)}" title="a conta volta para antes do 1º Pix e o que comprou depois volta para a loja">voltar antes do 1º Pix</button><button class="btn btn--danger btn--xs" data-pun="${esc(f.id)}" data-pun-who="${esc(f.name)}" data-pun-why="recebeu Pix de contas falsas">banir / excluir ${esc(f.name)}</button><button class="btn btn--danger btn--xs" data-pun="${esc(f.senders.map(x => x.id).join(','))}" data-pun-who="${esc(f.senders.map(x => x.name).join(', '))}" data-pun-why="conta usada para mandar Pix para ${esc(f.name)}">suspender ${f.senders.length} remetente(s)</button></span></div>
+        <span class="ad-sheet__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(f.id)}">ficha</button><button class="btn btn--glass btn--xs" data-desc="${esc(f.id)}" data-desc-pix="${f.total}">descontar</button><button class="btn btn--danger btn--xs" data-farm-back="${esc(f.id)}" title="a conta volta para antes do 1º Pix e o que comprou depois volta para a loja">voltar antes do 1º Pix</button><button class="btn btn--danger btn--xs" data-pun="${esc(f.id)}" data-pun-who="${esc(f.name)}" data-pun-why="recebeu Pix de contas falsas">banir / excluir ${esc(f.name)}</button><button class="btn btn--danger btn--xs" data-pun="${esc(f.senders.map(x => x.id).join(','))}" data-pun-who="${esc(f.senders.map(x => x.name).join(', '))}" data-pun-why="conta usada para mandar Pix para ${esc(f.name)}">suspender ${f.senders.length} remetente(s)</button></span></div>
         <div class="ad-tablewrap"><table class="ad-xl"><thead><tr><th>#</th><th>data e hora do Pix</th><th>conta que mandou</th><th>situação</th><th>conta criada em</th><th>idade</th><th class="num">valor</th><th class="num">acumulado</th><th>mensagem</th></tr></thead><tbody>
         ${rows.map(x => `<tr><td class="num">${x.i}</td><td>${dt(x.at)}</td><td><a href="#" data-vg-user="${esc(x.id)}">${esc(x.name)}</a></td><td>${status(x.id)}</td><td>${dt(x.created)}</td><td>${age(x.ageDays)}</td><td class="num">${brl(x.amount)}</td><td class="num">${brl(x.acc)}</td><td>${esc(x.memo)}</td></tr>`).join('')}
         </tbody></table></div></div>`; }).join('')}` : '';
@@ -864,7 +864,7 @@ function drawCheats(on) {
         <td>${AE.brlShort(r.pixInSum)} / ${AE.brlShort(r.pixOutSum)}${lastPix([...(r.pixIn || []), ...(r.pixOut || [])]) ? `<br><small class="muted">${dt(lastPix([...(r.pixIn || []), ...(r.pixOut || [])]))}</small>` : ''}</td>
         <td class="num">${r.casino == null ? '—' : AE.brlShort(r.casino)}</td>
         <td class="ad-xl__why">${r.why.map(w => esc(w)).join('<br>')}</td>
-        <td class="ad-xl__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(r.id)}">ficha</button>${r.excess > 0 ? `<button class="btn btn--glass btn--xs" data-vg-take="${esc(r.id)}">tirar ${AE.brlShort(r.excess)}</button>` : ''}<button class="btn btn--danger btn--xs" data-pun="${esc(r.id)}" data-pun-who="${esc(r.name)}" data-pun-why="${esc(r.why[0] || 'trapaça')}">banir / excluir</button></td></tr>`; }).join('')}
+        <td class="ad-xl__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(r.id)}">ficha</button><button class="btn btn--glass btn--xs" data-desc="${esc(r.id)}">descontar</button>${r.excess > 0 ? `<button class="btn btn--glass btn--xs" data-vg-take="${esc(r.id)}">tirar ${AE.brlShort(r.excess)}</button>` : ''}<button class="btn btn--danger btn--xs" data-pun="${esc(r.id)}" data-pun-who="${esc(r.name)}" data-pun-why="${esc(r.why[0] || 'trapaça')}">banir / excluir</button></td></tr>`; }).join('')}
     </tbody></table></div>` : (farms.length ? '' : '<p class="good">Nenhum sinal forte de trapaça agora. 👍</p>');
 }
 // na ficha do jogador: o que a vigilância viu sobre ele
@@ -890,6 +890,35 @@ document.addEventListener('click', async e => {
     if (error) return fail(error, 'suspender as contas');
     await log('ban_farm', f.id, { count: f.senders.length, why: reason }); toast(`${f.senders.length} conta(s) suspensa(s) por 30 dias.`); await loadUsers(''); loadVigia();
   }
+}, true);
+// descontar do caixa do jogador: vira ordem do administrador e aparece no livro-caixa dele ("ajuste do administrador: motivo")
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-desc]'); if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const id = b.dataset.desc, r = vg?.rows.find(x => x.id === id) || {}, name = r.name || vg?.farm.find(f => f.id === id)?.name || 'jogador';
+  const sug = [['Pix de contas novas', Number(b.dataset.descPix) || vg?.farm.find(f => f.id === id)?.total || 0, 'Pix recebidos de contas falsas'],
+    ['Pix recebidos', r.pixInSum || 0, 'Pix recebidos de forma irregular'], ['dinheiro sem lançamento', r.gap || 0, 'dinheiro que apareceu sem lançamento'],
+    ['acima do ritmo', r.excess || 0, 'ganho acima do ritmo normal do jogo'], ['ganho em 24 h', Math.max(0, r.money24 || 0), 'ganho irregular nas últimas 24 h']]
+    .filter(x => x[1] > 0).filter((x, i, a) => a.findIndex(y => Math.round(y[1]) === Math.round(x[1])) === i);
+  const d = document.createElement('dialog'); d.className = 'ad-pun';
+  d.innerHTML = `<form method="dialog"><h3>descontar de ${esc(name)}</h3>
+    <p class="small">Caixa hoje: <b>${r.s?.money != null ? brl(r.s.money) : '—'}</b> · patrimônio ${r.worth != null ? brl(r.worth) : '—'}. Sai do caixa quando o jogo dele sincronizar e aparece no livro-caixa como <i>ajuste do administrador</i>. O caixa pode ficar negativo.</p>
+    ${sug.length ? `<div class="row">${sug.map(([k, v, why]) => `<button type="button" class="btn btn--glass btn--xs" data-sug="${Math.round(v)}" data-why="${esc(why)}">${k}: ${AE.brlShort(v)}</button>`).join('')}</div>` : ''}
+    <label class="field"><span>valor a descontar (R$)</span><input class="input" type="number" name="amount" min="1" step="1" required value="${Math.round(sug[0]?.[1] || 0) || ''}" autofocus></label>
+    <label class="field"><span>motivo (aparece no livro-caixa dele)</span><input class="input" name="why" maxlength="120" value="${esc(sug[0]?.[2] || 'trapaça')}"></label>
+    <div class="row"><button class="btn btn--glass" value="cancel" formnovalidate>cancelar</button><button class="btn btn--danger" value="ok">descontar</button></div></form>`;
+  d.addEventListener('click', ev => { const s2 = ev.target.closest('[data-sug]'); if (!s2) return; d.querySelector('[name=amount]').value = s2.dataset.sug; d.querySelector('[name=why]').value = s2.dataset.why; });
+  document.body.append(d); d.showModal();
+  d.addEventListener('close', async () => {
+    const f = Object.fromEntries(new FormData(d.querySelector('form'))); d.remove();
+    const amt = Math.floor(Number(f.amount) || 0); if (d.returnValue !== 'ok' || amt <= 0) return;
+    const why = (f.why || 'trapaça').slice(0, 120);
+    if (!confirm(`Descontar ${brl(amt)} do caixa de ${name}?\n\nNo livro-caixa dele: "ajuste do administrador: ${why}"`)) return;
+    const { error } = await sb.from('admin_grants').insert({ user_id: id, kind: 'money', amount: -amt, note: why });
+    if (error) return fail(error, 'descontar');
+    await log('take_money', id, { amount: amt, why, from: 'alertas de trapaça' });
+    toast(`Desconto de ${brl(amt)} enviado. Sai do caixa de ${name} quando o jogo dele sincronizar.`);
+  });
 }, true);
 // banir ou excluir direto dos alertas: um jogador ou todas as contas de uma fazenda de uma vez
 document.addEventListener('click', e => {
