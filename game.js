@@ -283,7 +283,7 @@ function eta(monthsLeft, done = '') {
   let ms = 0; try { const w = Live.world(); ms = (monthsLeft - 1) * w.monthMs + W.msLeft(w, Live.now()); } catch { return ''; }
   return `<span class="eta" data-until="${Math.round(Live.now() + ms)}">⏳ ${etaTxt(ms)}</span>`;
 }
-function etaTxt(ms) { let mm = 600000; try { mm = Live.world().monthMs; } catch {} const d = Math.max(1, Math.ceil(ms / mm * 30)); return `faltam ${d} ${d === 1 ? 'dia' : 'dias'} · ~${realTxt(ms)}`; }
+function etaTxt(ms) { let mm = 300000; try { mm = Live.world().monthMs; } catch {} const d = Math.max(1, Math.ceil(ms / mm * 30)); return `faltam ${d} ${d === 1 ? 'dia' : 'dias'} · ~${realTxt(ms)}`; }
 G.eta = eta; G.monthFrac = monthFrac;
 setInterval(() => { for (const el of document.querySelectorAll('.eta[data-until]')) { const ms = Number(el.dataset.until) - Live.now(); el.textContent = ms > 0 ? `⏳ ${etaTxt(ms)}` : '✅ pronto na virada do mês'; } }, 5000);
 function orchardBox(l) {
@@ -1684,7 +1684,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 197;
+const APP_VERSION = 198;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

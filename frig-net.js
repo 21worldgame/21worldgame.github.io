@@ -5,7 +5,7 @@ import * as AB from './abate.js';
 import { G, say, note, save, brl, int, profileOf } from './store.js';
 
 export let plants = [];   // frigoríficos abertos de outros jogadores, com vagas do mês
-const bucket = () => Math.floor(Date.now() / 600000);   // "mês" de 10 min, igual ao servidor
+const bucket = () => Math.floor(Date.now() / 300000);   // "mês" de 5 min, igual ao servidor
 export async function refresh() {
   const sb = Auth.sbClient(); if (!sb) return;
   const { data, error } = await sb.from('abate_plant').select('owner, owner_name, fee, cap, used, bucket').eq('open', true);

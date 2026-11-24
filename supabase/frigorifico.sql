@@ -54,7 +54,7 @@ end $$;
 -- quem abate: confere taxa e vaga do mês, registra o pagamento do dono (taxa + couro de R$ 60 por cabeça)
 create or replace function public.use_abate(p_owner uuid, p_heads int, p_fee int, p_name text)
 returns text language plpgsql security definer set search_path = public as $$
-declare r public.abate_plant; b bigint := floor(extract(epoch from now()) / 600);
+declare r public.abate_plant; b bigint := floor(extract(epoch from now()) / 300);   -- vaga do mês: mês do mundo = 5 min
 begin
   if auth.uid() is null then return 'login'; end if;
   if p_owner = auth.uid() then return 'self'; end if;

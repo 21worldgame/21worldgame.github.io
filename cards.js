@@ -131,7 +131,7 @@ export function packEV(id) {
   if (id.startsWith('sazonal:')) return SEASON_PACK.hit * (RARITY.exclusiva.value + 2 * EXTRA * ev(W_STD));
   return PACKS[id].hit * PACKS[id].slots.reduce((sum, w, i) => sum + ev(w) * (i ? EXTRA : 1), 0);
 }
-export const PACK_DAY = 144;   // estoque dos pacotes renova a cada 144 meses do mundo (1 dia real), não a cada mês
+export const PACK_DAY = 288;   // estoque dos pacotes renova a cada 288 meses do mundo (1 dia real com mês de 5 min), não a cada mês
 export function packsLeft(s, id) { const m = Math.floor((s.month || 0) / PACK_DAY); if (s.packs?.m !== m) s.packs = { m, n: {} }; return packInfo(id).stock - (s.packs.n[id] || 0); }
 // abre um pacote; free = prêmio (não cobra nem gasta o estoque do mês)
 export function openPack(s, id = 'ouro', rng = Math.random, now = Date.now(), free = false) {

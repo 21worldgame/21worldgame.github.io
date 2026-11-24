@@ -507,7 +507,7 @@ import * as WD from './world.js';
   const now = 1000 + 600000, f = WD.setSpeed(w, 10000, now);
   assert.equal(WD.current(f, now), 11); assert.equal(WD.current(f, now + 10000), 12);          // acelerar não muda o mês atual
   assert.equal(WD.current(WD.advance(f, 5), now), 16);
-  assert.equal(WD.sanitize({ monthMs: 5 }).monthMs, WD.MIN_MONTH_MS); assert.equal(WD.sanitize(null).base, 1);
+  assert.equal(WD.sanitize({ monthMs: 5 }).monthMs, WD.MIN_MONTH_MS); assert.equal(WD.sanitize(null).base, WD.DEFAULT.base);
   assert.equal(WD.fmt(61000), '1:01'); assert.equal(WD.fmt(3700000), '1h01');
 }
 console.log('mundo ok');

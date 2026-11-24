@@ -6,7 +6,7 @@ import * as TV from './news-ui.js';
 import { G, $, esc, brl, say, save, note, feed } from './store.js';
 
 const pct = v => `${(v * 100).toFixed(2).replace('.', ',').replace(/0$/, '')}%`;
-const real = months => { let mm = 600000; try { mm = Live.world().monthMs; } catch {} const m = Math.round(months * mm / 60000); return m < 60 ? `~${m} min` : m < 2880 ? `~${Math.round(m / 60)} h` : `~${Math.round(m / 1440)} dias`; };
+const real = months => { let mm = 300000; try { mm = Live.world().monthMs; } catch {} const m = Math.round(months * mm / 60000); return m < 60 ? `~${m} min` : m < 2880 ? `~${Math.round(m / 60)} h` : `~${Math.round(m / 1440)} dias`; };
 const worth = () => L.netWorth(G.S);
 
 export function render() {
