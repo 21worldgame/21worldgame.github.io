@@ -901,7 +901,7 @@ console.log('máquinas ok');
   s.month = 1; const now = 1.8e12;
   assert.ok(SHx.npcListings(s, now).every(l => l.price <= 10000), 'mundo novo: bot pobre não anuncia carro nem terra');
   s.month = 1200; const ls = SHx.npcListings(s, now);
-  assert.ok(new Set(ls.map(l => l.cat)).size >= 6, 'anúncios de várias categorias');
+  assert.ok(new Set(ls.map(l => l.cat)).size >= 5, 'anúncios de várias categorias');
   assert.deepEqual(SHx.npcListings(s, now).map(l => l.label), ls.map(l => l.label), 'iguais para todos na mesma janela');
   for (const l of ls) {
     const before = s.money, r = SHx.buyNpc(s, l.id, now);

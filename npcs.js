@@ -95,7 +95,17 @@ export const FALL = Date.UTC(2026, 10, 24, 16, 40), FALLEN = new Set(['n0', 'n1'
 export const SHOWN = new Map();
 // todos os jogadores do mundo perdem 25% em 3 h reais a partir daí (devagar, sem salto): mais disputa para quem tem conta
 const ss = x => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
-export const dropOf = t => 1 - 0.25 * ss((t - FALL) / (3 * 36e5));
+// 24/11/2026 15:40: quebra do fundo 21 Capital (TV 21). Quem tinha dinheiro no fundo perde 20%, devagar, ao longo de 12 h (ninguém fica sem nada).
+// No topo a perseguição ao líder cai 25% nas mesmas 12 h e só recupera um pouco em 3 dias (fica em 85%): os jogadores sobem devagar.
+// HEAVY: os que tinham mais no fundo (RainhaDaSoja, Blackjack21, HarasEstrela, vaqueironeo, Fazendeiro_Ouro) perdem mais, em 18 h,
+// e saem do topo aos poucos (rivals.js para de puxar eles para perto do líder).
+export const CRASH = Date.UTC(2026, 10, 24, 18, 40), HEAVY = new Set(['n3', 'n2', 'n5', 'n71', 'n112']);
+export const CRASH_H = 36;   // horas reais da queda (bem devagar)
+export const crashOf = t => 1 - 0.2 * ss((t - CRASH) / (CRASH_H * 36e5));
+export const crashHunt = t => 1 - 0.25 * ss((t - CRASH) / (CRASH_H * 36e5)) + 0.1 * ss((t - CRASH - CRASH_H * 36e5) / (72 * 36e5));
+export const heavyOf = t => 1 - 0.55 * ss((t - CRASH) / (48 * 36e5));   // perseguição dos HEAVY: some quase toda em 18 h
+const heavyBase = (n, t) => (HEAVY.has(n.id) ? 1 - 0.15 * ss((t - CRASH) / (48 * 36e5)) : 1);   // e a fortuna deles cai mais 15%
+export const dropOf = t => (1 - 0.25 * ss((t - FALL) / (3 * 36e5))) * crashOf(t);
 // folga: jogadores fora do jogo até a hora indicada (UTC). 12:20 de Brasília = 15:20 UTC. Apague a linha para voltarem antes.
 export const AWAY = { 'ReiDoGado': Date.UTC(2026, 10, 21, 15, 20), 'A Boiadeira': Date.UTC(2026, 10, 21, 15, 20) };
 export const isAway = (n, now = Date.now()) => (AWAY[typeof n === 'string' ? byNick(n)?.orig ?? n : n?.orig ?? n?.nick] || 0) > now;
@@ -143,7 +153,7 @@ export function worthAt(n, month, t = Date.now(), raw = false) {
   const boost = 1 + (T.npcBoost - 1) * Math.min(1, m / 48);   // mundo novo continua alcançável
   const r = Math.min(1, Math.max(0, (month - NPC_RAMP_START) / NPC_RAMP));   // 0 em 19/11/2026, 1 daqui a um mês
   const start = 10000 * (Math.max(10000, n.base) / 10000) ** (m / 48);   // todo bot começa o mundo com R$ 10 mil e chega à fortuna dele no mês 49
-  return Math.round(start * (1 + n.g * 0.55) ** m * (1 + (boost * late - 1) * r) * wave * form(n, t) * (PERF.fn ? PERF.fn(n, month) : 1) * dropOf(t) * (fell ? 0.15 : 1));   // caído e o ranking ainda não calculou: uma fração do que tinha
+  return Math.round(start * (1 + n.g * 0.55) ** m * (1 + (boost * late - 1) * r) * wave * form(n, t) * (PERF.fn ? PERF.fn(n, month) : 1) * dropOf(t) * heavyBase(n, t) * (fell ? 0.15 : 1));   // caído e o ranking ainda não calculou: uma fração do que tinha
 }
 // chegada: cada bot entra no mundo num momento diferente das primeiras 24 h reais (144 meses): o ranking enche aos poucos, como gente de verdade chegando
 export const startMonth = n => 1 + Math.floor(hash(n.i * 13 + 7) * 144);
@@ -185,6 +195,25 @@ function assets(n, worth, lands, ha, age) {
   return { biz: biz.map(({ cat, brand }) => ({ cat, brand })), landList, mina: worth > 2e7 && r(2) < 0.3, wh: worth > 1.5e6 ? Math.floor(r(3) * 4) : 0,
     granja: worth > 8e5 && r(4) < 0.5 ? 1 + Math.floor(r(5) * 4) : 0, suinos: worth > 1e6 && r(6) < 0.4 ? 1 + Math.floor(r(7) * 3) : 0, cardsN: Math.floor(r(8) * 24 * age), club: null };
 }
+// a perda de 24/11 aparece no perfil de cada um com a causa dele (fixa por pessoa), no momento em que ela acontece nas 12 h da queda:
+// a maioria tinha dinheiro no fundo 21 Capital; uns venderam a produção na baixa por medo; poucos torraram no cassino antes de largar
+export const lossCause = n => (HEAVY.has(n.id) ? 'fundo' : ((x) => (x < 0.6 ? 'fundo' : x < 0.88 ? 'baixa' : 'cassino'))(hash(n.i * 211 + 3)));
+function fundo(n, worth, now = Date.now()) {
+  if (now < CRASH || FALLEN.has(n.id) || worth < 2e5) return [];
+  const r = k => hash(n.i * 211 + k), cause = lossCause(n), at = CRASH + r(7) * (CRASH_H - 2) * 36e5, k = HEAVY.has(n.id) ? 0.35 : 0.2;
+  if (cause === 'fundo') {
+    const put = Math.round(worth * (0.6 + r(5) * 0.3) / 1000) * 1000, out = [{ txt: 'aplicou no fundo 21 Capital', val: -put, at: CRASH - (1 + r(9) * 5) * 864e5 }];
+    if (at <= now) out.push({ txt: `prejuízo no fundo 21 Capital (cotas caíram ${k * 100}%)`, val: -Math.round(put * k), at });
+    return out;
+  }
+  if (at > now) return [];
+  if (cause === 'baixa') {
+    const [g, p] = [['sacas de soja', A.soja], ['sacas de café', A.cafe], ['bois gordos', A.arroba * 16]][Math.floor(r(11) * 3)], q = Math.max(10, Math.round(worth * 0.25 / p / 10) * 10);
+    return [{ txt: `vendeu ${q} ${g} na baixa, ${Math.round(18 + r(13) * 12)}% abaixo do preço normal`, val: Math.round(q * p * 0.76), at }, { txt: 'prejuízo na venda (vendeu antes da alta)', val: -Math.round(worth * 0.2), at: at + 60000 }];
+  }
+  return [{ txt: `perdeu ${int(Math.round(worth * 0.2 / 2))} fichas no cassino`, val: -Math.round(worth * 0.2), at }];
+}
+const int = v => v.toLocaleString('pt-BR');
 // perfil completo (para a janela de perfil)
 export function profile(n, month) {
   const worth = worthAt(n, month), r = k => hash(n.i * 31 + k), lv = levelFor(worth);
@@ -196,7 +225,7 @@ export function profile(n, month) {
     stats: { hands, wins: Math.round(hands * (0.38 + r(3) * 0.08)), best: Math.round((150 + r(4) * Math.min(cw / 3000, 2500)) * cage), races: Math.round(r(5) * 60 * cage), raceWins: Math.round(r(6) * 14 * cage) },
     lands: Math.floor(worth / 250000), ha: Math.floor(worth / 250000) * (30 + Math.floor(r(7) * 70)), ...assets(n, worth, Math.floor(worth / 250000), Math.floor(worth / 250000) * (30 + Math.floor(r(7) * 70)), age), pioneer: hash(n.i * 89 + 5) < 0.35, heads: Math.floor(worth / 60000) * 10,
     cars, animals: Array.from({ length: Math.floor(r(8) * 3 * age) }, (_, k) => ({ kind: k % 2 ? 'horse' : 'dog', name: '', rating: 50 + Math.floor(r(9 + k) * 30), wins: Math.floor(r(12 + k) * 8) })),
-    achCount: Math.floor(Math.min(20, 2 + Math.floor(lv / 2)) * age), deals: deals(n, worth).filter(d => Date.now() - d.at < (month - 1) * 3e5),   // negócio só desde que o mundo começou (ponytail: assume 5 min por mês)
+    achCount: Math.floor(Math.min(20, 2 + Math.floor(lv / 2)) * age), deals: [...fundo(n, worth), ...deals(n, worth).filter(d => Date.now() - d.at < (month - 1) * 3e5)].sort((a, b) => b.at - a.at).slice(0, 6),   // negócio só desde que o mundo começou (ponytail: assume 5 min por mês)
   };
 }
 

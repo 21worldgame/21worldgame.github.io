@@ -3,7 +3,7 @@
 import { T } from './tune.js';
 import { rank } from './logic.js';
 
-import { NPCS, isAway, EARLY, startMonth, worthAt as npcWorth, levelFor as npcLevel, FALL, FALLEN, SHOWN } from './npcs.js';
+import { NPCS, isAway, EARLY, startMonth, worthAt as npcWorth, levelFor as npcLevel, FALL, FALLEN, SHOWN, crashHunt, HEAVY, heavyOf } from './npcs.js';
 // volta dos dois caídos: da posição 13/14 até passar o 1º em CLIMB_DAYS reais (posição fracionária entre os vizinhos, sem salto)
 export const CLIMB_DAYS = 7, CLIMB_FROM = { n0: 12, n1: 13 };
 export const levelFor = npcLevel;
@@ -27,7 +27,7 @@ export function rivals(month, leader = 0, me = 0, t = Date.now()) {
   hunted.clear();
   const early = month < EARLY;   // largada: os jogadores têm chance de passar os bots
   if (leader > 0 && T.hunt && !early) [...rows].filter(r => !r.away).sort((a, b) => b.worth - a.worth).slice(0, HUNT.length).forEach((r, k) => {
-    const chase = Math.round(Math.min(leader * T.huntLead, leader * (HUNT[k] / HUNT[0]) * huntLevel(t) * (1 + HUNT_WAVE * Math.sin(month * 0.9 + k * 2.1))));   // nunca passa muito do 1º
+    const chase = Math.round(Math.min(leader * T.huntLead, leader * (HUNT[k] / HUNT[0]) * huntLevel(t) * (1 + HUNT_WAVE * Math.sin(month * 0.9 + k * 2.1))) * crashHunt(t) * (HEAVY.has(r.id) ? heavyOf(t) : 1));   // quebra do fundo: o topo também cai e volta devagar   // nunca passa muito do 1º
     if (chase > r.worth) { r.worth = chase; hunted.set(r.id, chase); }
   });
   if (T.near && !early && me > 0 && me < leader) {   // quem não é o líder sempre tem 3 concorrentes logo acima (os seguintes depois dos caçadores)
