@@ -743,7 +743,7 @@ function renderBanco() {
 function renderLivro() {
   const s = S();
   $('#log').innerHTML = s.log.length ? s.log.slice(0, 80).map(e => `<tr>
-    <td class="num">${e.m}</td><td>${esc(dots(e.txt))}</td><td class="num ${e.val < 0 ? 'bad' : e.val > 0 ? 'good' : ''}">${e.val ? brl(e.val) : ''}</td></tr>`).join('')
+    <td class="num">${e.m}</td><td>${esc(dots(e.txt))}${e.gid ? (e.appeal ? ' <span class="tag">recurso enviado</span>' : ` <button class="btn btn--glass btn--sm" data-appeal="${e.gid}">recorrer</button>`) : ''}</td><td class="num ${e.val < 0 ? 'bad' : e.val > 0 ? 'good' : ''}">${e.val ? brl(e.val) : ''}</td></tr>`).join('')
     : '<tr><td colspan="3" class="empty">Nada lançado ainda. Jogue uma mão ou passe o mês.</td></tr>';
 }
 
@@ -1684,7 +1684,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 209;
+const APP_VERSION = 210;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
@@ -1803,4 +1803,19 @@ document.addEventListener('input', e => {
   if (!show) { if (h) h.hidden = true; return; }
   if (!h) { h = document.createElement('small'); h.className = 'numfmt'; i.after(h); }
   h.hidden = false; h.textContent = `= ${v.toLocaleString('pt-BR')}`;
+});
+
+// recorrer de um desconto do administrador / Receita Federal pelo livro-caixa
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-appeal]'); if (!b) return;
+  const gid = Number(b.dataset.appeal), en = S().log.find(x => x.gid === gid); if (!en) return;
+  const d = document.createElement('dialog'); d.className = 'dlg';
+  d.innerHTML = `<form method="dialog" style="display:grid;gap:10px;max-width:28rem"><h3 style="margin:0">recorrer do desconto</h3>
+    <p class="small" style="margin:0">${esc(dots(en.txt))} <b class="bad">${brl(en.val)}</b></p>
+    <label class="field"><span>explique por que o desconto está errado (o administrador lê e responde aqui no livro-caixa)</span>
+    <textarea class="input" name="msg" rows="5" minlength="5" maxlength="800" required></textarea></label>
+    <div class="row"><button class="btn btn--glass" value="cancel" formnovalidate>cancelar</button><button class="btn btn--gold" value="ok">enviar recurso</button></div></form>`;
+  document.body.append(d); d.showModal();
+  d.addEventListener('close', async () => { const msg = d.querySelector('[name=msg]').value.trim(); d.remove();
+    if (d.returnValue === 'ok' && msg.length >= 5 && await Live.appeal(gid, msg)) renderLivro(); });
 });

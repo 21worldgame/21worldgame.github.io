@@ -783,7 +783,7 @@ async function loadVigia() {
       farm: F[x.user_id], farmSender: FS[x.user_id], gap: GP[x.user_id]?.gap || 0, gapN: GP[x.user_id]?.gapN || 0, jump: JP[x.user_id] || 0 }; });
     vg = { ...AE.watch(players), pix, saves, farm, UI };
     st.textContent = `${players.length} contas analisadas às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-    drawVigia();
+    drawVigia(); loadRecursos();
   } catch (e) { fail(e, 'carregar a vigilância'); st.textContent = ''; } finally { $('#ad-vg-reload').disabled = false; }
 }
 // situação da conta agora: ativa, suspensa até tal dia, banida para sempre ou excluída
@@ -905,20 +905,59 @@ document.addEventListener('click', e => {
     <p class="small">Caixa hoje: <b>${r.s?.money != null ? brl(r.s.money) : '—'}</b> · patrimônio ${r.worth != null ? brl(r.worth) : '—'}. Sai do caixa quando o jogo dele sincronizar e aparece no livro-caixa como <i>ajuste do administrador</i>. O caixa pode ficar negativo.</p>
     ${sug.length ? `<div class="row">${sug.map(([k, v, why]) => `<button type="button" class="btn btn--glass btn--xs" data-sug="${Math.round(v)}" data-why="${esc(why)}">${k}: ${AE.brlShort(v)}</button>`).join('')}</div>` : ''}
     <label class="field"><span>valor a descontar (R$)</span><input class="input" type="number" name="amount" min="1" step="1" required value="${Math.round(sug[0]?.[1] || 0) || ''}" autofocus></label>
-    <label class="field"><span>motivo (aparece no livro-caixa dele)</span><input class="input" name="why" maxlength="120" value="${esc(sug[0]?.[2] || 'trapaça')}"></label>
+    <label class="field"><span>motivo</span><input class="input" name="why" maxlength="120" value="${esc(sug[0]?.[2] || 'trapaça')}"></label>
+    <label class="ad-pun__opt"><input type="checkbox" name="rf" checked> lançar como aviso da Receita Federal</label>
+    <label class="field"><span>como vai aparecer no livro-caixa dele (pode editar)</span><textarea class="input" name="txt" maxlength="200" rows="3"></textarea></label>
     <div class="row"><button class="btn btn--glass" value="cancel" formnovalidate>cancelar</button><button class="btn btn--danger" value="ok">descontar</button></div></form>`;
-  d.addEventListener('click', ev => { const s2 = ev.target.closest('[data-sug]'); if (!s2) return; d.querySelector('[name=amount]').value = s2.dataset.sug; d.querySelector('[name=why]').value = s2.dataset.why; });
-  document.body.append(d); d.showModal();
+  const q = n => d.querySelector(`[name=${n}]`);
+  const suggest = () => { const v = brl(Math.floor(Number(q('amount').value) || 0)), w = (q('why').value || 'trapaça').trim().replace(/\.$/, '');
+    q('txt').value = (q('rf').checked ? `Receita Federal: auto de infração. ${v} recolhidos por ${w.charAt(0).toLowerCase() + w.slice(1)}. Reincidência leva à suspensão da conta.` : w).slice(0, 200); };
+  d.addEventListener('click', ev => { const s2 = ev.target.closest('[data-sug]'); if (!s2) return; q('amount').value = s2.dataset.sug; q('why').value = s2.dataset.why; suggest(); });
+  d.addEventListener('input', ev => { if (ev.target.name !== 'txt') suggest(); });
+  d.addEventListener('change', ev => { if (ev.target.name === 'rf') suggest(); });
+  document.body.append(d); suggest(); d.showModal();
   d.addEventListener('close', async () => {
     const f = Object.fromEntries(new FormData(d.querySelector('form'))); d.remove();
     const amt = Math.floor(Number(f.amount) || 0); if (d.returnValue !== 'ok' || amt <= 0) return;
-    const why = (f.why || 'trapaça').slice(0, 120);
-    if (!confirm(`Descontar ${brl(amt)} do caixa de ${name}?\n\nNo livro-caixa dele: "ajuste do administrador: ${why}"`)) return;
+    const why = (f.txt || f.why || 'trapaça').trim().slice(0, 200), shown = /^Receita Federal/.test(why) ? why : `ajuste do administrador: ${why}`;
+    if (!confirm(`Descontar ${brl(amt)} do caixa de ${name}?\n\nNo livro-caixa dele:\n"${shown}"`)) return;
     const { error } = await sb.from('admin_grants').insert({ user_id: id, kind: 'money', amount: -amt, note: why });
     if (error) return fail(error, 'descontar');
     await log('take_money', id, { amount: amt, why, from: 'alertas de trapaça' });
     toast(`Desconto de ${brl(amt)} enviado. Sai do caixa de ${name} quando o jogo dele sincronizar.`);
   });
+}, true);
+// recursos: o jogador contestou um desconto pelo livro-caixa (supabase/recursos.sql). Aceitar devolve o valor; negar manda a resposta.
+let RECS = [];
+async function loadRecursos() {
+  const { data, error } = await sb.from('recursos').select('*').order('at', { ascending: false }).limit(80);
+  if (error) { $('#ad-rec').innerHTML = ''; return; }
+  RECS = data || []; const open = RECS.filter(r => r.status === 'aberto').length;
+  const dt = t => (t ? new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
+  $('#ad-rec').innerHTML = RECS.length ? `<h3>📨 recursos dos jogadores ${open ? `<span class="tag tag--red">${open} esperando resposta</span>` : ''}</h3>
+    <div class="ad-tablewrap"><table class="ad-xl"><thead><tr><th>pedido em</th><th>jogador</th><th>situação</th><th class="num">descontado</th><th>lançamento</th><th>o que ele diz</th><th>resposta</th><th>agir</th></tr></thead><tbody>
+    ${[...RECS].sort((a, b) => (a.status === 'aberto') === (b.status === 'aberto') ? 0 : a.status === 'aberto' ? -1 : 1).map(r => `<tr${r.status === 'aberto' ? ' class="ad-alert"' : ''}>
+      <td>${dt(r.at)}</td><td><a href="#" data-vg-user="${esc(r.user_id)}">${esc(r.name || '?')}</a> ${status(r.user_id)}</td>
+      <td><span class="tag tag--${r.status === 'aberto' ? 'gold' : r.status === 'aceito' ? 'green' : 'red'}">${r.status}</span>${r.answered_at ? `<br><small class="muted">${dt(r.answered_at)}</small>` : ''}</td>
+      <td class="num">${brl(r.amount)}</td><td class="ad-xl__why">${esc(r.entry || '')}</td><td class="ad-xl__why"><b>${esc(r.msg)}</b></td><td class="ad-xl__why">${esc(r.answer || '')}</td>
+      <td class="ad-xl__acts">${r.status === 'aberto' ? `<button class="btn btn--gold btn--xs" data-rec-ok="${r.id}">aceitar e devolver</button><button class="btn btn--danger btn--xs" data-rec-no="${r.id}">negar</button>` : ''}</td></tr>`).join('')}
+    </tbody></table></div>` : '';
+}
+document.addEventListener('click', async e => {
+  const ok = e.target.closest('[data-rec-ok]'), no = e.target.closest('[data-rec-no]'); if (!ok && !no) return;
+  e.preventDefault(); e.stopPropagation();
+  const r = RECS.find(x => String(x.id) === (ok ? ok.dataset.recOk : no.dataset.recNo)); if (!r) return;
+  const rf = /^Receita Federal/.test(r.entry || ''), who = rf ? 'Receita Federal' : 'Administrador';
+  const answer = prompt(ok ? `Aceitar o recurso de ${r.name} e devolver ${brl(r.amount)}?\n\nResposta para ele (opcional):` : `Negar o recurso de ${r.name}?\n\nResposta para ele (aparece no livro-caixa):`,
+    ok ? 'Analisamos o seu caso e o desconto foi cancelado.' : 'Analisamos o seu caso e o desconto foi mantido.');
+  if (answer === null) return;
+  const txt = (ok ? `${who}: recurso aceito. ${brl(r.amount)} devolvidos. ${answer}` : `${who}: recurso negado. ${answer}`).trim().slice(0, 200);
+  const g = await sb.from('admin_grants').insert({ user_id: r.user_id, kind: ok ? 'money' : 'message', amount: ok ? Number(r.amount) : 0, note: txt });
+  if (g.error) return fail(g.error, 'responder o recurso');
+  const u = await sb.from('recursos').update({ status: ok ? 'aceito' : 'negado', answer: answer.slice(0, 400), answered_at: new Date().toISOString() }).eq('id', r.id);
+  if (u.error) return fail(u.error, 'marcar o recurso');
+  await log(ok ? 'appeal_accept' : 'appeal_deny', r.user_id, { id: r.id, amount: r.amount, answer });
+  toast(ok ? `Recurso aceito: ${brl(r.amount)} voltam para ${r.name}.` : 'Recurso negado. Ele vê a resposta no livro-caixa.'); loadRecursos();
 }, true);
 // banir ou excluir direto dos alertas: um jogador ou todas as contas de uma fazenda de uma vez
 document.addEventListener('click', e => {
