@@ -98,7 +98,7 @@ export function cashHTML(nick) {
   const borrow = !f ? `<div class="glass tr-col tr-col--them"><h3>pedir emprestado a ${esc(nick)}</h3><p class="tr-sub">só entre parceiros: marque a caixinha <b>parceiro</b> no cartão dele.</p>${partnerBox(s, nick)}</div>`
     : owe ? `<div class="glass tr-col tr-col--them"><h3>pedir emprestado a ${esc(nick)}</h3><p class="tr-sub">Você já deve ${brl(owe.bal)} para ele. Termine de pagar para pedir de novo.</p></div>`
     : `<form class="glass tr-col tr-col--them am-loan" data-loan="borrow"><h3>pedir emprestado a ${esc(nick)}</h3>
-      <p class="tr-sub">sem garantia, ${pct(AM.loanRate(f))} ao mês em 12 parcelas no <b>débito automático</b> (saem sozinhas da sua carteira). O banco cobra ${pct(L.BANK_RATE)} e pede terra como garantia.</p>
+      <p class="tr-sub">sem garantia, ${pct(AM.loanRate(f))} ao mês em 12 parcelas no <b>débito automático</b> (saem sozinhas da sua carteira). O banco cobra ${pct(L.bankRate())} e pede terra como garantia.</p>
       <label class="field"><span>valor (até ${brl(AM.loanLimit(s, f))})</span><input class="input" id="am-bor" type="number" min="1000" step="1000" max="${AM.loanLimit(s, f)}" value="${AM.loanLimit(s, f)}" inputmode="numeric"></label>
       <p class="am-prev" id="am-bprev">${preview(AM.loanLimit(s, f), AM.loanRate(f), 12)}</p>
       <p class="tr-sub">Atrasar parcela derruba a confiança; duas atrasadas e ele toma sua terra, como o banco.</p>${btn('borrow', nick, 'pedir agora')}</form>`;

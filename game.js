@@ -58,6 +58,15 @@ import { openDeal } from './deal-ui.js';
 import * as BO from './bot-offers.js';
 import * as Live from './live.js';
 G.now = Live.now;   // hora do servidor para a sincronização (auth.js)
+// 17:00 de 24/11: aperto do crédito (logic.js). Avisa uma vez cada jogador, na hora para quem está online e ao abrir para quem chegar depois.
+function creditSqueeze() {
+  const s = G.S; if (!s || s.sq216 || !L.squeezed(Live.now())) return;
+  const n = L.squeezeLoans(s, Live.now()); s.sq216 = 1;
+  badge('Aviso importante do banco', `Banco Central subiu os juros: empréstimo do banco passa de 1,8% para 3,2% ao mês${n ? `, inclusive ${n === 1 ? 'no seu contrato' : `nos seus ${n} contratos`}` : ''}. A garantia vale menos (terra 30%, gado 10%) e o limite de crédito caiu. Leia no Jornal 21.`, 'mission');
+  say('Banco Central subiu os juros: o crédito ficou mais caro em todos os bancos.', true);
+  save(); G.render?.();
+}
+setInterval(creditSqueeze, 10000); setTimeout(creditSqueeze, 4000);
 import * as ST from './stable.js';
 import * as SUI from './stable-ui.js';
 import * as FUI from './futebol-ui.js';
@@ -1687,7 +1696,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 215;
+const APP_VERSION = 216;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

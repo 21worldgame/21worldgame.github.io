@@ -1026,7 +1026,7 @@ console.log('suínos, negócios e galpões ok');
   const mid = L3.newState(() => 0.5); mid.money = 5e5; assert.equal(L3.monthTax(mid, 0, 100000)[0].val, -5000, 'imposto de renda 5% do lucro');
   const rich = L3.newState(() => 0.5); rich.money = 3e8; assert.equal(L3.monthTax(rich, 0, 100000)[0].val, -5000, 'rico paga a mesma alíquota');
   assert.deepEqual(L3.monthTax(rich, 2e5, 1e5), [], 'mês no prejuízo não paga');
-  assert.equal(L3.bankRisk({ ...rich, lands: [], herd: [], loans: [], lent: [], cars: [], stock: {}, prices: {} }).rate, L3.BANK_RATE, 'juros iguais para rico');
+  assert.equal(L3.bankRisk({ ...rich, lands: [], herd: [], loans: [], lent: [], cars: [], stock: {}, prices: {} }).rate, L3.bankRate(), 'juros iguais para rico');
 }
 {
   const ST3 = await import('./stable.js'), st = { stable: { animals: [], offers: [] } };
@@ -1363,7 +1363,7 @@ console.log('mina ok');
   assert.deepEqual(Nw.npcNews(77, ['A', 'B']), Nw.npcNews(77, ['A', 'B']), 'igual para todos');
   console.log('TV 21: notícias ok'); }
 { const Ne = await import('./news.js'), t = Ne.EDITORIAL[0].at;
-  assert.equal(Ne.editorial(t + 3600e3).length, Ne.EDITORIAL.filter(e => e.at - t < 864e5).length, 'edição especial no ar'); assert.equal(Ne.editorial(t + 5 * 864e5).length, 0, 'sai do ar depois de 3 dias');
+  assert.equal(Ne.editorial(t + 3600e3).length, Ne.EDITORIAL.filter(e => e.at <= t + 3600e3 && e.at - t < 864e5).length, 'edição especial no ar (só a partir da hora marcada)'); assert.equal(Ne.editorial(Math.max(...Ne.EDITORIAL.map(e => e.at)) + 3 * 864e5 + 1).length, 0, 'sai do ar depois de 3 dias');
   assert.ok(Ne.EDITORIAL.every(e => Ne.KINDS[e.kind] && e.title.length > 20 && e.lead.length > 80 && Ne.headline(e) === e.title));
   console.log('TV 21: edição especial ok'); }
 { // TV 21 / Resenha: o mesmo jogador do mundo não fala de novo nas 6 janelas seguintes
@@ -1669,4 +1669,15 @@ import * as CT from './contador.js';
   assert.ok(out.some(o => /corte de cana/.test(o.txt)), 'cana atrasada corta no mês seguinte');
   assert.equal(s.lands[0].cane.age, CNt.CANE.first, 'e volta para o ritmo normal da soca');
   console.log('cana com tempo novo ok');
+}
+
+// aperto do crédito às 17:00 de 24/11/2026: juros 1,8% -> 3,2% (também nos contratos do banco que já existem), garantia menor; empréstimo de parceiro não muda
+{
+  const Lc = await import('./logic.js'), before = Lc.SQUEEZE_AT - 1, after = Lc.SQUEEZE_AT;
+  assert.equal(Lc.bankRate(before), Lc.BANK_RATE); assert.equal(Lc.bankRate(after), Lc.SQUEEZE_RATE);
+  const s = { loans: [{ bal: 1000, rate: 0.018 }, { bal: 1000, rate: 0.012, from: 'Zé' }] };
+  assert.equal(Lc.squeezeLoans(s, before), 0); assert.equal(s.loans[0].rate, 0.018);
+  assert.equal(Lc.squeezeLoans(s, after), 1); assert.ok(s.loans[0].rate >= 0.03); assert.equal(s.loans[1].rate, 0.012);
+  assert.equal(Lc.squeezeLoans(s, after), 0, 'só sobe uma vez');
+  console.log('aperto do crédito ok');
 }

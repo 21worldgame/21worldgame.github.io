@@ -19,6 +19,12 @@ export const BANK_RATE = 0.018;   // juros do banco ao mês: empréstimo com ter
 // agiota: quem pega com ele é quem o banco não atende. Paga o banco + 1 ponto + o risco dele (calote ao mês) com 10% de folga.
 // Com calote o cobrador ainda recupera RECOVER do saldo, então emprestar dá lucro esperado: rate - risk * (1 - RECOVER) > 0.
 export const RECOVER = 0.25;
+// v216: aperto do crédito às 17:00 de 24/11/2026 (Banco Central sobe a Selic de surpresa): juros do banco de 1,8% para 3,2% ao mês,
+// inclusive nos contratos que já existem (todos pós-fixados), e a garantia vale menos (terra 50% -> 30%, gado 20% -> 10%)
+export const SQUEEZE_AT = Date.UTC(2026, 10, 24, 20, 0), SQUEEZE_RATE = 0.032;
+export const squeezed = (t = Date.now()) => t >= SQUEEZE_AT;
+export const bankRate = (t = Date.now()) => (squeezed(t) ? SQUEEZE_RATE : BANK_RATE);
+export function squeezeLoans(s, t = Date.now()) { let n = 0; if (squeezed(t)) for (const l of s.loans || []) { const r = +(SQUEEZE_RATE * PK.mult(s, 'loan')).toFixed(4); if (!l.from && l.rate < r) { l.rate = r; n++; } } return n; }
 export const agiotaRate = risk => +(BANK_RATE + 0.01 + risk * 1.1).toFixed(3);
 export const lendEdge = b => b.rate - b.risk * (1 - RECOVER);   // lucro esperado ao mês por real emprestado
 export const KG_ARROBA = 15;
@@ -302,13 +308,13 @@ export function bankRisk(s) {
   const usage = Math.min(2, lent / Math.max(1, ceiling));                                     // quanto do teto já usou
   const miss = Math.max(0, (s.creditMiss || 0) - Math.floor((s.creditGood || 0) / 12));       // atrasos, perdoados aos poucos pelas parcelas em dia
   const high = w >= BANK.highNet, base = creditLimit(s);
-  const rate = BANK_RATE * PK.mult(s, 'loan');   // juros iguais para todos (v151); o que muda com o tamanho do cliente é só o limite
+  const rate = bankRate() * PK.mult(s, 'loan');   // juros iguais para todos (v151); o que muda com o tamanho do cliente é só o limite
   if (!high) return { high, w, cap, own, ceiling, exposure, usage, miss, premium: 0, rate, limit: base };
   const room = ceiling * Math.max(0.15, Math.min(1, 1.6 - exposure)) - lent;                 // quanto mais o cliente supera o banco, menos ele empresta
   return { high, w, cap, own, ceiling, exposure, usage, miss, premium: 0, rate, limit: Math.max(0, Math.floor(Math.min(base, room))) };
 }
 export const creditLimit = s =>
-  Math.max(0, Math.floor(s.lands.filter(l => l.own).reduce((a, l) => a + l.value, 0) * 0.5 + herdValue(s) * 0.2 - debt(s)));
+  Math.max(0, Math.floor(s.lands.filter(l => l.own).reduce((a, l) => a + l.value, 0) * (squeezed() ? 0.3 : 0.5) + herdValue(s) * (squeezed() ? 0.1 : 0.2) - debt(s)));
 
 // soma protegida: um item com dado faltando (save antigo) vale 0 em vez de virar NaN e quebrar a tela
 const num = v => (Number.isFinite(v) ? v : 0);
@@ -391,6 +397,7 @@ export function tick(s, rng = Math.random) {
     c.value = Math.round(c.value * (1 - CAR_DEPREC));
   }
 
+  squeezeLoans(s);   // contrato do banco é pós-fixado: sobe junto com os juros
   for (const loan of [...s.loans]) {
     loan.bal *= 1 + loan.rate;
     const due = loan.bal / Math.max(1, loan.left);
