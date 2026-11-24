@@ -3,7 +3,9 @@
 import { T } from './tune.js';
 import { rank } from './logic.js';
 
-import { NPCS, isAway, EARLY, startMonth, worthAt as npcWorth, levelFor as npcLevel } from './npcs.js';
+import { NPCS, isAway, EARLY, startMonth, worthAt as npcWorth, levelFor as npcLevel, FALL, FALLEN, FALLEN_W } from './npcs.js';
+// volta dos dois caídos: da posição 13/14 até passar o 1º em CLIMB_DAYS reais (posição fracionária entre os vizinhos, sem salto)
+export const CLIMB_DAYS = 7, CLIMB_FROM = { n0: 12, n1: 13 };
 export const levelFor = npcLevel;
 // month pode ser fracionário (mês + progresso), para os números andarem de verdade
 // caçadores do topo: os 3 maiores concorrentes do mundo perseguem o líder real (leader = maior patrimônio de jogador).
@@ -21,7 +23,7 @@ export function huntLevel(t = Date.now(), top = T.huntLead) {
 export const NEAR = [1.03, 1.09, 1.17];   // vizinhos: sempre tem alguém logo acima de você
 export const hunted = new Map();   // id do npc -> fortuna de caçador (para o perfil mostrar o mesmo número do ranking)
 export function rivals(month, leader = 0, me = 0, t = Date.now()) {
-  const rows = NPCS.filter(n => month >= startMonth(n)).map(n => { const worth = npcWorth(n, month, t); return { away: isAway(n), pid: `npc:${n.id}`, id: n.id, name: n.nick, worth, look: n.look }; });
+  const rows = NPCS.filter(n => month >= startMonth(n)).map(n => { const worth = npcWorth(n, month, t); return { away: isAway(n) || (FALLEN.has(n.id) && t >= FALL), pid: `npc:${n.id}`, id: n.id, name: n.nick, worth, look: n.look }; });
   hunted.clear();
   const early = month < EARLY;   // largada: os jogadores têm chance de passar os bots
   if (leader > 0 && T.hunt && !early) [...rows].filter(r => !r.away).sort((a, b) => b.worth - a.worth).slice(0, HUNT.length).forEach((r, k) => {
@@ -31,6 +33,16 @@ export function rivals(month, leader = 0, me = 0, t = Date.now()) {
   if (T.near && !early && me > 0 && me < leader) {   // quem não é o líder sempre tem 3 concorrentes logo acima (os seguintes depois dos caçadores)
     const free = [...rows].filter(r => !r.away).sort((a, b) => b.worth - a.worth).filter(r => !hunted.has(r.id)).slice(0, NEAR.length);
     free.forEach((r, k) => { const near = Math.round(me * NEAR[k] * (1 + 0.03 * Math.sin(month * 1.3 + k))); if (near > r.worth && near < leader) { r.worth = near; hunted.set(r.id, near); } });
+  }
+  if (t >= FALL) {   // os dois caídos: posição que sobe devagar; acima do 1º acompanham o ciclo da disputa (o jogador ainda pode liderar)
+    const vals = [...rows.filter(r => !FALLEN.has(r.id)).map(r => r.worth), leader].filter(v => v > 0).sort((a, b) => b - a), u = ss((t - FALL) / (CLIMB_DAYS * 864e5));
+    for (const r of rows.filter(r => FALLEN.has(r.id))) {
+      const p = CLIMB_FROM[r.id] - (CLIMB_FROM[r.id] + (r.id === 'n1' ? 0.3 : 0.6)) * u, top = vals[0] || 1e6;
+      const fin = leader > 0 ? leader * huntLevel(t) * (r.id === 'n1' ? 0.99 : 1.005) : top * 1.01;
+      let w; if (p >= 0) { const i = Math.max(0, Math.min(Math.floor(p), vals.length - 2)), f = p - i, a = vals[i] || top, b = vals[i + 1] || a * 0.95; w = a * (b / a) ** f; }   // entre o vizinho de cima e o de baixo
+      else w = top + (fin - top) * Math.min(1, -p / 0.5);
+      r.worth = Math.round(w * (1 + 0.004 * Math.sin(t / 36e5 * 1.7 + (r.id === 'n1' ? 2 : 0)))); FALLEN_W.set(r.id, r.worth); hunted.set(r.id, r.worth);
+    }
   }
   return rows.map(({ id, away, ...r }) => ({ ...r, level: npcLevel(r.worth), rank: rank(r.worth) }));
 }

@@ -1,6 +1,6 @@
 // Cada jogador fictício (NPC) senta em UMA mesa só, em todos os jogos: nenhum nick se repete entre mesas da casa.
 // Mesas de aposta alta vêm primeiro na lista e pegam os NPCs mais ricos (NPCS já vem do mais rico para o mais pobre).
-import { NPCS, isAway } from './npcs.js';
+import { NPCS, isAway, FALLEN } from './npcs.js';
 
 // [id da mesa, quantos bots]. "am-*" = reserva para mesas de amigos de cada jogo.
 const SPEC = [
@@ -11,7 +11,7 @@ const SPEC = [
   ['av', 15], ['sub', 4], ['am-21', 6], ['am-pk', 5], ['am-tr', 3], ['am-sn', 1], ['rl', 8],
 ];
 const POOL = {};
-{ let k = 0; for (const [id, n] of SPEC) POOL[id] = NPCS.slice(k, k += n).map(x => x.nick); }
+{ let k = 0; for (const [id, n] of SPEC) POOL[id] = NPCS.filter(x => !FALLEN.has(x.id)).slice(k, k += n).map(x => x.nick); }   // os dois caídos não sentam mais em mesa nenhuma
 // quem está de folga (npcs.js AWAY) é trocado por um reserva ('sub'), também único; volta sozinho depois do horário
 let nextSub = 0; const SUB = {};
 const swap = nick => (isAway(nick) ? (SUB[nick] ??= POOL.sub[nextSub++ % POOL.sub.length]) : nick);
@@ -20,7 +20,7 @@ export const botFor = id => (POOL[id] ? swap(POOL[id][0]) : undefined);
 
 // v167: a mesa fica LIVRE para os jogadores. Os jogadores do mundo só sentam de vez em quando (cada mesa tem 4% de chance por janela de 6 min),
 // para parecer gente de verdade e não bot de enfeite. Igual para todos os aparelhos (sorteio pelo relógio).
-export const SIT_P = 0.04, SIT_WIN = 6 * 60000;
+export const SIT_P = 0.015, SIT_WIN = 6 * 60000;
 const h01 = s => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return ((h >>> 0) % 100000) / 100000; };
 export function sitting(id, now = Date.now(), max = 2) {
   const pool = botsFor(id), w = Math.floor(now / SIT_WIN);

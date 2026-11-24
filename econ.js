@@ -5,7 +5,9 @@
 //  - muita gente num produto → oferta alta → preço de referência cai; pouca gente → sobe (com atraso de uma safra).
 // Crises: a cada ~2 anos o mundo olha se há concentração exagerada num produto; se houver, avisa antes (🟡 → 🟠) e a crise
 // chega depois (🔴). Sem concentração, não há crise. Eventos temáticos (greve, ciberataque, contaminação...) seguem a exposição.
-import { NPCS, PERF } from './npcs.js';
+import { NPCS, PERF, CLOCK, FALL } from './npcs.js';
+import { current } from './world.js';
+const smartW = () => Math.floor((Math.max(1, current(CLOCK.world, FALL)) - 1) / SEASON);   // safra em que os jogadores do mundo ficaram mais espertos
 
 export const GOODS = ['soja', 'milho', 'cafe', 'laranja', 'cana', 'arroba'];
 export const LABEL = { soja: 'soja', milho: 'milho', cafe: 'café', laranja: 'laranja', cana: 'cana', arroba: 'boi gordo', frango: 'frango', suino: 'suíno' };
@@ -213,6 +215,7 @@ export function npcChoice(n, w) {
     if (k === fav) v *= 1 + P.stick * 2;
     if (k === fever && P.chase > 0) v *= 1 + P.chase * 1.1;
     if (P.noise) v *= 0.6 + h(n.i * 13 + w * 7 + k.length) * P.noise * 2;
+    if (w >= smartW()) v *= (npcSeason(w).mult[k] || 1) ** 2;   // experiente: olha o preço da safra e vai no que paga mais
     sum += v; if (v > bv) { bv = v; best = k; }
   }
   return { good: best, share: bv / sum };

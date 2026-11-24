@@ -1,6 +1,7 @@
 import { T } from './tune.js';
 import { value as cardValue } from './cards.js';
 import { value as suinosValue, PRICES as SU_PRICES } from './suinos.js';
+import { value as pescaValue } from './pesca.js';
 import { value as bizValue } from './negocios.js';
 import { value as minaValue, EQUIP as MINE_EQUIP } from './mina.js';
 import * as PK from './perks.js';
@@ -11,7 +12,7 @@ import { caneValue } from './cana.js';
 import { plantValue } from './abate.js';
 // Regras puras do 21 World (sem DOM) — usadas pelo jogo e pelo test.mjs.
 import { animalsValue } from './stable.js';
-export const CHIP = 10;           // 1 ficha = R$ 10
+export const CHIP = 2;            // 1 ficha = R$ 2 (era R$ 10 até 24/11/2026: passe e prêmios em fichas enriqueciam demais)
 export const HOUSE_FEE = 0.05;    // taxa do cassino sobre o pote
 export const MARKET_FEE = 0.01;   // taxa do mercado sobre vendas
 export const BANK_RATE = 0.018;   // juros do banco ao mês: empréstimo com terra de garantia (vida real, Selic 13,75% em nov/2026)
@@ -317,7 +318,7 @@ export function netWorth(s) {
   return Math.round(part(() => s.money) + part(() => s.chips * CHIP) + own.reduce((a, l) => a + num(l.value), 0) + part(() => herdValue(s))
     + Object.entries(s.stock || {}).reduce((a, [k, q]) => a + num(q * (s.prices?.[k] ?? 0)), 0) + (s.lent || []).reduce((a, l) => a + num(l?.bal), 0)
     + part(() => carsValue(s)) + part(() => animalsValue(s)) + (s.cards || []).reduce((a, c) => a + part(() => cardValue(c)), 0) + part(() => granjaValue(s))
-    + own.reduce((a, l) => a + part(() => orchardValue(s, l) + caneValue(s, l)), 0) + num(s.caneHarvester?.value) + part(() => plantValue(s)) + part(() => suinosValue(s)) + part(() => bizValue(s)) + part(() => minaValue(s)) + part(() => investTotal(s)) - part(() => debt(s)));   // investimentos no banco contam no patrimônio
+    + own.reduce((a, l) => a + part(() => orchardValue(s, l) + caneValue(s, l)), 0) + num(s.caneHarvester?.value) + part(() => plantValue(s)) + part(() => suinosValue(s)) + part(() => pescaValue(s)) + part(() => bizValue(s)) + part(() => minaValue(s)) + part(() => investTotal(s)) - part(() => debt(s)));   // investimentos no banco contam no patrimônio
 }
 
 // troféus de patrimônio: o de 10 mi é o selo de entrada; ficam para sempre, mesmo se a fortuna cair

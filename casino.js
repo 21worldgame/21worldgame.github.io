@@ -127,9 +127,11 @@ function tableCard(t, kind, host) {
 // faixa do salão: online, pote do dia e prêmios recentes dos jogadores
 function lobbyHero(on) {
   const now = Live.now(), day = Math.floor((now - 3 * 3600e3) / 864e5), sinceDay = ((now - 3 * 3600e3) % 864e5) / 864e5;
-  const jackpot = Math.round(250000 + sinceDay * 1900000 + (day % 7) * 40000);
-  const slot = Math.floor(now / 7000), ids = [...NPC.onlineSet(now)], pickN = k => NPC.byId(ids[(slot * 7 + k * 13) % ids.length])?.nick || 'A Boiadeira';
-  const wins = [0, 1, 2].map(k => { const tb = SOLO[(slot + k * 3) % SOLO.length]; return `<li><b>${esc(pickN(k))}</b> levou <strong>${int(tb.minBet * (3 + ((slot + k) % 5) * 2))}</strong> fichas na ${esc(tb.name)}</li>`; }).join('');
+  const jackpot = Math.round(20000 + sinceDay * 160000 + (day % 7) * 4000);
+  // prêmios recentes: um ou outro de vez em quando, só nas mesas de baixo (até a VIP) e com prêmio do tamanho da aposta
+  const slot = Math.floor(now / 45000), ids = [...NPC.onlineSet(now)].filter(id => !NPC.FALLEN.has(id)), rr = k => { const x = Math.sin((slot * 7 + k) * 91.7) * 43758.5; return x - Math.floor(x); };
+  const wins = (ids.length ? [0, 1].slice(0, rr(9) < 0.6 ? 1 : 2) : []).map(k => { const tb = SOLO[Math.floor(rr(k) ** 2.2 * 5)], who = NPC.byId(ids[Math.floor(rr(k + 3) * ids.length)])?.nick;
+    return who ? `<li><b>${esc(who)}</b> levou <strong>${int(tb.minBet * (1 + Math.floor(rr(k + 5) * 3) * 0.5))}</strong> fichas na ${esc(tb.name)}</li>` : ''; }).join('');
   return `<div class="lhero__txt"><span class="lhero__kicker"><i></i>${on} jogadores online agora</span><h2>salão de jogos</h2>
       <p>Sente numa mesa de 21, gire a roleta, voe no aviator ou aposte no futebol ao vivo.</p>
       <button class="btn btn--gold btn--lg" data-act="sit" data-kind="solo" data-id="${SOLO[1].id}">jogar agora</button></div>

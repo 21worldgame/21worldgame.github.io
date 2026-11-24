@@ -61,6 +61,7 @@
   <div class="splash" id="splash" aria-hidden="true"><img src="assets/brand/logo-anim.svg" width="120" height="120" alt=""><span>carregando a mesa</span></div>
   <svg width="0" height="0" class="visually-hidden" aria-hidden="true">
     <symbol id="i-cards" viewBox="0 0 24 24"><rect x="3" y="5" width="11" height="15" rx="2"/><path d="M10 4.5l7.6-1.4a2 2 0 0 1 2.3 1.6l2 11.3a2 2 0 0 1-1.6 2.3L16 19"/></symbol>
+    <symbol id="i-fish" viewBox="0 0 24 24"><path d="M3 12c3-5 9-6 13-3l5-3v12l-5-3c-4 3-10 2-13-3z"/><circle cx="8" cy="11" r=".8"/></symbol>
     <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.2-6.5 8-6.5s7 2 8 6.5"/></symbol>
     <symbol id="i-map" viewBox="0 0 24 24"><path d="M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/></symbol>
@@ -126,6 +127,7 @@
         <button role="tab" id="t-ranking" data-tab="ranking" aria-controls="p-ranking" aria-selected="false" tabindex="-1"><svg><use href="#i-trophy"/></svg>ranking</button>
         <button role="tab" id="t-corridas" data-tab="corridas" aria-controls="p-corridas" aria-selected="false" tabindex="-1"><svg><use href="#i-flag"/></svg>corridas</button>
         <button role="tab" id="t-trader" data-tab="trader" aria-controls="p-trader" aria-selected="false" tabindex="-1"><svg><use href="#i-candle"/></svg>investimentos</button>
+        <button role="tab" id="t-pesca" data-tab="pesca" aria-controls="p-pesca" aria-selected="false" tabindex="-1"><svg><use href="#i-fish"/></svg>pesqueiro</button>
         <button role="tab" id="t-futebol" data-tab="futebol" aria-controls="p-futebol" aria-selected="false" tabindex="-1"><svg><use href="#i-ball"/></svg>futebol</button>
         <button role="tab" id="t-inventario" data-tab="inventario" aria-controls="p-inventario" aria-selected="false" tabindex="-1"><svg><use href="#i-bag"/></svg>inventário</button>
         <button role="tab" id="t-loja" data-tab="loja" aria-controls="p-loja" aria-selected="false" tabindex="-1"><svg><use href="#i-shop"/></svg>loja</button>
@@ -253,7 +255,7 @@
               <button class="btn btn--glass" data-act="buy-chips">comprar</button>
               <button class="btn btn--glass" data-act="cash-chips">resgatar</button>
             </div>
-            <p class="muted small">1 ficha = R$ 10. Você joga contra o dealer: quem chegar mais perto de 21 sem passar vence. Blackjack paga 3 para 2.</p>
+            <p class="muted small">1 ficha = R$ 2. Você joga contra o dealer: quem chegar mais perto de 21 sem passar vence. Blackjack paga 3 para 2.</p>
             <h3>na mesa</h3>
             <ul class="who-list" id="who-list"></ul>
           </aside>
@@ -673,6 +675,26 @@
     <!-- CONCESSIONÁRIA -->
 
     <!-- SUÍNOS -->
+    <section id="p-pesca" role="tabpanel" aria-labelledby="t-pesca" class="panel" hidden>
+      <div class="listhead"><h2>pesqueiro</h2><span class="muted small">Lance, espere a boia afundar, fisgue, puxe sem arrebentar a linha e tire o peixe da água. Venda na peixaria. Só pesca com a tela aberta.</span></div>
+      <div class="pe-spots" id="pe-spots"></div>
+      <div class="pe">
+        <div class="pe__stage glass">
+          <canvas id="pe-cv" class="pe__cv" aria-label="lago: a boia, a linha e o peixe"></canvas>
+          <div class="pe__hud" id="pe-hud" hidden>
+            <div class="pe-meter"><span>linha</span><span class="bar pe-bar"><i id="pe-ten" data-lvl="ok"></i></span></div>
+            <div class="pe-meter"><span>até a beira</span><span class="bar pe-bar pe-bar--dist"><i id="pe-dist"></i></span></div>
+            <small id="pe-stam" class="muted"></small>
+            <div class="pe-net" id="pe-net" hidden></div>
+          </div>
+          <p class="pe__msg" id="pe-msg" aria-live="polite"></p>
+          <div class="row pe__acts" id="pe-acts"></div>
+          <p class="muted small">Atalho: barra de espaço lança, fisga, puxa (segure) e tira da água.</p>
+        </div>
+        <aside class="pe__side" id="pe-side"></aside>
+      </div>
+    </section>
+
     <section id="p-suinos" role="tabpanel" aria-labelledby="t-suinos" class="panel" hidden>
       <div class="listhead"><h2>suinocultura</h2><span class="muted small">Barracão, leitões, ração e o ponto certo de venda (por volta do 4º mês, ~120 kg).</span></div>
       <div class="tiles" id="sn2-prices"></div>
@@ -964,7 +986,7 @@
     <div class="cx-bal"><span class="chip-ico chip-ico--lg" aria-hidden="true"></span><div><b id="cx-have">0 fichas</b><small class="muted" id="cx-haveval">valem R$ 0</small></div></div>
     <label class="field"><span id="cx-lbl">quantas fichas trocar</span><input class="input" id="cx-n" type="number" min="1" step="1" inputmode="numeric"></label>
     <div class="cx-quick"><button type="button" class="btn btn--glass btn--sm" data-cx-pct="0.25">25%</button><button type="button" class="btn btn--glass btn--sm" data-cx-pct="0.5">50%</button><button type="button" class="btn btn--glass btn--sm" data-cx-pct="1">tudo</button></div>
-    <p class="cx-out" id="cx-out"></p><p class="muted small">1 ficha = R$ 10, nos dois sentidos, sem taxa.</p>
+    <p class="cx-out" id="cx-out"></p><p class="muted small">1 ficha = R$ 2, nos dois sentidos, sem taxa.</p>
     <div class="cx-acts"><button class="btn btn--glass" type="button" data-cx-close>cancelar</button><button class="btn btn--gold" type="button" data-act="chipx-go" id="cx-go">trocar</button></div></dialog>
   <dialog class="dlg dlg--qr" id="dlg-qr" aria-labelledby="qr-title"><h2 id="qr-title">📱 conectar celular</h2><p>Aponte a câmera do celular para o código. O jogo abre já na tela <b>entrar</b> com o seu e-mail: é só digitar a senha (ou usar o mesmo botão do Google).</p><div class="qr-box" id="qr-box"></div><p class="muted small">ou abra no celular: <b id="qr-url"></b></p><p class="muted small">Tudo o que você tem aqui aparece lá, e o que fizer lá aparece aqui em segundos. Não crie uma conta nova no celular: use a mesma.</p><form method="dialog"><button class="btn btn--gold">pronto</button></form></dialog>
   <dialog class="dlg dlg--econ" id="dlg-econ" aria-labelledby="econ-title"><h2 id="econ-title">relatório do mercado</h2><div id="econ-body"></div><form method="dialog"><button class="btn btn--gold">fechar</button></form></dialog>

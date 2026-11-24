@@ -1363,7 +1363,7 @@ console.log('mina ok');
   assert.deepEqual(Nw.npcNews(77, ['A', 'B']), Nw.npcNews(77, ['A', 'B']), 'igual para todos');
   console.log('TV 21: notícias ok'); }
 { const Ne = await import('./news.js'), t = Ne.EDITORIAL[0].at;
-  assert.equal(Ne.editorial(t + 3600e3).length, Ne.EDITORIAL.length, 'edição especial no ar'); assert.equal(Ne.editorial(t + 5 * 864e5).length, 0, 'sai do ar depois de 3 dias');
+  assert.equal(Ne.editorial(t + 3600e3).length, Ne.EDITORIAL.filter(e => e.at - t < 864e5).length, 'edição especial no ar'); assert.equal(Ne.editorial(t + 5 * 864e5).length, 0, 'sai do ar depois de 3 dias');
   assert.ok(Ne.EDITORIAL.every(e => Ne.KINDS[e.kind] && e.title.length > 20 && e.lead.length > 80 && Ne.headline(e) === e.title));
   console.log('TV 21: edição especial ok'); }
 { // TV 21 / Resenha: o mesmo jogador do mundo não fala de novo nas 6 janelas seguintes

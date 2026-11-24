@@ -20,10 +20,10 @@ export const KB = [
     'Prêmio diário: 200 fichas × dias seguidos (até 7), e o 7º dia vale o dobro. Faltou um dia, a sequência recomeça.',
     'Passe de temporada: 30 níveis de 120 XP cada, e cada nível paga 100 fichas. No 21 só 2% das vitórias dão XP. Missões do dia dão fichas e XP.'] },
   { t: 'fichas', k: ['ficha', 'fichas', 'caixa', 'trocar fichas', 'resgate'], a: [
-    '1 ficha vale R$ 10. Você compra fichas no caixa do salão e pode trocar de volta por dinheiro.',
+    '1 ficha vale R$ 2. Você compra fichas no caixa do salão e pode trocar de volta por dinheiro.',
     'Nas mesas entre jogadores, a casa fica com 5% do pote.'] },
   { t: 'patrimônio', k: ['patrimonio', 'valor total', 'quanto valho', 'netWorth', 'riqueza'], a: [
-    'Patrimônio = dinheiro + fichas (R$ 10 cada) + terras próprias + gado + estoque pelo preço de hoje + carros + animais de corrida + cartas + granja + suínos + pomares e canaviais + frigorífico + empresas + mina + o que você emprestou, menos o que deve ao banco.',
+    'Patrimônio = dinheiro + fichas (R$ 2 cada) + terras próprias + gado + estoque pelo preço de hoje + carros + animais de corrida + cartas + granja + suínos + pomares e canaviais + frigorífico + empresas + mina + o que você emprestou, menos o que deve ao banco.',
     'Pergunte "por que meu patrimônio cai todo mês?" para ver o que puxa o seu para baixo.'] },
   { t: 'mercado e crises', k: ['crise', 'crises', 'mercado', 'saturado', 'saturada', 'saturacao', 'oferta', 'demanda', 'alerta', 'plantao', 'relatorio', 'superproducao', 'greve', 'regiao saturada'], a: [
     'Os preços seguem a economia do mundo: quando muita gente planta o mesmo produto, a oferta sobe e o preço de referência cai; quando poucos produzem, sobe.',

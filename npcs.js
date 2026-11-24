@@ -85,8 +85,14 @@ for (const n of [...BASE, ...EXTRA]) {
   Object.defineProperty(n, 'nick', { enumerable: true, get() { return this.gnick && Date.now() >= this.renameAt ? this.gnick : this.orig; } });
 }
 // mundo recomeçado: as bios antigas falavam de time, haras, galgo, fazenda e carta que ninguém tem mais. Todo bot começa com uma frase de quem acabou de chegar
-const FRESH = ['bora', 'sem tempo, só passando', 'foco no gado', 'aceito parceria', 'chama no pv', 'devagar e sempre', '🐂', 'larguei o cassino, agora é só agro', 'comecei agora, bora', 'recomeçando do zero kkk', 'primeiro dia por aqui', 'sem nada ainda, vamos ver', 'rumo ao primeiro milhão', 'recomecei do zero, sem drama', 'novo por aqui, pega leve', 'meta: sair dos 10 mil', 'soja, gado e empresa. cassino nunca mais', 'vivendo de safra e dividendo', 'compro terra, chama no pv'];
+const FRESH = ['bora', 'sem tempo, só passando', 'foco no gado', 'aceito parceria', 'chama no pv', 'devagar e sempre', '🐂', 'agro é a base de tudo', 'comecei agora, bora', 'recomeçando do zero kkk', 'primeiro dia por aqui', 'sem nada ainda, vamos ver', 'rumo ao primeiro milhão', 'recomecei do zero, sem drama', 'novo por aqui, pega leve', 'meta: sair dos 10 mil', 'soja, gado e empresa', 'vivendo de safra e dividendo', 'compro na baixa, vendo na alta', 'diversificar é a regra', 'compro terra, chama no pv'];
 export const NPCS = [...BASE, ...EXTRA].map(n => ({ ...n, bio: hash(n.i * 59 + 11) < 0.45 ? '' : FRESH[Math.floor(hash(n.i * 61 + 3) * FRESH.length)] }));   // ~45% sem recado no perfil
+// 24/11/2026 13:40: a fortuna de cassino do ReiDoGado e da A Boiadeira foi tomada (TV 21: "mafioso do cassino", sem nomes).
+// Caem para o 13º/14º lugar e voltam bem devagar, só com gado, terra e negócios (rivals.js calcula e guarda aqui). Perfil sempre aberto.
+export const FALL = Date.UTC(2026, 10, 24, 16, 40), FALLEN = new Set(['n0', 'n1']), FALLEN_W = new Map();
+// todos os jogadores do mundo perdem 25% em 3 h reais a partir daí (devagar, sem salto): mais disputa para quem tem conta
+const ss = x => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+export const dropOf = t => 1 - 0.25 * ss((t - FALL) / (3 * 36e5));
 // folga: jogadores fora do jogo até a hora indicada (UTC). 12:20 de Brasília = 15:20 UTC. Apague a linha para voltarem antes.
 export const AWAY = { 'ReiDoGado': Date.UTC(2026, 10, 21, 15, 20), 'A Boiadeira': Date.UTC(2026, 10, 21, 15, 20) };
 export const isAway = (n, now = Date.now()) => (AWAY[typeof n === 'string' ? byNick(n)?.orig ?? n : n?.orig ?? n?.nick] || 0) > now;
@@ -126,13 +132,14 @@ export const NPC_RAMP_START = 440;   // força final e dias da rampa: painel adm
 export const PERF = { fn: null };
 // fortuna no mês do mundo (pode ser fracionário: anda devagar entre um mês e outro)
 export function worthAt(n, month, t = Date.now()) {
+  const fell = FALLEN.has(n.id) && t >= FALL; if (fell && FALLEN_W.has(n.id)) return FALLEN_W.get(n.id);   // valor que o ranking calculou (rivals.js)
   const m = Math.min(48, Math.max(0, month - 1) * 48 / EARLY);   // arrancada esticada pela largada inteira (2 dias reais)
   const late = Math.min(NPC_LATE_CAP, NPC_LATE ** Math.max(0, month - 49)), NPC_RAMP = T.npcRampDays * 144;   // depois seguem crescendo devagar, até 6x
   const wave = 1 + 0.07 * Math.sin(month * 0.7 + n.i * 2.1) + 0.03 * Math.sin(month * 2.3 + n.i);
   const boost = 1 + (T.npcBoost - 1) * Math.min(1, m / 48);   // mundo novo continua alcançável
   const r = Math.min(1, Math.max(0, (month - NPC_RAMP_START) / NPC_RAMP));   // 0 em 19/11/2026, 1 daqui a um mês
   const start = 10000 * (Math.max(10000, n.base) / 10000) ** (m / 48);   // todo bot começa o mundo com R$ 10 mil e chega à fortuna dele no mês 49
-  return Math.round(start * (1 + n.g * 0.55) ** m * (1 + (boost * late - 1) * r) * wave * form(n, t) * (PERF.fn ? PERF.fn(n, month) : 1));
+  return Math.round(start * (1 + n.g * 0.55) ** m * (1 + (boost * late - 1) * r) * wave * form(n, t) * (PERF.fn ? PERF.fn(n, month) : 1) * dropOf(t) * (fell ? 0.15 : 1));   // caído e o ranking ainda não calculou: uma fração do que tinha
 }
 // chegada: cada bot entra no mundo num momento diferente das primeiras 24 h reais (144 meses): o ranking enche aos poucos, como gente de verdade chegando
 export const startMonth = n => 1 + Math.floor(hash(n.i * 13 + 7) * 144);
@@ -178,11 +185,11 @@ function assets(n, worth, lands, ha, age) {
 export function profile(n, month) {
   const worth = worthAt(n, month), r = k => hash(n.i * 31 + k), lv = levelFor(worth);
   const age = Math.min(1, Math.max(0, (month - 1) / EARLY));   // 0 no mês 1: sem partidas, conquistas, bichos nem negócios; chega ao normal na largada (2 dias)
-  const cm = Math.min(month, Math.max(1, current(CLOCK.world, CASINO_STOP))), cw = worthAt(n, cm), cage = Math.min(1, Math.max(0, (cm - 1) / EARLY));   // cassino parado no dia em que largou
+  const cm = Math.min(month, Math.max(1, current(CLOCK.world, CASINO_STOP))), cw = worthAt(n, cm, CASINO_STOP - 1), cage = FALLEN.has(n.id) ? 0 : Math.min(1, Math.max(0, (cm - 1) / EARLY));   // cassino parado no dia em que largou
   const hands = Math.round((80 + levelFor(cw) * 45 + r(1) * 400) * cage), cars = Object.keys(CARS).filter(c => CARS[c].type !== 'maquina' && CARS[c].price < worth * 0.6).slice(-1 - Math.floor(r(2) * 2));
   return {
-    npc: true, id: n.id, name: n.nick, look: n.look, level: lv, rank: rank(worth), worth, bio: n.bio,
-    stats: { hands, wins: Math.round(hands * (0.38 + r(3) * 0.08)), best: Math.round((200 + r(4) * cw / 200) * cage), races: Math.round(r(5) * 60 * cage), raceWins: Math.round(r(6) * 14 * cage) },
+    npc: true, id: n.id, name: n.nick, look: n.look, level: lv, rank: rank(worth), worth, bio: FALLEN.has(n.id) ? ['recomeçando do zero, só no gado e na terra', 'boi no pasto e terra no nome'][n.i] : n.bio, open: FALLEN.has(n.id),
+    stats: { hands, wins: Math.round(hands * (0.38 + r(3) * 0.08)), best: Math.round((150 + r(4) * Math.min(cw / 3000, 2500)) * cage), races: Math.round(r(5) * 60 * cage), raceWins: Math.round(r(6) * 14 * cage) },
     lands: Math.floor(worth / 250000), ha: Math.floor(worth / 250000) * (30 + Math.floor(r(7) * 70)), ...assets(n, worth, Math.floor(worth / 250000), Math.floor(worth / 250000) * (30 + Math.floor(r(7) * 70)), age), pioneer: hash(n.i * 89 + 5) < 0.35, heads: Math.floor(worth / 60000) * 10,
     cars, animals: Array.from({ length: Math.floor(r(8) * 3 * age) }, (_, k) => ({ kind: k % 2 ? 'horse' : 'dog', name: '', rating: 50 + Math.floor(r(9 + k) * 30), wins: Math.floor(r(12 + k) * 8) })),
     achCount: Math.floor(Math.min(20, 2 + Math.floor(lv / 2)) * age), deals: deals(n, worth).filter(d => Date.now() - d.at < (month - 1) * 3e5),   // negócio só desde que o mundo começou (ponytail: assume 5 min por mês)
