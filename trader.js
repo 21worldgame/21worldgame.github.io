@@ -1,5 +1,5 @@
 // Mesa de operações: velas ao vivo (1, 5 ou 10 min), aposta por tempo em "sobe" ou "desce".
-// O valor sai na hora e só volta se acertar (1,85x). Preços vêm de market.js: iguais para todos e sem perder nada ao recarregar.
+// O valor sai na hora e só volta se acertar (1,7x em 1 min, 1,8x em 5, 1,88x em 10). Preços vêm de market.js: iguais para todos e sem perder nada ao recarregar.
 import * as MK from './market.js';
 import * as Live from './live.js';
 import { G, $, esc, brl, int, say, save, award, note, confetti } from './store.js';
@@ -12,7 +12,7 @@ const fmtLeft = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${M
 export function initTrader() {
   G.S.trades ??= []; G.S.trHist ??= [];
   $('#tr-assets').innerHTML = Object.entries(MK.ASSETS).map(([k, a]) => `<button class="tr-asset" data-act="tr-asset" data-id="${k}"><strong>${a.ticker}</strong><span id="tr-q-${k}"></span></button>`).join('');
-  pickAsset(cur);
+  pickAsset(cur); pickDur(dur);
   const cv = $('#tr-canvas');
   cv.addEventListener('mousemove', e => { const r = cv.getBoundingClientRect(); hover = { x: e.clientX - r.left, y: e.clientY - r.top }; draw(); });
   cv.addEventListener('mouseleave', () => { hover = null; draw(); });
@@ -39,7 +39,9 @@ function settleNow() {
 
 export function pickAsset(a) { cur = a; document.querySelectorAll('.tr-asset').forEach(b => b.classList.toggle('is-on', b.dataset.id === a)); render(); }
 export function pickTf(v) { tf = Number(v); document.querySelectorAll('[data-act="tr-tf"]').forEach(b => b.classList.toggle('is-on', Number(b.dataset.id) === tf)); render(); }
-export function pickDur(v) { dur = Number(v); document.querySelectorAll('[data-act="tr-dur"]').forEach(b => b.classList.toggle('is-on', Number(b.dataset.id) === dur)); render(); }
+const x = v => String(v).replace('.', ',') + 'x';
+// escolher o tempo da operação troca as velas para o mesmo tempo: o gráfico mostra o que vale para aquela operação
+export function pickDur(v) { dur = Number(v); document.querySelectorAll('[data-act="tr-dur"]').forEach(b => { const m = Number(b.dataset.id); b.classList.toggle('is-on', m === dur); b.innerHTML = `${m} min <small>paga ${x(MK.payout(m))}</small>`; }); pickTf(dur); }
 export const pickLev = () => {};
 
 export function open(side) {
@@ -49,7 +51,7 @@ export function open(side) {
   const t = r.trade, tk = MK.ASSETS[cur].ticker;
   note(`trader: apostou que ${tk} ${side > 0 ? 'sobe' : 'desce'} em ${dur} min`, -stake);
   sfx.play('chip', 0.5);
-  say(`Valendo! ${tk} em ${MK.fmt(cur, t.entry)}. Se ${side > 0 ? 'subir' : 'descer'} em ${dur} min, você recebe ${brl(Math.round(stake * MK.PAYOUT))}.`);
+  say(`Valendo! ${tk} em ${MK.fmt(cur, t.entry)}. Se ${side > 0 ? 'subir' : 'descer'} em ${dur} min, você recebe ${brl(Math.round(stake * t.pay))} (${x(t.pay)}).`);
   save(); G.render(); render();
 }
 export const close = () => {};          // não existe mais sair antes do tempo: o dinheiro já está em jogo
@@ -69,7 +71,7 @@ function render() {
   $('#tr-ch').className = ch >= 0 ? 'good' : 'bad';
   $('#tr-hl').textContent = `máx ${MK.fmt(cur, Math.max(...vis.map(c => c.h)))}  mín ${MK.fmt(cur, Math.min(...vis.map(c => c.l)))}  ${A.unit}`;
   const amt = Math.floor(Number($('[name="tr-amt"]').value) || 0);
-  $('#tr-size').innerHTML = `Acertou em ${dur} min: recebe <b class="good">${brl(Math.round(amt * MK.PAYOUT))}</b> (lucro de ${Math.round((MK.PAYOUT - 1) * 100)}%). Errou ou ficou igual: perde ${brl(amt)}.`;
+  $('#tr-size').innerHTML = `Acertou em ${dur} min: recebe <b class="good">${brl(Math.round(amt * MK.payout(dur)))}</b> (${x(MK.payout(dur))}, lucro de ${Math.round((MK.payout(dur) - 1) * 100)}%). Quanto mais longo o tempo, mais paga: 1 min ${x(MK.payout(1))} · 5 min ${x(MK.payout(5))} · 10 min ${x(MK.payout(10))}. Errou ou ficou igual: perde ${brl(amt)}.`;
   $('#tr-pos').innerHTML = G.S.trades.length ? G.S.trades.map(p => {
     const cp = MK.price(p.asset, t), ahead = p.side * (cp - p.entry) > 0;
     return `<li class="tr-p"><div><strong class="${p.side > 0 ? 'good' : 'bad'}">${p.side > 0 ? '▲ sobe' : '▼ desce'} ${MK.ASSETS[p.asset].ticker}</strong>

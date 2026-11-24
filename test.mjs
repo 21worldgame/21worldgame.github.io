@@ -532,7 +532,10 @@ import * as MK from './market.js';
   assert.equal(s.money, 9700);
   const r = MK.settle(s, t0 + 60000)[0];
   const won = MK.price('boi', t0 + 60000) > MK.price('boi', t0);
-  assert.equal(r.win, won); assert.equal(s.money, 9700 + (won ? 1850 : 0)); assert.equal(s.trades.length, 0);
+  assert.equal(r.win, won); assert.equal(s.money, 9700 + (won ? 1700 : 0)); assert.equal(s.trades.length, 0);
+  assert.deepEqual([1, 5, 10].map(MK.payout), [1.7, 1.8, 1.88]);   // quanto mais longo, mais paga
+  const old = { money: 0, trHist: [], trades: [{ id: 1, asset: 'boi', side: won ? 1 : -1, stake: 1000, minutes: 1, entry: MK.price('boi', t0), at: t0, exp: t0 + 60000 }] };
+  MK.settle(old, t0 + 60000); assert.equal(old.money, 1850);   // operação aberta antes (sem pay) recebe o 1,85x combinado
 }
 console.log('mercado ok');
 // menções e privado no chat
@@ -1260,9 +1263,9 @@ console.log('mina ok');
   for (let i = 0; i < 300; i++) { const f = { market: [{ id: 'x', price: 100000 }] }, d = FTq.dealFor(f, 'x', rng); assert.ok(d.limit >= 95000, 'piso de compra'); }
   assert.ok(FTq.OFFER_MAX < FTq.BUY_FLOOR); console.log('jogadores: sem arbitragem compra/venda ok'); }
 { const MKq = await import('./market.js'), LEq = await import('./leilao.js');
-  for (const a of Object.keys(MKq.ASSETS)) for (const lb of [60, 300, 600]) for (const dir of [1, -1]) { let w = 0; const N = 3000;
-    for (let k = 0; k < N; k++) { const now = 1.79e12 + k * 1300000, side = dir * (Math.sign(MKq.price(a, now) - MKq.price(a, now - lb * 1000)) || 1); if (side * (MKq.price(a, now + 300000) - MKq.price(a, now)) > 0) w++; }
-    assert.ok(w / N < 1 / MKq.PAYOUT, `mercado ${a}: seguir/ir contra o gráfico não pode dar lucro (${(w / N * 100).toFixed(1)}%)`); }
+  for (const a of Object.keys(MKq.ASSETS)) for (const m of MKq.DURATIONS) for (const lb of [60, 300, 600]) for (const dir of [1, -1]) { let w = 0; const N = 3000;
+    for (let k = 0; k < N; k++) { const now = 1.79e12 + k * 1300000, side = dir * (Math.sign(MKq.price(a, now) - MKq.price(a, now - lb * 1000)) || 1); if (side * (MKq.price(a, now + m * 60000) - MKq.price(a, now)) > 0) w++; }
+    assert.ok(w / N < 1 / MKq.payout(m), `mercado ${a} ${m} min: seguir/ir contra o gráfico não pode dar lucro (${(w / N * 100).toFixed(1)}%)`); }
   for (let sl = 1000; sl < 2500; sl++) { const l = LEq.lot(sl), st = LEq.state(l, LEq.endsAt(sl) - 1500); assert.ok(st.next >= l.value * 0.97, `leilão ${sl} saiu barato`); }
   console.log('mercado imprevisível e leilão sem cavalo barato ok'); }
 

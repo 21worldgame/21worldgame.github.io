@@ -51,7 +51,7 @@ export const KB = [
     'Vender no mercado tem taxa de 1%. O que fica no estoque conta no patrimônio pelo preço do dia.'] },
   { t: 'investimentos', k: ['investimento', 'investimentos', 'trader', 'grafico', 'vela', 'subir ou descer', 'opcao'], a: [
     'Nos investimentos você escolhe um ativo, o tempo (1, 5 ou 10 minutos) e aposta se o preço vai subir ou descer.',
-    'Acertou: recebe 1,85× o valor. Errou ou empatou: perde o valor. Não dá para sair antes do tempo.'] },
+    'Acertou: recebe 1,7× o valor em 1 min, 1,8× em 5 min e 1,88× em 10 min (o gráfico troca para velas do mesmo tempo). Errou ou empatou: perde o valor. Não dá para sair antes do tempo.'] },
   // ---------- terras ----------
   { t: 'terras', k: ['terra', 'terras', 'hectare', 'ha', 'fazenda', 'comprar terra', 'regiao', 'mapa', 'satelite'], a: [
     'Cada terra tem região, uso (pasto, lavoura ou café), hectares, água e benfeitorias. Isso mexe no preço e em quantos bois cabem.',

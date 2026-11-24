@@ -12,7 +12,8 @@ export const ASSETS = {   // preço base = cotação real de nov/2026 (B3, Cepea
 };
 export const DURATIONS = [1, 5, 10];          // minutos
 export const TIMEFRAMES = [1, 5, 10];         // minutos por vela
-export const PAYOUT = 1.85;                   // acertou: recebe 1,85x o valor (lucro de 85%); errou ou empatou: perde
+export const PAYOUT = { 1: 1.7, 5: 1.8, 10: 1.88 }   // teto: a melhor estratégia acerta ~52% em 10 min, empate de 1,88x é 53,2%;   // acertou: recebe Nx o valor (quanto mais longo, mais paga); errou ou empatou: perde
+export const payout = minutes => PAYOUT[minutes];
 export const MIN_STAKE = 100;
 
 // Passeio aleatório determinístico (mesmo valor para o mesmo instante em qualquer aparelho), montado como ponte browniana:
@@ -52,7 +53,7 @@ export function open(s, { asset, side, stake, minutes }, now) {
   if (stake < MIN_STAKE) return { err: `o valor mínimo é R$ ${MIN_STAKE}.` };
   if (stake > s.money) return { err: 'dinheiro insuficiente.' };
   s.money -= stake;                                      // o dinheiro entra em jogo na hora
-  const t = { id: s.nextId++, asset, side: side > 0 ? 1 : -1, stake, minutes, entry: price(asset, now), at: now, exp: now + minutes * 60000 };
+  const t = { id: s.nextId++, asset, side: side > 0 ? 1 : -1, stake, minutes, entry: price(asset, now), pay: payout(minutes), at: now, exp: now + minutes * 60000 };
   (s.trades ??= []).push(t);
   return { trade: t };
 }
@@ -65,7 +66,7 @@ export function settle(s, now) {
       done.push({ ...t, old: true, back: t.margin || 0 }); continue;
     }
     if (now < t.exp) continue;
-    const final = price(t.asset, t.exp), win = t.side * (final - t.entry) > 0, back = win ? Math.round(t.stake * PAYOUT) : 0;
+    const final = price(t.asset, t.exp), win = t.side * (final - t.entry) > 0, back = win ? Math.round(t.stake * (t.pay ?? 1.85)) : 0;   // sem pay = aberta antes da v199, quando tudo pagava 1,85x
     s.money += back; s.trades.splice(s.trades.indexOf(t), 1);
     const r = { ...t, final, win, back };
     s.trHist = [r, ...(s.trHist || [])].slice(0, 15);
