@@ -47,12 +47,12 @@ function paintActs() {
     wait: `<button class="btn btn--gold btn--lg" data-pe="hook">fisgar!</button><button class="btn btn--glass" data-pe="quit">recolher</button>`,
     fight: `<button class="btn btn--gold btn--lg pe-hold" data-pe="hold" aria-pressed="false">segure para puxar</button>`,
     land: `<button class="btn btn--gold btn--lg" data-pe="net">tirar da água!</button>`,
-    caught: `<button class="btn btn--gold btn--lg" data-pe="keep">pôr na caixa (${brl(PE.fishValue(G.S, { ...f, age: 0 }))})</button><button class="btn btn--glass" data-pe="free">soltar</button>`,
+    caught: f ? `<button class="btn btn--gold btn--lg" data-pe="keep">pôr na caixa (${brl(PE.fishValue(G.S, { ...f, age: 0 }))})</button><button class="btn btn--glass" data-pe="free">soltar</button>` : '',
   }[T.st] || '';
   $('#pe-msg').innerHTML = T.msg;
   $('#pe-hud').hidden = T.st !== 'fight' && T.st !== 'land';
   $('#pe-net').hidden = T.st !== 'land';
-  if (T.st === 'caught') $('#pe-msg').innerHTML = `<strong class="dw-win">${S.img} ${S.label} de ${fmtKg(f.kg)}!</strong>${f.trophy ? ' <b class="pe-trophy">peixe troféu</b>' : ''}`;
+  if (T.st === 'caught' && f) $('#pe-msg').innerHTML = `<strong class="dw-win">${S.img} ${S.label} de ${fmtKg(f.kg)}!</strong>${f.trophy ? ' <b class="pe-trophy">peixe troféu</b>' : ''}`;
 }
 const setMsg = (m, st) => { T.msg = m; if (st) T.st = st; paintActs(); };
 
