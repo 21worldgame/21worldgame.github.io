@@ -115,3 +115,9 @@ tr.ad-mark td { background: color-mix(in oklab, var(--hud-accent) 10%, transpare
 .ad-pun h3, .ad-pun p { margin: 0; }
 .ad-pun__opt { display: flex; align-items: center; gap: 6px; font-size: 14px; }
 .ad-pun__opt--bad { color: var(--color-error); font-weight: 700; }
+.ad-pun:has(.ad-desc__prev:not([hidden])) { max-width: 36rem; }
+.ad-desc__edit, .ad-desc__prev { display: grid; gap: 8px; }
+.ad-desc__prev p { margin: 0; }
+.ad-prev__note { display: grid; gap: 4px; padding: 10px 12px; border-radius: 12px; border-left: 4px solid var(--hud-accent); background: var(--glass); font-size: 14px; line-height: 1.4; }
+.ad-prev__note b { font-size: 15px; }
+.ad-prev__log td { white-space: normal !important; }

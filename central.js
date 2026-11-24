@@ -917,7 +917,7 @@ document.addEventListener('click', e => {
     ['acima do ritmo', r.excess || 0, 'ganho acima do ritmo normal do jogo'], ['ganho em 24 h', Math.max(0, r.money24 || 0), 'ganho irregular nas últimas 24 h']]
     .filter(x => x[1] > 0).filter((x, i, a) => a.findIndex(y => Math.round(y[1]) === Math.round(x[1])) === i);
   const d = document.createElement('dialog'); d.className = 'ad-pun';
-  d.innerHTML = `<form method="dialog"><h3>descontar de ${esc(name)}</h3>
+  d.innerHTML = `<form method="dialog"><div class="ad-desc__edit"><h3>descontar de ${esc(name)}</h3>
     <p class="small">Caixa hoje: <b>${r.s?.money != null ? brl(r.s.money) : '—'}</b> · patrimônio ${r.worth != null ? brl(r.worth) : '—'}. Sai do caixa quando o jogo dele sincronizar e aparece no livro-caixa como aviso do órgão escolhido (ele nunca vê "administrador"). O caixa pode ficar negativo.</p>
     ${sug.length ? `<div class="row">${sug.map(([k, v, why]) => `<button type="button" class="btn btn--glass btn--xs" data-sug="${Math.round(v)}" data-why="${esc(why)}">${k}: ${AE.brlShort(v)}</button>`).join('')}</div>` : ''}
     <label class="field"><span>valor a descontar (R$)</span><input class="input" type="number" name="amount" min="1" step="1" required value="${Math.round(sug[0]?.[1] || 0) || ''}" autofocus></label>
@@ -925,8 +925,25 @@ document.addEventListener('click', e => {
     <label class="field"><span>quem manda o aviso (dentro do jogo; o jogador nunca vê "administrador")</span><select class="input" name="org">
       <option value="rf">Receita Federal: auto de infração</option><option value="bc">Banco Central: Pix bloqueado por fraude</option><option value="pf">Polícia Federal: bens apreendidos</option></select></label>
     <label class="field"><span>como vai aparecer no livro-caixa dele (pode editar)</span><textarea class="input" name="txt" maxlength="500" rows="5"></textarea></label>
-    <div class="row"><button class="btn btn--glass" value="cancel" formnovalidate>cancelar</button><button class="btn btn--danger" value="ok">descontar</button></div></form>`;
-  const q = n => d.querySelector(`[name=${n}]`);
+    <div class="row"><button class="btn btn--glass" value="cancel" formnovalidate>cancelar</button><button class="btn btn--danger" type="button" data-prev>descontar</button></div></div>
+    <div class="ad-desc__prev" hidden></div></form>`;
+  const q = n => d.querySelector(`[name=${n}]`), edit = d.querySelector('.ad-desc__edit'), prev = d.querySelector('.ad-desc__prev');
+  const finalTxt = () => { const t = (q('txt').value || 'movimentação incompatível com a sua renda').trim().slice(0, 500); return ORG_RE.test(t) ? t : `Receita Federal: ${t}`.slice(0, 500); };
+  // prévia: como o jogador vai ver (notificação + linha do livro-caixa + caixa antes e depois) antes de mandar
+  const preview = () => {
+    const amt = Math.floor(Number(q('amount').value) || 0); if (amt <= 0) { q('amount').focus(); return toast('Coloque o valor a descontar.', true); }
+    const t = finalTxt(), org = t.match(ORG_RE)[1], body = t.slice(org.length + 1).trim(), cash = Number(r.s?.money), month = Math.max(0, ...vg.rows.map(x => Number(x.s?.month) || 0));
+    prev.innerHTML = `<h3>prévia: é assim que ${esc(name)} vai ver</h3>
+      <p class="muted small">notificação no jogo</p>
+      <div class="ad-prev__note"><b>${esc(org)}</b><span>${esc(body)}</span></div>
+      <p class="muted small">livro-caixa</p>
+      <table class="ad-xl ad-prev__log"><thead><tr><th>mês</th><th>lançamento</th><th class="num">valor</th></tr></thead>
+        <tbody><tr><td class="num">${month || '—'}</td><td>${esc(t)} <span class="btn btn--glass btn--xs">recorrer</span></td><td class="num bad">${brl(-amt)}</td></tr></tbody></table>
+      <p class="small">Caixa: <b>${Number.isFinite(cash) ? brl(cash) : '—'}</b> → <b class="${Number.isFinite(cash) && cash - amt < 0 ? 'bad' : ''}">${Number.isFinite(cash) ? brl(cash - amt) : '—'}</b> (sai quando o jogo dele sincronizar)</p>
+      <div class="row"><button class="btn btn--glass" type="button" data-back>voltar e editar</button><button class="btn btn--danger" value="ok">enviar desconto de ${brl(amt)}</button></div>`;
+    edit.hidden = true; prev.hidden = false;
+  };
+  d.addEventListener('click', ev => { if (ev.target.closest('[data-prev]')) preview(); if (ev.target.closest('[data-back]')) { prev.hidden = true; edit.hidden = false; } });
   const suggest = () => { const v = brl(Math.floor(Number(q('amount').value) || 0));
     const items = q('why').value.split('\n').map(x => x.trim().replace(/[.;]$/, '')).filter(Boolean);
     const make = list => ({ rf: `Receita Federal: auto de infração. A fiscalização encontrou ${list}. Foram recolhidos ${v}. Se discordar, peça revisão aqui no livro-caixa. Reincidência leva à suspensão da conta.`,
@@ -941,9 +958,7 @@ document.addEventListener('click', e => {
   d.addEventListener('close', async () => {
     const f = Object.fromEntries(new FormData(d.querySelector('form'))); d.remove();
     const amt = Math.floor(Number(f.amount) || 0); if (d.returnValue !== 'ok' || amt <= 0) return;
-    let why = (f.txt || 'movimentação incompatível com a sua renda').trim().slice(0, 500); if (!ORG_RE.test(why)) why = `Receita Federal: ${why}`.slice(0, 500);   // sempre imersivo
-    const shown = why;
-    if (!confirm(`Descontar ${brl(amt)} do caixa de ${name}?\n\nNo livro-caixa dele:\n"${shown}"`)) return;
+    const why = ((f.txt || '').trim() ? ORG_RE.test(f.txt.trim()) ? f.txt.trim() : `Receita Federal: ${f.txt.trim()}` : 'Receita Federal: movimentação incompatível com a sua renda').slice(0, 500);   // sempre imersivo (a prévia já foi vista)
     const { error } = await sb.from('admin_grants').insert({ user_id: id, kind: 'money', amount: -amt, note: why });
     if (error) return fail(error, 'descontar');
     await log('take_money', id, { amount: amt, why, from: 'alertas de trapaça' });
