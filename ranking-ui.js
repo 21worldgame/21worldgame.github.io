@@ -33,7 +33,7 @@ function rows() {
   // online alinhado: o mundo mostra de 68 a 159 jogadores online no total, contando os jogadores de verdade; os bots completam o resto
   const on = NPC.onlineSet(t);
   return base.map(r => {
-    r = { ...r, online: r.pid === 'me' ? true : String(r.pid || '').startsWith('npc:') ? on.has(r.pid.slice(4)) : String(r.pid || '').startsWith('u:') ? false : !!r.pid };   // da nuvem sem estar no salão = fora agora
+    r = { ...r, online: r.pid === 'me' ? true : String(r.pid || '').startsWith('npc:') ? on.has(r.pid.slice(4)) : String(r.pid || '').startsWith('u:') ? Live.isOnline(r.pid.slice(2)) : !!r.pid };   // jogador de verdade: online se está com o jogo aberto agora (presença)
     if (String(r.pid).startsWith('npc:')) { const p = NPC.profile(NPC.byId(r.pid.slice(4)), month), c = npcColls(r.pid, month); return { ...r, ha: p.ha, best: p.stats.best, wins: p.stats.wins, colls: c, prestige: c.length * 10 }; }
     if (r.pid === 'me') return { ...r, ha: me.ha, best: me.stats?.best || 0, wins: me.stats?.wins || 0, colls: me.colls || [], prestige: me.prestige || 0 };
     return r;

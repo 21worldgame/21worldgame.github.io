@@ -1567,7 +1567,7 @@ setTimeout(() => eliteCheck(), 4000);
 // economia do mundo: aplica o mês atual (preço de referência e demanda) e, a cada 5 min, junta o que os jogadores com conta plantaram
 function econSync() {
   try {
-    EC.apply(S().month || 1, L.ECON, NG.SHOCK);
+    EC.apply(S().month || 1, L.ECON, NG.SHOCK, L.CROP_YIELD);
     REG_INFO = EC.regionInfo(L.REGIONS, REG_COUNTS, S().month || 1);
     for (const k of Object.keys(L.REGION_K)) delete L.REGION_K[k];
     for (const [k, v] of Object.entries(REG_INFO)) L.REGION_K[k] = v.k;
@@ -1598,7 +1598,7 @@ function worldMonths0() {
   const before = s.money, logBefore = s.log.length; let harvests = 0;
   const closes = [];   // o que cada fechamento lançou (o contador mostra exatamente isso)
   for (let i = 0; i < p.ticks; i++) {
-    EC.apply(s.month, L.ECON, NG.SHOCK);   // economia do mundo deste mês: preço de referência e demanda dos setores
+    EC.apply(s.month, L.ECON, NG.SHOCK, L.CROP_YIELD);   // economia do mundo deste mês: preço de referência e demanda dos setores
     const lines = L.tick(s), rec = [...lines], N = l => { note(l.txt, l.val); rec.push(l); };
     for (const l of ST.monthly(s)) N(l);
     for (const l of GR.monthly(s)) N(l);
@@ -1684,7 +1684,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 202;
+const APP_VERSION = 203;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

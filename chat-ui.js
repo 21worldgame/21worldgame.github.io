@@ -72,7 +72,7 @@ function popup(m) {
     html: `<span class="nt__av">${avatarSVG(p.look || {}, { label: m.name })}</span><div class="nt__msg"><b>${esc(m.name)}<small>${m.pv ? 'privado' : 'mencionou você na Geral'} · ${time(m.at)}</small></b><p>${esc(m.text)}</p></div>` });
   card.dataset.conv = c;
 }
-const onlineLabel = () => `${people().length + 1} online`;
+const onlineLabel = () => `${NPC.onlineTotal(Live.now())} online`;   // o mesmo número do ranking, do salão e da cidade
 // número no botão: privadas e menções (a Geral não conta, senão ficava sempre aceso)
 function badge() {
   let n = unread.get('@') || 0; for (const [c, v] of unread) if (c !== 'all' && c !== '@' && c !== 'tv') n += v;
@@ -92,7 +92,7 @@ function drawPeople() {
     + row('tv', icon('<i class="tv__dot"></i>'), 'TV 21', tv ? esc(`${tv.name} ${tv.what}`) : 'últimas notícias do mundo', 0, 0);
   const ranked = list.filter(p => !f || p.name.toLowerCase().includes(f)).map(p => ({ p, last: lastOf(p.id) }))
     .sort((a, b) => (b.last?.at || 0) - (a.last?.at || 0) || a.p.name.localeCompare(b.p.name));
-  html += `<li class="rz__sec">online agora · ${f ? ranked.length : list.length + 1}</li>`;
+  html += `<li class="rz__sec">online agora · ${f ? ranked.length : NPC.onlineTotal(Live.now())}</li>`;
   html += ranked.map(({ p, last }) => row(p.id, mini(p.look, p.name), p.name, typing.has(p.id) ? '<i class="rz__typing">digitando...</i>' : last ? esc(`${last.mine ? 'você: ' : ''}${last.text}`) : `nível ${p.level} · toque para conversar`, last?.at, unread.get(p.id) || 0, '<i class="rz__dot" aria-label="online"></i>')).join('')
     || `<li class="rz__empty">Ninguém com esse nome online.</li>`;
   el.innerHTML = html;
@@ -104,7 +104,7 @@ function drawStrip() {
   el.hidden = conv !== 'all'; if (el.hidden) return;
   const list = people().sort((a, b) => (b.peer ? 1 : 0) - (a.peer ? 1 : 0) || b.level - a.level), key = list.map(p => p.id).join();
   if (key === stripKey) return; stripKey = key;
-  el.innerHTML = `<span class="rz__strip-t">online agora · ${list.length + 1}</span><div class="rz__strip-row">${list.map(p => `<button type="button" class="rz__chip" data-conv="${esc(p.id)}" title="conversar com ${esc(p.name)}">${mini(p.look, p.name)}<i class="rz__dot"></i><small>${esc(p.name)}</small></button>`).join('')}</div>`;
+  el.innerHTML = `<span class="rz__strip-t">online agora · ${NPC.onlineTotal(Live.now())}</span><div class="rz__strip-row">${list.map(p => `<button type="button" class="rz__chip" data-conv="${esc(p.id)}" title="conversar com ${esc(p.name)}">${mini(p.look, p.name)}<i class="rz__dot"></i><small>${esc(p.name)}</small></button>`).join('')}</div>`;
 }
 function drawConv() {
   drawStrip();

@@ -81,9 +81,9 @@ export const EVENTS = {
   superproducao: { cat: 'agrícola', title: g => `Superprodução de ${LABEL[g]}`, why: g => `Com a entrada de muitos produtores, a produção de ${LABEL[g]} bateu recorde. O excesso de oferta pressiona os preços e reduz as margens.`, tips: g => [`diversificar para produtos com pouca oferta`, `segurar o estoque de ${LABEL[g]} só se tiver galpão`, `evitar comprar terra nova para ${LABEL[g]} agora`] },
   greve: { cat: 'logística', title: () => 'Greve nacional dos caminhoneiros', why: () => 'Uma paralisação dos caminhoneiros atrasa o transporte de mercadorias em várias regiões. Quem depende de frete sente primeiro.', eff: { soja: 0.9, milho: 0.9, laranja: 0.88, arroba: 0.93 }, sector: { food: 0.85, cars: 0.9, markets: 0.9 }, up: { jewel: 1.05 }, tips: () => ['guardar a safra no galpão até a estrada liberar', 'evitar vender produto perecível na pressa', 'negócios que não dependem de frete sofrem menos'] },
   ciber: { cat: 'tecnologia', title: () => 'Ataque cibernético de grandes proporções', why: () => 'Um ataque derrubou serviços digitais pelo país. Empresas de tecnologia e bancos enfrentam instabilidade, e clientes procuram alternativas.', sector: { isps: 0.8, banks: 0.85 }, up: { realty: 1.06, auction: 1.05 }, tips: () => ['provedores e bancos podem perder clientes por alguns meses', 'negócios físicos ganham espaço', 'quem segura a operação sai valorizado'] },
-  frutas: { cat: 'sanitária', title: () => 'Bactéria suspende venda de frutas', why: () => 'Uma bactéria encontrada em regiões produtoras suspendeu parte da venda de frutas. O setor tem perdas, e outros produtos ganham espaço.', eff: { laranja: 0.75 }, up: { cana: 1.06, milho: 1.04 }, tips: () => ['pomares podem render menos por alguns meses', 'cana e milho ganham demanda', 'não é hora de plantar pomar novo'] },
-  geada: { cat: 'clima', title: () => 'Geada forte nas regiões de café', why: () => 'Uma frente fria trouxe geada às regiões cafeeiras. A colheita vai encolher, e o preço do café tende a subir para quem tiver estoque.', eff: { cafe: 1.22 }, tips: () => ['quem tem café estocado pode vender melhor', 'cafezais novos sofrem mais', 'oportunidade para quem plantou em outras regiões'] },
-  seca: { cat: 'clima', title: () => 'Seca prolongada no Centro-Oeste', why: () => 'A falta de chuva derruba a produtividade de grãos. Com menos soja e milho no mercado, os preços sobem, mas quem planta agora arrisca mais.', eff: { soja: 1.15, milho: 1.18 }, sector: { food: 0.94 }, tips: () => ['estoque de grão vale mais', 'ração mais cara pesa na granja e nos suínos', 'irrigação e galpão fazem diferença'] },
+  frutas: { cat: 'sanitária', crop: { laranja: 0.75 }, title: () => 'Bactéria suspende venda de frutas', why: () => 'Uma bactéria encontrada em regiões produtoras suspendeu parte da venda de frutas. O setor tem perdas, e outros produtos ganham espaço.', eff: { laranja: 0.75 }, up: { cana: 1.06, milho: 1.04 }, tips: () => ['pomares podem render menos por alguns meses', 'cana e milho ganham demanda', 'não é hora de plantar pomar novo'] },
+  geada: { cat: 'clima', crop: { cafe: 0.7 }, title: () => 'Geada forte nas regiões de café', why: () => 'Uma frente fria trouxe geada às regiões cafeeiras. A colheita vai encolher, e o preço do café tende a subir para quem tiver estoque.', eff: { cafe: 1.22 }, tips: () => ['quem tem café estocado pode vender melhor', 'cafezais novos sofrem mais', 'oportunidade para quem plantou em outras regiões'] },
+  seca: { cat: 'clima', crop: { soja: 0.8, milho: 0.78 }, title: () => 'Seca prolongada no Centro-Oeste', why: () => 'A falta de chuva derruba a produtividade de grãos. Com menos soja e milho no mercado, os preços sobem, mas quem planta agora arrisca mais.', eff: { soja: 1.15, milho: 1.18 }, sector: { food: 0.94 }, tips: () => ['estoque de grão vale mais', 'ração mais cara pesa na granja e nos suínos', 'irrigação e galpão fazem diferença'] },
   aviaria: { cat: 'sanitária', title: () => 'Gripe aviária fecha mercados', why: () => 'Casos de gripe aviária fecharam compradores de frango por alguns meses. O preço do frango cai; carne bovina e suína ganham espaço.', eff: { frango: 0.78, arroba: 1.06, suino: 1.08 }, tips: () => ['segurar a venda de frango se der', 'boi e suíno ganham demanda', 'evitar novos galpões de frango agora'] },
   imoveis: { cat: 'mercado', title: () => 'Boom imobiliário nas capitais', why: () => 'Juros e emprego em alta aqueceram o mercado de imóveis. Aluguéis sobem e casas valorizam mais rápido.', sector: { realty: 1.15, hotel: 1.06 }, tips: () => ['imobiliárias faturam mais', 'boa hora para vender imóveis caros', 'o boom passa: não compre no topo sem planejar'] },
   dolar: { cat: 'câmbio', title: () => 'Dólar dispara e exportação ganha força', why: () => 'O real perdeu valor. Quem exporta (soja, café, laranja) recebe mais; importados e viagens ficam mais caros.', eff: { soja: 1.1, cafe: 1.12, laranja: 1.08 }, sector: { cars: 0.88, air: 0.92 }, tips: () => ['bom momento para vender grão e café', 'importados vendem menos', 'insumos importados encarecem o plantio'] },
@@ -105,7 +105,7 @@ function themed(j) {
   const p = season(m0).pressure, wt = THEMES.map(t => { const E = EVENTS[t]; let v = 1; for (const g of Object.keys(E.eff || {})) if (p[g]) v += Math.max(0, p[g] - 1) * 2; return v; });
   let r = h(j * 4.4 + 3) * wt.reduce((a, b) => a + b, 0), kind = THEMES[0];
   for (let i = 0; i < THEMES.length; i++) { r -= wt[i]; if (r <= 0) { kind = THEMES[i]; break; } }
-  return { id: `t${j}-${kind}`, kind, start: m0, warn: 2, dur: 3 + Math.floor(h(j * 6.6) * 5), k: 0.6 + h(j * 8.1) * 0.4, eff: EVENTS[kind].eff, sector: EVENTS[kind].sector, up: EVENTS[kind].up };
+  return { id: `t${j}-${kind}`, kind, start: m0, warn: 2, dur: 3 + Math.floor(h(j * 6.6) * 5), k: 0.6 + h(j * 8.1) * 0.4, eff: EVENTS[kind].eff, sector: EVENTS[kind].sector, up: EVENTS[kind].up, crop: EVENTS[kind].crop };
 }
 // eventos que tocam o mês m (do aviso até 3 meses depois do fim)
 export function events(m) {
@@ -126,23 +126,23 @@ export function phaseOf(e, m) {
 const power = (e, m) => (e.phase === 'crise' ? Math.min(1, (m - e.start + 1) / 2) : e.phase === 'fim' ? Math.max(0, 1 - (m - e.start - e.dur) / 3) : 0);
 // ---------- resultado do mês: preço de referência e demanda dos setores ----------
 export function state(m) {
-  const s = season(m), price = { ...s.mult }, sector = {};
+  const s = season(m), price = { ...s.mult }, sector = {}, crop = {};   // crop: quanto rende a colheita de quem colhe neste mês (1 = normal)
   const evs = events(m);
   for (const e of evs) {
     const p = power(e, m); if (!p) continue;
     for (const [g, v] of Object.entries(e.eff || {})) price[g] = +((price[g] || 1) * (1 + (v - 1) * p)).toFixed(3);
     for (const [g, v] of Object.entries(e.up || {})) { if (GOODS.includes(g) || g === 'frango' || g === 'suino') price[g] = +((price[g] || 1) * (1 + (v - 1) * p)).toFixed(3); else sector[g] = +((sector[g] || 1) * (1 + (v - 1) * p)).toFixed(3); }
     for (const [c, v] of Object.entries(e.sector || {})) sector[c] = +((sector[c] || 1) * (1 + (v - 1) * p)).toFixed(3);
+    for (const [g, v] of Object.entries(e.crop || {})) crop[g] = +((crop[g] || 1) * (1 + (v - 1) * p)).toFixed(3);
   }
   const lvl = evs.reduce((a, e) => Math.max(a, { aviso: 1, risco: 2, crise: 3, fim: 0 }[e.phase]), 0);
-  return { month: m, mix: s.mix, pressure: s.pressure, price, sector, events: evs, level: lvl };
+  return { month: m, mix: s.mix, pressure: s.pressure, price, sector, crop, events: evs, level: lvl };
 }
 // preenche os multiplicadores que o jogo usa (preço de referência e demanda dos setores) para o mês m
-export function apply(m, priceOut, sectorOut) {
+export function apply(m, priceOut, sectorOut, cropOut = {}) {
   const st = state(m);
-  for (const k of Object.keys(priceOut)) delete priceOut[k];
-  for (const k of Object.keys(sectorOut)) delete sectorOut[k];
-  Object.assign(priceOut, st.price); Object.assign(sectorOut, st.sector);
+  for (const o of [priceOut, sectorOut, cropOut]) for (const k of Object.keys(o)) delete o[k];
+  Object.assign(priceOut, st.price); Object.assign(sectorOut, st.sector); Object.assign(cropOut, st.crop);
   return st;
 }
 export const LEVELS = [['🟢', 'mercado estável'], ['🟡', 'sinais de atenção'], ['🟠', 'risco elevado'], ['🔴', 'crise em andamento']];
@@ -154,6 +154,17 @@ export function headline(e) {
     : e.phase === 'risco' ? `Risco elevado: ${title.toLowerCase()} deve começar em breve.`
     : e.phase === 'crise' ? E.why(g) : `${title}: o pior já passou e o mercado se recupera aos poucos.`;
   return { icon: ph[1], level: ph[2], cat: E.cat, title, lead, tips: E.tips(g) };
+}
+// o que o evento faz de verdade no jogo neste mês, em palavras ("preço do café +22% · colheita de café −30%")
+const pct = v => `${v >= 1 ? '+' : '−'}${Math.round(Math.abs(v - 1) * 100)}%`;
+export function effectTxt(e, m) {
+  const p = power({ ...e, phase: e.phase ?? phaseOf(e, m) }, m), on = p > 0, out = [];
+  const k = v => (on ? 1 + (v - 1) * p : v);   // antes da crise: o que vem (efeito cheio); na crise: o de agora
+  for (const [g, v] of Object.entries(e.eff || {})) out.push(`preço ${g === 'arroba' ? 'do boi' : `de ${LABEL[g] || g}`} ${pct(k(v))}`);
+  for (const [g, v] of Object.entries(e.up || {})) if (LABEL[g]) out.push(`preço ${g === 'arroba' ? 'do boi' : `de ${LABEL[g]}`} ${pct(k(v))}`);
+  for (const [g, v] of Object.entries(e.crop || {})) out.push(`colheita de ${LABEL[g] || g} ${pct(k(v))}`);
+  for (const [c, v] of Object.entries(e.sector || {})) out.push(`${SECTOR_TXT[c] || c} ${pct(k(v))} de clientes`);
+  return out.length ? `${on ? 'Efeito agora' : 'Efeito esperado'}: ${out.join(' · ')}.` : '';
 }
 // recomendações do momento (informação, não garantia)
 export function tips(m) {

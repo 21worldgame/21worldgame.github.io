@@ -94,11 +94,20 @@ function realtime(sb) {
   presence(sb);
 }
 // presença em tempo real: o painel admin vê quem está com o jogo aberto agora (some sozinho ao fechar a aba)
+const ONLINE = { ids: new Set() };
+export const isOnline = uid => ONLINE.ids.has(uid);          // jogador de verdade com o jogo aberto agora
+export const realOnline = () => Math.max(1, ONLINE.ids.size);   // inclui você
 function presence(sb) {
   try {
     const key = `t${Math.random().toString(36).slice(2, 10)}`, since = Date.now();
     const ch = sb.channel('online-players', { config: { presence: { key } } });
     const info = () => { const a = Auth.account(), p = G.S ? profileOf() : {}; return { uid: a?.id || null, name: String(p.name || 'visitante').slice(0, 24), level: p.level || 1, worth: Math.round(p.worth || 0), tab: location.hash.slice(1) || 'cassino', since, mobile: matchMedia('(max-width: 40rem)').matches }; };
+    // quem está com o jogo aberto agora (jogadores de verdade): ranking, chat, salão e cidade contam a partir daqui
+    ch.on('presence', { event: 'sync' }, () => {
+      const ids = new Set(); for (const [k, metas] of Object.entries(ch.presenceState())) { const m = metas[0]; ids.add(m?.uid || k); }
+      const me = Auth.account()?.id; if (me) ids.add(me);
+      ONLINE.ids = ids; NPC_CLOCK.real = Math.max(1, ids.size);
+    });
     ch.subscribe(st => { if (st === 'SUBSCRIBED') ch.track(info()); });
     setInterval(() => ch.track(info()), 30000);
     addEventListener('hashchange', () => ch.track(info()));

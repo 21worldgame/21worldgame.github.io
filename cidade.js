@@ -124,12 +124,13 @@ export function build(d, c) {
 export function edition(d, c, deals = []) {
   const e = d.ed, [a] = c.rows, slides = [];
   const add = (img, kind, f) => f && slides.push({ img, kind, title: f.text, lead: f.lead });
+  for (const x of (c.econ || []).slice(0, 2)) slides.push({ img: 'assets/farm-colheita.webp', kind: x.phase === 'crise' ? 'alerta' : 'economia', title: `${x.icon} ${x.title}`, lead: `${x.lead} ${x.effect}`.trim() });   // economia primeiro: mexe no bolso de todo mundo
   add('assets/photo-vegas.webp', 'fortuna', lider(d, c));
   if (c.rows.length > 2) slides.push({ img: 'assets/photo-chips.webp', kind: 'fortuna', title: 'Os mais ricos da cidade', lead: c.rows.slice(0, 5).map((r, i) => `${i + 1}º ${r.name}, ${short(r.worth)}`).join(' · ') + '.' });
   if (deals.length) slides.push({ img: 'assets/news/news-export.webp', kind: 'negocio', title: `Negócio do dia: ${deals[0].text}`, lead: `${deals[0].lead}${deals.length > 1 ? ` Também no balanço: ${deals.slice(1, 3).map(x => x.text).join('; ')}.` : ''}` });
   add('assets/car-porsche.webp', 'fortuna', clube(d, c));
   add('assets/farm-colheita.webp', 'cidade', cidade(d, c));
-  return { slides, intro: { greet: e.greet, name: e.name, text: a ? `Na pauta desta edição: a fortuna dos moradores, os grandes negócios fechados e o movimento da cidade. Hoje, ${a.name} lidera o ranking com ${short(a.worth)}.` : 'Na pauta desta edição: o movimento da cidade e os grandes negócios do 21 World.' },
+  return { slides, intro: { greet: e.greet, name: e.name, text: a ? `Na pauta desta edição: ${(c.econ || []).length ? 'a economia que mexe nas lavouras e nos preços, ' : ''}a fortuna dos moradores, os grandes negócios fechados e o movimento da cidade. Hoje, ${a.name} lidera o ranking com ${short(a.worth)}.` : 'Na pauta desta edição: o movimento da cidade e os grandes negócios do 21 World.' },
     item: { id: d.id, kind: 'edicao', at: d.at, name: e.name, text: a ? `${e.name} no ar: ${a.name} lidera a cidade com ${short(a.worth)}` : `${e.name} no ar: acompanhe as notícias da cidade`,
       lead: `${slides.length} reportagens: ${slides.slice(0, 3).map(s => s.title).join(' | ')}` } };
 }
@@ -138,6 +139,6 @@ export function edition(d, c, deals = []) {
 // manchete do dia: o plantão da fortuna mais recente, ou o líder do ranking se nada foi ao ar ainda
 export function gazeta(c, now, deals = []) {
   const top = c.rows.slice(0, 5), mi = c.rows.filter(r => r.worth >= 1e6).length;
-  return { period: periodOf(now), top, deals: deals.slice(0, 3), lead: lider({ at: Math.floor(now / H) * H }, c),
+  return { period: periodOf(now), top, deals: deals.slice(0, 3), econ: (c.econ || []).slice(0, 2), lead: lider({ at: Math.floor(now / H) * H }, c),
     stats: { pop: c.rows.length, online: c.online, mi, club: c.rows.filter(r => r.worth >= 1e8).length } };
 }

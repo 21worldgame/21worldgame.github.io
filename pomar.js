@@ -1,6 +1,7 @@
 // Pomar de laranja (regras puras): cultura perene na terra própria. Planta uma vez, espera a formação e colhe a cada 4 meses
 // enquanto cuidar. Sem defensivo ("veneno") todo mês a praga aumenta, a colheita cai e o greening pode matar árvores.
 import { bonus } from './perks.js';
+import { CROP_YIELD } from './logic.js';
 export const ORANGE = {
   plant: 30000,       // R$ por hectare (mudas, covas, adubação de plantio; implantação real ~R$ 30 mil)
   grow: 5,            // meses de formação até a primeira colheita
@@ -59,9 +60,9 @@ export function monthly(s, rng = Math.random) {
     o.age++;
     if (o.age >= ORANGE.grow && (o.age - ORANGE.grow) % ORANGE.cycle === 0) {
       const hail = rng() < 0.04;                                          // chuva de granizo derruba parte da fruta
-      const cx = Math.round(expected(l, l.orchard, -bonus(s, 'perda')) * (0.85 + rng() * 0.3) * (hail ? 0.6 : 1) * harvestMult(s));
+      const ev = CROP_YIELD.laranja ?? 1, cx = Math.round(expected(l, l.orchard, -bonus(s, 'perda')) * (0.85 + rng() * 0.3) * (hail ? 0.6 : 1) * harvestMult(s) * ev);   // ev: bactéria do noticiário
       s.stock.laranja = (s.stock.laranja || 0) + cx; o.harvests++;
-      add(cx ? `colheita de laranja: ${cx} caixas, ${l.region}${hail ? ' (granizo derrubou parte da fruta)' : ''}` : `colheita perdida em ${l.region}: a praga derrubou toda a laranja`);
+      add(cx ? `colheita de laranja: ${cx} caixas, ${l.region}${hail ? ' (granizo derrubou parte da fruta)' : ''}${ev < 0.995 ? ` (a bactéria do noticiário levou ${Math.round((1 - ev) * 100)}%)` : ''}` : `colheita perdida em ${l.region}: a praga derrubou toda a laranja`);
     }
   }
   return out;

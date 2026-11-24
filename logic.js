@@ -227,6 +227,8 @@ const walk = (v, rng, pct) => v * (1 + (rng() * 2 - 1) * pct);
 // arroba/bezerro/grãos também ancorados: soltos derivavam (arroba chegou a ~R$ 120) e o boi engordado vendia abaixo do bezerro
 // ECON: multiplicador do preço de referência vindo da economia do mundo (econ.js), igual para todos; o jogo preenche antes do mês
 export const ECON = {};
+// CROP_YIELD: quanto rende a colheita neste mês por produto (seca, geada, bactéria: econ.js), igual para todos
+export const CROP_YIELD = {};
 export const REGION_K = {};   // região → multiplicador do preço da terra (procura e saturação), também preenchido pelo jogo
 // preços de referência: Cepea/CNA, nov/2026
 export const ANCHOR = { soja: 150, milho: 64, cafe: 1600, arroba: 335, bezerro: 3500, cana: 130, laranja: 28, ...GR_PRICES, ...SU_PRICES };
@@ -374,11 +376,11 @@ export function tick(s, rng = Math.random) {
   // lavoura: cresce e colhe; a safra varia ±25% com o clima e, de vez em quando, quebra (seca ou geada)
   for (const l of s.lands) {
     if (!l.crop || --l.crop.left > 0) continue;
-    const c = CROPS[l.crop.type], quebra = rng() < CLIMATE.chance, f = quebra ? CLIMATE.min + rng() * CLIMATE.span : 0.75 + rng() * 0.5;
+    const c = CROPS[l.crop.type], quebra = rng() < CLIMATE.chance, ev = CROP_YIELD[c.good] ?? 1, f = (quebra ? CLIMATE.min + rng() * CLIMATE.span : 0.75 + rng() * 0.5) * ev;
     const bruto = Math.round(l.ha * c.yield * f), dono = l.own ? 0 : Math.round(bruto * RENT_SHARE), sacas = bruto - dono;
     s.stock[c.good] += sacas; (s.colhido ??= {})[c.good] = (s.colhido[c.good] || 0) + sacas;   // produção própria (contratos de exportação)
     if (quebra) add(`quebra de safra (${c.good === 'cafe' ? 'geada' : 'seca'}) em ${l.region}: a lavoura de ${c.label} rendeu ${Math.round(f * 100)}% do normal`);
-    add(`colheita de ${c.label}: ${sacas} sacas, ${l.region}${dono ? ` (${dono} ficaram com o dono da terra)` : ''}`);
+    add(`colheita de ${c.label}: ${sacas} sacas, ${l.region}${dono ? ` (${dono} ficaram com o dono da terra)` : ''}${ev < 0.995 ? ` (a ${c.good === 'cafe' ? 'geada' : 'seca'} do noticiário levou ${Math.round((1 - ev) * 100)}%)` : ''}`);
     if (l.crop.seg && f < INSURE.cover) add(`seguro agrícola: indenização da lavoura de ${c.label}, ${l.region}`, (INSURE.cover - f) * l.ha * c.yield * (s.prices[c.good] || 0));
     delete l.crop;
   }

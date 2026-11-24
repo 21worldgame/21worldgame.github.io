@@ -538,6 +538,14 @@ import * as MK from './market.js';
   MK.settle(old, t0 + 60000); assert.equal(old.money, 1850);   // operação aberta antes (sem pay) recebe o 1,85x combinado
 }
 console.log('mercado ok');
+// notícia de economia mexe de verdade: na seca a colheita de soja sai menor, e o livro-caixa diz por quê
+{ const EC = await import('./econ.js'), m = 214, st = EC.state(m);
+  assert.ok(st.crop.soja < 1 && st.price.soja > 1, 'seca do mês 214: colheita menor e preço maior');
+  const grow = () => { const t = L.newState(() => 0.5); t.money = 1e7; const l = { id: 3, own: true, region: 'cerrado, goiás', ha: 100, cap: 0.9, value: 5e6 }; t.lands.push(l); L.plant(t, l, 'soja', false); for (let i = 0; i < L.CROPS.soja.months; i++) L.tick(t, () => 0.5); return t; };
+  const normal = grow().stock.soja; EC.apply(m, L.ECON, {}, L.CROP_YIELD); const seca = grow(); EC.apply(1, L.ECON, {}, L.CROP_YIELD);
+  assert.equal(seca.stock.soja, Math.round(normal * st.crop.soja)); assert.ok(seca.log.some(x => /seca do noticiário levou/.test(x.txt)));
+  assert.match(EC.effectTxt(EC.events(m).find(e => e.kind === 'seca'), m), /colheita de soja −\d+%/); }
+console.log('notícia de economia na lavoura ok');
 // menções e privado no chat
 {
   assert.ok(CH.mentions('oi @Ana, vende a hilux?', 'Ana'));

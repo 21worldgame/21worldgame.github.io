@@ -24,10 +24,10 @@ function tick() {
   const st = now(), seen = seenGet();
   for (const e of st.events) {
     const id = `${e.id}:${e.phase}`, hd = EC.headline(e);
-    TV.push({ id, kind: e.phase === 'aviso' || e.phase === 'risco' ? 'alerta' : 'economia', text: `${hd.icon} ${hd.lead}`, at: Date.now() - (seen.has(id) ? 600000 : 0) });
+    TV.push({ id, kind: e.phase === 'aviso' || e.phase === 'risco' ? 'alerta' : 'economia', text: `${hd.icon} ${hd.lead}${e.phase !== 'fim' && EC.effectTxt(e, st.month) ? ` ${EC.effectTxt(e, st.month)}` : ''}`, at: Date.now() - (seen.has(id) ? 600000 : 0) });
     if (!seen.has(id)) {
       seenAdd(id);
-      feed({ txt: `${hd.icon} ${hd.title}: ${hd.level}`, imp: e.phase !== 'fim' });
+      feed({ txt: `${hd.icon} ${hd.title}: ${hd.level}${e.phase !== 'fim' ? `. ${EC.effectTxt(e, st.month)}` : ''}`, imp: e.phase !== 'fim' });
       if ((e.phase === 'risco' || e.phase === 'crise') && Date.now() - lastFlash > 600000) { lastFlash = Date.now(); flash(e); }
     }
   }

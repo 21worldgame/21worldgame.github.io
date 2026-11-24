@@ -8,6 +8,7 @@ import * as Live from './live.js';
 import { G, esc, ntOff } from './store.js';
 import { avatarSVG } from './avatar.js';
 import { short, headline, KINDS } from './news.js';
+import * as EC from './econ.js';
 
 const HIST_KEY = '21world.cidade.hist', ED_KEY = '21world.cidade.ed', MIN = 6e4;
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || '') ?? d; } catch { return d; } };
@@ -19,7 +20,8 @@ const saveHist = () => store(HIST_KEY, [...hist.values()].sort((a, b) => b.at - 
 function ctx() {
   const t = Live.now(), w = Live.world();
   const rows = (G.rankRows?.(500) || []).filter(r => r.worth > 10000).map(r => (r.pid === 'me' && G.S?.privateProfile ? { ...r, name: 'um investidor misterioso' } : r));
-  return { rows, online: Math.max(1, NPC.onlineTotal(t)), monthAt: x => W.current(w, x) + W.progress(w, x) };
+  const m = W.current(w, t), econ = EC.events(m).filter(e => e.phase !== 'fim').map(e => ({ ...EC.headline(e), phase: e.phase, effect: EC.effectTxt(e, m) }));   // o que está mexendo no mercado e nas lavouras agora
+  return { rows, econ, online: Math.max(1, NPC.onlineTotal(t)), monthAt: x => W.current(w, x) + W.progress(w, x) };
 }
 // negócios das últimas 24 h: os do mundo (iguais para todos) e os que jogadores de verdade fecharam e a TV viu
 let dealsAt = 0, dealsC = [];
@@ -90,6 +92,7 @@ export function gazetaHTML() {
         <button type="button" class="btn btn--glass btn--sm" data-tab-go="ranking">ranking completo</button></section>
       <section class="gz__col"><h4>negócios do dia</h4><ul class="gz__deals">${g.deals.map(d => `<li><span class="tv__kick tv__kick--${esc(d.kind)}">${esc(KINDS[d.kind] || 'NEGÓCIO')}</span><p>${esc(d.text)}</p><small><b>${short(d.val)}</b> · ${ago(d.at)}</small></li>`).join('') || '<li class="muted small">Nenhum grande negócio nas últimas 24 horas.</li>'}</ul></section>
     </div>
+    ${g.econ.length ? `<div class="gz__econ"><h4>economia: o que está mexendo nas lavouras e nos preços</h4><ul class="gz__deals">${g.econ.map(x => `<li><span class="tv__kick tv__kick--${x.phase === 'crise' ? 'alerta' : 'economia'}">${esc(x.icon)} ${esc(x.level)}</span><p><b>${esc(x.title)}</b>. ${esc(x.lead)}</p><small><b>${esc(x.effect)}</b></small></li>`).join('')}</ul></div>` : ''}
     <div class="gz__stats">${tile('moradores no ranking', g.stats.pop)}${tile('online agora', c.online)}${tile('milionários', g.stats.mi)}${tile('Clube dos 100 mi', g.stats.club)}${tile('negócios em 24 h', deals.length)}</div>
     <div class="gz__wire"><h4><i class="tv__dot"></i> última hora na TV 21</h4><ul>${wire.map(x => `<li><time>${hhmm(x.at)}</time><span class="tv__kick tv__kick--${esc(x.kind)}">${esc(KINDS[x.kind] || 'NOTÍCIA')}</span><p>${esc(x.text)}</p></li>`).join('') || '<li class="muted small">O noticiário da cidade começa em instantes.</li>'}</ul></div>`;
 }
