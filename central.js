@@ -827,17 +827,17 @@ function drawVigia() {
 const certainty = s => (s >= 6 ? ['quase certeza', 'red'] : s >= 4 ? ['muito provável', 'red'] : ['vale conferir', 'gold']);
 function drawCheats(on) {
   const ago = t => { const h = (Date.now() - Date.parse(t)) / 36e5; return h < 1 ? `${Math.max(1, Math.round(h * 60))} min` : h < 48 ? `${Math.round(h)} h` : `${Math.round(h / 24)} dias`; };
-  const farms = vg.farm.filter(f => f.sure || f.n >= 2);
+  const farms = vg.farm.filter(f => f.sure || f.n >= 2).sort((a, b) => (a.last < b.last ? 1 : -1));   // Pix mais recente primeiro
   const dt = t => (t ? new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—');
   const age = d => (d == null ? '—' : d < 1 ? `<b class="bad">${Math.max(1, Math.round(d * 24))} h</b>` : d < AE.NEW_DAYS ? `<b class="bad">${Math.floor(d)} d</b>` : `${Math.floor(d)} d`);
   // planilha: uma linha por Pix suspeito, com data e hora, quem mandou, quando a conta foi criada e o acumulado
   $('#ad-farm').innerHTML = farms.length ? `<h3>💸 fazenda de contas (Pix de contas novas para a mesma pessoa, 30 dias)</h3>
-    ${farms.map(f => { let acc = 0;
+    ${farms.map(f => { let acc = 0; const rows = (f.list || []).map((x, i) => ({ ...x, i: i + 1, acc: acc += x.amount })).reverse();
       return `<div class="ad-sheet ad-sheet--red"><div class="ad-sheet__top"><span class="tag tag--red">${f.sure ? 'quase certeza' : 'muito provável'}</span>
         <b>${esc(f.name)}</b> recebeu <b>${brl(f.total)}</b> em ${f.n} Pix de ${f.senders.length} conta(s) · 1º ${dt(f.first)} · último ${dt(f.last)} (há ${ago(f.last)})${on.has(f.id) ? ' <span class="tag tag--green">online</span>' : ''}
         <span class="ad-sheet__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(f.id)}">ficha</button><button class="btn btn--danger btn--xs" data-farm-back="${esc(f.id)}" title="a conta volta para antes do 1º Pix e o que comprou depois volta para a loja">voltar antes do 1º Pix</button><button class="btn btn--danger btn--xs" data-farm-ban="${esc(f.id)}" title="as contas que mandaram ficam 30 dias sem entrar">suspender ${f.senders.length} remetente(s)</button></span></div>
         <div class="ad-tablewrap"><table class="ad-xl"><thead><tr><th>#</th><th>data e hora do Pix</th><th>conta que mandou</th><th>conta criada em</th><th>idade</th><th class="num">valor</th><th class="num">acumulado</th><th>mensagem</th></tr></thead><tbody>
-        ${(f.list || []).map((x, i) => `<tr><td class="num">${i + 1}</td><td>${dt(x.at)}</td><td><a href="#" data-vg-user="${esc(x.id)}">${esc(x.name)}</a></td><td>${dt(x.created)}</td><td>${age(x.ageDays)}</td><td class="num">${brl(x.amount)}</td><td class="num">${brl(acc += x.amount)}</td><td>${esc(x.memo)}</td></tr>`).join('')}
+        ${rows.map(x => `<tr><td class="num">${x.i}</td><td>${dt(x.at)}</td><td><a href="#" data-vg-user="${esc(x.id)}">${esc(x.name)}</a></td><td>${dt(x.created)}</td><td>${age(x.ageDays)}</td><td class="num">${brl(x.amount)}</td><td class="num">${brl(x.acc)}</td><td>${esc(x.memo)}</td></tr>`).join('')}
         </tbody></table></div></div>`; }).join('')}` : '';
   const list = vg.rows.filter(r => r.score >= 4 && !(farms.some(f => f.id === r.id) && r.why.length === 1)).slice(0, 40);
   $('#ad-cheat-st').textContent = `${farms.length} fazenda(s) de contas · ${list.length} jogador(es) com sinais fortes · visto em ${dt(Date.now())}`;
