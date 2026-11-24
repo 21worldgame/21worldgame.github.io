@@ -244,32 +244,60 @@ function draw(balls, aiming) {
     g.fillStyle = '#fff'; g.font = `800 ${3 * S}px system-ui`; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(`força ${Math.round(power * 100)}%`, bx + bw + 2 * S, by + bh / 2);
   }
 }
-// bola rolando: o número e a faixa giram na direção do movimento (ângulo = distância rodada / raio)
+// bola rolando de verdade: cada bola guarda a orientação 3D (eixos do corpo no mundo) e gira em torno do eixo
+// perpendicular ao movimento (ângulo = distância / raio). A bola é pintada pixel a pixel (esfera com luz), então a faixa,
+// o círculo do número e o número giram e somem para baixo da bola como numa mesa de verdade.
 const roll = new Map();
-function ball(b) {
-  const g = g2, x = X(b.x), y = Y(b.y), r = SN.R * S, n = b.n, col = COLORS[n > 8 ? n - 8 : n];
-  let st = roll.get(n); if (!st) roll.set(n, st = { x: b.x, y: b.y, th: 0, dx: 1, dy: 0 });
-  const dd = Math.hypot(b.x - st.x, b.y - st.y);
-  if (dd > 1e-4 && dd < SN.R * 6) { st.dx = (b.x - st.x) / dd; st.dy = (b.y - st.y) / dd; st.th += dd / SN.R; } else if (dd >= SN.R * 6) st.th = 0;   // pulo grande (nova partida): zera
-  st.x = b.x; st.y = b.y;
-  const ang = Math.atan2(st.dy, st.dx), sin = Math.sin(st.th), cos = Math.cos(st.th);
-  g.save(); g.beginPath(); g.arc(x, y, r, 0, 7); g.clip();
-  g.fillStyle = n > 8 ? '#f8fafc' : col; g.fillRect(x - r, y - r, 2 * r, 2 * r);
-  if (n > 8) {   // faixa: anda pela bola e fica mais fina quando está de lado
-    g.save(); g.translate(x + st.dx * r * sin, y + st.dy * r * sin); g.rotate(ang + Math.PI / 2);
-    g.fillStyle = col; g.fillRect(-r * 1.6, -r * 0.55 * Math.max(0.25, Math.abs(cos)), r * 3.2, r * 1.1 * Math.max(0.25, Math.abs(cos))); g.restore();
+const rot = (v, a, c, s) => { const d = (a[0] * v[0] + a[1] * v[1] + a[2] * v[2]) * (1 - c);   // Rodrigues
+  return [v[0] * c + (a[1] * v[2] - a[2] * v[1]) * s + a[0] * d, v[1] * c + (a[2] * v[0] - a[0] * v[2]) * s + a[1] * d, v[2] * c + (a[0] * v[1] - a[1] * v[0]) * s + a[2] * d]; };
+const unit = v => { const l = Math.hypot(...v) || 1; return v.map(x => x / l); };
+const cross = (u, v) => [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+const rgbOf = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const LIGHT = unit([-0.45, -0.55, 0.7]), HALF = unit([LIGHT[0], LIGHT[1], LIGHT[2] + 1]);
+function orient(n) {   // orientação inicial diferente por bola (o número não fica igual em todas)
+  const a = unit([Math.sin(n * 2.1), Math.cos(n * 1.3), 0.4]), t = n * 1.7 + 0.6, c = Math.cos(t), s = Math.sin(t);
+  return { ex: rot([0, 0, 1], a, c, s), ey: rot([1, 0, 0], a, c, s), ez: rot([0, 1, 0], a, c, s) };
+}
+function paint(st, n, rp) {   // desenha a esfera num canvas pequeno (só quando a bola girou ou a mesa mudou de tamanho)
+  const D = Math.ceil(rp * 2) + 2, c = st.cv ??= document.createElement('canvas');
+  if (c.width !== D) { c.width = c.height = D; st.ctx = c.getContext('2d'); st.img = st.ctx.createImageData(D, D); }
+  const px = st.img.data, base = rgbOf(COLORS[n > 8 ? n - 8 : n]), white = [246, 246, 240], red = [210, 40, 40];
+  const { ex, ey, ez } = st, h = D / 2;
+  for (let j = 0, o = 0; j < D; j++) for (let i = 0; i < D; i++, o += 4) {
+    const x = (i + 0.5 - h) / rp, y = (j + 0.5 - h) / rp, d2 = x * x + y * y;
+    const edge = Math.max(0, Math.min(1, (1 - Math.sqrt(d2)) * rp + 0.5));
+    if (!edge) { px[o + 3] = 0; continue; }
+    const z = Math.sqrt(Math.max(0, 1 - d2));
+    const bx = ex[0] * x + ex[1] * y + ex[2] * z, bz = ez[0] * x + ez[1] * y + ez[2] * z;
+    const col = n === 0 ? (Math.abs(bx) > 0.94 ? red : white)
+      : Math.abs(bx) > 0.8 ? white : n > 8 ? (Math.abs(bz) < 0.52 ? base : white) : base;
+    const dif = Math.max(0, x * LIGHT[0] + y * LIGHT[1] + z * LIGHT[2]), sp = Math.max(0, x * HALF[0] + y * HALF[1] + z * HALF[2]) ** 60 * 230;
+    const k = 0.28 + 0.8 * dif;
+    px[o] = Math.min(255, col[0] * k + sp); px[o + 1] = Math.min(255, col[1] * k + sp); px[o + 2] = Math.min(255, col[2] * k + sp); px[o + 3] = 255 * edge;
   }
-  const spot = (s, c) => {   // círculo branco com o número (aparece dos dois lados da bola)
-    if (c <= 0.05) return;
-    const sx = x + st.dx * r * 0.82 * s, sy = y + st.dy * r * 0.82 * s, k = 0.3 + 0.7 * c;
-    g.save(); g.translate(sx, sy); g.rotate(ang);
-    g.fillStyle = n ? '#fff' : 'rgba(220,38,38,.85)'; g.beginPath(); g.ellipse(0, 0, r * (n ? 0.48 : 0.16) * k, r * (n ? 0.48 : 0.16), 0, 0, 7); g.fill();
-    if (n && c > 0.45) { g.rotate(-ang); g.scale(st.dx * st.dx * k + st.dy * st.dy || 1, st.dy * st.dy * k + st.dx * st.dx || 1); g.fillStyle = '#111'; g.font = `800 ${r * 0.62}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(n, 0, r * 0.04); }
-    g.restore();
-  };
-  spot(sin, cos); spot(-sin, -cos);
-  const sh = g.createRadialGradient(x - r * 0.4, y - r * 0.45, r * 0.1, x, y, r * 1.1); sh.addColorStop(0, 'rgba(255,255,255,.55)'); sh.addColorStop(0.35, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(0,0,0,.45)');
-  g.fillStyle = sh; g.fillRect(x - r, y - r, 2 * r, 2 * r); g.restore();
+  st.ctx.putImageData(st.img, 0, 0);
+  if (n) for (const sg of [1, -1]) {   // o número no círculo branco, deitado na superfície da bola (some quando vira para baixo)
+    const cz = ex[2] * sg; if (cz < 0.2) continue;
+    const g = st.ctx; g.save(); g.globalAlpha = Math.min(1, (cz - 0.2) * 3);
+    g.setTransform(ey[0] * sg * rp / 100, ey[1] * sg * rp / 100, ez[0] * rp / 100, ez[1] * rp / 100, h + ex[0] * sg * rp, h + ex[1] * sg * rp);
+    g.fillStyle = '#111'; g.font = '800 46px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(n, 0, 3); g.restore();
+  }
+  st.dirty = false; st.rp = rp;
+}
+function ball(b) {
+  const n = b.n, rp = SN.R * S;
+  let st = roll.get(n); if (!st) roll.set(n, st = { x: b.x, y: b.y, ...orient(n), dirty: true });
+  const dx = b.x - st.x, dy = b.y - st.y, dd = Math.hypot(dx, dy);
+  if (dd > 1e-4 && dd < SN.R * 6) {   // rolou: gira em torno do eixo deitado, perpendicular ao movimento
+    const a = [-dy / dd, dx / dd, 0], t = dd / SN.R, c = Math.cos(t), s = Math.sin(t);
+    const ex = unit(rot(st.ex, a, c, s)), ez = unit(cross(ex, rot(st.ey, a, c, s)));
+    st.ex = ex; st.ez = ez; st.ey = cross(ez, ex); st.dirty = true;
+  }
+  st.x = b.x; st.y = b.y;
+  if (st.dirty || st.rp !== rp) paint(st, n, rp);
+  const g = g2, x = X(b.x), y = Y(b.y);
+  g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(x + rp * 0.25, y + rp * 0.35, rp * 0.95, rp * 0.8, 0, 0, 7); g.fill();   // sombra na mesa
+  g.drawImage(st.cv, x - st.cv.width / 2, y - st.cv.height / 2);
 }
 function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 const tableXY = e => { const r = cv.getBoundingClientRect(), s = (SN.L + 2 * M) / r.width; return { x: (e.clientX - r.left) * s - M, y: (e.clientY - r.top) * s - M }; };

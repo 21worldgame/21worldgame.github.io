@@ -127,6 +127,40 @@ export function renderWho() {
   const n = document.querySelector('#rl-who-n'); if (n) n.textContent = `${real.length + 1 + botBets.length} jogando`;
 }
 setInterval(renderWho, 4000);
+// giro de verdade num laço só (requestAnimationFrame): a roda gira no sentido horário e freia aos poucos; a bola corre ao
+// contrário na pista, perde velocidade, desce, bate nos defletores, quica entre as casas e assenta; daí em diante ela vai
+// junto com a roda (presa na casa) até a roda parar. A casa do resultado termina embaixo do ponteiro.
+const DEPTH = 182;   // quanto a bola desce da pista até a casa (% do tamanho da bola)
+function spinFx(W0, W1, D) {
+  const rotEl = $('#rl-rot'), arm = $('#rl-arm'), ballEl = $('#rl-ball'), trail = $('#rl-trail'), blur = $('#rl-blur');
+  const place = (w, b, y, tr, bl) => { rotEl.style.transform = `rotate(${w}deg)`; arm.style.transform = `rotate(${b}deg)`; ballEl.style.transform = `translate(0, ${y}%)`; trail.style.opacity = tr; blur.style.opacity = bl; rotEl.style.filter = bl > 0.05 ? `blur(${(bl * 2.6).toFixed(2)}px)` : ''; };
+  if (!D) { place(W1, 0, DEPTH, 0, 0); return Promise.resolve(); }
+  const wheel = p => W0 + (W1 - W0) * (1 - (1 - p) ** 3);                 // freada da roda
+  const LOCK = 0.78, DROP = 0.5;                                          // a bola desce em 50% e assenta em 78% do tempo
+  const K = 360 * 11 + (((W1 - W0) % 360) + 360) % 360;                   // voltas da bola contra a roda (começa onde parou da última vez)
+  const rel = s => K * (1 - s) ** 2;                                       // ângulo da bola em relação à casa (atrito: freada constante)
+  const hits = [1, 3, 5].map(k => DROP + (LOCK - DROP) * k / 7), played = new Set();
+  let lastPocket = Math.floor(K / SEG), lastTick = 0;
+  return new Promise(res => {
+    const t0 = performance.now();
+    const frame = now => {
+      const p = Math.min(1, (now - t0) / D), w = wheel(p), pocket = w - W1, s = Math.min(1, p / LOCK);
+      let b = pocket + rel(s), y = 0;
+      if (p > DROP && p < LOCK) {   // descendo: quica (cada pulo menor) e leva trancos dos defletores
+        const u = (p - DROP) / (LOCK - DROP);
+        y = DEPTH * (1 - (1 - u) ** 1.6 * Math.abs(Math.cos(u * Math.PI * 3.5)));
+        b += Math.sin(u * Math.PI * 5) * 9 * (1 - u) ** 2;
+      } else if (p >= LOCK) y = DEPTH;
+      const relSpeed = 2 * K * (1 - s) / (LOCK * D);                       // graus por ms da bola contra a roda
+      place(w, b, y, p < DROP ? Math.min(1, relSpeed * 1.4) : 0, Math.max(0, 1 - p / 0.75) * 0.9);
+      const k = Math.floor(rel(s) / SEG);                                    // tique da bola passando pelas casas
+      if (k !== lastPocket && p > DROP * 0.7 && now - lastTick > 45) { lastPocket = k; lastTick = now; sfx.play('chip', Math.min(0.3, 0.06 + relSpeed * 0.25)); }
+      for (const h of hits) if (p >= h && !played.has(h)) { played.add(h); sfx.play('ball', 0.35); navigator.vibrate?.(8); }
+      if (p < 1) requestAnimationFrame(frame); else res();
+    };
+    requestAnimationFrame(frame);
+  });
+}
 export async function spin() {
   const total = Object.values(bets).reduce((a, b) => a + b, 0);
   if (spinning || !total) return;
@@ -140,30 +174,12 @@ export async function spin() {
   const n = GM.WHEEL[Math.floor(Math.random() * 37)], idx = GM.WHEEL.indexOf(n);
   // a roda gira no sentido horário e para com o número do resultado embaixo do ponteiro
   const target = wheelAngle + 360 * 5 + ((360 - idx * SEG - (wheelAngle % 360)) % 360 + 360) % 360;
-  const dur = RM.matches ? 0 : 8500;
+  const dur = RM.matches ? 0 : 9000;
   const box = $('#rl-wheel');
   box.classList.add('is-spinning');
   sfx.play('ball', 0.3);
-  // roda: gira no sentido horário, desacelera de verdade e fica nítida só no fim (borrão de movimento)
-  $('#rl-rot').animate([{ transform: `rotate(${wheelAngle}deg)`, filter: 'blur(3px)' }, { filter: 'blur(2px)', offset: 0.3 }, { filter: 'blur(0)', offset: 0.78 }, { transform: `rotate(${target}deg)`, filter: 'blur(0)' }],
-    { duration: dur, easing: 'cubic-bezier(.12,.7,.18,1)', fill: 'forwards' });
-  $('#rl-blur').animate([{ opacity: 0.9 }, { opacity: 0.55, offset: 0.35 }, { opacity: 0 }], { duration: dur, easing: 'ease-out', fill: 'forwards' });
-  box.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.035)', offset: 0.12 }, { transform: 'scale(1.035)', offset: 0.78 }, { transform: 'scale(1)' }], { duration: dur, easing: 'ease-in-out' });
-  // bola: corre ao contrário na pista (com rastro), perde velocidade, cai nos defletores, quica e assenta na casa (topo)
-  $('#rl-arm').animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(-2880deg)' }], { duration: dur, easing: 'cubic-bezier(.08,.55,.2,1)', fill: 'forwards' });
-  $('#rl-trail').animate([{ opacity: 1 }, { opacity: 0.8, offset: 0.55 }, { opacity: 0, offset: 0.7 }, { opacity: 0 }], { duration: dur, fill: 'forwards' });
-  const hop = (y, x, o, e = 'ease-out') => ({ transform: `translate(${x}%, ${y}%)`, offset: o, easing: e });
-  $('#rl-ball').animate([
-    { transform: 'translate(0, 0)' }, hop(0, 0, 0.6), hop(70, 0, 0.66, 'ease-in'), hop(25, 90, 0.7), hop(120, 160, 0.75, 'ease-in'), hop(70, -60, 0.8),
-    hop(165, -90, 0.85, 'ease-in'), hop(130, -30, 0.89), hop(185, 20, 0.93, 'ease-in'), hop(168, 0, 0.96), { transform: 'translate(0, 182%)', offset: 1 }],
-    { duration: dur, fill: 'forwards' });
-  // tique-taque da bola passando pelas casas (espaçado cada vez mais) e as batidas nos defletores
-  const timers = [];
-  for (let k = 0; k < 30; k++) timers.push(setTimeout(() => sfx.play('chip', 0.12), dur * 0.58 * (1 - (1 - k / 30) ** 2.2)));
-  for (const o of [0.66, 0.75, 0.85, 0.93]) timers.push(setTimeout(() => sfx.play('ball', 0.35), dur * o));
-  wheelAngle = target;
-  await new Promise(r => setTimeout(r, dur + 200));
-  timers.forEach(clearTimeout);
+  await spinFx(wheelAngle, target, dur);
+  wheelAngle = target % 360;
   box.classList.remove('is-spinning');
   sfx.play('stack', 0.5);
   landFx(n);

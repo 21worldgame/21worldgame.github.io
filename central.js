@@ -763,7 +763,7 @@ async function loadVigia() {
       soft(pageAll(() => sb.from('receita_casos').select('user_id'))),
       soft(pageAll(() => sb.from('admin_grants').select('user_id, amount').eq('kind', 'money').gt('amount', 0))),
       soft(pageAll(() => sb.from('pix').select('from_id, from_name, to_id, to_name, amount, memo, kind, at').gt('at', ago(7)).order('at', { ascending: false }))),
-      soft(pageAll(() => sb.from('pix').select('from_id, from_name, to_id, to_name, amount, at').gt('at', ago(30)))),
+      soft(pageAll(() => sb.from('pix').select('from_id, from_name, to_id, to_name, amount, memo, at').gt('at', ago(30)))),
       soft(pageAll(() => sb.from('diario').select('user_id, at, kind, txt, val, money, worth, acts, tab').in('kind', ['gap', 'inicio']).gt('at', ago(7)))),
     ]);
     // fazenda de contas (30 dias) e dinheiro sem lançamento (diário, 7 dias)
@@ -828,24 +828,32 @@ const certainty = s => (s >= 6 ? ['quase certeza', 'red'] : s >= 4 ? ['muito pro
 function drawCheats(on) {
   const ago = t => { const h = (Date.now() - Date.parse(t)) / 36e5; return h < 1 ? `${Math.max(1, Math.round(h * 60))} min` : h < 48 ? `${Math.round(h)} h` : `${Math.round(h / 24)} dias`; };
   const farms = vg.farm.filter(f => f.sure || f.n >= 2);
-  $('#ad-farm').innerHTML = farms.length ? `<h3>💸 fazenda de contas: várias contas mandando Pix para a mesma pessoa</h3>
-    <p class="ad-help">Cada conta nova começa com dinheiro. Quem cria várias contas e manda esse dinheiro por Pix para a conta principal fica rico sem jogar. Abaixo, quem recebeu esses Pix nos últimos 30 dias e as contas que mandaram (com quantos dias de criada a conta tinha quando mandou).</p>
-    ${farms.map(f => `<article class="ad-cheat ad-cheat--red"><header><span class="tag tag--red">${f.sure ? 'quase certeza' : 'muito provável'}</span> <b class="ad-cheat__name">${esc(f.name)}</b> recebeu <b>${brl(f.total)}</b> em ${f.n} Pix ${on.has(f.id) ? '<span class="tag tag--green">online agora</span>' : ''}</header>
-      <p>${esc(f.story)} Primeiro Pix há ${ago(f.first)}, último há ${ago(f.last)}.</p>
-      <div class="ad-tablewrap"><table><thead><tr><th>conta que mandou</th><th>idade da conta quando mandou</th><th class="num">Pix</th><th class="num">total</th></tr></thead><tbody>${f.senders.map(x => `<tr><td><a href="#" data-vg-user="${esc(x.id)}">${esc(x.name)}</a></td><td>${x.ageDays == null ? '—' : x.ageDays < 1 ? '<b class="bad">criada no mesmo dia</b>' : x.ageDays < AE.NEW_DAYS ? `<b class="bad">${Math.floor(x.ageDays)} dia(s)</b>` : `${Math.floor(x.ageDays)} dias`}</td><td class="num">${x.n}</td><td class="num">${brl(x.total)}</td></tr>`).join('')}</tbody></table></div>
-      <div class="row"><button class="btn btn--gold btn--sm" data-vg-user="${esc(f.id)}">abrir a ficha de ${esc(f.name)}</button>
-        <button class="btn btn--danger btn--sm" data-farm-back="${esc(f.id)}">voltar ${esc(f.name)} para antes do 1º Pix</button>
-        <button class="btn btn--danger btn--sm" data-farm-ban="${esc(f.id)}">suspender as ${f.senders.length} conta(s) que mandaram</button></div>
-      <p class="muted small"><b>Voltar para antes do 1º Pix</b>: a conta dele fica como estava antes de receber, e tudo o que ele comprou depois volta para a loja. <b>Suspender</b>: as contas que mandaram ficam 30 dias sem entrar.</p></article>`).join('')}` : '';
-  const list = vg.rows.filter(r => r.score >= 4 && !(farms.some(f => f.id === r.id) && r.why.length === 1)).slice(0, 12);
-  $('#ad-cheat-st').textContent = `${farms.length} fazenda(s) de contas · ${list.length} jogador(es) com sinais fortes`;
-  $('#ad-cheat').innerHTML = list.map(r => { const [lv, tone] = certainty(r.score);
-    return `<article class="ad-cheat ad-cheat--${tone}"><header><span class="tag tag--${tone}">${lv}</span> <b class="ad-cheat__name">${esc(r.name)}</b> · patrimônio ${brl(r.worth)} · ${r.playH == null ? 'tempo jogado não medido' : `${hrs(r.playH)} jogadas`}${on.has(r.id) ? ' <span class="tag tag--green">online agora</span>' : ''}${r.banned ? ' <span class="tag tag--red">suspenso</span>' : ''}</header>
-      <ul>${r.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul>
-      <div class="row"><button class="btn btn--gold btn--sm" data-vg-user="${esc(r.id)}">abrir a ficha e voltar o save</button>
-        ${r.excess > 0 ? `<button class="btn btn--glass btn--sm" data-vg-take="${esc(r.id)}">tirar o excesso (${AE.brlShort(r.excess)})</button>` : ''}
-        ${!r.banned ? `<button class="btn btn--danger btn--sm" data-vg-ban="${esc(r.id)}">suspender 1 dia</button>` : ''}</div></article>`; }).join('')
-    || (farms.length ? '' : '<p class="good">Nenhum sinal forte de trapaça agora. 👍</p>');
+  const dt = t => (t ? new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—');
+  const age = d => (d == null ? '—' : d < 1 ? `<b class="bad">${Math.max(1, Math.round(d * 24))} h</b>` : d < AE.NEW_DAYS ? `<b class="bad">${Math.floor(d)} d</b>` : `${Math.floor(d)} d`);
+  // planilha: uma linha por Pix suspeito, com data e hora, quem mandou, quando a conta foi criada e o acumulado
+  $('#ad-farm').innerHTML = farms.length ? `<h3>💸 fazenda de contas (Pix de contas novas para a mesma pessoa, 30 dias)</h3>
+    ${farms.map(f => { let acc = 0;
+      return `<div class="ad-sheet ad-sheet--red"><div class="ad-sheet__top"><span class="tag tag--red">${f.sure ? 'quase certeza' : 'muito provável'}</span>
+        <b>${esc(f.name)}</b> recebeu <b>${brl(f.total)}</b> em ${f.n} Pix de ${f.senders.length} conta(s) · 1º ${dt(f.first)} · último ${dt(f.last)} (há ${ago(f.last)})${on.has(f.id) ? ' <span class="tag tag--green">online</span>' : ''}
+        <span class="ad-sheet__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(f.id)}">ficha</button><button class="btn btn--danger btn--xs" data-farm-back="${esc(f.id)}" title="a conta volta para antes do 1º Pix e o que comprou depois volta para a loja">voltar antes do 1º Pix</button><button class="btn btn--danger btn--xs" data-farm-ban="${esc(f.id)}" title="as contas que mandaram ficam 30 dias sem entrar">suspender ${f.senders.length} remetente(s)</button></span></div>
+        <div class="ad-tablewrap"><table class="ad-xl"><thead><tr><th>#</th><th>data e hora do Pix</th><th>conta que mandou</th><th>conta criada em</th><th>idade</th><th class="num">valor</th><th class="num">acumulado</th><th>mensagem</th></tr></thead><tbody>
+        ${(f.list || []).map((x, i) => `<tr><td class="num">${i + 1}</td><td>${dt(x.at)}</td><td><a href="#" data-vg-user="${esc(x.id)}">${esc(x.name)}</a></td><td>${dt(x.created)}</td><td>${age(x.ageDays)}</td><td class="num">${brl(x.amount)}</td><td class="num">${brl(acc += x.amount)}</td><td>${esc(x.memo)}</td></tr>`).join('')}
+        </tbody></table></div></div>`; }).join('')}` : '';
+  const list = vg.rows.filter(r => r.score >= 4 && !(farms.some(f => f.id === r.id) && r.why.length === 1)).slice(0, 40);
+  $('#ad-cheat-st').textContent = `${farms.length} fazenda(s) de contas · ${list.length} jogador(es) com sinais fortes · visto em ${dt(Date.now())}`;
+  // jogadores com sinais fortes: uma linha por jogador, com as datas que importam e os motivos
+  const lastPix = (arr = []) => arr.reduce((m, p) => (p.at > m ? p.at : m), '');
+  $('#ad-cheat').innerHTML = list.length ? `<div class="ad-tablewrap"><table class="ad-xl"><thead><tr><th>nível</th><th>jogador</th><th>conta criada</th><th>último save</th><th class="num">patrimônio</th><th class="num">24 h</th><th class="num">horas (total · hoje)</th><th class="num">R$/h</th><th>Pix receb. / env. (último)</th><th class="num">cassino</th><th>motivos</th><th>agir</th></tr></thead><tbody>
+    ${list.map(r => { const [lv, tone] = certainty(r.score), sv = r.s?.savedAt;
+      return `<tr class="ad-alert"><td><span class="tag tag--${tone}">${lv} · ${r.score}</span></td>
+        <td><a href="#" data-vg-user="${esc(r.id)}"><b>${esc(r.name)}</b></a>${on.has(r.id) ? ' <span class="tag tag--green">online</span>' : ''}${r.banned ? ' <span class="tag tag--red">suspenso</span>' : ''}</td>
+        <td>${dt(r.created)}</td><td>${sv ? dt(sv) : '—'}</td><td class="num">${AE.brlShort(r.worth)}</td><td class="num ${r.money24 < 0 ? 'bad' : 'good'}">${r.money24 == null ? '—' : AE.brlShort(r.money24)}</td>
+        <td class="num">${hrs(r.playH)} · ${hrs(r.todayH)}</td><td class="num">${r.perHour == null ? '—' : AE.brlShort(r.perHour)}</td>
+        <td>${AE.brlShort(r.pixInSum)} / ${AE.brlShort(r.pixOutSum)}${lastPix([...(r.pixIn || []), ...(r.pixOut || [])]) ? `<br><small class="muted">${dt(lastPix([...(r.pixIn || []), ...(r.pixOut || [])]))}</small>` : ''}</td>
+        <td class="num">${r.casino == null ? '—' : AE.brlShort(r.casino)}</td>
+        <td class="ad-xl__why">${r.why.map(w => esc(w)).join('<br>')}</td>
+        <td class="ad-xl__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(r.id)}">ficha</button>${r.excess > 0 ? `<button class="btn btn--glass btn--xs" data-vg-take="${esc(r.id)}">tirar ${AE.brlShort(r.excess)}</button>` : ''}${!r.banned ? `<button class="btn btn--danger btn--xs" data-vg-ban="${esc(r.id)}">suspender 1 dia</button>` : ''}</td></tr>`; }).join('')}
+    </tbody></table></div>` : (farms.length ? '' : '<p class="good">Nenhum sinal forte de trapaça agora. 👍</p>');
 }
 // na ficha do jogador: o que a vigilância viu sobre ele
 function cheatBox(id) {

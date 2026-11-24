@@ -137,13 +137,14 @@ export function pixFarm(pix, users = {}) {
   const by = {};
   for (const p of pix) {
     if (!startish(p)) continue;
-    const R = (by[p.to_id] ??= { id: p.to_id, name: p.to_name || users[p.to_id]?.name || '?', n: 0, total: 0, first: p.at, last: p.at, from: {} });
+    const R = (by[p.to_id] ??= { id: p.to_id, name: p.to_name || users[p.to_id]?.name || '?', n: 0, total: 0, first: p.at, last: p.at, from: {}, list: [] });
     const age = (Date.parse(p.at) - Date.parse(users[p.from_id]?.created || '')) / 864e5;
     const S = (R.from[p.from_id] ??= { id: p.from_id, name: p.from_name || users[p.from_id]?.name || '?', n: 0, total: 0, ageDays: Number.isFinite(age) ? age : null });
+    R.list.push({ at: p.at, id: p.from_id, name: S.name, created: users[p.from_id]?.created || null, ageDays: Number.isFinite(age) ? age : null, amount: Number(p.amount) || 0, memo: p.memo || '' });
     R.n++; R.total += Number(p.amount) || 0; S.n++; S.total += Number(p.amount) || 0;
     if (p.at < R.first) R.first = p.at; if (p.at > R.last) R.last = p.at;
   }
-  return Object.values(by).map(R => { const senders = Object.values(R.from).sort((a, b) => b.total - a.total);
+  return Object.values(by).map(R => { R.list.sort((a, b) => (a.at < b.at ? -1 : 1)); const senders = Object.values(R.from).sort((a, b) => b.total - a.total);
     const sure = senders.length >= 2 || R.total >= 50000;
     return { ...R, senders, sure, story: `${senders.length} ${senders.length === 1 ? 'conta mandou' : 'contas diferentes mandaram'} ${R.n} Pix somando ${brlShort(R.total)} para ${R.name}. ${senders.filter(x => x.ageDays != null && x.ageDays < NEW_DAYS).length} delas tinham menos de ${NEW_DAYS} dias de criadas quando mandaram.` };
   }).filter(R => R.n >= 2 || R.total >= 20000).sort((a, b) => b.total - a.total);
