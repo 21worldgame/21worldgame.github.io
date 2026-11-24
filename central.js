@@ -757,7 +757,7 @@ async function loadVigia() {
   try {
     if (!users.length) await loadUsers('');
     const ago = d => new Date(Date.now() - d * 864e5).toISOString(), soft = p => p.catch(() => []);
-    const [saves, hist, rc, gifts, pix, pix30, diary, bans, oks] = await Promise.all([
+    const [saves, hist, rc, gifts, pix, pix30, diary, bans, oks, takes] = await Promise.all([
       pageAll(() => sb.from('saves').select('user_id, data, updated_at')),
       soft(pageAll(() => sb.from('save_history').select('user_id, saved_at, money').gt('saved_at', ago(1)))),
       soft(pageAll(() => sb.from('receita_casos').select('user_id'))),
@@ -767,6 +767,7 @@ async function loadVigia() {
       soft(pageAll(() => sb.from('diario').select('user_id, at, kind, txt, val, money, worth, acts, tab').in('kind', ['gap', 'inicio']).gt('at', ago(7)))),
       soft(pageAll(() => sb.from('bans').select('user_id, reason, until'))),
       soft(pageAll(() => sb.from('vigia_ok').select('*'))),
+      soft(pageAll(() => sb.from('admin_grants').select('user_id, amount, created_at').eq('kind', 'money').lt('amount', 0).gt('created_at', ago(30)))),
     ]);
     OKS = Object.fromEntries(oks.map(o => [o.user_id, o]));
     BANS = Object.fromEntries(bans.filter(b => !b.until || Date.parse(b.until) > Date.now()).map(b => [b.user_id, b]));
@@ -785,6 +786,7 @@ async function loadVigia() {
       farm: F[x.user_id], farmSender: FS[x.user_id], gap: GP[x.user_id]?.gap || 0, gapN: GP[x.user_id]?.gapN || 0, jump: JP[x.user_id] || 0 }; });
     vg = { ...AE.watch(players), pix, saves, farm, UI };
     st.textContent = `${players.length} contas analisadas às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    await handled(takes);
     drawVigia(); loadRecursos();
   } catch (e) { fail(e, 'carregar a vigilância'); st.textContent = ''; } finally { $('#ad-vg-reload').disabled = false; }
 }
@@ -872,7 +874,9 @@ function drawCheats(on) {
         <td class="ad-xl__why">${r.why.map(w => esc(w)).join('<br>')}</td>
         <td class="ad-xl__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(r.id)}">ficha</button><button class="btn btn--glass btn--xs" data-desc="${esc(r.id)}">descontar</button><button class="btn btn--glass btn--xs" data-pano="${esc(r.id)}" title="tirar dos alertas: volta só se aparecer coisa nova">passar o pano</button>${r.excess > 0 ? `<button class="btn btn--glass btn--xs" data-vg-take="${esc(r.id)}">tirar ${AE.brlShort(r.excess)}</button>` : ''}<button class="btn btn--danger btn--xs" data-pun="${esc(r.id)}" data-pun-who="${esc(r.name)}" data-pun-why="${esc(r.why[0] || 'trapaça')}">banir / excluir</button></td></tr>`; }).join('')}
     </tbody></table></div>` : (farms.length ? '' : '<p class="good">Nenhum sinal forte de trapaça agora. 👍</p>');
-  if (cleared.length) $('#ad-cheat').insertAdjacentHTML('beforeend', `<p class="small muted ad-cleared">🧽 pano passado (fora dos alertas até aparecer coisa nova): ${cleared.map(r => `<a href="#" data-vg-user="${esc(r.id)}">${esc(r.name)}</a> <small>${new Date(OKS[r.id].at).toLocaleDateString('pt-BR')}</small> <button class="btn btn--glass btn--xs" data-pano-undo="${esc(r.id)}">voltar para os alertas</button>`).join(' · ')}</p>`);
+  const paid = cleared.filter(r => /^descontado/.test(OKS[r.id].note || '')), wiped = cleared.filter(r => !paid.includes(r));
+  if (paid.length) $('#ad-cheat').insertAdjacentHTML('beforeend', `<p class="small muted ad-cleared">💸 já descontados (acompanhe em <a href="#" data-goto-sent>avisos enviados</a>; voltam aqui se aparecer coisa nova): ${paid.map(r => `<a href="#" data-vg-user="${esc(r.id)}">${esc(r.name)}</a> <small>${esc(OKS[r.id].note)}</small> <button class="btn btn--glass btn--xs" data-pano-undo="${esc(r.id)}">voltar para os alertas</button>`).join(' · ')}</p>`);
+  if (wiped.length) $('#ad-cheat').insertAdjacentHTML('beforeend', `<p class="small muted ad-cleared">🧽 pano passado (fora dos alertas até aparecer coisa nova): ${wiped.map(r => `<a href="#" data-vg-user="${esc(r.id)}">${esc(r.name)}</a> <small>${new Date(OKS[r.id].at).toLocaleDateString('pt-BR')}</small> <button class="btn btn--glass btn--xs" data-pano-undo="${esc(r.id)}">voltar para os alertas</button>`).join(' · ')}</p>`);
 }
 // na ficha do jogador: o que a vigilância viu sobre ele
 function cheatBox(id) {
@@ -969,6 +973,8 @@ document.addEventListener('click', e => {
     const { error } = await sb.from('admin_grants').insert({ user_id: id, kind: 'money', amount: -amt, note: why });
     if (error) return fail(error, 'descontar');
     await log('take_money', id, { amount: amt, why, from: 'alertas de trapaça' });
+    const rr = vg?.rows.find(x => x.id === id);
+    if (rr) { const row = okRow(rr, { note: `descontado ${brl(amt)} em ${new Date().toLocaleDateString('pt-BR')}`, at: new Date().toISOString() }); if (!(await sb.from('vigia_ok').upsert(row)).error) { OKS[id] = row; drawVigia(); } }
     sentNotice(name, amt, why);
   });
 }, true);
@@ -1063,6 +1069,16 @@ document.addEventListener('click', async e => {
   await log(ok ? 'appeal_accept' : 'appeal_deny', r.user_id, { id: r.id, amount: r.amount, answer });
   toast(ok ? `Recurso aceito: ${brl(r.amount)} voltam para ${r.name}.` : 'Recurso negado. Ele vê a resposta no livro-caixa.'); loadRecursos();
 }, true);
+// quem já levou desconto sai sozinho dos alertas e passa a ser acompanhado em "avisos enviados" (volta se aparecer coisa nova)
+const okRow = (r, extra) => ({ user_id: r.id, score: r.score || 0, gap: r.gap || 0, jump: r.jump || 0, pix: Math.max(r.pixInSum || 0, r.farm?.total || 0), ...extra });
+async function handled(takes = []) {
+  const last = {}; for (const t of takes) if (!last[t.user_id] || t.created_at > last[t.user_id].created_at) last[t.user_id] = t;
+  const rows = Object.values(last).filter(t => !OKS[t.user_id] || Date.parse(OKS[t.user_id].at) < Date.parse(t.created_at)).map(t => { const r = vg.rows.find(x => x.id === t.user_id);
+    return r && okRow(r, { note: `descontado ${brl(-Number(t.amount))} em ${new Date(t.created_at).toLocaleDateString('pt-BR')}`, at: t.created_at }); }).filter(Boolean);
+  if (!rows.length) return;
+  const { error } = await sb.from('vigia_ok').upsert(rows); if (!error) for (const x of rows) OKS[x.user_id] = x;
+}
+document.addEventListener('click', e => { const g = e.target.closest('[data-goto-sent]'); if (g) { e.preventDefault(); show('enviados'); } });
 // passar o pano: guarda o que foi visto agora; o jogador some dos alertas até aparecer coisa nova
 document.addEventListener('click', async e => {
   const p = e.target.closest('[data-pano]'), u = e.target.closest('[data-pano-undo]'); if (!p && !u) return;
