@@ -1,7 +1,8 @@
 // Jogadores do mundo (controlados pelo jogo): nicks, visual, fortuna, estatísticas e presença online.
 // Tudo é calculado pelo horário e pelo mês do mundo, então é igual para todos os aparelhos.
 import { T } from './tune.js';
-import { rank, CARS } from './logic.js';
+import { rank, CARS, REGIONS, ANCHOR as A } from './logic.js';
+import { LISTS } from './negocios.js';
 import { current, DEFAULT as WORLD0 } from './world.js';
 
 // [nick, patrimônio inicial, crescimento por mês, pele, cabelo, cor do cabelo, barba, roupa, cor da roupa, acessório, frase]
@@ -84,7 +85,7 @@ for (const n of [...BASE, ...EXTRA]) {
   Object.defineProperty(n, 'nick', { enumerable: true, get() { return this.gnick && Date.now() >= this.renameAt ? this.gnick : this.orig; } });
 }
 // mundo recomeçado: as bios antigas falavam de time, haras, galgo, fazenda e carta que ninguém tem mais. Todo bot começa com uma frase de quem acabou de chegar
-const FRESH = ['bora', 'sem tempo, só passando', 'foco no gado', 'aceito parceria', 'chama no pv', 'devagar e sempre', '🐂', 'só no 21 hoje', 'comecei agora, bora', 'recomeçando do zero kkk', 'primeiro dia por aqui', 'sem nada ainda, vamos ver', 'rumo ao primeiro milhão', 'recomecei do zero, sem drama', 'novo por aqui, pega leve', 'meta: sair dos 10 mil'];
+const FRESH = ['bora', 'sem tempo, só passando', 'foco no gado', 'aceito parceria', 'chama no pv', 'devagar e sempre', '🐂', 'larguei o cassino, agora é só agro', 'comecei agora, bora', 'recomeçando do zero kkk', 'primeiro dia por aqui', 'sem nada ainda, vamos ver', 'rumo ao primeiro milhão', 'recomecei do zero, sem drama', 'novo por aqui, pega leve', 'meta: sair dos 10 mil', 'soja, gado e empresa. cassino nunca mais', 'vivendo de safra e dividendo', 'compro terra, chama no pv'];
 export const NPCS = [...BASE, ...EXTRA].map(n => ({ ...n, bio: hash(n.i * 59 + 11) < 0.45 ? '' : FRESH[Math.floor(hash(n.i * 61 + 3) * FRESH.length)] }));   // ~45% sem recado no perfil
 // folga: jogadores fora do jogo até a hora indicada (UTC). 12:20 de Brasília = 15:20 UTC. Apague a linha para voltarem antes.
 export const AWAY = { 'ReiDoGado': Date.UTC(2026, 10, 21, 15, 20), 'A Boiadeira': Date.UTC(2026, 10, 21, 15, 20) };
@@ -140,35 +141,49 @@ export const levelFor = worth => Math.max(1, Math.min(60, Math.round(Math.log10(
 // negócios do bot: a cada janela de 3 h em que ele estava com vontade de jogar, fecha um negócio do tamanho da fortuna dele
 const DEAL_MS = 3 * 36e5;
 const DEAL_KINDS = [
-  (v, r) => { const q = Math.max(10, Math.round(v * 0.03 / 2600 / 10) * 10); return { txt: `comprou ${q} bezerros`, val: -q * Math.round(2450 + r * 300) }; },
-  (v, r) => { const q = Math.max(10, Math.round(v * 0.04 / 4700 / 10) * 10); return { txt: `vendeu ${q} bois gordos`, val: q * Math.round(4400 + r * 700) }; },
-  (v, r) => { const q = Math.max(100, Math.round(v * 0.02 / 130 / 100) * 100), p = Math.round(118 + r * 26); return { txt: `vendeu ${q} sacas de soja a R$ ${p}`, val: q * p }; },
-  (v, r) => { const q = Math.max(100, Math.round(v * 0.015 / 60 / 100) * 100), p = Math.round(52 + r * 14); return { txt: `comprou ${q} sacas de milho a R$ ${p}`, val: -q * p }; },
-  (v, r) => { const q = Math.max(20, Math.round(v * 0.01 / 1400 / 10) * 10), p = Math.round(1250 + r * 300); return { txt: `vendeu ${q} sacas de café a R$ ${p}`, val: q * p }; },
+  (v, r) => { const q = Math.max(10, Math.round(v * 0.03 / 2600 / 10) * 10); return { txt: `comprou ${q} bezerros`, val: -q * Math.round(A.bezerro * (0.9 + r * 0.2)) }; },
+  (v, r) => { const q = Math.max(10, Math.round(v * 0.04 / 4700 / 10) * 10); return { txt: `vendeu ${q} bois gordos`, val: q * Math.round(A.arroba * 16 * (0.9 + r * 0.2)) }; },
+  (v, r) => { const q = Math.max(100, Math.round(v * 0.02 / 130 / 100) * 100), p = Math.round(A.soja * (0.9 + r * 0.2)); return { txt: `vendeu ${q} sacas de soja a R$ ${p}`, val: q * p }; },
+  (v, r) => { const q = Math.max(100, Math.round(v * 0.015 / 60 / 100) * 100), p = Math.round(A.milho * (0.9 + r * 0.2)); return { txt: `comprou ${q} sacas de milho a R$ ${p}`, val: -q * p }; },
+  (v, r) => { const q = Math.max(20, Math.round(v * 0.01 / 1400 / 10) * 10), p = Math.round(A.cafe * (0.9 + r * 0.2)); return { txt: `vendeu ${q} sacas de café a R$ ${p}`, val: q * p }; },
   (v, r) => { const ha = Math.max(20, Math.round(v * 0.06 / 18000 / 10) * 10); return { txt: `comprou ${ha} ha de terra`, val: -ha * Math.round(15000 + r * 9000) }; },
   (v, r) => { const q = Math.max(500, Math.round(v * 0.004 / 6.2 / 500) * 500); return { txt: `vendeu ${q} kg de frango`, val: Math.round(q * (5.6 + r * 1.2)) }; },
-  (v, r) => { const q = Math.max(50, Math.round(v * 0.005 / 38 / 50) * 50); return { txt: `vendeu ${q} caixas de laranja`, val: q * Math.round(34 + r * 9) }; },
+  (v, r) => { const q = Math.max(50, Math.round(v * 0.005 / 38 / 50) * 50); return { txt: `vendeu ${q} caixas de laranja`, val: q * Math.round(A.laranja * (0.9 + r * 0.2)) }; },
+  (v, r) => { const ha = Math.max(20, Math.round(v * 0.05 / 18000 / 10) * 10); return { txt: `recebeu arrendamento de ${ha} ha`, val: Math.round(ha * (180 + r * 90)) }; },
+  (v, r) => ({ txt: 'recebeu o lucro das empresas', val: Math.round(v * (0.002 + r * 0.004) / 100) * 100 }),
 ];
 export function deals(n, worth, now = Date.now(), max = 6) {
   const out = [], s0 = Math.floor(now / DEAL_MS);
   for (let k = 0; k < 40 && out.length < max; k++) {
     const sl = s0 - k, t = sl * DEAL_MS + hash(n.i * 131 + sl) * DEAL_MS;
     if (t > now || hash(n.i * 37 + sl) > 0.15 + drive(n, t) * 0.6) continue;
-    const d = DEAL_KINDS[Math.floor(hash(n.i * 53 + sl) * DEAL_KINDS.length)](worth, hash(n.i * 71 + sl));
+    const d = DEAL_KINDS[Math.floor(hash(n.i * 53 + sl) * DEAL_KINDS.length)](worth * (0.5 + hash(n.i * 29 + sl) * 1.1), hash(n.i * 71 + sl));
     out.push({ ...d, at: t });
   }
   return out;
 }
 
+// 24/11/2026: os jogadores do mundo largaram o cassino e vivem de agro e empresas. As partidas de antes continuam no perfil, paradas nesse dia
+export const CASINO_STOP = Date.UTC(2026, 10, 24, 3);
+const BIZ = Object.entries(LISTS).filter(([c]) => c !== 'usinas').flatMap(([cat, L]) => Object.entries(L).map(([brand, v]) => ({ cat, brand, price: v.price })));
+// o que cada um tem (empresas, terras, granja...), fixo por pessoa e do tamanho da fortuna: o perfil fica igual ao de quem tem conta
+function assets(n, worth, lands, ha, age) {
+  const r = k => hash(n.i * 43 + k), can = BIZ.filter(b => b.price <= worth * 0.3), want = worth < 3e6 ? 0 : Math.min(can.length, 1 + Math.floor(r(1) * Math.min(5, worth / 8e6))), biz = [];
+  for (let k = 0; biz.length < want && k < 60; k++) { const b = can[Math.floor(r(10 + k) * can.length)]; if (!biz.includes(b)) biz.push(b); }
+  const landList = Array.from({ length: Math.min(10, lands) }, (_, k) => ({ region: REGIONS[Math.floor(r(80 + k) * REGIONS.length)].name, ha: Math.max(10, Math.round(ha / lands / 10) * 10), orchard: r(120 + k) < 0.15, cane: r(140 + k) < 0.12 }));
+  return { biz: biz.map(({ cat, brand }) => ({ cat, brand })), landList, mina: worth > 2e7 && r(2) < 0.3, wh: worth > 1.5e6 ? Math.floor(r(3) * 4) : 0,
+    granja: worth > 8e5 && r(4) < 0.5 ? 1 + Math.floor(r(5) * 4) : 0, suinos: worth > 1e6 && r(6) < 0.4 ? 1 + Math.floor(r(7) * 3) : 0, cardsN: Math.floor(r(8) * 24 * age), club: null };
+}
 // perfil completo (para a janela de perfil)
 export function profile(n, month) {
-  const worth = worthAt(n, month), lv = levelFor(worth), r = k => hash(n.i * 31 + k);
+  const worth = worthAt(n, month), r = k => hash(n.i * 31 + k), lv = levelFor(worth);
   const age = Math.min(1, Math.max(0, (month - 1) / EARLY));   // 0 no mês 1: sem partidas, conquistas, bichos nem negócios; chega ao normal na largada (2 dias)
-  const hands = Math.round((80 + lv * 45 + r(1) * 400) * age), cars = Object.keys(CARS).filter(c => CARS[c].type !== 'maquina' && CARS[c].price < worth * 0.6).slice(-1 - Math.floor(r(2) * 2));
+  const cm = Math.min(month, Math.max(1, current(CLOCK.world, CASINO_STOP))), cw = worthAt(n, cm), cage = Math.min(1, Math.max(0, (cm - 1) / EARLY));   // cassino parado no dia em que largou
+  const hands = Math.round((80 + levelFor(cw) * 45 + r(1) * 400) * cage), cars = Object.keys(CARS).filter(c => CARS[c].type !== 'maquina' && CARS[c].price < worth * 0.6).slice(-1 - Math.floor(r(2) * 2));
   return {
     npc: true, id: n.id, name: n.nick, look: n.look, level: lv, rank: rank(worth), worth, bio: n.bio,
-    stats: { hands, wins: Math.round(hands * (0.38 + r(3) * 0.08)), best: Math.round((200 + r(4) * worth / 200) * age), races: Math.round(r(5) * 60 * age), raceWins: Math.round(r(6) * 14 * age) },
-    lands: Math.floor(worth / 250000), ha: Math.floor(worth / 250000) * (30 + Math.floor(r(7) * 70)), heads: Math.floor(worth / 60000) * 10,
+    stats: { hands, wins: Math.round(hands * (0.38 + r(3) * 0.08)), best: Math.round((200 + r(4) * cw / 200) * cage), races: Math.round(r(5) * 60 * cage), raceWins: Math.round(r(6) * 14 * cage) },
+    lands: Math.floor(worth / 250000), ha: Math.floor(worth / 250000) * (30 + Math.floor(r(7) * 70)), ...assets(n, worth, Math.floor(worth / 250000), Math.floor(worth / 250000) * (30 + Math.floor(r(7) * 70)), age), pioneer: hash(n.i * 89 + 5) < 0.35, heads: Math.floor(worth / 60000) * 10,
     cars, animals: Array.from({ length: Math.floor(r(8) * 3 * age) }, (_, k) => ({ kind: k % 2 ? 'horse' : 'dog', name: '', rating: 50 + Math.floor(r(9 + k) * 30), wins: Math.floor(r(12 + k) * 8) })),
     achCount: Math.floor(Math.min(20, 2 + Math.floor(lv / 2)) * age), deals: deals(n, worth).filter(d => Date.now() - d.at < (month - 1) * 3e5),   // negócio só desde que o mundo começou (ponytail: assume 5 min por mês)
   };

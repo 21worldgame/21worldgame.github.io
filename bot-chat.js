@@ -35,7 +35,7 @@ const L = {
     ofensa: ['Vamos manter o respeito, por favor.', 'Não precisa disso. Bom jogo para você.'],
     pergunta: ['Boa pergunta. Não sei te dizer com certeza.', 'Acredito que sim, mas não tenho certeza.', 'Hmm, não sei dizer agora. Depois te falo.'],
     papo: ['Entendi.', 'Interessante, não sabia disso.', 'Certo, faz sentido.', 'Pois é, o mundo está agitado hoje.'],
-    sumiu: ['Desculpe a demora, estava numa mesa.', 'Perdão, só vi agora.'],
+    sumiu: ['Desculpe a demora, estava cuidando da fazenda.', 'Perdão, só vi agora.'],
   },
   informal: {
     oi: ['eae', 'fala tu', 'opa blz?', 'salve', 'eae mano suave?', 'fala ai'],
@@ -47,10 +47,10 @@ const L = {
     ofensa: ['ue', 'oloco', 'q isso mano', 'oxi', 'relaxa ai'],
     pergunta: ['sei n', 'acho q sim', 'n faço ideia kk', 'pq?'],
     papo: ['ss', 'boa', 'slk', 'dmr', 'pse', 'tendi'],
-    sumiu: ['foi mal tava jogando', 'opa vi agr', 'mals sumi'],
+    sumiu: ['foi mal tava na fazenda', 'opa vi agr', 'mals sumi'],
   },
   amigo: {
-    oi: ['opaaa tudo bem?? 😄', 'oiii, bem vindo! precisando de algo é só chamar 🙌', 'eaaai, tudo certo? bora jogar uma mesa depois?', 'fala meu amigo!! 😁'],
+    oi: ['opaaa tudo bem?? 😄', 'oiii, bem vindo! precisando de algo é só chamar 🙌', 'eaaai, tudo certo? bora fazer negócio depois?', 'fala meu amigo!! 😁'],
     oi2: ['opa de novo haha 😄', 'tô aqui sim!'],
     negocio: ['bora negociar sim! manda no meu perfil que a gente acerta 🤝', 'pra você faço um precinho camarada haha', 'opa, interessa sim! me chama no negociar', 'agora não tenho, mas se aparecer te aviso 🙏'],
     dica: ['olha, eu fui no meu ritmo e deu certo, vai com calma que dá bom 💪', 'o segredo é não desistir haha, tamo junto', 'cada um tem seu jeito, mas qualquer coisa me chama que eu te ajudo 😉'],

@@ -669,6 +669,9 @@ import * as NP from './npcs.js';
   assert.ok(at(21) > at(4), 'à noite tem mais gente que de madrugada');
   assert.equal(NP.onlineNow(Date.UTC(2026, 10, 18, 15)).length, NP.onlineNow(Date.UTC(2026, 10, 18, 15, 5)).length);
   const p = NP.profile(NP.NPCS[0], 3); assert.ok(p.name && p.level >= 1 && p.stats.hands >= 0 && p.bio);
+  // largaram o cassino: partidas paradas depois do dia, perfil com o que tem (empresas, terras) como quem tem conta
+  const p1 = NP.profile(NP.NPCS[0], 5000), p2 = NP.profile(NP.NPCS[0], 9000);
+  assert.equal(p1.stats.hands, p2.stats.hands, 'cassino parado'); assert.ok(p2.biz.length >= 1 && p2.landList.length >= 1, 'rico tem empresa e terra no perfil');
 }
 console.log('jogadores do mundo ok');
 // confinamento: novato sem terra consegue lucrar com gado (menos que quem tem pasto)
