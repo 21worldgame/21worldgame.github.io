@@ -33,7 +33,7 @@ export async function refreshGold() {
   if (live.oz && G.S && MI.setSpot(G.S, live.oz, live.fx)) G.render?.();   // o preço do ouro no save acompanha o mercado real
 }
 setInterval(refreshGold, 600000); setTimeout(refreshGold, 2000);
-const liveLine = () => !live.oz ? 'preço de reserva (sem internet)' : `US$ ${int(live.oz)} a onça × R$ ${live.fx.toFixed(2).replace('.', ',')} = <b>R$ ${(live.oz / MI.OZ * live.fx).toFixed(0)}/g</b> · ${live.ok ? 'ao vivo' : 'último preço guardado'}${live.at ? `, atualizado há ${Math.max(0, Math.round((Date.now() - live.at) / 60000))} min` : ''}`;
+const liveLine = () => !live.oz ? 'preço de reserva (sem internet)' : `US$ ${int(live.oz)} a onça × R$ ${live.fx.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} = <b>R$ ${(live.oz / MI.OZ * live.fx).toFixed(0)}/g</b> · ${live.ok ? 'ao vivo' : 'último preço guardado'}${live.at ? `, atualizado há ${Math.max(0, Math.round((Date.now() - live.at) / 60000))} min` : ''}`;
 const FLEET_ICO = { furar: '🔩', escavar: '🚜', carregar: '🏗️', transportar: '🚛' };
 const mine = () => owner.ok && owner.id && owner.id === Auth.account()?.id && G.S.mina;
 
@@ -64,8 +64,8 @@ export function ownCard() {
       <span class="mina-fl ${m.crews ? 'is-ok' : 'is-no'}">👷 equipes: <b>${m.crews} (${int(m.crews * MI.CREW_T)} t/mês)</b></span><span class="mina-fl is-ok">🏭 usina: <b>${int(MI.PLANT_T)} t/mês</b></span></div>
     <p class="small ${lack.length ? 'bad' : 'good'}">${lack.length ? `Faltam máquinas para extrair: <b>${esc(lack.join(', '))}</b>. Compre na loja 21 (aba máquinas) e elas entram na mina sozinhas.` : `Capacidade de hoje: <b>${int(cap.t)} t de minério por mês</b>, limitada por ${esc(cap.limit)}. Para produzir mais, solte esse gargalo.`} <button class="btn btn--glass btn--sm" type="button" data-tab-go="loja">ir à loja</button></p>
     ${run ? `<table class="mina-dre"><caption class="small muted">estimativa do próximo mês (no teor de ${String(grade).replace('.', ',')} g/t, recuperação de ${Math.round(MI.RECOVERY * 100)}%)</caption>
-      <tr><td>ouro vendido (${kg.toFixed(1).replace('.', ',')} kg)</td><td class="good">+${brl(rev)}</td></tr><tr><td>diesel, explosivos, reagentes e desgaste (${int(tons)} t × ${brl(MI.OPEX_T)})</td><td class="bad">−${brl(varc)}</td></tr>
-      <tr><td>CFEM (1,5%) e impostos (${(MI.ROYALTY * 100).toFixed(1).replace('.', ',')}%)</td><td class="bad">−${brl(roy)}</td></tr><tr><td>custos fixos e equipes</td><td class="bad">−${brl(fixed)}</td></tr>
+      <tr><td>ouro vendido (${kg.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg)</td><td class="good">+${brl(rev)}</td></tr><tr><td>diesel, explosivos, reagentes e desgaste (${int(tons)} t × ${brl(MI.OPEX_T)})</td><td class="bad">−${brl(varc)}</td></tr>
+      <tr><td>CFEM (1,5%) e impostos (${(MI.ROYALTY * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)</td><td class="bad">−${brl(roy)}</td></tr><tr><td>custos fixos e equipes</td><td class="bad">−${brl(fixed)}</td></tr>
       <tr class="is-tot"><td><b>resultado antes do IPVA e seguro da frota</b></td><td class="${net >= 0 ? 'good' : 'bad'}"><b>${net >= 0 ? '+' : '−'}${brl(Math.abs(net))}</b></td></tr></table>` : ''}
     <div class="row"><label class="field"><span>equipes de mineiros (0 a ${MI.MINE.maxCrews})</span><input class="input" type="range" min="0" max="${MI.MINE.maxCrews}" value="${m.crews}" id="mina-crews"></label><b id="mina-crews-n">${m.crews}</b>
       <button class="btn btn--gold btn--sm" data-mina="crews">contratar / dispensar</button><button class="btn btn--glass btn--sm" data-mina="sell">vender a mina (${brl(MI.saleValue(G.S))})</button></div>

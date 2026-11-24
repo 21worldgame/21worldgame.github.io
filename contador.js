@@ -198,7 +198,7 @@ export const ADVICE = /compensa|vale (mais )?a pena|vale comprar|melhor (investi
 export const QUICK = ['qual meu lucro real?', 'por que tive prejuízo?', 'o que está vindo caro?', 'quanto tempo meu dinheiro aguenta?', 'quanto vale meu patrimônio?', 'por que meu patrimônio cai todo mês?', 'quanto vou pagar no próximo fechamento?'];
 // período pedido: "últimos 3 meses"; o padrão é 12 meses
 const periodOf = q => { const x = /ult\w* (\d{1,2}) mes/.exec(q); return x ? Math.max(1, Math.min(ARCHIVE, +x[1])) : 12; };
-const money2 = v => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
+const money2 = v => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 // ctx: { brl, forecast: summarize(previsão), prices, base, held, worth, loans }
 export function answer(s, q0, ctx) {
   const q = norm(q0), brl = ctx.brl, g = groupIn(q), L = g ? GROUP_LABEL[g] : null, m = s.month || 0, fc = ctx.forecast, held = ctx.held || {}, N = periodOf(q);
@@ -238,7 +238,7 @@ export function answer(s, q0, ctx) {
   if (/quanto devo|minha divida|meus emprestimos|devo ao banco|parcelas? que faltam/.test(q)) {
     const ls = ctx.loans || [];
     if (!ls.length) return ['Você não deve nada ao banco.'];
-    return [`Você deve ${brl(ls.reduce((t, l) => t + l.bal, 0))} ao banco:`, ...ls.map((l, i) => `• empréstimo ${i + 1}: ${brl(l.bal)}, juros de ${(l.rate * 100).toFixed(1).replace('.', ',')}% ao mês, faltam ${l.left} ${l.left === 1 ? 'parcela' : 'parcelas'} de uns ${brl(l.bal * (1 + l.rate) / Math.max(1, l.left))}`), 'Duas parcelas atrasadas e o banco toma a terra mais cara.'];
+    return [`Você deve ${brl(ls.reduce((t, l) => t + l.bal, 0))} ao banco:`, ...ls.map((l, i) => `• empréstimo ${i + 1}: ${brl(l.bal)}, juros de ${(l.rate * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% ao mês, faltam ${l.left} ${l.left === 1 ? 'parcela' : 'parcelas'} de uns ${brl(l.bal * (1 + l.rate) / Math.max(1, l.left))}`), 'Duas parcelas atrasadas e o banco toma a terra mais cara.'];
   }
   if (/aguenta|quanto tempo|quebrar|sem dinheiro|falir|falencia|dinheiro dura/.test(q)) {
     const net = fc.total - fc.income, cash = s.money || 0;

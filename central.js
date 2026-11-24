@@ -641,7 +641,7 @@ document.addEventListener('click', async e => {
 });
 
 // ---------- vigilância (admin-econ.js watch): quem enriqueceu rápido demais, Pix, cassino, Receita, tempo jogado ----------
-const hrs = h => (h == null ? '—' : h < 1 ? `${Math.round(h * 60)} min` : `${h.toFixed(1).replace('.', ',')} h`);
+const hrs = h => (h == null ? '—' : h < 1 ? `${Math.round(h * 60)} min` : `${h.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h`);
 async function pageAll(q) { const out = []; for (let f = 0; ; f += 500) { const { data, error } = await q().range(f, f + 499); if (error) throw error; out.push(...(data || [])); if (!data || data.length < 500) return out; } }
 // ---------- diário: tudo o que cada jogador fez (supabase/diario.sql) ----------
 let dj = null;
@@ -729,7 +729,7 @@ function drawDiario() {
   $('#ad-dj-jump').innerHTML = R.jumps.slice(0, 40).map(j => `<tr><td>${who(j.name)}</td><td>${hm(j.prevAt)} → ${hm(j.at)}</td><td>${esc(j.why)}</td><td class="num">${brl(j.from)} → ${brl(j.to)}</td><td class="num">${sgn(j.diff)}</td></tr>`).join('') || none(5);
   $('#ad-dj-src').innerHTML = R.sources.slice(0, 60).map(x => `<tr><td title="${esc(x.ex)}">${esc(x.k)}</td><td class="num">${brl(x.in)}</td><td class="num">${brl(x.out)}</td><td class="num">${sgn(x.net)}</td><td class="num">${int(x.n)}</td><td class="num">${int(x.nPlayers)}</td><td>${x.top ? `${who(x.top[0])} (${brl(x.top[1])})` : ''}</td></tr>`).join('') || none(7);
   $('#ad-dj-chip').innerHTML = R.chipBy.slice(0, 30).map(g => `<tr><td>${actLabel(g.act)}</td><td class="num">${sgn(g.val)}</td><td class="num">${int(g.n)}</td><td>${ppl(g.players)}</td></tr>`).join('') || none(4);
-  $('#ad-dj-pl').innerHTML = R.players.map(p => `<tr><td><strong>${who(p.name)}</strong></td><td class="num">${p.hours.toFixed(1).replace('.', ',')}</td><td class="num">${sgn(p.worthGain)}</td><td class="num">${sgn(Math.round(p.perHour))}</td>
+  $('#ad-dj-pl').innerHTML = R.players.map(p => `<tr><td><strong>${who(p.name)}</strong></td><td class="num">${p.hours.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td><td class="num">${sgn(p.worthGain)}</td><td class="num">${sgn(Math.round(p.perHour))}</td>
     <td class="num">${brl(p.in)} / ${brl(p.out)}</td><td class="num">${p.gapN ? `${sgn(p.gap)} <small>(${p.gapN}x)</small>` : '—'}</td><td class="num">${p.chips ? sgn(p.chips) : '—'}</td><td class="num">${p.sessions}</td>
     <td><small>${p.top.filter(t => t.net > 0).slice(0, 3).map(t => `${esc(t.k)}: ${brl(t.net)}`).join('<br>')}</small></td></tr>`).join('') || none(9);
   drawTimeline();

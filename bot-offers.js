@@ -22,7 +22,7 @@ export function offerFor(s, now = Date.now()) {
   const opts = [];
   for (const g of Object.keys(GOOD)) { const have = Math.floor(s.stock?.[g] || 0); if (have >= 20 && p[g]) opts.push(() => {
     const q = Math.max(10, Math.round(have * (0.3 + r * 0.5))), unit = Math.round(p[g] * (0.97 + r * 0.1) * 100) / 100;
-    return { kind: 'buy', good: g, q, unit, total: Math.round(q * unit), txt: line(LINES.buy).replace('{q}', `${q} ${GOOD[g][0]}`).replace('{p}', `R$ ${unit.toFixed(2).replace('.', ',')}`) };
+    return { kind: 'buy', good: g, q, unit, total: Math.round(q * unit), txt: line(LINES.buy).replace('{q}', `${q} ${GOOD[g][0]}`).replace('{p}', `R$ ${unit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`) };
   }); }
   const lot = (s.herd || []).find(x => x.kg >= 380);
   if (lot && p.arroba) opts.push(() => {

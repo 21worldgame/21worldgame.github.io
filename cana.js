@@ -78,7 +78,7 @@ export function monthly(s, rng = Math.random) {
       const mine = ownsUsina(s, 'cana'), price = (s.prices.cana || CANE.price) * (burnt ? 0.85 : 1) * (mine ? 1.12 : 1) * mult(s, 'cana');
       const lg = logistics(s, l), net = Math.round(tons * (price - lg.total + (mine ? lg.freight / 2 : 0)));
       c.cuts++; if (!due || c.cuts === 1) c.age = c.cuts === 1 ? CANE.first : CANE.first + (c.cuts - 1) * CANE.cycle;   // corte antecipado pelo fogo
-      add(`corte de cana: ${tons} t para ${mine ? 'a SUA usina (+12% e frete pela metade)' : `a usina a ${lg.km} km`}, ${l.region}${burnt ? ' (cana queimada, com desconto)' : ''} · logística R$ ${lg.total.toFixed(2).replace('.', ',')}/t`, net);
+      add(`corte de cana: ${tons} t para ${mine ? 'a SUA usina (+12% e frete pela metade)' : `a usina a ${lg.km} km`}, ${l.region}${burnt ? ' (cana queimada, com desconto)' : ''} · logística R$ ${lg.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/t`, net);
       if (c.cuts >= CANE.reform) out.push({ txt: `canavial de ${l.region}: já são ${c.cuts} cortes, pense em reformar`, val: 0 });
     }
   }

@@ -407,7 +407,7 @@ export function tick(s, rng = Math.random) {
   }
 
   for (const p of [...s.lent]) {
-    if (rng() < p.risk) { const back = Math.round(p.bal * RECOVER); add(`${p.name} deu calote de R$ ${Math.round(p.bal - back)} (o cobrador recuperou ${Math.round(RECOVER * 100)}%)`, back); s.lent.splice(s.lent.indexOf(p), 1); continue; }
+    if (rng() < p.risk) { const back = Math.round(p.bal * RECOVER); add(`${p.name} deu calote de R$ ${Math.round(p.bal - back).toLocaleString('pt-BR')} (o cobrador recuperou ${Math.round(RECOVER * 100)}%)`, back); s.lent.splice(s.lent.indexOf(p), 1); continue; }
     p.bal *= 1 + p.rate;
     const pay = p.bal / Math.max(1, p.left);
     add(`${p.name} pagou a parcela`, pay); p.bal -= pay;

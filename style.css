@@ -3716,3 +3716,4 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .bo__list { list-style: none; padding: 0; display: grid; gap: var(--space-sm); }
 .bo__list li { padding: var(--space-sm); border: 1px solid var(--color-rule-2); border-radius: 12px; }
 @media (prefers-reduced-motion: reduce) { .bo__stamp { animation: none; } }
+.numfmt { display: block; margin-top: 2px; font-size: .78rem; font-weight: 700; color: var(--money, #4ade80); font-variant-numeric: tabular-nums; }

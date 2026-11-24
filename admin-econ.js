@@ -61,7 +61,7 @@ export function alerts(s, p = pnl(s)) {
   const d = safe(() => L.debt(s)); if (w > 0 && d > w * 0.5) a.push(`dívida de ${brlShort(d)}, mais da metade do patrimônio`);
   return a;
 }
-export const brlShort = v => { const n = Number(v) || 0, a = Math.abs(n); return `${n < 0 ? '-' : ''}R$ ${a >= 1e9 ? `${(a / 1e9).toFixed(2).replace('.', ',')} bi` : a >= 1e6 ? `${(a / 1e6).toFixed(1).replace('.', ',')} mi` : a >= 1e3 ? `${Math.round(a / 1e3)} mil` : Math.round(a)}`; };
+export const brlShort = v => { const n = Number(v) || 0, a = Math.abs(n); return `${n < 0 ? '-' : ''}R$ ${a >= 1e9 ? `${(a / 1e9).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} bi` : a >= 1e6 ? `${(a / 1e6).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} mi` : a >= 1e3 ? `${Math.round(a / 1e3)} mil` : Math.round(a)}`; };
 
 // maiores lançamentos do livro-caixa (entradas e saídas) dos últimos meses
 export const bigMoves = (s, n = 12) => [...(s.log || [])].filter(l => l.val).sort((a, b) => Math.abs(b.val) - Math.abs(a.val)).slice(0, n);
@@ -105,7 +105,7 @@ export function watch(players, now = Date.now()) {
     const why = [], add = (pts, txt) => { r.score = (r.score || 0) + pts; why.push(txt); };
     r.score = 0;
     if (fair && r.perHour > fair * FAIR_X && r.worth > 200000) add(3, `ganha ${brlShort(r.perHour)} por hora jogada, ${Math.round(r.perHour / fair)}x o normal (${brlShort(fair)}/h)`);
-    if (r.playH != null && r.playH < 2 && r.worth > 1e6) add(3, `${brlShort(r.worth)} com só ${r.playH.toFixed(1).replace('.', ',')} h jogadas`);
+    if (r.playH != null && r.playH < 2 && r.worth > 1e6) add(3, `${brlShort(r.worth)} com só ${r.playH.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h jogadas`);
     if (r.playH == null && r.worth > 1e6) add(1, 'tempo jogado ainda não medido (jogo dele está em versão antiga)');
     if (r.pixInSum > Math.max(100000, r.worth * 0.3)) add(3, `${brlShort(r.pixInSum)} recebidos por Pix (${Math.round(r.pixInSum / Math.max(1, r.worth) * 100)}% do patrimônio): pode ser outra conta dele mandando dinheiro`);
     if (r.pixOutSum > Math.max(100000, (r.worth + r.pixOutSum) * 0.5)) add(2, `mandou ${brlShort(r.pixOutSum)} por Pix, mais da metade do que tinha (conta "laranja"?)`);

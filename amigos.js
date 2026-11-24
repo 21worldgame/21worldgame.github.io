@@ -150,7 +150,7 @@ export function lendTo(s, nick, amount, rate, months, mode = 'auto') {
   if (!LEND_RATES.includes(rate)) return 'escolha uma taxa da lista.';
   if (months < 2 || months > 12) return 'prazo de 2 a 12 meses.';
   if (amount < 1000 || amount > lendCap(s, nick)) return `${nick} só precisa de até R$ ${lendCap(s, nick).toLocaleString('pt-BR')}.`;
-  if (rate > lendMaxRate(s, nick, mode)) return `${nick} achou o juro alto demais: no máximo ${(lendMaxRate(s, nick, mode) * 100).toFixed(1).replace('.', ',')}% ao mês ${MODES[mode].label}${isFriend(s, nick) ? ' entre parceiros' : ''}.`;
+  if (rate > lendMaxRate(s, nick, mode)) return `${nick} achou o juro alto demais: no máximo ${(lendMaxRate(s, nick, mode) * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% ao mês ${MODES[mode].label}${isFriend(s, nick) ? ' entre parceiros' : ''}.`;
   if (!isFriend(s, nick) && rate < AGIOTA_MIN) return `${nick} não é seu parceiro: sem confiança, você só empresta a partir de ${Math.round(AGIOTA_MIN * 100)}% ao mês.`;
   if (s.lent.some(p => p.nick === nick)) return `${nick} ainda está pagando o empréstimo anterior.`;
   if (amount > s.money) return 'dinheiro insuficiente.';

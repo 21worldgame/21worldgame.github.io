@@ -97,20 +97,20 @@ function statRow(k, x, y, d, u = '') {
 function odds(mt, ph) {
   const open = ph === 'pre';
   return `<div class="fb-mk">${AP.markets(mt).map(m => `<div class="fb-mkt${m.id === 'placar' ? ' fb-mkt--wide' : ''}"><h5>${m.label}</h5><div class="fb-opts">${m.opts.map(o =>
-    `<button class="fb-odd${pick && pick.mk === m.id && pick.k === o.k ? ' is-on' : ''}" data-fb-mk="${m.id}" data-fb-k="${o.k}" ${open ? '' : 'disabled'}><span>${esc(o.label)}</span><b>${o.odd.toFixed(2).replace('.', ',')}</b></button>`).join('')}</div></div>`).join('')}</div>`;
+    `<button class="fb-odd${pick && pick.mk === m.id && pick.k === o.k ? ' is-on' : ''}" data-fb-mk="${m.id}" data-fb-k="${o.k}" ${open ? '' : 'disabled'}><span>${esc(o.label)}</span><b>${o.odd.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></button>`).join('')}</div></div>`).join('')}</div>`;
 }
 
 function slip(mt, ph, slot) {
   const m = pick && AP.markets(mt).find(x => x.id === pick.mk), o = m?.opts.find(x => x.k === pick.k);
   const stake = Number($('[name="fb-stake"]')?.value) || 100;
   $('#fb-slip').innerHTML = ph !== 'pre' ? `<p class="muted small">Este jogo já começou: as apostas fecharam. Escolha um jogo da <b>próxima rodada</b> para apostar.</p>`
-    : o ? `<div class="fb-pick"><small>${esc(mt.home.n)} x ${esc(mt.away.n)}</small><b>${esc(m.label)}: ${esc(o.label)}</b><span class="fb-pick__odd">${o.odd.toFixed(2).replace('.', ',')}</span></div>
+    : o ? `<div class="fb-pick"><small>${esc(mt.home.n)} x ${esc(mt.away.n)}</small><b>${esc(m.label)}: ${esc(o.label)}</b><span class="fb-pick__odd">${o.odd.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
       <label class="field"><span>valor em fichas</span><input class="input" name="fb-stake" type="number" min="${AP.MIN_BET}" step="10" value="${stake}" inputmode="numeric"></label>
       <div class="row">${[50, 100, 500, 1000].map(v => `<button class="btn btn--glass btn--sm" data-fb-q="${v}">${v}</button>`).join('')}</div>
       <p class="small">retorno possível: <b class="good" id="fb-ret">${int(Math.floor(stake * o.odd))} fichas</b></p>
       <button class="btn btn--gold btn--lg" data-fb-bet>apostar</button>`
     : '<p class="muted small">Escolha uma odd ao lado para montar o bilhete.</p>';
-  const mine = (G.S.fbets || []).map(b => `<li><span>${esc(b.game)}<small>${esc(b.label)}</small></span><b>${int(b.stake)} × ${b.odd.toFixed(2).replace('.', ',')}</b></li>`).join('');
+  const mine = (G.S.fbets || []).map(b => `<li><span>${esc(b.game)}<small>${esc(b.label)}</small></span><b>${int(b.stake)} × ${b.odd.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></li>`).join('');
   const done = (G.S.fhist || []).slice(0, 6).map(b => `<li class="${b.won ? 'is-won' : 'is-lost'}"><span>${esc(b.game)} (${b.score})<small>${esc(b.label)}</small></span><b>${b.won ? `+${int(b.pay)}` : `−${int(b.stake)}`}</b></li>`).join('');
   // a galera apostando: nicks do mundo, fixos por rodada
   const r = AP.rng(slot * 97 + 5), on = [...NPC.onlineSet(Live.now())].slice(0, 40), ms = AP.matches(slot);

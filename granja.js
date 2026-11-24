@@ -78,8 +78,8 @@ export function monthly(s, rng = Math.random) {
     add('granja: energia, cama e mão de obra', -Math.round(l.birds * H.energy));
     if (l.cost != null) l.cost += feed + Math.round(l.birds * H.energy);
     let dead = l.birds * Math.max(0, H.mort + bonus(s, 'perda'));
-    if (rng() < (l.vac ? 0.01 : 0.05)) { const d = l.birds * (l.vac ? 0.05 : 0.2); dead += d; l.events.push('doença'); add(`granja: surto de doença no lote${l.vac ? ' (a vacina segurou boa parte)' : ' sem vacina'}: ${Math.round(d)} aves perdidas`); }
-    if (H.heat && rng() < 0.06) { const d = l.birds * 0.06; dead += d; l.events.push('calor'); add(`granja: onda de calor no galpão: ${Math.round(d)} aves perdidas`); }
+    if (rng() < (l.vac ? 0.01 : 0.05)) { const d = l.birds * (l.vac ? 0.05 : 0.2); dead += d; l.events.push('doença'); add(`granja: surto de doença no lote${l.vac ? ' (a vacina segurou boa parte)' : ' sem vacina'}: ${Math.round(d).toLocaleString('pt-BR')} aves perdidas`); }
+    if (H.heat && rng() < 0.06) { const d = l.birds * 0.06; dead += d; l.events.push('calor'); add(`granja: onda de calor no galpão: ${Math.round(d).toLocaleString('pt-BR')} aves perdidas`); }
     l.birds = Math.max(0, Math.round(l.birds - dead));
     l.age++;
   }

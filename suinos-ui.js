@@ -5,7 +5,7 @@ import { G, $, esc, brl, int, say, save, note, confetti } from './store.js';
 export function render() {
   const el = $('#sn2-barns'); if (!el) return;
   const s = G.S, st = SU.ensure(s), P = s.prices;
-  const pr = (k, label, unit) => { const p = P[k], pv = s.prev?.[k] ?? p, ch = pv ? (p / pv - 1) * 100 : 0; return `<div class="tile glass"><span class="muted small">${label}</span><strong>R$ ${p.toFixed(2).replace('.', ',')} <small class="${ch >= 0 ? 'good' : 'bad'}">${ch >= 0 ? '▲' : '▼'}${Math.abs(ch).toFixed(1)}%</small></strong><small class="muted">${unit}</small></div>`; };
+  const pr = (k, label, unit) => { const p = P[k], pv = s.prev?.[k] ?? p, ch = pv ? (p / pv - 1) * 100 : 0; return `<div class="tile glass"><span class="muted small">${label}</span><strong>R$ ${p.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <small class="${ch >= 0 ? 'good' : 'bad'}">${ch >= 0 ? '▲' : '▼'}${Math.abs(ch).toFixed(1)}%</small></strong><small class="muted">${unit}</small></div>`; };
   $('#sn2-prices').innerHTML = pr('suino', 'suíno vivo', 'por kg') + pr('leitao', 'leitão (~23 kg)', 'por cabeça') + pr('racaoSuino', 'ração de suíno', 'por kg');
   el.innerHTML = st.barns.length ? st.barns.map(b => {
     const B = SU.BARNS[b.type], l = SU.lotOf(s, b.id);

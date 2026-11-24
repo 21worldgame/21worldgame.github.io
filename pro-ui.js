@@ -13,7 +13,7 @@ let view = 'buscar', off = false, lock = false, pros = [], looks = {}, mine = nu
 const ago = t => { const m = Math.round((Date.now() - Date.parse(t)) / 6e4); return m < 1 ? 'agora' : m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.floor(m / 60)} h` : `há ${Math.floor(m / 1440)} d`; };
 const left = t => { const m = Math.max(0, Math.round((t - Date.now()) / 6e4)); return m < 60 ? `${m} min` : m < 1440 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${Math.floor(m / 1440)} d ${Math.floor((m % 1440) / 60)} h`; };
 const tag = (txt, tone, tip = '') => `<span class="pro-tag pro-tag--${tone}"${tip ? ` title="${esc(tip)}"` : ''}>${esc(txt)}</span>`;
-const stars = (v, n) => `<span class="pro-stars" aria-label="${Number(v).toFixed(1)} de 5 estrelas">${PR.starsTxt(v)}</span> <b>${Number(v).toFixed(1).replace('.', ',')}</b>${n != null ? ` <small class="muted">(${n})</small>` : ''}`;
+const stars = (v, n) => `<span class="pro-stars" aria-label="${Number(v).toFixed(1)} de 5 estrelas">${PR.starsTxt(v)}</span> <b>${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</b>${n != null ? ` <small class="muted">(${n})</small>` : ''}`;
 const av = (id, name) => `<span class="pro-av">${avatarSVG(looks[id] || { name }, { label: name })}</span>`;
 
 // ---------- dados ----------

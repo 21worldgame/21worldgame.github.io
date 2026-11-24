@@ -149,14 +149,16 @@ function render() {
   $('#tr-me').innerHTML = AMU.sideMe();
   $('#tr-them').innerHTML = ss.bot ? AMU.sideBot(ss.name) : AMU.sidePeer(lobby?.peers.get(ss.peer)?.profile || { name: ss.name });
   // abas: com jogador de verdade, parceria e empréstimo só aparecem depois de marcar a caixinha "parceiro"
+  // as 3 abas sempre aparecem (antes, com jogador de verdade sem parceria, a barra sumia e parecia que o empréstimo tinha acabado);
+  // parceria e empréstimo (débito automático ou na confiança) com jogador de verdade pedem a caixinha "parceiro", que aparece ali mesmo
   const full = ss.bot || AM.isFriend(G.S, ss.name);
-  if (!full) ss.tab = 'troca';
   ss.tab ||= 'troca';
-  for (const b of document.querySelectorAll('#tr-tabs [data-trtab]')) { b.hidden = !full && b.dataset.trtab !== 'troca'; b.classList.toggle('is-on', b.dataset.trtab === ss.tab); b.setAttribute('aria-pressed', String(b.dataset.trtab === ss.tab)); }
-  $('#tr-tabs').hidden = !full;
-  for (const p of document.querySelectorAll('#dlg-trade [data-pane]')) { p.hidden = p.dataset.pane !== ss.tab; p.dataset.nick = full ? ss.name : ''; }
-  if (ss.tab === 'parceria') { $('#tr-partner').dataset.nick = ss.name; $('#tr-partner').innerHTML = AMU.rentHTML(ss.name); }
-  if (ss.tab === 'dinheiro') { $('#tr-cash').dataset.nick = ss.name; $('#tr-cash').innerHTML = AMU.cashHTML(ss.name); }
+  for (const b of document.querySelectorAll('#tr-tabs [data-trtab]')) { b.hidden = false; b.classList.toggle('is-on', b.dataset.trtab === ss.tab); b.setAttribute('aria-pressed', String(b.dataset.trtab === ss.tab)); }
+  $('#tr-tabs').hidden = false;
+  for (const p of document.querySelectorAll('#dlg-trade [data-pane]')) { p.hidden = p.dataset.pane !== ss.tab; p.dataset.nick = ss.name; }
+  const locked = what => `<div class="glass tr-col"><h3>${what} com ${esc(ss.name)}</h3><p class="tr-sub">Com jogador de verdade, ${what === 'emprestar e pedir' ? 'o empréstimo (no débito automático ou na confiança)' : 'alugar terra, galpão e máquina'} é só entre parceiros. Marque a caixinha abaixo: quando ${esc(ss.name)} aceitar, esta aba abre.</p>${AMU.partnerBox(G.S, ss.name, lobby?.peers.get(ss.peer)?.profile)}</div>`;
+  if (ss.tab === 'parceria') { $('#tr-partner').dataset.nick = ss.name; $('#tr-partner').innerHTML = full ? AMU.rentHTML(ss.name) : locked('alugar'); }
+  if (ss.tab === 'dinheiro') { $('#tr-cash').dataset.nick = ss.name; $('#tr-cash').innerHTML = full ? AMU.cashHTML(ss.name) : locked('emprestar e pedir'); }
   $('#tr-steps').innerHTML = (ss.bot
     ? ['Em <b>você recebe</b>, escolha o que quer comprar dele (ele vende pelo preço de mercado).', 'Em <b>você dá</b>, ponha dinheiro ou itens seus que cubram o preço. Ele paga seus itens pelo valor de venda na hora; o que sobrar volta em dinheiro.', 'Clique <b>estou pronto</b> e depois <b>confirmar troca</b>.']
     : ['Em <b>você dá</b>, monte o que vai entregar (itens, dinheiro ou fichas).', `${esc(ss.name)} monta o lado dele; aparece em <b>você recebe</b>. Combinem pelo chat.`, 'Os dois clicam <b>estou pronto</b> e depois <b>confirmar troca</b>. Se alguém mexer, os dois confirmam de novo.']).map(x => `<li>${x}</li>`).join('');

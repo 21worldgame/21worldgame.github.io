@@ -24,7 +24,7 @@ export function inventory(s) {
   return out;
 }
 
-export const describe = it => it.kind === 'chips' ? `${it.amount} fichas` : it.kind === 'money' ? `R$ ${Math.round(it.amount).toLocaleString('pt-BR')}`
+export const describe = it => it.kind === 'chips' ? `${Number(it.amount).toLocaleString('pt-BR')} fichas` : it.kind === 'money' ? `R$ ${Math.round(it.amount).toLocaleString('pt-BR')}`
   : it.kind === 'good' ? `${it.qty} ${UNIT(it.good)} de ${GOODS[it.good] || it.good}` : it.kind === 'car' ? (CARS[it.data.model]?.name || 'carro')
   : it.kind === 'acc' ? `acessório ${it.acc}` : it.kind === 'galpao' ? NG.WAREHOUSES[it.data?.type]?.label || 'galpão' : it.kind === 'aviario' ? `${GR.HOUSES[it.data?.type]?.label || 'galpão'} (granja)`
   : it.kind === 'empresa' ? NG.LISTS[it.cat]?.[it.data?.brand]?.name || 'empresa' : it.kind === 'club' ? `clube ${it.data?.club}`

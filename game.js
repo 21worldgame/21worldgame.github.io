@@ -1,7 +1,7 @@
 import * as L from './logic.js';
 import * as P from './progress.js';
 import { CATALOG, SLOT, avatarSVG, accsOf, toggleAcc } from './avatar.js';
-import { G, $, esc, brl, int, RM, say, save, note, pay, award, checkAch, confetti, today, yesterday, reset, profileOf, levelUp, ntOff, ntSet, badge, blockKey, isBlocked, setBlocked } from './store.js';
+import { G, $, esc, brl, int, dots, RM, say, save, note, pay, award, checkAch, confetti, today, yesterday, reset, profileOf, levelUp, ntOff, ntSet, badge, blockKey, isBlocked, setBlocked } from './store.js';
 import * as C from './casino.js';
 import * as RC from './racing.js';
 import * as sfx from './sfx.js';
@@ -401,7 +401,7 @@ function lotPin(LF, lat, lon, icon, cls, tip, pop, bg) {
   return m;
 }
 // passar o mouse num lote: foto de satélite do lugar com a área inteira desenhada no tamanho real + comparação de tamanho
-const sizeTxt = ha => { const f = Math.round(ha / 0.714), side = Math.sqrt(ha / 100); return `${int(ha)} ha · ${f >= 1 ? `${int(f)} ${f === 1 ? 'campo' : 'campos'} de futebol` : 'menos de um campo de futebol'} · ~${side >= 1 ? `${side.toFixed(1).replace('.', ',')} km` : `${Math.round(side * 1000)} m`} de lado`; };
+const sizeTxt = ha => { const f = Math.round(ha / 0.714), side = Math.sqrt(ha / 100); return `${int(ha)} ha · ${f >= 1 ? `${int(f)} ${f === 1 ? 'campo' : 'campos'} de futebol` : 'menos de um campo de futebol'} · ~${side >= 1 ? `${side.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km` : `${Math.round(side * 1000)} m`} de lado`; };
 function areaTip(l, head) {
   if (!Number.isFinite(l.lat) || !(l.ha > 0)) return head;
   const t = satThumb(l);
@@ -530,7 +530,7 @@ function renderCana() {
   const p = s.prices.cana, pv = s.prev?.cana ?? p, ch = pv ? (p / pv - 1) * 100 : 0, hv = s.caneHarvester;
   $('#cn-logi').innerHTML = `<div><span class="muted small">usina paga pela tonelada</span><strong>${brl(p)} <small class="${ch >= 0 ? 'good' : 'bad'}">${ch >= 0 ? '▲' : '▼'} ${Math.abs(ch).toFixed(1)}%</small></strong></div>
     <div><span class="muted small">corte</span><strong>${hv ? `colhedora própria ${brl(CN.LOGI.cutOwn)}/t` : `terceirizado ${brl(CN.LOGI.cutThird)}/t`}</strong></div>
-    <div><span class="muted small">frete</span><strong>R$ ${CN.LOGI.freightKm.toFixed(2).replace(".", ",")}/t por km${(s.cars || []).some(c => c.model === 'scania') ? ' · seu caminhão: −35%' : ''}</strong></div>
+    <div><span class="muted small">frete</span><strong>R$ ${CN.LOGI.freightKm.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/t por km${(s.cars || []).some(c => c.model === 'scania') ? ' · seu caminhão: −35%' : ''}</strong></div>
     ${hv ? `<button class="btn btn--glass btn--sm" data-act="cn-sellharv">vender colhedora ${brl(hv.value * 0.85)}</button>` : `<button class="btn btn--gold btn--sm" data-act="cn-buyharv">comprar colhedora (${brl(CN.HARVESTER.price)})</button>`}`;
   $('#cn-list').innerHTML = cn.length ? cn.map(l => `<article class="glass pm-card"><p class="small muted">${esc(l.region)} · perto de ${esc(L.region(l.region).city)}</p>${caneBox(l)}</article>`).join('')
     : '<p class="empty glass">Nenhum canavial ainda. Plante numa das suas terras abaixo.</p>';
@@ -572,9 +572,9 @@ function renderGranja() {
     const H = GR.HOUSES[hs.type], l = GR.lotOf(s, hs.id);
     if (!l) return `<article class="glass grcard"><img class="grcard__img" src="assets/${H.img}.webp" alt="" loading="lazy">
       <div class="grcard__body"><div class="hcard__top"><h4>${H.label}</h4><span class="tag tag--dark">vazio</span></div>
-      <p class="small muted">até ${int(H.cap)} aves · conversão ${H.conv.toString().replace('.', ',')} kg de ração por kg · mortalidade ${(H.mort * 100).toFixed(1).replace('.', ',')}%/mês</p>
+      <p class="small muted">até ${int(H.cap)} aves · conversão ${H.conv.toString().replace('.', ',')} kg de ração por kg · mortalidade ${(H.mort * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%/mês</p>
       <div class="row"><label class="field"><span>pintinhos</span><input class="input input--s" id="gr-q-${hs.id}" type="number" min="100" step="100" max="${H.cap}" value="${H.cap}" inputmode="numeric"></label>
-        <label class="check small"><input type="checkbox" id="gr-v-${hs.id}" checked><span>vacinar (R$ ${GR.VACCINE.toFixed(2).replace('.', ',')}/ave)</span></label></div>
+        <label class="check small"><input type="checkbox" id="gr-v-${hs.id}" checked><span>vacinar (R$ ${GR.VACCINE.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/ave)</span></label></div>
       <p class="small">custo do alojamento: <b>${brl(GR.housingCost(s, H.cap, true))}</b> para ${int(H.cap)} pintinhos (pago 1 vez). Depois, em cada fechamento do mês, vêm a ração e a energia.</p>
       <div class="row"><button class="btn btn--gold" data-act="gr-house" data-id="${hs.id}">alojar pintinhos</button><button class="btn btn--glass btn--sm" data-act="gr-sellhouse" data-id="${hs.id}">vender galpão ${brl(Math.round(hs.value * GR.HOUSE_RESALE))}</button></div></div></article>`;
     const [stage, img] = grStage(l.age), kg = GR.kgAt(l.age), k = Math.min(1, (l.age + (l.age < 2 ? monthFrac() : 0)) / 2);
@@ -588,7 +588,7 @@ function renderGranja() {
   }).join('') : '<p class="empty glass">Nenhum galpão ainda. Construa o primeiro abaixo.</p>';
   $('#gr-shop').innerHTML = Object.entries(GR.HOUSES).map(([k, H]) => `<article class="glass grcard"><img class="grcard__img" src="assets/${H.img}.webp" alt="" loading="lazy">
     <div class="grcard__body"><h4>${H.label}</h4><p class="price">${brl(H.price)}</p>
-    <p class="small muted">até ${int(H.cap)} aves · conversão ${H.conv.toString().replace('.', ',')} · mortalidade ${(H.mort * 100).toFixed(1).replace('.', ',')}%/mês${H.heat ? ' · sofre com calor' : ' · climatizado, sem onda de calor'}</p>
+    <p class="small muted">até ${int(H.cap)} aves · conversão ${H.conv.toString().replace('.', ',')} · mortalidade ${(H.mort * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%/mês${H.heat ? ' · sofre com calor' : ' · climatizado, sem onda de calor'}</p>
     <button class="btn btn--gold" data-act="gr-buy" data-id="${k}">construir</button></div></article>`).join('');
 }
 
@@ -612,7 +612,7 @@ function renderContratos(s) {
       <p>${int(c.qty)} sacas de ${gl(c.good)} a <b>${brl(c.price)}</b> a saca · total <b class="good">${brl(c.qty * c.price)}</b></p>
       <span class="bar"><i style="transform:scaleX(${Math.min(1, r / c.qty).toFixed(3)})"></i></span><small class="muted">da sua colheita no armazém: ${int(r)} de ${int(c.qty)}</small>
       <button class="btn ${ok ? 'btn--gold' : 'btn--glass'} btn--sm" data-act="ctx-deliver" data-id="${esc(c.id)}" ${ok ? '' : 'disabled'}>entregar</button></article>`; }).join('');
-  const offs = CTR.offers(s.month || 1, s.prices).filter(o => !s.contracts.some(c => c.id === o.id)).map(o => `<article class="glass ctx"><div class="ctx__h"><b>${esc(o.trader)}</b><span class="tag tag--green">+${(o.prem * 100).toFixed(1).replace('.', ',')}% sobre o dia</span></div>
+  const offs = CTR.offers(s.month || 1, s.prices).filter(o => !s.contracts.some(c => c.id === o.id)).map(o => `<article class="glass ctx"><div class="ctx__h"><b>${esc(o.trader)}</b><span class="tag tag--green">+${(o.prem * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% sobre o dia</span></div>
       <p>Compra <b>${int(o.qty)} sacas de ${gl(o.good)}</b> a <b>${brl(o.price)}</b> a saca, entrega em até <b>${o.months} meses</b>.</p>
       <p class="small muted">total ${brl(o.qty * o.price)} · se não entregar: multa de ${brl(o.qty * o.price * CTR.FINE)}</p>
       <button class="btn btn--glass btn--sm" data-act="ctx-accept" data-id="${esc(o.id)}" ${s.contracts.length >= CTR.MAX_ACTIVE ? 'disabled' : ''}>fechar contrato</button></article>`).join('');
@@ -625,7 +625,7 @@ function renderMercado() {
   GR.ensure(s); PM.ensure(s); CN.ensure(s); SU.ensure(s); MI.ensure(s);
   $('#goods').innerHTML = Object.entries(GOODS).filter(([k]) => s.prices[k] ?? GR.PRICES[k]).map(([k, label]) => {
     const p = s.prices[k] ?? GR.PRICES[k], pv = s.prev?.[k] ?? p, ch = (p / pv - 1) * 100, trade = k in s.stock && k !== 'cana';
-    const money = v => (v < 100 ? `R$ ${v.toFixed(2).replace('.', ',')}` : brl(v));
+    const money = v => (v < 100 ? `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : brl(v));
     return `<article class="glass hcard mcard">
       <img class="hcard__photo" src="assets/${PHOTO[k]}.webp" alt="" loading="lazy">
       <div class="hcard__top"><h4>${label}</h4><span class="delta ${ch > 0 ? 'is-up' : ch < 0 ? 'is-down' : ''}">${ch > 0 ? '▲' : ch < 0 ? '▼' : '='} ${Math.abs(ch).toFixed(1)}%</span></div>
@@ -724,7 +724,7 @@ document.addEventListener('click', e => {
 // ---------- banco ----------
 function renderBanco() {
   const s = S();
-  const br = L.bankRisk(s), pc = v => `${(v * 100).toFixed(1).replace('.', ',')}%`;
+  const br = L.bankRisk(s), pc = v => `${(v * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
   rollTo($('#credit'), br.limit, brl);
   const cn = $('.credit__note'); if (cn) cn.innerHTML = br.high
     ? `<b>Cliente de alto patrimônio.</b> Juros de <b>${pc(br.rate)} ao mês</b> em 12 parcelas (risco ${br.premium < 0.5 ? 'moderado' : br.premium < 1.5 ? 'alto' : 'muito alto'} para o banco). Teto do banco para você: ${brl(br.ceiling)}. Duas parcelas atrasadas e o banco toma sua terra mais cara.`
@@ -743,7 +743,7 @@ function renderBanco() {
 function renderLivro() {
   const s = S();
   $('#log').innerHTML = s.log.length ? s.log.slice(0, 80).map(e => `<tr>
-    <td class="num">${e.m}</td><td>${esc(e.txt)}</td><td class="num ${e.val < 0 ? 'bad' : e.val > 0 ? 'good' : ''}">${e.val ? brl(e.val) : ''}</td></tr>`).join('')
+    <td class="num">${e.m}</td><td>${esc(dots(e.txt))}</td><td class="num ${e.val < 0 ? 'bad' : e.val > 0 ? 'good' : ''}">${e.val ? brl(e.val) : ''}</td></tr>`).join('')
     : '<tr><td colspan="3" class="empty">Nada lançado ainda. Jogue uma mão ou passe o mês.</td></tr>';
 }
 
@@ -1250,7 +1250,7 @@ const ACTS = {
     S().herd.splice(S().herd.indexOf(h), 1); S().money += v; note(`venda de ${h.heads} cabeças`, v); say(`Lote vendido por ${brl(v)}.`); award('sellherd');
   },
   'ctx-accept'(id) { const s = S(), o = CTR.offers(s.month || 1, s.prices).find(x => x.id === id), err = CTR.accept(s, o); if (err) return say(err[0].toUpperCase() + err.slice(1), true);
-    note(`contrato fechado com a ${o.trader}: ${o.qty} sacas de ${CTR.GOODS[o.good].label} a R$ ${o.price.toFixed(2).replace('.', ',')}`); say(`Contrato fechado com a ${o.trader}. Entregue em até ${o.months} meses.`); award('contract'); },
+    note(`contrato fechado com a ${o.trader}: ${o.qty} sacas de ${CTR.GOODS[o.good].label} a R$ ${o.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`); say(`Contrato fechado com a ${o.trader}. Entregue em até ${o.months} meses.`); award('contract'); },
   'ctx-deliver'(id) { const r = CTR.deliver(S(), id); if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true);
     note(`exportação: ${r.c.qty} sacas de ${CTR.GOODS[r.c.good].label} entregues à ${r.c.trader}`, r.value); say(`Entregue! A ${r.c.trader} pagou ${brl(r.value)}.`); confetti(60); award('export'); },
   'buy-good'(k) { const n = qty(`q-${k}`); NG.ensure(S()); if (n > NG.room(S(), k)) return say(`Não cabe no armazém: dá para guardar mais ${int(NG.room(S(), k))}. Compre galpões na loja.`, true); if (n && pay(n * S().prices[k], `compra de ${n} sacas de ${GOODS[k]}`)) { S().stock[k] += n; say('Mercadoria no armazém.'); } },
@@ -1684,7 +1684,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 204;
+const APP_VERSION = 205;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
@@ -1795,3 +1795,12 @@ document.addEventListener('click', e => { const g = e.target.closest('[data-tab-
     b.addEventListener('click', () => { const show = i.type === 'password'; i.type = show ? 'text' : 'password'; b.innerHTML = show ? OFF : EYE; b.setAttribute('aria-label', show ? 'esconder senha' : 'mostrar senha'); b.setAttribute('aria-pressed', String(show)); i.focus(); });
   }
 }
+// campo de número não aceita ponto: enquanto digita, mostra logo abaixo o valor com ponto de milhar (80000 -> = 80.000)
+document.addEventListener('input', e => {
+  const i = e.target; if (!(i instanceof HTMLInputElement) || i.type !== 'number') return;
+  let h = i.nextElementSibling?.classList?.contains('numfmt') ? i.nextElementSibling : null;
+  const v = Number(i.value), show = Number.isFinite(v) && Math.abs(v) >= 1000;
+  if (!show) { if (h) h.hidden = true; return; }
+  if (!h) { h = document.createElement('small'); h.className = 'numfmt'; i.after(h); }
+  h.hidden = false; h.textContent = `= ${v.toLocaleString('pt-BR')}`;
+});

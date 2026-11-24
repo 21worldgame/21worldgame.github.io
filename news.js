@@ -23,7 +23,7 @@ export function fromNote(name, txt, val) {
   if (!txt || SKIP.test(txt)) return null;
   const troca = /^troca com /.test(txt);
   if (!troca && !(Math.abs(val) >= NEWS_MIN)) return null;
-  const what = txt.replace(/^(loja 21|loja de luxo|loja|Feirão|leilão):\s*/i, '').replace(/^compra de /, '').replace(/^comprou /, '').replace(/^vendeu /, '');
+  const what = txt.replace(/^(loja 21|loja de luxo|loja|Feirão|leilão):\s*/i, '').replace(/^compra de /, '').replace(/^comprou /, '').replace(/^vendeu /, '').replace(/^venda de /, '').replace(/(^|[^\d.,\w])(\d{4,})(?![\d.,\w])/g, (m, x, n) => (/^(19|20)\d\d$/.test(n) ? m : x + Number(n).toLocaleString('pt-BR')));
   const kind = troca ? 'troca' : /vend/i.test(txt) ? 'venda' : /roda|prêmio|ganhou|bônus/i.test(txt) ? 'premio' : val < 0 ? 'compra' : 'negocio';
   return { kind, name: tidy(name).slice(0, 18) || 'um jogador', what: what.slice(0, 90), val: Math.round(val) };
 }
