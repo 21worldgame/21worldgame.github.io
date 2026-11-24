@@ -199,6 +199,7 @@ export function backup(d, why) {
 // volta uma cópia: ela vira o save atual e vai para a nuvem (a versão de agora também vira cópia, por garantia)
 export async function restore(i) {
   const b = backups()[i]; if (!b) return false;
+  if (b.at < (Number(G.S?.adminRestoreAt) || 0)) { say('Esta cópia é de antes de o administrador voltar a sua conta e não pode mais ser usada.', true); return false; }
   backup(G.S, 'antes de restaurar');
   adopt(JSON.parse(b.data)); save(); G.render?.();
   if (user) await push().catch(() => {});
@@ -225,11 +226,25 @@ const serverIso = () => new Date(G.now?.() ?? Date.now()).toISOString();   // ho
 function newerThanMe(d) { if ((Number(d?.appV) || 0) > (G.appV || 0)) { outdated = true; G.checkUpdate?.(); say('Saiu uma versão nova do jogo: atualizando para não perder nada do seu progresso.', true); return true; } return false; }
 function takeRemote(row, msg = true) {
   if (newerThanMe(row.data)) return;                              // não aplica com código velho: espera a atualização
+  if (row.restored) return forceRestore(row);
   if (dirty() && progressOf(G.S) > progressOf(row.data) * 1.001) { backup(G.S, 'versão deste aparelho (a nuvem chegou junto)'); }
   else if (dirty()) backup(G.S, 'mudanças deste aparelho antes de atualizar');
   try { D.take(G.S, user?.id); } catch {}
   adopt(row.data); try { D.rebase(G.S, 'pegou o save da nuvem (outro aparelho)', Date.now(), location.hash.slice(1), user?.id); } catch {} base = row.updated_at; setBaseData(row.data); pushed = G.S.savedAt || 0; lastPush = pushed; saveMeta(); syncedAt = Date.now(); G.render();
   if (msg) say('Atualizado com o que você fez no outro aparelho.');
+}
+// o administrador voltou a conta no tempo: o aparelho troca na hora, mesmo no meio de uma mão, sem guardar cópia do estado
+// que foi desfeito (senão o jogador restaurava a cópia pelo perfil) e recarrega para não sobrar nada do estado velho na tela
+let forcing = false;
+function forceRestore(row) {
+  if (forcing) return; forcing = true;
+  const at = Number(row.data.adminRestoreAt) || Date.now();
+  try { localStorage.setItem(bkKey(), JSON.stringify(backups().filter(b => b.at >= at))); } catch {}
+  adopt(row.data); base = row.updated_at; setBaseData(row.data); pushed = G.S.savedAt || 0; lastPush = pushed; saveMeta(); syncedAt = Date.now();
+  try { D.rebase(G.S, 'conta voltada no tempo pelo administrador', Date.now(), location.hash.slice(1), user?.id); } catch {}
+  try { localStorage.setItem('21world.restoredMsg', String(at)); } catch {}
+  say('O administrador voltou a sua conta para um estado anterior. O jogo vai recarregar.', true);
+  setTimeout(() => location.reload(), 1500);
 }
 export async function push() {
   if (!sb || !user || pushing || outdated) return false;
@@ -242,9 +257,11 @@ export async function push() {
     else res = await sb.from('saves').insert({ user_id: user.id, data, updated_at: at }).select('updated_at');
     if (res.error || !res.data?.length) {
       // outro aparelho gravou antes (ou a linha já existia): a nuvem vale; este aparelho se atualiza
+      if (res.error && /restaurad/i.test(res.error.message || '')) { const r = await pull(); if (r?.restored) forceRestore(r); return false; }   // o servidor recusou: a conta foi voltada no tempo
       if (res.error && (base || !/duplicate|conflict|23505/i.test(`${res.error.code} ${res.error.message}`))) { lastErrAt = Date.now(); setTimeout(() => { if (dirty()) scheduleSync(); }, 8000); return false; }   // erro de rede: tenta de novo sozinho
-      if (G.busy?.()) return false;                                   // no meio de uma mão: tenta de novo no próximo save
       const row = await pull();
+      if (row?.restored) { forceRestore(row); return false; }
+      if (G.busy?.()) return false;                                   // no meio de uma mão: tenta de novo no próximo save
       if (!row) { base = ''; saveMeta(); return false; }              // a linha sumiu (conta zerada pelo admin): grava de novo no próximo save
       mergeRemote(row); return false;
     }
@@ -274,11 +291,13 @@ function watchSaves() {
   try { bc = sb.channel(`save-${user.id}`).on('broadcast', { event: 'saved' }, ({ payload }) => { if (payload?.dev !== DEV) setTimeout(checkRemote, 300); }).subscribe(); } catch {}
 }
 async function checkRemote() {
-  if (!sb || !user || pushing || outdated || document.visibilityState === 'hidden' || G.busy?.()) return;
+  if (!sb || !user || pushing || outdated || document.visibilityState === 'hidden') return;
   try {
     const { data } = await sb.from('saves').select('updated_at').eq('user_id', user.id).maybeSingle();
     if (!data || sameAt(data.updated_at, base)) return;
     const row = await pull();
+    if (row?.restored) return forceRestore(row);   // voltada no tempo pelo administrador: troca já, mesmo no meio de uma mão
+    if (G.busy?.()) return;
     if (row && !sameAt(row.updated_at, base) && !pushing) mergeRemote(row);
   } catch {}
 }
@@ -432,3 +451,6 @@ export async function boot() {
   return 'ok';
 }
 export const MINPW = MIN_PASSWORD;
+// depois da recarga da restauração: explica ao jogador o que aconteceu
+setTimeout(() => { let at = 0; try { at = Number(localStorage.getItem('21world.restoredMsg')) || 0; localStorage.removeItem('21world.restoredMsg'); } catch {}
+  if (at) say(`Em ${new Date(at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} o administrador voltou a sua conta para um estado anterior: o que foi feito depois daquela cópia saiu da conta.`, true); }, 4000);

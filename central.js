@@ -213,6 +213,10 @@ async function restoreTo(uid, histId, whenTxt, moneyTxt) {
   if (!confirm(`Voltar a conta de ${nm} para a cópia de ${whenTxt || 'antes'} (${moneyTxt || ''} em caixa)?\n\nTudo o que ele ganhou e comprou depois sai da conta. Marcas, mina, frigorífico e acessórios que ele não tinha naquela hora voltam para a loja. O estado de agora fica guardado (dá para desfazer).`)) return null;
   const { data, error } = await sb.rpc('admin_restore_save', { p_id: Number(histId) });
   const ok = data === 'ok' || data?.ok;
+  if (ok) try {   // avisa o aparelho dele na hora (o mesmo aviso que um aparelho manda ao outro): troca em ~1 s, não em 5
+    const ch = sb.channel(`save-${uid}`);
+    ch.subscribe(st => { if (st === 'SUBSCRIBED') ch.send({ type: 'broadcast', event: 'saved', payload: { dev: 'admin' } }).finally(() => setTimeout(() => sb.removeChannel(ch), 2000)); });
+  } catch {}
   if (error || !ok) { fail(error || { message: data?.err || data }, 'voltar a conta (o código novo das cópias já foi colado no banco?)'); return null; }
   const r = typeof data === 'object' ? data : {}, li = [];
   li.push(`A conta voltou a ser exatamente como estava em <b>${esc(whenTxt || when(r.from))}</b>. Se ${esc(nm)} estiver jogando, o jogo dele troca em segundos; se não, na próxima vez que abrir.`);
