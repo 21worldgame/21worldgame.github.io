@@ -928,10 +928,12 @@ document.addEventListener('click', e => {
     <div class="row"><button class="btn btn--glass" value="cancel" formnovalidate>cancelar</button><button class="btn btn--danger" value="ok">descontar</button></div></form>`;
   const q = n => d.querySelector(`[name=${n}]`);
   const suggest = () => { const v = brl(Math.floor(Number(q('amount').value) || 0));
-    const items = q('why').value.split('\n').map(x => x.trim().replace(/[.;]$/, '')).filter(Boolean), list = items.length ? items.join('; ') : 'movimentação incompatível com a sua renda';
-    q('txt').value = ({ rf: `Receita Federal: auto de infração. A fiscalização encontrou ${list}. Foram recolhidos ${v}. Se discordar, peça revisão aqui no livro-caixa. Reincidência leva à suspensão da conta.`,
+    const items = q('why').value.split('\n').map(x => x.trim().replace(/[.;]$/, '')).filter(Boolean);
+    const make = list => ({ rf: `Receita Federal: auto de infração. A fiscalização encontrou ${list}. Foram recolhidos ${v}. Se discordar, peça revisão aqui no livro-caixa. Reincidência leva à suspensão da conta.`,
       bc: `Banco Central: ${v} bloqueados e devolvidos ao sistema. Motivo: ${list}. Suas transferências seguem em monitoramento. Se discordar, peça revisão aqui no livro-caixa.`,
-      pf: `Polícia Federal: ${v} apreendidos em operação. Foram encontrados ${list}. O caso segue em investigação. Se discordar, peça revisão aqui no livro-caixa.` }[q('org').value]).slice(0, 500); };
+      pf: `Polícia Federal: ${v} apreendidos em operação. Foram encontrados ${list}. O caso segue em investigação. Se discordar, peça revisão aqui no livro-caixa.` }[q('org').value]);
+    let n = items.length; while (n > 1 && make(items.slice(0, n).join('; ')).length > 500) n--;   // cabe inteiro: tira os últimos achados em vez de cortar no meio
+    q('txt').value = make(items.length ? items.slice(0, n).join('; ') : 'movimentação incompatível com a sua renda').slice(0, 500); };
   d.addEventListener('click', ev => { const s2 = ev.target.closest('[data-sug]'); if (!s2) return; q('amount').value = s2.dataset.sug; suggest(); });
   d.addEventListener('input', ev => { if (ev.target.name !== 'txt') suggest(); });
   d.addEventListener('change', ev => { if (ev.target.name === 'org') suggest(); });
