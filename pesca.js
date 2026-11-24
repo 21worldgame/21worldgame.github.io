@@ -95,6 +95,7 @@ export function ensure(s) {
   for (const k of Object.keys(p.best)) if (SPECIES[k]) p.best[k] = Math.min(SPECIES[k].max, p.best[k]); else delete p.best[k];
   for (const k of Object.keys(p.mkt)) p.mkt[k] = Math.min(1.35, Math.max(0.7, Number(p.mkt[k]) || 1));
   p.orders = p.orders.filter(o => o && SPECIES[o.sp] && o.id != null);
+  p.wall = (Array.isArray(p.wall) ? p.wall : []).filter(w => w && SPECIES[w.sp] && w.kg > 0).sort((a, b) => b.kg - a.kg).slice(0, WALL);
   return p;
 }
 export const boxKg = s => ensure(s).box.reduce((t, f) => t + f.kg, 0);
@@ -190,6 +191,7 @@ export function step(st, hold, drag, dt, rng = Math.random) {
   const ten = Math.min(pull, slip), out = fish > slip ? Math.min(6, 1.2 + (fish - slip) / R.line * 9) : 0, spin = pull > slip ? 0.25 : 1;
   st.ten += (ten / R.line - st.ten) * Math.min(1, dt * 8);
   if (st.ten >= 1 || (st.ten > 0.85 && rng() < dt * (st.ten - 0.85) * 4)) return 'snap';   // perto do limite a linha pode estourar no nó
+  st.out = out;
   if (out) st.d += out * dt;
   else if (hold) st.d -= R.reel * (1 + Math.min(0.2, st.lv * 0.01)) * spin * Math.max(0.15, 1 - fish / R.line) * (st.mv === 'dive' ? 0.35 : 1) * dt;
   else st.d += Math.max(0, fish / R.line - 0.25) * 2.5 * dt;
@@ -211,7 +213,16 @@ export function keep(s, f) {
 }
 // pesque e solte: não vai para a caixa, mas dá 50% a mais de experiência e entra no álbum
 export function release(s, f) { const p = ensure(s), x = Math.round(xpOf(f) * 1.5); log(p, f); p.xp += x; return { xp: x }; }
-function log(p, f) { p.n++; p.kg = Math.round((p.kg + f.kg) * 100) / 100; if (f.kg > (p.best[f.sp] || 0)) p.best[f.sp] = f.kg; }
+// mural de troféus: as maiores capturas (troféu ou recorde da espécie), com lugar e data
+export const WALL = 8;
+// comprimento aproximado pelo peso (peixe de corpo médio: peso ≈ 0,012 × cm³)
+export const lengthCm = f => Math.round(Math.cbrt((f.kg * 1000) / (f.sp === 'pirarucu' || f.sp === 'pintado' ? 0.008 : 0.013)));
+function wall(p, f) {
+  if (!f.trophy && f.kg <= (p.best[f.sp] || 0)) return false;
+  p.wall = [...(p.wall || []), { sp: f.sp, kg: f.kg, cm: lengthCm(f), spot: f.spot || '', at: f.at || 0, trophy: !!f.trophy }].sort((a, b) => b.kg - a.kg).slice(0, WALL);
+  return true;
+}
+function log(p, f) { wall(p, f); p.n++; p.kg = Math.round((p.kg + f.kg) * 100) / 100; if (f.kg > (p.best[f.sp] || 0)) p.best[f.sp] = f.kg; }
 // vende tudo da caixa (ou só os índices pedidos)
 export function sell(s, idx = null) {
   const p = ensure(s), pick = idx ? new Set(idx) : null; let v = 0, kg = 0, n = 0;
@@ -249,3 +260,12 @@ export function monthly(s, rng = Math.random) {
   if (p.n || p.orders.length) newOrders(s, rng);   // só quem já pescou recebe encomenda
   return out;
 }
+
+// dicas do seu Tião, o barqueiro: uma por arremesso, conforme o lugar e o tempo
+export const TIPS = {
+  geral: ['Linha esticada, mas não no osso: peixe gosta de linha frouxa para cuspir o anzol.', 'Viu a água borbulhar? É cardume comendo. Joga ali.', 'Pescador apressado volta de mão vazia.', 'Peixe cansado vira de lado. Aí é só trazer.', 'Fricção é igual rédea de cavalo: nem solta demais, nem puxa demais.'],
+  lagoa: ['Lambari rouba isca: espera a boia sumir de vez.', 'Traíra fica na beirada, no meio do mato.'],
+  pesqueiro: ['Massa de milho no meio do tanque traz pacu.', 'Tambacu puxa para o meio: dá linha e cansa ele.', 'De vez em quando passa um pintado no fundo.'],
+  represa: ['Tucunaré salta: na hora do salto, solta a linha.', 'Pintado mora no fundo, perto dos 50 metros.', 'Dourado corre muito. Aperta a fricção só depois da primeira corrida.', 'Pirarucu é briga de vários minutos. Fricção no meio e paciência.'],
+};
+export const tipFor = (spot, weather, rng = Math.random) => { const t = [...TIPS.geral, ...(TIPS[spot] || []), `Hoje: ${weather.label}, ${weather.txt}.`]; return t[Math.floor(rng() * t.length)]; };

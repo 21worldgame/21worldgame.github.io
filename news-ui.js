@@ -37,6 +37,16 @@ G.onNote = (txt, val) => {
   send?.({ t: 'news', ...m });
 };
 
+// peixe grande do próprio jogador (pesca-ui.js): vira notícia para todos, no máximo 1 a cada 20 min
+let fishAt = 0;
+G.fishNews = (f, sp, where) => {
+  if (Date.now() - fishAt < 20 * 60000) return;
+  const s = G.S, name = s?.privateProfile ? 'um pescador misterioso' : profileOf().name, n = N.fishNews(name, f, sp, where); if (!n) return;
+  const m = { ...n, id: Math.random().toString(36).slice(2, 12), at: Date.now() };
+  if (recentName(m.name, m.at)) return;
+  fishAt = m.at; add({ ...m, real: true, mine: true }); send?.({ t: 'news', ...m });
+};
+
 // notícias dos jogadores do mundo
 function npcTick(first = false) {
   const now = Live.now(), c = Math.floor(now / N.NEWS_GAP);

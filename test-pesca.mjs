@@ -68,3 +68,9 @@ console.log('pesca ok');
   const m = merge3(b, { month: 1, pesca: { rod: 1, cooler: 1, n: 7, tickets: { pesqueiro: 300 } } }, { month: 1, pesca: { rod: 2, cooler: 2, n: 6, tickets: { pesqueiro: 200 } } });
   assert.equal(m.pesca.rod, 2); assert.equal(m.pesca.cooler, 2); assert.equal(m.pesca.n, 8); assert.equal(m.pesca.tickets.pesqueiro, 300); }
 console.log('pesca: cansaço e dois aparelhos ok');
+// mural de troféus: maiores capturas (troféu ou recorde), no máximo 8, do maior para o menor
+{ const t = { money: 0 }; P.ensure(t); for (const kg of [2, 1, 3, 2.5]) P.release(t, { sp: 'pacu', kg, spot: 'x', at: 1 });
+  assert.deepEqual(t.pesca.wall.map(w => w.kg), [3, 2]); assert.ok(t.pesca.wall[0].cm > 30 && t.pesca.wall[0].cm < 80);
+  for (let i = 0; i < 12; i++) P.release(t, { sp: 'tilapia', kg: 0.5, trophy: true }); assert.equal(t.pesca.wall.length, P.WALL);
+  assert.ok(P.tipFor('represa', P.WEATHER[0]).length > 10); }
+console.log('pesca: mural ok');

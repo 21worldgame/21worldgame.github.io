@@ -9,7 +9,7 @@ import { turnOf } from './npcs.js';
 export const ANCHORS = ['Willian Borner', 'Retana Rater'];
 export const NEWS_MIN = 30000;        // movimentos a partir de R$ 30 mil viram notícia
 export const NEWS_GAP = 70000;        // notícia dos jogadores do mundo: uma a cada ~70 s (algumas janelas sem notícia)
-export const KINDS = { compra: 'COMPRA', venda: 'VENDA', troca: 'TROCA', premio: 'PRÊMIO', negocio: 'NEGÓCIO', economia: 'ECONOMIA', alerta: 'ALERTA', fortuna: 'FORTUNA', edicao: 'JORNAL 21', cidade: 'CIDADE' };
+export const KINDS = { compra: 'COMPRA', venda: 'VENDA', troca: 'TROCA', premio: 'PRÊMIO', negocio: 'NEGÓCIO', economia: 'ECONOMIA', alerta: 'ALERTA', fortuna: 'FORTUNA', edicao: 'JORNAL 21', cidade: 'CIDADE', pesca: 'PESCA' };
 
 // R$ 3,6 mi · R$ 850 mil · R$ 12.500
 export const short = v => { v = Math.abs(Math.round(v)); const f = (x, u) => `R$ ${String(+x.toFixed(x < 10 ? 1 : 0)).replace('.', ',')} ${u}`;
@@ -107,8 +107,10 @@ export const EDITORIAL = [
     'Depois da operação da Polícia Federal, o Banco Central mudou o câmbio do cassino. A ficha, que valia R$ 10, passa a valer R$ 2, tanto na compra quanto na troca de volta no caixa. As fichas guardadas e as que vêm de prêmios, do passe e da subida de nível seguem as mesmas, mas valem menos no patrimônio. O objetivo é acabar com fortunas feitas de fichas e devolver o peso ao trabalho no campo e nas empresas.'), at: Date.UTC(2026, 10, 24, 16, 45) },
   { ...ed(38, 'alerta', 'assets/photo-vegas.webp', 'Banco Central sobe os juros de surpresa e crédito fica mais caro em todos os bancos',
     'O Banco Central anunciou às 17h desta terça-feira uma alta de juros fora do calendário, e o efeito chegou na hora a todos os bancos do 21 World. O empréstimo com garantia, que custava 1,8% ao mês, passa a custar 3,2% ao mês. A mudança vale também para quem já tem contrato: como os empréstimos do banco são pós-fixados, a próxima parcela já vem com a taxa nova. Os bancos também ficaram mais exigentes com a garantia. A terra, que respaldava metade do valor, agora cobre só 30%, e o gado cai de 20% para 10%. Na prática, o limite de crédito encolheu para todo mundo. Segundo a autoridade monetária, a medida quer frear o endividamento depois da operação da Polícia Federal no cassino e do corte no valor da ficha. Especialistas ouvidos pela redação recomendam quitar o que for possível, evitar crédito novo e manter caixa para as parcelas: duas atrasadas e o banco toma a terra mais cara. Quem tem dinheiro parado pode olhar os investimentos, que não mudaram.'), at: Date.UTC(2026, 10, 24, 20, 0) },
-  { ...ed(38, 'alerta', 'assets/photo-vegas.webp', 'Quebra do fundo 21 Capital derruba grandes fortunas: investidores perdem 20% em poucas horas',
+  { ...ed(39, 'alerta', 'assets/photo-vegas.webp', 'Quebra do fundo 21 Capital derruba grandes fortunas: investidores perdem 20% em poucas horas',
     'O fundo 21 Capital, que prometia rendimento acima do mercado com papéis de agronegócio e imóveis, travou os resgates nesta terça-feira depois que a carteira desabou. Sem conseguir vender os ativos, a gestora reconheceu a perda e o valor das cotas caiu cerca de 20% em poucas horas. Boa parte dos grandes do ranking tinha dinheiro aplicado no fundo e deve ver o patrimônio encolher aos poucos nos próximos dias, à medida que as cotas são reprecificadas. Entre os mais expostos, segundo o mercado, está a maior produtora de soja do ranking, que tinha a maior parte da fortuna no fundo. Ninguém perdeu tudo, mas vários nomes do top 20 devem trocar de posição. Quem manteve o dinheiro na produção, em terras, gado, lavoura e empresas próprias, não foi afetado. Analistas da TV 21 esperam alguma recuperação dos maiores investidores nos próximos dois dias, mas avisam que o prejuízo de quem ficou no fundo não volta. A dica dos especialistas é a de sempre: não colocar todos os ovos na mesma cesta.'), at: Date.UTC(2026, 10, 24, 18, 40) },
+  { ...ed(40, 'cidade', 'assets/photo-horses.webp', 'Pesqueiro abre as portas: lagoa, pesque-pague e represa com briga de verdade e encomenda dos restaurantes',
+    'A cidade ganhou nesta terça-feira um pesqueiro completo, na aba jogos. São três águas: a lagoa da fazenda, de graça e boa para treinar a mão; o pesque-pague, com tanques de pacu, tambacu e carpa; e a represa, casa do tucunaré, do dourado, do pintado e até do pirarucu. A pescaria é ao vivo: o pescador arremessa no cardume, espera a boia afundar de vez, fisga na hora certa e briga com o peixe. Cada espécie luta de um jeito. O tucunaré salta, o pintado afunda, a traíra sacode a cabeça e o pirarucu cansa o braço por minutos. Quem não regula a fricção do molinete perde a linha inteira ou arrebenta tudo. Seu Tião, barqueiro da represa há trinta anos, resume: "Pescador apressado volta de mão vazia." O peixe vai para a caixa térmica e se vende na peixaria, com preço que muda todo mês, ou vai para as encomendas de restaurantes como o Beira-Rio e o Bar do Pescador, que pagam bem acima da peixaria por peixe fresco. Quem tirar peixe grande aparece aqui na TV 21. O tempo e a hora contam: amanhecer e fim de tarde são as melhores horas. Boa pescaria.'), at: Date.UTC(2026, 10, 24, 20, 30) },
 ];
 // edição do Jornal 21: o jornal abre com as reportagens que o jogador ainda não viu (guarda a hora da última vista)
 export const EDITION = 'jornal-v190';
@@ -118,6 +120,7 @@ export function headline(n) {
   if (n.title) return n.title;   // edição especial
   if (n.text) return n.text;   // economia do mundo (econ-ui.js): manchete pronta
   const v = n.val ? ` por ${short(n.val)}` : '';
+  if (n.kind === 'pesca') return `${n.name} ${n.what}.`;   // peixe grande: só o peso, sem valor
   if (n.kind === 'troca') return `${n.name} fechou uma troca ${n.what.replace(/^troca /, '')}.`;
   if (n.kind === 'venda') return `${n.name} vendeu ${n.what}${v}.`;
   if (n.kind === 'premio') return `${n.name} levou ${short(n.val)}: ${n.what}.`;
@@ -148,9 +151,28 @@ const GEN = [
   r => { const [g, p, q] = pick(r, [['soja', 150, 30000], ['milho', 64, 50000], ['café', 1600, 3000]]), s = q * pick(r, [1, 2, 4]); return { kind: 'venda', what: `${s.toLocaleString('pt-BR')} sacas de ${g}`, val: s * p }; },
   r => { const c = pick(r, cars); return { kind: 'venda', what: `o ${c.name} seminovo`, val: Math.round(c.price * 0.8) }; },
 ];
+// ---------- pesca: peixe grande vira notícia ----------
+// jogador: só troféu ou peixe de 15 kg para cima (a tela segura 1 notícia a cada 20 min por jogador)
+export const FISH_BIG = 15;
+export const fishBig = f => !!f && (f.trophy || f.kg >= FISH_BIG);
+const KG = k => `${String(Math.round(k * 10) / 10).replace('.', ',')} kg`;
+export function fishNews(name, f, sp, where) {
+  if (!fishBig(f)) return null;
+  return { kind: 'pesca', name: tidy(name).slice(0, 18) || 'um pescador', what: tidy(`tirou ${sp} de ${KG(f.kg)} ${where}${f.trophy ? ', peixe troféu' : ''}`).slice(0, 90), val: 0 };
+}
+// jogadores do mundo que pescam: poucos (1 em cada ~9 nicks), revezando, e raro (≈1 notícia a cada meia hora); sem valor em dinheiro
+const anglers = nicks => nicks.filter(n => [...n].reduce((t, c) => (t * 31 + c.charCodeAt(0)) >>> 0, 7) % 9 === 0);
+const BIG_CATCH = [['um dourado', 9, 20, 'na represa'], ['um pintado', 14, 30, 'na represa'], ['um tucunaré', 5, 7, 'na represa'], ['um tambacu', 10, 14, 'no pesque-pague'], ['uma carpa', 12, 16, 'no pesque-pague'], ['um pirarucu', 45, 140, 'na represa']];
+export const FISH_NEWS_P = 0.02;
+function npcFish(slot, r, nicks) {
+  const a = anglers(nicks); if (!a.length) return null;
+  const [sp, lo, hi, where] = pick(r, BIG_CATCH), kg = lo + (hi - lo) * r() * r();
+  return { id: `nf${slot}`, kind: 'pesca', name: a[slot % a.length], what: `tirou ${sp} de ${KG(kg)} ${where}`, val: 0, at: slot * NEWS_GAP + Math.floor(r() * 15000), real: false };
+}
 export function npcNews(slot, nicks) {
   const r = seeded(slot * 2246822519 + 7);
   if (!nicks.length || r() < 0.2) return null;
+  if (r() < FISH_NEWS_P) return npcFish(slot, r, nicks);
   const name = turnOf(slot, nicks, NEWS_GAP), n = pick(r, GEN)(r);
   return { id: `nn${slot}`, name, ...n, at: slot * NEWS_GAP + Math.floor(r() * 15000), real: false };
 }

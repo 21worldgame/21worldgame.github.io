@@ -1681,3 +1681,13 @@ import * as CT from './contador.js';
   assert.equal(Lc.squeezeLoans(s, after), 0, 'só sobe uma vez');
   console.log('aperto do crédito ok');
 }
+
+// reportagens com id único (id repetido some da TV) e notícia de pesca: só peixe grande, sem valor em dinheiro
+{
+  const Nf = await import('./news.js'), ids = Nf.EDITORIAL.map(e => e.id);
+  assert.equal(new Set(ids).size, ids.length, 'id de reportagem repetido: ' + ids.filter((x, i) => ids.indexOf(x) !== i));
+  assert.equal(Nf.fishNews('Ana', { kg: 3 }, 'um pacu', 'no pesque-pague'), null);
+  const n = Nf.fishNews('Ana', { kg: 22 }, 'um pintado', 'na represa'); assert.equal(n.val, 0); assert.equal(Nf.headline(n), 'Ana tirou um pintado de 22 kg na represa.');
+  assert.ok(Nf.accept({ ...n, id: 'x', at: Date.now() }), 'notícia de pesca passa pelo salão');
+  console.log('notícias de pesca ok');
+}

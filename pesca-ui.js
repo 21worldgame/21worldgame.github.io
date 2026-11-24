@@ -3,10 +3,10 @@
 // arrancada, linha frouxa) → puçá → caixa ou soltar. Só anda com a tela aberta; sair no meio da briga perde o peixe.
 import * as PE from './pesca.js';
 import * as sfx from './sfx.js';
-import { G, $, esc, brl, int, say, save, note, confetti, today } from './store.js';
+import { G, $, esc, brl, int, say, save, note, confetti, today, RM } from './store.js';
 
 // estado da pescaria na tela (não vai para o save: fechar a página no meio perde só a isca)
-const T = { st: 'idle', spot: 'lagoa', bait: 'minhoca', fish: null, fight: null, msg: '', t: 0, pow: 0, powDir: 1, at: 0, cast: null, school: 0, onSchool: false, wait: 0, nib: 0, nibOn: 0, bite: 0, late: 0, grade: null, land: null, miss: 0, tangle: 0, rec: false, fx: [] };
+const T = { st: 'idle', spot: 'lagoa', bait: 'minhoca', fish: null, fight: null, msg: '', t: 0, pow: 0, powDir: 1, at: 0, cast: null, school: 0, onSchool: false, wait: 0, nib: 0, nibOn: 0, bite: 0, late: 0, grade: null, land: null, miss: 0, tangle: 0, rec: false, fx: [], shake: 0, snd: 0, buzz: 0, tip: '', birds: [] };
 const hold = { on: false };
 const fmtKg = k => `${k.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} kg`;
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -37,6 +37,7 @@ export function render() {
       <button class="btn btn--gold" data-pe="sellall">vender tudo na peixaria (${brl(tot)})</button>
       <p class="muted small">No gelo o peixe perde ${Math.round(PE.SPOIL * 100)}% do preço a cada mês do mundo e estraga no ${PE.SPOIL_MAX + 1}º mês.</p>`
       : '<p class="muted small">Vazia. O que você tirar da água vem para cá.</p>'}</div>
+    ${p.wall?.length ? `<div class="glass pe-card"><h4>mural de troféus <small class="muted">suas maiores capturas</small></h4><ol class="pe-wall">${p.wall.map(w => `<li><i>${PE.SPECIES[w.sp].img}</i><span><b>${PE.SPECIES[w.sp].label} · ${fmtKg(w.kg)}</b><small class="muted">${w.cm} cm${w.spot ? ` · ${esc(w.spot)}` : ''}${w.at ? ` · ${new Date(w.at).toLocaleDateString('pt-BR')}` : ''}${w.trophy ? ' · troféu' : ''}</small></span></li>`).join('')}</ol></div>` : ''}
     <div class="glass pe-card"><h4>álbum de espécies <small class="muted">${seen} de ${Object.keys(PE.SPECIES).length}</small></h4><div class="pe-album">${Object.entries(PE.SPECIES).map(([k, F]) => p.best[k]
       ? `<span class="pe-sp" title="${esc(F.txt)}"><i>${F.img}</i><b>${F.label}</b><small>recorde ${fmtKg(p.best[k])}</small></span>`
       : `<span class="pe-sp is-off" title="ainda não pescado"><i>❔</i><b>???</b><small>${PE.ZONES[F.zone[0]]}</small></span>`).join('')}</div></div>
@@ -65,6 +66,8 @@ function paintActs() {
   $('#pe-msg').innerHTML = T.st === 'caught' && f
     ? `<strong class="dw-win">${S.img} ${S.label} de ${fmtKg(f.kg)}!</strong>${f.trophy ? ' <b class="pe-trophy">peixe troféu</b>' : ''}${T.rec ? ' <b class="pe-trophy">novo recorde</b>' : ''} <span class="muted small">${esc(S.txt)}</span>`
     : T.msg;
+  const ph = $('#pe-photo'); ph.hidden = !(T.st === 'caught' && f);
+  if (T.st === 'caught' && f) ph.innerHTML = `<div class="pe-photo__pic"><i>${S.img}</i></div><div><b>${S.label}</b><span>${fmtKg(f.kg)} · ${PE.lengthCm(f)} cm</span><small>${esc(PE.SPOTS[T.spot].label)} · ${new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</small>${f.trophy ? '<em>peixe troféu</em>' : ''}${T.rec ? '<em>novo recorde</em>' : ''}</div>`;
   $('#pe-hud').hidden = T.st !== 'fight' && T.st !== 'land';
   $('#pe-net').hidden = T.st !== 'land';
   $('#pe-pow').hidden = T.st !== 'aim';
@@ -82,7 +85,7 @@ function aim() {
   if (!(P().baits[T.bait] > 0)) return say('Sem isca: compre na lojinha ao lado.', true);
   const e = PE.enter(s, T.spot); if (e.err) return say(cap(e.err), true);
   if (e.cost) { note(`pesca: entrada do ${PE.SPOTS[T.spot].label}`, -e.cost); save(); }
-  T.school ||= PE.school(T.spot); T.pow = 0; T.powDir = 1; T.fish = null;
+  T.school ||= PE.school(T.spot); T.tip = PE.tipFor(T.spot, PE.weatherOf(s.month)); $('#pe-tip').textContent = `🎣 Seu Tião: ${T.tip}`; T.pow = 0; T.powDir = 1; T.fish = null;
   setMsg(`Solte quando a força chegar no cardume (bolhas a ~${T.school} m).`, 'aim');
 }
 function release() {
@@ -115,7 +118,9 @@ function startLand() { T.land = { x: 0, dir: 1, zone: 0.3 + Math.random() * 0.4,
 function net() {
   const l = T.land; if (!l || T.st !== 'land') return;
   if (Math.abs(l.x - l.zone) <= l.w / 2) {
-    T.rec = T.fish.kg > (P().best[T.fish.sp] || 0); T.st = 'caught'; splash(1, 26);
+    T.rec = T.fish.kg > (P().best[T.fish.sp] || 0); T.st = 'caught'; splash(1, 26); T.shake = 0.3;
+    Object.assign(T.fish, { spot: PE.SPOTS[T.spot].label, at: Date.now() });
+    try { G.fishNews?.(T.fish, `${['tilapia', 'traira', 'carpa'].includes(T.fish.sp) ? 'uma' : 'um'} ${PE.SPECIES[T.fish.sp].label}`, { lagoa: 'na lagoa', pesqueiro: 'no pesque-pague', represa: 'na represa' }[T.spot]); } catch {}
     sfx.fanfare(); confetti(T.fish.trophy ? 160 : T.rec ? 80 : 30); navigator.vibrate?.([30, 40, 30]); paintActs(); render(); return;
   }
   T.miss++; sfx.play('chip', 0.2); splash(1, 12);
@@ -142,9 +147,15 @@ function spotXY(W, H, hz, m, wob = 0) {
 const jumpK = f => (f?.mv === 'jump' ? Math.sin(Math.max(0, Math.min(1, 1 - f.mt / PE.MOVES.jump.t[1]))* Math.PI) : 0);
 function draw(cv, dt) {
   const x = cv.getContext('2d'), W = cv.width, H = cv.height, hz = H * 0.3, t = (T.t += dt), u = W / 600, h = hour(), S = PE.SPOTS[T.spot];
+  x.save(); if (T.shake > 0 && !RM.matches) { T.shake = Math.max(0, T.shake - dt); x.translate((Math.random() - 0.5) * 10 * u * T.shake, (Math.random() - 0.5) * 10 * u * T.shake); }
+  const night = h >= 19 || h < 5;
   const g = x.createLinearGradient(0, 0, 0, hz); g.addColorStop(0, SKY[T.spot][0]); g.addColorStop(1, SKY[T.spot][1]); x.fillStyle = g; x.fillRect(0, 0, W, hz);
   if (h < 7 || h >= 18) { x.fillStyle = h >= 20 || h < 5 ? 'rgba(10,15,40,.55)' : 'rgba(255,120,60,.22)'; x.fillRect(0, 0, W, hz); }
   const Wt = PE.weatherOf(G.S.month);
+  // sol ou lua, estrelas e pássaros
+  if (night) { x.fillStyle = 'rgba(255,255,255,.8)'; for (let i = 0; i < 40; i++) x.fillRect((i * 137) % W, (i * 71) % (hz * 0.8), (i % 3 ? 1 : 2) * u, (i % 3 ? 1 : 2) * u); x.fillStyle = '#f4f1d0'; x.beginPath(); x.arc(W * 0.8, hz * 0.3, 14 * u, 0, Math.PI * 2); x.fill(); }
+  else if (!/chuva|frente/.test(Wt.label)) { const sy = hz * (h < 12 ? 1 - (h - 5) / 7 : (h - 12) / 7) * 0.8 + hz * 0.1; x.fillStyle = h >= 17 || h < 7 ? '#ffb15a' : '#fff3b0'; x.beginPath(); x.arc(W * (0.15 + (h - 5) / 14 * 0.7), sy, 16 * u, 0, Math.PI * 2); x.fill(); }
+  if (!night) { if (T.birds.length < 3 && Math.random() < dt * 0.08) T.birds.push({ x: -20, y: hz * (0.15 + Math.random() * 0.4), v: 30 + Math.random() * 30 }); x.strokeStyle = 'rgba(30,30,40,.7)'; x.lineWidth = 1.5 * u; T.birds = T.birds.filter(b => (b.x += b.v * dt * u) < W + 20); for (const b of T.birds) { const fl = Math.sin(t * 9 + b.y) * 4 * u; x.beginPath(); x.moveTo(b.x - 6 * u, b.y - fl); x.lineTo(b.x, b.y); x.lineTo(b.x + 6 * u, b.y - fl); x.stroke(); } }
   if (/nublado|chuva|frente/.test(Wt.label)) { x.fillStyle = 'rgba(80,90,110,.35)'; x.fillRect(0, 0, W, hz); }
   // morros e mata
   x.fillStyle = '#3f6b3e'; x.beginPath(); x.moveTo(0, hz); for (let i = 0; i <= 10; i++) x.lineTo(i * W / 10, hz - (16 + 18 * Math.abs(Math.sin(i * 1.9 + (T.spot === 'represa' ? 2 : T.spot === 'pesqueiro' ? 1 : 0)))) * u); x.lineTo(W, hz); x.fill();
@@ -159,6 +170,10 @@ function draw(cv, dt) {
   if (/chuva/.test(Wt.label)) { x.strokeStyle = 'rgba(220,230,255,.35)'; x.lineWidth = u; for (let i = 0; i < 60; i++) { const rx = (i * 97 + t * 400) % W, ry = (i * 53 + t * 700) % H; x.beginPath(); x.moveTo(rx, ry); x.lineTo(rx - 3 * u, ry + 9 * u); x.stroke(); } }
   // cardume (bolhas)
   if (T.school && ['aim', 'fly', 'wait'].includes(T.st)) { const [bx, by] = spotXY(W, H, hz, T.school, 0.4); x.strokeStyle = 'rgba(255,255,255,.6)'; x.lineWidth = u; for (let i = 0; i < 7; i++) { const ph = (t * 0.8 + i / 7) % 1; x.beginPath(); x.arc(bx + Math.sin(i * 2.4) * 18 * u, by - ph * 10 * u, (1.5 + ph * 3) * u, 0, Math.PI * 2); x.stroke(); } }
+  // taboas na beira, píer no pesque-pague, vaga-lumes à noite
+  x.strokeStyle = '#4c6b2a'; x.lineWidth = 2 * u; for (let i = 0; i < 14; i++) { const rx = W * (0.62 + i * 0.027), sw = Math.sin(t * 1.2 + i) * 3 * u; x.beginPath(); x.moveTo(rx, H); x.quadraticCurveTo(rx + sw, H - 30 * u, rx + sw * 2, H - (40 + (i % 4) * 8) * u); x.stroke(); if (i % 3 === 0) { x.fillStyle = '#6b4423'; x.fillRect(rx + sw * 2 - 2 * u, H - (48 + (i % 4) * 8) * u, 4 * u, 10 * u); } }
+  if (T.spot === 'pesqueiro') { x.fillStyle = '#8a6a44'; x.fillRect(W * 0.72, H * 0.62, W * 0.28, 8 * u); for (let i = 0; i < 4; i++) x.fillRect(W * (0.74 + i * 0.07), H * 0.62, 4 * u, H * 0.2); }
+  if (night) { for (let i = 0; i < 10; i++) { const a = (t * 0.4 + i * 1.7); x.fillStyle = `rgba(220,255,120,${0.4 + 0.4 * Math.sin(t * 3 + i)})`; x.fillRect(W * (0.55 + 0.4 * ((Math.sin(a) + 1) / 2)), H * (0.55 + 0.3 * ((Math.cos(a * 1.3) + 1) / 2)), 2.5 * u, 2.5 * u); } }
   // barranco e vara
   x.fillStyle = '#5b3f22'; x.beginPath(); x.moveTo(0, H); x.lineTo(0, H * 0.8); x.quadraticCurveTo(W * 0.2, H * 0.84, W * 0.34, H); x.fill();
   x.fillStyle = '#3d6b2f'; for (let i = 0; i < 9; i++) x.fillRect(i * W * 0.035, H * 0.8 + Math.sin(i) * 4 * u - 10 * u, 2 * u, 12 * u);
@@ -203,6 +218,7 @@ function draw(cv, dt) {
   T.fx = T.fx.filter(p => (p.t += dt) < p.life);
   x.fillStyle = 'rgba(255,255,255,.8)';
   for (const p of T.fx) { const [sx, sy] = spotXY(W, H, hz, p.at, wob); x.fillRect(sx + Math.cos(p.a) * p.v * p.t * u, sy + (Math.sin(p.a) * p.v * p.t + 160 * p.t * p.t) * u, 2.5 * u, 2.5 * u); }
+  x.restore();
 }
 function loop(ts) {
   raf = 0;
@@ -228,7 +244,12 @@ function tickGame(dt) {
     T.wait -= dt; if (T.wait <= 0) { T.bite = PE.HOOK_WIN + PE.perks(lv()).hook; T.late = 0; splash(T.at, 6); sfx.tick(0.9); navigator.vibrate?.(40); setMsg('<b>A boia afundou! FISGUE!</b>'); }
   } else if (T.st === 'fight') {
     const f = T.fight, mv = f.mv, r = PE.step(f, hold.on, P().drag, dt);
-    if (f.mv !== mv && f.mv === 'jump') { splash(f.d, 14); sfx.play('chip', 0.4); }
+    if (f.mv !== mv && f.mv === 'jump') { splash(f.d, 14); sfx.play('chip', 0.4); T.shake = 0.35; }
+    if (f.mv !== mv && f.mv === 'run') { T.shake = 0.25; navigator.vibrate?.(80); }
+    // som: a fricção chia quando solta linha; a carretilha estala recolhendo
+    T.snd -= dt; if (T.snd <= 0) { if (f.out) { sfx.tick(0.18); T.snd = 0.06; } else if (hold.on) { sfx.tick(0.06); T.snd = 0.16; } }
+    // celular: a vara "pulsa" na mão conforme a força na linha
+    T.buzz -= dt; if (T.buzz <= 0 && f.ten > 0.4) { navigator.vibrate?.(Math.round(8 + f.ten * 30)); T.buzz = 0.45 - f.ten * 0.25; }
     paintHud();
     if (r === 'snap') { sfx.boom(); navigator.vibrate?.([30, 30, 80]); return end(T.fish.kg > PE.RODS[P().rod].maxKg ? `A linha arrebentou: peixe grande demais para a ${PE.RODS[P().rod].label}.` : P().drag >= 9 && f.R.drag ? 'A linha arrebentou! Fricção apertada demais: perto do máximo a linha estoura antes de correr.' : 'A linha arrebentou! Solte quando ela ficar vermelha.'); }
     if (r === 'spool') return end('O peixe levou toda a linha do carretel e escapou. Aperte a fricção (↑) quando ele correr muito.');
