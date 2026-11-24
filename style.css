@@ -3695,3 +3695,23 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .map-find { max-width: 260px; padding: 6px 10px; border-radius: 10px; background: rgba(15,23,42,.85); color: #fff; border: 1px solid rgba(255,255,255,.2); font: inherit; font-size: .85rem; }
 .lpin.is-dim { opacity: .3; filter: grayscale(.7); }
 .lpin.is-focus { transform: scale(1.35); border-color: #facc15; box-shadow: 0 0 0 4px rgba(250,204,21,.45), 0 3px 10px rgba(0,0,0,.6); }
+
+/* Delegacia do 21: boletim de ocorrência (bo.js) */
+.dlg--bo { width: min(38rem, calc(100% - 32px)); border-top: 4px solid #1e3a8a; }
+.bo__head { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); padding-bottom: var(--space-sm); border-bottom: 1px dashed var(--color-rule-2); }
+.bo__head small { color: var(--color-muted); text-transform: uppercase; letter-spacing: .08em; font-size: var(--text-xs); }
+.bo__badge { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 50%; background: radial-gradient(circle, #facc15 0 45%, #1e3a8a 47%); color: #1e3a8a; font-size: 20px; box-shadow: 0 0 0 3px #facc15; }
+.bo__form { display: grid; gap: var(--space-sm); }
+.bo__lead { color: var(--color-ink); }
+.bo__grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); }
+.bo__field { padding: var(--space-xs) var(--space-sm); border: 1px solid var(--color-rule-2); border-radius: 10px; }
+.bo__field span { display: block; font-size: var(--text-xs); color: var(--color-muted); text-transform: uppercase; }
+.bo__ta { min-height: 6rem; padding: var(--space-xs) var(--space-sm); font: 500 var(--text-sm)/1.4 var(--font-body, inherit); resize: vertical; }
+.bo__oath span { font-size: var(--text-xs); color: var(--color-muted); }
+.bo__done { position: relative; text-align: center; display: grid; gap: var(--space-xs); }
+.bo__num { font: 800 2rem/1 var(--font-display); letter-spacing: .06em; color: var(--color-ink); }
+.bo__stamp { position: absolute; top: 0; right: 0; padding: 4px 12px; border: 3px solid var(--color-error); border-radius: 6px; color: var(--color-error); font: 900 var(--text-md)/1 var(--font-display); letter-spacing: .12em; transform: rotate(-12deg); opacity: .85; animation: bo-stamp 500ms var(--ease-spring) both; }
+@keyframes bo-stamp { from { transform: rotate(-12deg) scale(2.4); opacity: 0; } }
+.bo__list { list-style: none; padding: 0; display: grid; gap: var(--space-sm); }
+.bo__list li { padding: var(--space-sm); border: 1px solid var(--color-rule-2); border-radius: 12px; }
+@media (prefers-reduced-motion: reduce) { .bo__stamp { animation: none; } }

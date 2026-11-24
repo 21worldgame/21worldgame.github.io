@@ -904,7 +904,7 @@ async function loadBo() {
   let q = sb.from('bo_casos').select('*').order('at', { ascending: false }).limit(200);
   if ($('#ad-bo-f').value === 'abertos') q = q.in('status', ['registrado', 'investigando']);
   const { data, error } = await q;
-  if (error) { st.textContent = ''; $('#ad-bo').innerHTML = '<tr><td colspan="7" class="muted">A delegacia ainda não foi ligada no banco (rode supabase/delegacia.sql).</td></tr>'; return; }
+  if (error) { st.textContent = ''; $('#ad-bo').innerHTML = '<tr><td colspan="7" class="muted">A delegacia ainda não foi ligada no banco.</td></tr>'; return; }
   const novos = data.filter(c => c.status === 'registrado').length, b = $('#ad-bo-badge'); b.textContent = novos; b.hidden = !novos;
   const vezes = {}; for (const c of data) vezes[c.target] = (vezes[c.target] || 0) + 1;
   st.textContent = `${data.length} boletim(ns) · ${novos} novo(s)`;

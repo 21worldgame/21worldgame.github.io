@@ -66,6 +66,7 @@ import * as TUI from './trade-ui.js';
 import * as TD from './trade.js';
 import * as AM from './amigos.js';
 import * as AMU from './amigos-ui.js';
+import './bo.js';
 
 const S = () => G.S;
 
@@ -832,9 +833,9 @@ function openProfile(pid, fetched) {
     ${!me && TUI.online().some(x => x.pid === pid) ? `<div class="pf__acts"><button class="btn btn--gold" data-act="trade-invite" data-id="${esc(pid)}">negociar</button></div>` : ''}
     ${!me && String(pid).startsWith('npc:') ? `<div class="pf__acts"><button class="btn btn--gold" data-act="trade-bot" data-id="${esc(String(pid).slice(4))}">negociar</button></div>` : ''}
     ${!me ? (() => { const npcId = String(pid).startsWith('npc:') ? String(pid).slice(4) : null, key = blockKey(p.name, npcId), on = isBlocked(p.name, npcId);
-      return `<div class="pf__acts"><button class="btn btn--sm ${on ? 'btn--gold' : 'btn--glass'}" data-act="toggle-block" data-id="${esc(key)}" data-name="${esc(p.name)}" data-reopen="${esc(pid)}">${on ? 'desbloquear' : 'bloquear'}</button></div>`; })() : ''}
+      return `<div class="pf__acts"><button class="btn btn--sm ${on ? 'btn--gold' : 'btn--glass'}" data-act="toggle-block" data-id="${esc(key)}" data-name="${esc(p.name)}" data-reopen="${esc(pid)}">${on ? 'desbloquear' : 'bloquear'}</button>${String(pid).startsWith('u:') && Auth.account() ? `<button class="btn btn--sm btn--danger" data-bo="${esc(String(pid).slice(2))}" data-name="${esc(p.name)}">🚔 registrar B.O.</button>` : ''}</div>`; })() : ''}
     ${me && (S().blocked || []).length ? `<h3>bloqueados</h3><ul class="pf__blocked">${S().blocked.map(k => { const n = k.startsWith('npc:') ? NPC.byId(k.slice(4))?.nick : k.slice(5); return `<li><span>${esc(n || k)}</span><button class="btn btn--glass btn--sm" data-act="toggle-block" data-id="${esc(k)}" data-name="${esc(n || k)}" data-reopen="me">desbloquear</button></li>`; }).join('')}</ul>` : ''}
-    ${me ? `<div class="pf__acts"><button class="btn btn--glass" data-act="edit-char">editar personagem</button><button class="btn btn--glass" data-act="toggle-nt">avisos na tela: ${ntOff('aviso') || ntOff('chat') ? 'desligados' : 'ligados'}</button>${Auth.account() ? '<button class="btn btn--glass" data-act="logout">sair da conta</button><button class="btn btn--danger btn--sm" data-act="wipe">apagar meus dados</button>' : ''}</div>${Auth.account() ? syncBox() : ''}` : ''}`;
+    ${me ? `<div class="pf__acts"><button class="btn btn--glass" data-act="edit-char">editar personagem</button><button class="btn btn--glass" data-act="toggle-nt">avisos na tela: ${ntOff('aviso') || ntOff('chat') ? 'desligados' : 'ligados'}</button>${Auth.account() ? '<button class="btn btn--glass" data-bo-mine>🚔 meus boletins</button><button class="btn btn--glass" data-act="logout">sair da conta</button><button class="btn btn--danger btn--sm" data-act="wipe">apagar meus dados</button>' : ''}</div>${Auth.account() ? syncBox() : ''}` : ''}`;
   const dlg = $('#dlg-profile');
   if (!dlg.open) dlg.showModal();
 }
@@ -1683,7 +1684,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 196;
+const APP_VERSION = 197;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
