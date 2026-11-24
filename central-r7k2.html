@@ -38,6 +38,7 @@
         <button data-tab="investigar">🔎 investigar o dinheiro<small>diário, livro-caixa, terras sumidas</small></button>
         <button data-tab="mundo">🌎 mundo e regras<small>economia, eventos, regras, donos únicos, avisos</small></button>
         <button data-tab="delegacia">🚔 delegacia (B.O.) <span class="ad-badge" id="ad-bo-badge" hidden></span><small>denúncias de jogadores para investigar</small></button>
+        <button data-tab="enviados">📨 avisos enviados <span class="ad-badge" id="ad-sent-badge" hidden></span><small>descontos e mensagens: quem recebeu, se já saiu da conta</small></button>
         <button data-tab="pedidos">📬 pedidos e registro <span class="ad-badge" id="ad-pw-badge" hidden></span><span class="ad-badge" id="ad-pro-badge" hidden></span><small>senhas, profissionais, o que o admin fez</small></button>
       </nav>
       <p class="muted small" id="ad-who"></p>
@@ -258,6 +259,13 @@
           <button class="btn btn--gold" type="button" id="ad-bk-load">carregar</button> <span class="muted small" id="ad-bk-st"></span>
         </div>
         <div class="ad-tablewrap ad-ledger"><table><thead><tr><th>jogador</th><th>mês</th><th>categoria</th><th>lançamento</th><th class="num">valor</th></tr></thead><tbody id="ad-bk"></tbody></table></div>
+      </section>
+
+      <section data-panel="sent" hidden>
+        <div class="ad-head"><h2>📨 central de avisos enviados</h2><button class="btn btn--glass btn--sm" id="ad-sent-reload" type="button">atualizar</button> <span class="muted small" id="ad-sent-st"></span></div>
+        <p class="ad-help">Tudo o que foi mandado para os jogadores (descontos da Receita/Banco Central/Polícia Federal, dinheiro, fichas, mensagens), do mais novo para o mais velho. <b>Pendente</b>: o jogo dele ainda não abriu desde o envio; o desconto sai da conta assim que ele entrar (mesmo offline, fica guardado). <b>Descontado</b>: já saiu do caixa, com data e hora. Pendente pode ser cancelado.</p>
+        <div class="row"><input class="input input--s" id="ad-sent-q" placeholder="buscar jogador ou texto"><select class="input input--s" id="ad-sent-f"><option value="">todos</option><option value="pend">só pendentes</option><option value="money">só dinheiro</option><option value="org">só Receita / BC / PF</option></select></div>
+        <div class="ad-tablewrap"><table class="ad-xl"><thead><tr><th>enviado em</th><th>jogador</th><th>situação da conta</th><th>tipo</th><th class="num">valor</th><th>mensagem que ele vê</th><th>entrega</th><th>recurso</th><th></th></tr></thead><tbody id="ad-sent"></tbody></table></div>
       </section>
 
       <section data-panel="log" hidden>

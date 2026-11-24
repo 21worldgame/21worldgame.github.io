@@ -50,7 +50,7 @@ async function enter(user) {
     const err = $('#ad-err'); err.textContent = 'Esta conta não é administradora.'; err.hidden = false;
     await sb.auth.signOut(); return;
   }
-  $('#ad-login').hidden = true; $('#ad-app').hidden = false;
+  $('#ad-login').hidden = true; $('#ad-app').hidden = false; setTimeout(() => loadSent(true), 1500);   // badge de avisos pendentes
   $('#ad-who').textContent = `Conectado como ${user.email}`;
   show('vigia');
   pwBadge(); setInterval(pwBadge, 60000);
@@ -102,10 +102,10 @@ for (const id of ['#ad-logout', '#ad-logout2']) $(id).addEventListener('click', 
 
 // ---------- navegação ----------
 // poucos menus: cada um junta várias partes do painel, uma embaixo da outra
-const MENU = { alertas: ['vigia', 'overview'], jogadores: ['players'], investigar: ['diario', 'terras', 'livros'], mundo: ['economy', 'rules', 'owners', 'news'], delegacia: ['bo'], pedidos: ['pro', 'passwords', 'log'] };
+const MENU = { alertas: ['vigia', 'overview'], jogadores: ['players'], investigar: ['diario', 'terras', 'livros'], mundo: ['economy', 'rules', 'owners', 'news'], delegacia: ['bo'], enviados: ['sent'], pedidos: ['pro', 'passwords', 'log'] };
 let tuneLoad = null;
 const LOAD = { vigia: () => loadVigia(), overview: () => loadOverview(), players: () => loadUsers(), diario: () => { if (!dj) loadDiario(); }, terras: () => loadLands(),
-  economy: () => { loadConfig(); loadEconomy(); }, rules: () => tuneLoad?.(), owners: () => loadOwners(), news: () => loadAnns(), bo: () => loadBo(), pro: () => loadPro(), passwords: () => loadPw(), log: () => loadLog() };
+  economy: () => { loadConfig(); loadEconomy(); }, rules: () => tuneLoad?.(), owners: () => loadOwners(), news: () => loadAnns(), bo: () => loadBo(), sent: () => loadSent(), pro: () => loadPro(), passwords: () => loadPw(), log: () => loadLog() };
 function show(tab) {
   const g = MENU[tab] ? tab : Object.keys(MENU).find(k => MENU[k].includes(tab)) || 'alertas';
   document.querySelectorAll('.ad-nav button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === g));
@@ -757,7 +757,7 @@ async function loadVigia() {
   try {
     if (!users.length) await loadUsers('');
     const ago = d => new Date(Date.now() - d * 864e5).toISOString(), soft = p => p.catch(() => []);
-    const [saves, hist, rc, gifts, pix, pix30, diary, bans] = await Promise.all([
+    const [saves, hist, rc, gifts, pix, pix30, diary, bans, oks] = await Promise.all([
       pageAll(() => sb.from('saves').select('user_id, data, updated_at')),
       soft(pageAll(() => sb.from('save_history').select('user_id, saved_at, money').gt('saved_at', ago(1)))),
       soft(pageAll(() => sb.from('receita_casos').select('user_id'))),
@@ -766,7 +766,9 @@ async function loadVigia() {
       soft(pageAll(() => sb.from('pix').select('from_id, from_name, to_id, to_name, amount, memo, at').gt('at', ago(30)))),
       soft(pageAll(() => sb.from('diario').select('user_id, at, kind, txt, val, money, worth, acts, tab').in('kind', ['gap', 'inicio']).gt('at', ago(7)))),
       soft(pageAll(() => sb.from('bans').select('user_id, reason, until'))),
+      soft(pageAll(() => sb.from('vigia_ok').select('*'))),
     ]);
+    OKS = Object.fromEntries(oks.map(o => [o.user_id, o]));
     BANS = Object.fromEntries(bans.filter(b => !b.until || Date.parse(b.until) > Date.now()).map(b => [b.user_id, b]));
     KNOWN = users.length < 300 ? new Set(users.map(u => u.user_id)) : new Set();   // lista cortada em 300: não dá para saber quem foi excluído
     // fazenda de contas (30 dias) e dinheiro sem lançamento (diário, 7 dias)
@@ -787,7 +789,10 @@ async function loadVigia() {
   } catch (e) { fail(e, 'carregar a vigilância'); st.textContent = ''; } finally { $('#ad-vg-reload').disabled = false; }
 }
 // situação da conta agora: ativa, suspensa até tal dia, banida para sempre ou excluída
-let BANS = {}, KNOWN = new Set();
+let BANS = {}, KNOWN = new Set(), OKS = {};
+// passou o pano: some dos alertas até aparecer coisa nova (mais pontos, ou +R$ 50 mil sem origem / de Pix)
+const fresh = r => { const o = OKS[r.id]; if (!o) return true; const n = x => Number(x) || 0;
+  return n(r.score) > n(o.score) || n(r.gap) > n(o.gap) + 50000 || n(r.jump) > n(o.jump) + 50000 || n(r.pixInSum) > n(o.pix) + 50000 || n(r.farm?.total) > n(o.pix) + 50000; };
 function status(id) {
   if (KNOWN.size && !KNOWN.has(id)) return '<span class="tag tag--red">excluída</span>';
   const b = BANS[id]; if (!b) return '<span class="tag tag--green">ativa</span>';
@@ -839,7 +844,7 @@ function drawVigia() {
 const certainty = s => (s >= 6 ? ['quase certeza', 'red'] : s >= 4 ? ['muito provável', 'red'] : ['vale conferir', 'gold']);
 function drawCheats(on) {
   const ago = t => { const h = (Date.now() - Date.parse(t)) / 36e5; return h < 1 ? `${Math.max(1, Math.round(h * 60))} min` : h < 48 ? `${Math.round(h)} h` : `${Math.round(h / 24)} dias`; };
-  const farms = vg.farm.filter(f => f.sure || f.n >= 2).sort((a, b) => (a.last < b.last ? 1 : -1));   // Pix mais recente primeiro
+  const farms = vg.farm.filter(f => (f.sure || f.n >= 2) && (!OKS[f.id] || f.total > (Number(OKS[f.id].pix) || 0) + 50000)).sort((a, b) => (a.last < b.last ? 1 : -1));   // Pix mais recente primeiro
   const dt = t => (t ? new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—');
   const age = d => (d == null ? '—' : d < 1 ? `<b class="bad">${Math.max(1, Math.round(d * 24))} h</b>` : d < AE.NEW_DAYS ? `<b class="bad">${Math.floor(d)} d</b>` : `${Math.floor(d)} d`);
   // planilha: uma linha por Pix suspeito, com data e hora, quem mandou, quando a conta foi criada e o acumulado
@@ -847,11 +852,12 @@ function drawCheats(on) {
     ${farms.map(f => { let acc = 0; const rows = (f.list || []).map((x, i) => ({ ...x, i: i + 1, acc: acc += x.amount })).reverse();
       return `<div class="ad-sheet ad-sheet--red"><div class="ad-sheet__top"><span class="tag tag--red">${f.sure ? 'quase certeza' : 'muito provável'}</span>
         <b>${esc(f.name)}</b> ${status(f.id)} recebeu <b>${brl(f.total)}</b> em ${f.n} Pix de ${f.senders.length} conta(s) · 1º ${dt(f.first)} · último ${dt(f.last)} (há ${ago(f.last)})${on.has(f.id) ? ' <span class="tag tag--green">online</span>' : ''}
-        <span class="ad-sheet__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(f.id)}">ficha</button><button class="btn btn--glass btn--xs" data-desc="${esc(f.id)}" data-desc-pix="${f.total}">descontar</button><button class="btn btn--danger btn--xs" data-farm-back="${esc(f.id)}" title="a conta volta para antes do 1º Pix e o que comprou depois volta para a loja">voltar antes do 1º Pix</button><button class="btn btn--danger btn--xs" data-pun="${esc(f.id)}" data-pun-who="${esc(f.name)}" data-pun-why="recebeu Pix de contas falsas">banir / excluir ${esc(f.name)}</button><button class="btn btn--danger btn--xs" data-pun="${esc(f.senders.map(x => x.id).join(','))}" data-pun-who="${esc(f.senders.map(x => x.name).join(', '))}" data-pun-why="conta usada para mandar Pix para ${esc(f.name)}">suspender ${f.senders.length} remetente(s)</button></span></div>
+        <span class="ad-sheet__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(f.id)}">ficha</button><button class="btn btn--glass btn--xs" data-pano="${esc(f.id)}" title="tirar dos alertas: volta só se aparecer coisa nova">passar o pano</button><button class="btn btn--glass btn--xs" data-desc="${esc(f.id)}" data-desc-pix="${f.total}">descontar</button><button class="btn btn--danger btn--xs" data-farm-back="${esc(f.id)}" title="a conta volta para antes do 1º Pix e o que comprou depois volta para a loja">voltar antes do 1º Pix</button><button class="btn btn--danger btn--xs" data-pun="${esc(f.id)}" data-pun-who="${esc(f.name)}" data-pun-why="recebeu Pix de contas falsas">banir / excluir ${esc(f.name)}</button><button class="btn btn--danger btn--xs" data-pun="${esc(f.senders.map(x => x.id).join(','))}" data-pun-who="${esc(f.senders.map(x => x.name).join(', '))}" data-pun-why="conta usada para mandar Pix para ${esc(f.name)}">suspender ${f.senders.length} remetente(s)</button></span></div>
         <div class="ad-tablewrap"><table class="ad-xl"><thead><tr><th>#</th><th>data e hora do Pix</th><th>conta que mandou</th><th>situação</th><th>conta criada em</th><th>idade</th><th class="num">valor</th><th class="num">acumulado</th><th>mensagem</th></tr></thead><tbody>
         ${rows.map(x => `<tr><td class="num">${x.i}</td><td>${dt(x.at)}</td><td><a href="#" data-vg-user="${esc(x.id)}">${esc(x.name)}</a></td><td>${status(x.id)}</td><td>${dt(x.created)}</td><td>${age(x.ageDays)}</td><td class="num">${brl(x.amount)}</td><td class="num">${brl(x.acc)}</td><td>${esc(x.memo)}</td></tr>`).join('')}
         </tbody></table></div></div>`; }).join('')}` : '';
-  const list = vg.rows.filter(r => r.score >= 4 && !(farms.some(f => f.id === r.id) && r.why.length === 1)).slice(0, 40);
+  const list = vg.rows.filter(r => r.score >= 4 && fresh(r) && !(farms.some(f => f.id === r.id) && r.why.length === 1)).slice(0, 40);
+  const cleared = vg.rows.filter(r => OKS[r.id] && !fresh(r));
   $('#ad-cheat-st').textContent = `${farms.length} fazenda(s) de contas · ${list.length} jogador(es) com sinais fortes · visto em ${dt(Date.now())}`;
   // jogadores com sinais fortes: uma linha por jogador, com as datas que importam e os motivos
   const lastPix = (arr = []) => arr.reduce((m, p) => (p.at > m ? p.at : m), '');
@@ -864,8 +870,9 @@ function drawCheats(on) {
         <td>${AE.brlShort(r.pixInSum)} / ${AE.brlShort(r.pixOutSum)}${lastPix([...(r.pixIn || []), ...(r.pixOut || [])]) ? `<br><small class="muted">${dt(lastPix([...(r.pixIn || []), ...(r.pixOut || [])]))}</small>` : ''}</td>
         <td class="num">${r.casino == null ? '—' : AE.brlShort(r.casino)}</td>
         <td class="ad-xl__why">${r.why.map(w => esc(w)).join('<br>')}</td>
-        <td class="ad-xl__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(r.id)}">ficha</button><button class="btn btn--glass btn--xs" data-desc="${esc(r.id)}">descontar</button>${r.excess > 0 ? `<button class="btn btn--glass btn--xs" data-vg-take="${esc(r.id)}">tirar ${AE.brlShort(r.excess)}</button>` : ''}<button class="btn btn--danger btn--xs" data-pun="${esc(r.id)}" data-pun-who="${esc(r.name)}" data-pun-why="${esc(r.why[0] || 'trapaça')}">banir / excluir</button></td></tr>`; }).join('')}
+        <td class="ad-xl__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(r.id)}">ficha</button><button class="btn btn--glass btn--xs" data-desc="${esc(r.id)}">descontar</button><button class="btn btn--glass btn--xs" data-pano="${esc(r.id)}" title="tirar dos alertas: volta só se aparecer coisa nova">passar o pano</button>${r.excess > 0 ? `<button class="btn btn--glass btn--xs" data-vg-take="${esc(r.id)}">tirar ${AE.brlShort(r.excess)}</button>` : ''}<button class="btn btn--danger btn--xs" data-pun="${esc(r.id)}" data-pun-who="${esc(r.name)}" data-pun-why="${esc(r.why[0] || 'trapaça')}">banir / excluir</button></td></tr>`; }).join('')}
     </tbody></table></div>` : (farms.length ? '' : '<p class="good">Nenhum sinal forte de trapaça agora. 👍</p>');
+  if (cleared.length) $('#ad-cheat').insertAdjacentHTML('beforeend', `<p class="small muted ad-cleared">🧽 pano passado (fora dos alertas até aparecer coisa nova): ${cleared.map(r => `<a href="#" data-vg-user="${esc(r.id)}">${esc(r.name)}</a> <small>${new Date(OKS[r.id].at).toLocaleDateString('pt-BR')}</small> <button class="btn btn--glass btn--xs" data-pano-undo="${esc(r.id)}">voltar para os alertas</button>`).join(' · ')}</p>`);
 }
 // na ficha do jogador: o que a vigilância viu sobre ele
 function cheatBox(id) {
@@ -962,9 +969,67 @@ document.addEventListener('click', e => {
     const { error } = await sb.from('admin_grants').insert({ user_id: id, kind: 'money', amount: -amt, note: why });
     if (error) return fail(error, 'descontar');
     await log('take_money', id, { amount: amt, why, from: 'alertas de trapaça' });
-    toast(`Desconto de ${brl(amt)} enviado. Sai do caixa de ${name} quando o jogo dele sincronizar.`);
+    sentNotice(name, amt, why);
   });
 }, true);
+// aviso no painel depois de enviar: o que foi, para quem, e o caminho para acompanhar
+function sentNotice(name, amt, txt) {
+  const d = document.createElement('dialog'); d.className = 'ad-pun ad-pun--ok';
+  d.innerHTML = `<form method="dialog"><h3>✅ aviso enviado para ${esc(name)}</h3>
+    <p><b class="bad">${brl(-amt)}</b> vão sair da conta dele. Se ele estiver jogando, sai em segundos; se não, sai assim que ele abrir o jogo (fica guardado no servidor).</p>
+    <div class="ad-prev__note"><span>${esc(txt)}</span></div>
+    <p class="small muted">Acompanhe em <b>📨 avisos enviados</b>: lá aparece quando foi descontado, e se ele pedir revisão.</p>
+    <div class="row"><button class="btn btn--glass" value="ok">fechar</button><button class="btn btn--gold" value="go">abrir avisos enviados</button></div></form>`;
+  document.body.append(d); d.showModal(); toast(`Aviso enviado para ${name}: ${brl(-amt)}.`);
+  d.addEventListener('close', () => { if (d.returnValue === 'go') show('enviados'); d.remove(); loadSent(true); });
+}
+// central de avisos enviados: as ordens (admin_grants) com quem recebeu, o texto, se já foi aplicada e se tem recurso
+let SENT = [], SENT_NAMES = {};
+const KIND = { money: 'dinheiro', chips: 'fichas', xp: 'XP', message: 'mensagem', reset: 'reiniciar', setmoney: 'carteira', land: 'terra', pioneer: 'selo' };
+async function loadSent(quiet) {
+  const st = $('#ad-sent-st'); if (!quiet && st) st.textContent = 'carregando...';
+  const [g, rc] = await Promise.all([sb.from('admin_grants').select('id, user_id, kind, amount, note, created_at, applied_at').order('created_at', { ascending: false }).limit(400),
+    sb.from('recursos').select('grant_id, status, msg').limit(1000)]);
+  if (g.error) { if (st) st.textContent = ''; return fail(g.error, 'carregar os avisos enviados'); }
+  SENT = g.data || []; const REC = Object.fromEntries((rc.data || []).map(r => [r.grant_id, r]));
+  SENT.forEach(x => { x.rec = REC[x.id]; });
+  const ids = [...new Set(SENT.map(x => x.user_id))].filter(i => !SENT_NAMES[i]);
+  for (const u of users) SENT_NAMES[u.user_id] ??= u.name;
+  const miss = ids.filter(i => !SENT_NAMES[i]);
+  for (let i = 0; i < miss.length; i += 100) { const { data } = await sb.from('public_profiles').select('user_id, name').in('user_id', miss.slice(i, i + 100)); for (const p of data || []) SENT_NAMES[p.user_id] = p.name; }
+  if (!Object.keys(BANS).length) { const { data } = await sb.from('bans').select('user_id, reason, until'); BANS = Object.fromEntries((data || []).filter(b => !b.until || Date.parse(b.until) > Date.now()).map(b => [b.user_id, b])); }
+  const pend = SENT.filter(x => !x.applied_at).length, b = $('#ad-sent-badge'); if (b) { b.textContent = pend; b.hidden = !pend; }
+  if (st) st.textContent = `${SENT.length} avisos · ${pend} pendente(s) · atualizado ${new Date().toLocaleTimeString('pt-BR')}`;
+  drawSent();
+}
+function drawSent() {
+  const el = $('#ad-sent'); if (!el) return;
+  const qq = ($('#ad-sent-q')?.value || '').trim().toLowerCase(), f = $('#ad-sent-f')?.value || '';
+  const dt = t => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const rows = SENT.filter(x => (!f || (f === 'pend' ? !x.applied_at : f === 'money' ? x.kind === 'money' || x.kind === 'setmoney' : ORG_RE.test(x.note || '')))
+    && (!qq || `${SENT_NAMES[x.user_id] || ''} ${x.note || ''}`.toLowerCase().includes(qq)));
+  el.innerHTML = rows.map(x => { const nm = SENT_NAMES[x.user_id] || '(conta apagada)', v = Number(x.amount) || 0, org = (x.note || '').match(ORG_RE)?.[1];
+    const val = x.kind === 'money' || x.kind === 'setmoney' ? `<span class="${v < 0 ? 'bad' : 'good'}">${brl(v)}</span>` : x.kind === 'chips' || x.kind === 'xp' ? int(v) : '';
+    const ent = x.applied_at ? `<span class="tag tag--green">${v < 0 && x.kind === 'money' ? 'descontado' : 'entregue'}</span><br><small>${dt(x.applied_at)}</small>` : '<span class="tag tag--gold">pendente</span><br><small class="muted">sai quando ele abrir o jogo</small>';
+    const rec = x.rec ? `<span class="tag tag--${x.rec.status === 'aberto' ? 'red' : x.rec.status === 'aceito' ? 'green' : 'gold'}">${x.rec.status === 'aberto' ? 'pediu revisão' : `revisão ${x.rec.status}`}</span>` : '';
+    return `<tr${!x.applied_at ? ' class="ad-alert"' : ''}><td>${dt(x.created_at)}</td><td><a href="#" data-vg-user="${esc(x.user_id)}"><b>${esc(nm)}</b></a></td><td>${status(x.user_id)}</td>
+      <td>${org ? `<b>${esc(org)}</b>` : KIND[x.kind] || esc(x.kind)}</td><td class="num">${val}</td><td class="ad-xl__why">${esc(x.note || '')}</td><td>${ent}</td><td>${rec}</td>
+      <td>${!x.applied_at ? `<button class="btn btn--glass btn--xs" data-sent-cancel="${x.id}">cancelar</button>` : ''}</td></tr>`; }).join('')
+    || '<tr><td colspan="9" class="muted">Nenhum aviso enviado ainda.</td></tr>';
+}
+$('#ad-sent-reload')?.addEventListener('click', () => loadSent());
+$('#ad-sent-q')?.addEventListener('input', drawSent);
+$('#ad-sent-f')?.addEventListener('change', drawSent);
+document.addEventListener('click', async e => {
+  const c = e.target.closest('[data-sent-cancel]'); if (!c) return;
+  const x = SENT.find(s => String(s.id) === c.dataset.sentCancel); if (!x) return;
+  if (!confirm(`Cancelar este aviso para ${SENT_NAMES[x.user_id] || 'o jogador'}? Ele ainda não recebeu, então nada sai da conta.`)) return;
+  const { data, error } = await sb.from('admin_grants').delete().eq('id', x.id).is('applied_at', null).select('id');
+  if (error) return fail(error, 'cancelar');
+  if (!data?.length) { toast('Não deu: o jogo dele acabou de aplicar este aviso.', true); return loadSent(); }
+  await log('grant_cancel', x.user_id, { id: x.id, kind: x.kind, amount: x.amount, note: x.note }); toast('Aviso cancelado.'); loadSent();
+});
+setInterval(() => { if (sb && !$('#ad-app').hidden) loadSent(true); }, 60000);   // badge de pendentes e entrega atualizando sozinhos
 // recursos: o jogador contestou um desconto pelo livro-caixa (supabase/recursos.sql). Aceitar devolve o valor; negar manda a resposta.
 let RECS = [];
 const ORG_RE = /^(Receita Federal|Banco Central|Polícia Federal):/;   // avisos imersivos (o jogo mostra sem "administrador")
@@ -997,6 +1062,18 @@ document.addEventListener('click', async e => {
   if (u.error) return fail(u.error, 'marcar o recurso');
   await log(ok ? 'appeal_accept' : 'appeal_deny', r.user_id, { id: r.id, amount: r.amount, answer });
   toast(ok ? `Recurso aceito: ${brl(r.amount)} voltam para ${r.name}.` : 'Recurso negado. Ele vê a resposta no livro-caixa.'); loadRecursos();
+}, true);
+// passar o pano: guarda o que foi visto agora; o jogador some dos alertas até aparecer coisa nova
+document.addEventListener('click', async e => {
+  const p = e.target.closest('[data-pano]'), u = e.target.closest('[data-pano-undo]'); if (!p && !u) return;
+  e.preventDefault(); e.stopPropagation();
+  const id = p ? p.dataset.pano : u.dataset.panoUndo, r = vg?.rows.find(x => x.id === id) || {}, fm = vg?.farm.find(f => f.id === id), name = r.name || fm?.name || 'jogador';
+  if (u) { const { error } = await sb.from('vigia_ok').delete().eq('user_id', id); if (error) return fail(error, 'voltar para os alertas'); delete OKS[id]; await log('vigia_unok', id, {}); toast(`${name} voltou para os alertas.`); return drawVigia(); }
+  const note = prompt(`Passar o pano em ${name}? Ele sai dos alertas de trapaça e só volta se aparecer coisa nova (mais sinais, ou +R$ 50 mil sem origem ou de Pix).\n\nAnotação (opcional, só você vê):`, '');
+  if (note === null) return;
+  const row = { user_id: id, score: r.score || 0, gap: r.gap || 0, jump: r.jump || 0, pix: Math.max(r.pixInSum || 0, fm?.total || 0), note: note.slice(0, 300) || null, at: new Date().toISOString() };
+  const { error } = await sb.from('vigia_ok').upsert(row); if (error) return fail(error, 'passar o pano');
+  OKS[id] = row; await log('vigia_ok', id, { score: row.score, note: row.note }); toast(`${name} saiu dos alertas.`); drawVigia();
 }, true);
 // banir ou excluir direto dos alertas: um jogador ou todas as contas de uma fazenda de uma vez
 document.addEventListener('click', e => {
