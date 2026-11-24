@@ -676,20 +676,24 @@
 
     <!-- SUÍNOS -->
     <section id="p-pesca" role="tabpanel" aria-labelledby="t-pesca" class="panel" hidden>
-      <div class="listhead"><h2>pesqueiro</h2><span class="muted small">Lance, espere a boia afundar, fisgue, puxe sem arrebentar a linha e tire o peixe da água. Venda na peixaria. Só pesca com a tela aberta.</span></div>
+      <div class="listhead"><h2>pesqueiro</h2><span class="muted small">Arremesse no cardume, fisgue na hora certa, canse o peixe sem arrebentar a linha e tire com o puçá. Venda na peixaria ou entregue encomendas. Só pesca com a tela aberta.</span></div>
+      <div class="pe-cond glass" id="pe-cond"></div>
       <div class="pe-spots" id="pe-spots"></div>
       <div class="pe">
         <div class="pe__stage glass">
-          <canvas id="pe-cv" class="pe__cv" aria-label="lago: a boia, a linha e o peixe"></canvas>
+          <canvas id="pe-cv" class="pe__cv" aria-label="lago: a vara, a linha, a boia e o peixe"></canvas>
+          <div class="pe-pow" id="pe-pow" hidden></div>
           <div class="pe__hud" id="pe-hud" hidden>
-            <div class="pe-meter"><span>linha</span><span class="bar pe-bar"><i id="pe-ten" data-lvl="ok"></i></span></div>
-            <div class="pe-meter"><span>até a beira</span><span class="bar pe-bar pe-bar--dist"><i id="pe-dist"></i></span></div>
-            <small id="pe-stam" class="muted"></small>
+            <b class="pe-act" id="pe-act" data-hot="false" aria-live="assertive"></b>
+            <div class="pe-meter"><span>linha</span><span class="bar pe-bar pe-bar--ten"><i id="pe-ten" data-lvl="ok"></i><b class="pe-slip" id="pe-slip" title="a partir daqui a fricção solta linha"></b></span></div>
+            <div class="pe-meter"><span>fôlego do peixe</span><span class="bar pe-bar"><i id="pe-stam" class="pe-stam"></i></span></div>
+            <div class="pe-meter"><span>linha fora <small id="pe-dist-t" class="muted"></small></span><span class="bar pe-bar pe-bar--dist"><i id="pe-dist"></i></span></div>
             <div class="pe-net" id="pe-net" hidden></div>
           </div>
           <p class="pe__msg" id="pe-msg" aria-live="polite"></p>
-          <div class="row pe__acts" id="pe-acts"></div>
-          <p class="muted small">Atalho: barra de espaço lança, fisga, puxa (segure) e tira da água.</p>
+          <div class="row pe__acts"><div class="row" id="pe-acts"></div>
+            <div class="pe-dragbox" id="pe-dragbox"><span class="small muted">fricção</span><button class="btn btn--glass btn--sm" data-pe="drag-" aria-label="afrouxar a fricção">−</button><b id="pe-drag">6</b><button class="btn btn--glass btn--sm" data-pe="drag+" aria-label="apertar a fricção">+</button></div></div>
+          <p class="muted small">Barra de espaço: segure para arremessar e para recolher, toque para fisgar e para o puçá. Setas ↑ ↓: fricção. Fricção baixa deixa o peixe correr (cuidado com o fim da linha); alta segura mais, mas perto do máximo a linha estoura. Na hora do salto, solte.</p>
         </div>
         <aside class="pe__side" id="pe-side"></aside>
       </div>
