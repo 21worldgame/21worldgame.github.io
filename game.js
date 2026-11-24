@@ -932,7 +932,7 @@ function renderCartas() {
         const copies = cs.filter(x => CD.setOf(x) === id && CD.keyOf(x) === c.key).sort((a, b) => CD.value(a) - CD.value(b));
         const card = copies[copies.length - 1] || (id === 'campeoes' ? { champ: c.key, tier: 'bronze' } : { set: id, key: c.key });
         return `<div class="cd-slot${copies.length ? ' is-have' : ''}" title="${esc(c.name)}">${CD.cardHTML(card, { small: true, missing: !copies.length })}${copies.length > 1 ? `<span class="tag tag--gold cd-dup">×${copies.length}</span>` : ''}
-          ${copies.length ? `<button class="btn btn--glass btn--sm cd-sell" data-act="card-sell" data-id="${copies[0].id}">vender ${brl(CD.value(copies[0]))}</button>` : ''}</div>`; }).join('')}</div>
+          ${copies.length ? `<button class="btn btn--glass btn--sm cd-sell" data-act="card-sell" data-id="${copies[0].id}" title="a carta vale ${brl(CD.value(copies[0]))}; a loja paga ${Math.round(CD.SELL * 100)}%">vender por ${brl(Math.round(CD.value(copies[0]) * CD.SELL))}</button>` : ''}</div>`; }).join('')}</div>
     </article>`;
   }).join('');
 }
@@ -1220,7 +1220,9 @@ const ACTS = {
   },
   'card-sell'(id) {
     const c = (S().cards || []).find(x => x.id === id); if (!c) return;
-    if (!confirm(`Vender ${CD.label(c)} para a loja por ${brl(Math.round(CD.value(c) * CD.SELL))}?`)) return;
+    if (!confirm(`Vender ${CD.label(c)} para a loja por ${brl(Math.round(CD.value(c) * CD.SELL))}?
+
+A carta vale ${brl(CD.value(c))}, mas a loja paga só ${Math.round(CD.SELL * 100)}%. Para receber mais, anuncie no Feirão ou troque com outro jogador.`)) return;
     const v = CD.sell(S(), id); note(`venda da carta ${CD.label(c)}`, v); say(`Carta vendida por ${brl(v)}.`);
   },
   'rent-land'(idv) {
@@ -1696,7 +1698,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 217;
+const APP_VERSION = 218;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
