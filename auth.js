@@ -247,9 +247,11 @@ function forceRestore(row, why = 'O administrador voltou a sua conta para um est
   say(why, true);
   setTimeout(() => location.reload(), 1500);
 }
+const PUSH_GAP = 20000;
+let lastPushAt = 0, profKey = '', profAt = 0;
 export async function push() {
   if (!sb || !user || pushing || outdated || G.devtools) return false;   // devguard.js: modo desenvolvedor aberto
-  pushing = true;
+  pushing = true; lastPushAt = Date.now();
   try {
     try { D.take(G.S, user.id, G.now?.() ?? Date.now()); } catch {}   // diário do admin: o que mudou desde o último envio
     const stamp = G.S.savedAt || 0, at = serverIso(), data = { ...G.S, dev: DEV, appV: G.appV || 0 }, snap = JSON.stringify(data);
@@ -270,7 +272,10 @@ export async function push() {
     base = res.data[0].updated_at; setBaseData(snap); pushed = stamp; lastPush = stamp; saveMeta(); syncedAt = Date.now();
     D.flush(sb, user.id);
     try { bc?.send({ type: 'broadcast', event: 'saved', payload: { dev: DEV } })?.catch?.(() => {}); } catch {}   // avisa o outro aparelho na hora
-    let row = profileRow(), r = await sb.from('public_profiles').upsert(row);
+    // perfil público: só regrava quando muda o que aparece (nome, nível, rank, visual) ou a cada 60 s (patrimônio do ranking)
+    let row = profileRow(); const pk = JSON.stringify([row.name, row.level, row.rank, row.look]);
+    if (pk === profKey && Date.now() - profAt < 60000) return true;
+    let r = await sb.from('public_profiles').upsert(row); if (!r.error) { profKey = pk; profAt = Date.now(); }
     if (r.error && /card/i.test(r.error.message || '')) { noCardUntil = Date.now() + 300000; row = profileRow(); r = await sb.from('public_profiles').upsert(row); }   // coluna card ainda não criada no servidor
     if (r.error && isNameTaken(r.error)) {                      // outro jogador já usa esse nome: troca por um com número
       G.S.avatar.name = withSuffix(row.name, Math.floor(10 + Math.random() * 90));
@@ -303,7 +308,7 @@ async function checkRemote() {
     if (row && !sameAt(row.updated_at, base) && !pushing) mergeRemote(row);
   } catch {}
 }
-setInterval(checkRemote, 5000);
+setInterval(checkRemote, 20000);   // o aviso do outro aparelho chega pelo Realtime; isto é só a rede de segurança
 // sincronização na tela (perfil): quando gravou por último, se há algo pendente, e o botão "sincronizar agora"
 let syncedAt = 0;
 export const syncInfo = () => ({ on: !!user, at: syncedAt, pending: !!user && dirty(), email: user?.email || '' });
@@ -312,7 +317,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 addEventListener('pageshow', e => { if (e.persisted) checkRemote(); });   // celular: voltou do cache da página (bfcache) com o jogo velho
 addEventListener('focus', () => checkRemote());
 // celular fecha o app ou trava a tela antes do envio de 1,5 s: manda na hora (e de novo quando a internet volta)
-const flush = () => { if (user && dirty()) { clearTimeout(timer); push().catch(() => {}); } };
+const flush = () => { if (user && dirty()) { clearTimeout(timer); timer = 0; push().catch(() => {}); } };
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
 addEventListener('pagehide', flush);
 addEventListener('online', () => { flush(); setTimeout(checkRemote, 500); });
@@ -320,8 +325,9 @@ let lastErrAt = 0;
 export const syncState = () => ({ on: !!user, pending: !!user && dirty(), offline: typeof navigator !== 'undefined' && navigator.onLine === false, at: syncedAt, err: lastErrAt });
 function scheduleSync() {
   if (!user) return;
-  clearTimeout(timer);
-  timer = setTimeout(() => push().catch(() => {}), 1500);   // quase em tempo real: outro aparelho vê o progresso em segundos
+  if (timer) return;   // já tem envio marcado: não empurra para frente (quem joga sem parar também grava)
+  // no máximo 1 gravação a cada PUSH_GAP por jogador (cada gravação regrava o save inteiro no banco); fechar ou esconder a aba grava na hora
+  timer = setTimeout(() => { timer = 0; push().catch(() => {}); }, Math.max(1500, PUSH_GAP - (Date.now() - lastPushAt)));
 }
 // terras dos outros jogadores de verdade, para o mapa
 let mapCache = null;
@@ -384,20 +390,14 @@ async function afterLogin() {
   if (dlg().open) dlg().close();
   try { localStorage.setItem('21world.hadAccount', '1'); } catch {}
   G.afterSave = scheduleSync;
-  watchRanking(); watchSaves();
+  watchSaves();
   await push().catch(() => {});
   renderAccount();
   G.onLogin?.();
 }
 
-// ranking em tempo real: o banco avisa quando algum perfil muda (precisa da replicação ligada; sem ela, o jogo consulta a cada poucos segundos)
-let rankCb = null, rankSub = false;
-export const onRankChange = fn => { rankCb = fn; };
-function watchRanking() {
-  if (rankSub || !sb) return;
-  rankSub = true;
-  try { sb.channel('rk').on('postgres_changes', { event: '*', schema: 'public', table: 'public_profiles' }, () => { rankCache = null; rankCb?.(); }).subscribe(); } catch {}
-}
+// ranking ao vivo desligado: cada gravação de perfil fazia o banco conferir todos os inscritos (esgotava o disco). O ranking é consultado a cada 30 s.
+export const onRankChange = () => {};
 function renderAccount() {
   const el = $('#account-line'); if (!el) return;
   el.hidden = !user;

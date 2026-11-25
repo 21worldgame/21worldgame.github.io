@@ -47,7 +47,7 @@ export async function start() {
   timer = setInterval(async () => {
     await loadConfig(sb); await loadAnnouncements(sb); maintenance();
     if (Auth.account()) { if (await checkBan(sb)) return; await applyGrants(sb); if (!isAdmin) await receita(sb); }
-  }, 10000);
+  }, 30000);
   return banned ? 'banned' : 'ok';
 }
 
