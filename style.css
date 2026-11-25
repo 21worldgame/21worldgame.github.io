@@ -3873,3 +3873,10 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .upd--full::backdrop { background: rgba(0,0,0,.6); }
 @keyframes updTruck { from { transform: translateX(-10px); } to { transform: translateX(10px); } }
 @media (prefers-reduced-motion: reduce) { .upd__truck { animation: none; } }
+
+/* mini aviso de atualização com caminhãozinho (v254): canto de baixo, não atrapalha */
+.upd--truck .upd__truck { font-size: 1.1rem; display: inline-block; animation: updTruck 1s ease-in-out infinite alternate; }
+.upd--truck small { opacity: .8; } .upd--truck small b { color: #3ddc84; }
+.wh-why { display: grid; gap: 6px; padding: var(--space-md); margin-bottom: var(--space-sm); border: 1px solid color-mix(in oklab, var(--money) 35%, transparent); }
+.wh-why h4 { margin: 0; } .wh-why ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 4px; font-size: var(--text-sm); } .wh-why p { margin: 0; }
+.upd--truck > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; }

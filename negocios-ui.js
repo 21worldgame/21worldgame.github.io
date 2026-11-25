@@ -73,13 +73,26 @@ export function shopHTML() {
     + block('markets', 'Clientes, ticket médio, mercadoria, perdas, funcionários e aluguel: preço baixo atrai gente, preço alto espanta.')
     + Object.entries(NG.SECTORS).map(([k, S]) => block(k, `${S.desc} Primeiro a marca (única no jogo), depois as unidades na aba negócios.`)).join('');
 }
+// galpão: o que ele resolve, em números do próprio jogador
+const CROP_SC = { soja: 60, milho: 100, cafe: 30 };   // sacas por hectare (logic.js CROPS)
 export function whHTML() {
   const s = G.S; NG.ensure(s);
-  const used = NG.tons(s), cap = NG.capacity(s);
-  return `<div class="glass wh-bar"><div><b>armazém: ${int(used)} t de ${int(cap)} t</b><span class="bar"><i style="transform:scaleX(${Math.min(1, used / cap).toFixed(3)})"></i></span></div>
+  const used = NG.tons(s), cap = NG.capacity(s), free = Math.max(0, cap - used), pc = s.prices?.cafe || 0;
+  // já perdeu: cada venda "sem lugar no armazém" saiu com 15% de desconto (o lançamento mostra os 85% recebidos)
+  const lostLog = (s.log || []).filter(e => /^sem lugar no armazém/.test(e.txt || '')), lost = lostLog.reduce((t, e) => t + (Number(e.val) || 0) / 0.85 * 0.15, 0);
+  const comingT = (s.lands || []).filter(l => l.crop && !l.leasedOut && CROP_SC[l.crop.type]).reduce((t, l) => t + l.ha * CROP_SC[l.crop.type] * 60 / 1000, 0);
+  const why = `<div class="glass wh-why"><h4>📦 por que ter galpão?</h4><ul>
+      <li><b>Sem espaço, você perde 15%:</b> o que passar de ${int(cap)} t na colheita é vendido na hora, pelo preço do dia e com desconto.${lost > 0 ? ` <span class="bad">Você já perdeu ≈ ${brl(lost)} assim (últimos lançamentos do livro-caixa).</span>` : ''}</li>
+      <li><b>Vende quando quiser:</b> o preço da soja, do milho e do café muda todo mês. Com a safra guardada, você espera o preço bom.</li>
+      <li><b>Contratos de exportação:</b> as tradings pagam de 3% a 8% acima do mercado, mas só aceitam sacas que estejam no seu armazém.</li>
+      <li><b>Laranja também:</b> as caixas do pomar ocupam o mesmo armazém.</li>
+      <li><b>É patrimônio:</b> conta no seu patrimônio e revende por 80% do que pagou. Galpão novo fica mais caro conforme o mundo avança.</li></ul>
+      ${comingT ? `<p class="small">Suas lavouras plantadas vão colher <b>≈ ${int(comingT)} t</b> (≈ ${int(comingT * 1000 / 60)} sacas). Livre agora: <b class="${comingT > free ? 'bad' : 'good'}">${int(free)} t</b>${comingT > free ? ` · faltam ≈ ${int(comingT - free)} t: sem galpão, essa parte sai com desconto` : ' · cabe tudo'}.</p>` : ''}</div>`;
+  return `${why}<div class="glass wh-bar"><div><b>armazém: ${int(used)} t de ${int(cap)} t</b><span class="bar"><i style="transform:scaleX(${Math.min(1, used / cap).toFixed(3)})"></i></span></div>
     <p class="small muted">Grátis: ${NG.FREE_TONS} t${s.biz.legacy ? ` + ${int(s.biz.legacy)} t do seu depósito antigo` : ''}. Colheita ou compra além do espaço é vendida na hora com 15% de desconto. Os galpões ficam mais caros conforme o mundo avança.</p></div>
     <div class="biz-grid">${Object.entries(NG.WAREHOUSES).map(([id, w]) => `<article class="shopcard"><div class="shopcard__photo" style="--img:url(assets/wh-${id}.webp)"><span class="shopcard__badge">${int(w.cap)} toneladas</span></div>
-      <div class="shopcard__body"><h4>${w.label}</h4><p class="small muted">guarda ~${int(w.cap * 1000 / 60)} sacas · manutenção ${brl(NG.whPrice(id, s.month) * NG.WH_UPKEEP)}/mês · o preço sobe com o tempo</p>
+      <div class="shopcard__body"><h4>${w.label}</h4><p class="small muted">guarda ~${int(w.cap * 1000 / 60)} sacas de grão ou ~${int(w.cap * 1000 / 40.8)} caixas de laranja · manutenção ${brl(NG.whPrice(id, s.month) * NG.WH_UPKEEP)}/mês</p>
+      ${pc ? `<p class="small good">Numa safra de café que encha o galpão, evita ≈ ${brl(w.cap * 1000 / 60 * pc * 0.15)} de desconto na venda forçada.</p>` : ''}
       <div class="shopcard__buy"><span class="shopcard__price">${brl(NG.whPrice(id, s.month))}</span><button class="btn btn--gold" data-biz="buywh" data-id="${id}">comprar galpão</button></div></div></article>`).join('')}</div>
     ${s.biz.wh.length ? `<h4>seus galpões</h4><ul class="biz-list">${s.biz.wh.map(w => `<li><span>${NG.WAREHOUSES[w.type].label}</span><b>${brl(w.value)}</b><button class="btn btn--glass btn--sm" data-biz="sellwh" data-id="${w.id}">vender (${brl(w.value * 0.8)})</button></li>`).join('')}</ul>` : ''}`;
 }
