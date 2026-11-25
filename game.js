@@ -299,7 +299,8 @@ function eta(monthsLeft, done = '') {
   let ms = 0; try { const w = Live.world(); ms = W.msUntil(w, Live.now(), monthsLeft); } catch { return ''; }
   return `<span class="eta" data-until="${Math.round(Live.now() + ms)}">⏳ ${etaTxt(ms)}</span>`;
 }
-function etaTxt(ms) { let mo = ms / 300000; try { const n = Live.now(); mo = W.monthsIn(Live.world(), n, n + ms); } catch {} const d = Math.max(1, Math.ceil(mo * 30 - 1e-6));   // antes: tempo real ÷ duração do mês de agora (de madrugada dava 122 mil dias) const mo2 = Math.round(d / 30), y = Math.round(d / 360), txt = d < 60 ? `${d} ${d === 1 ? 'dia' : 'dias'}` : d < 720 ? `${mo2} meses` : `${y} anos`;   // prazo longo: meses ou anos do mundo
+function etaTxt(ms) { let mo = ms / 300000; try { const n = Live.now(); mo = W.monthsIn(Live.world(), n, n + ms); } catch {} const d = Math.max(1, Math.ceil(mo * 30 - 1e-6));   // antes: tempo real ÷ duração do mês de agora (de madrugada dava 122 mil dias)
+  const mo2 = Math.round(d / 30), y = Math.round(d / 360), txt = d < 60 ? `${d} ${d === 1 ? 'dia' : 'dias'}` : d < 720 ? `${mo2} meses` : `${y} anos`;   // prazo longo: meses ou anos do mundo
   return `faltam ${txt} · ~${realTxt(ms)}`; }
 G.eta = eta; G.monthFrac = monthFrac;
 setInterval(() => { for (const el of document.querySelectorAll('.eta[data-until]')) { const ms = Number(el.dataset.until) - Live.now(); el.textContent = ms > 0 ? `⏳ ${etaTxt(ms)}` : '✅ pronto na virada do mês'; } }, 5000);
@@ -840,10 +841,16 @@ function openProfile(pid, fetched) {
   const rate = st.hands ? Math.round((st.wins / st.hands) * 100) : 0;
   const xp = me ? `<div class="pf__xp"><span class="small">nível ${p.level}, ${S().xp} de ${P.xpNeed(S().level)} XP</span><span class="bar"><i style="transform:scaleX(${S().xp / P.xpNeed(S().level)})"></i></span></div>` : '';
   const X = profileExtra(p, me);
-  $('#pf').innerHTML = `
+  // nº 1 do ranking: perfil de luxo (moldura dourada, coroa e faixa); some sozinho quando perde o 1º lugar
+  const top1 = (() => { try { const r = G.rankRows?.(1)?.[0]; return !!r && (r.pid === pid || (me && r.pid === 'me')); } catch { return false; } })();
+  $('#dlg-profile').classList.toggle('is-top1', top1);
+  // CEO: uma faixa por empresa que a pessoa tem agora (sai do que ela possui: comprou aparece, vendeu some; vale para empresa nova também)
+  const ceo = [...new Map((p.biz || []).map(b => [b.brand, NG.LISTS[b.cat]?.[b.brand]?.name || b.brand])).values()];
+  $('#pf').innerHTML = `${top1 ? '<div class="pf__crown" aria-label="número 1 do ranking"><span>👑</span><b>nº 1 do 21 World</b><small>a maior fortuna do mundo</small></div>' : ''}
     <div class="pf__head">
       <span class="pf__avatar is-full"${prTop ? ` data-prest="${prTop.id}"` : ''}>${avatarSVG(p.look, { label: p.name, full: true })}</span>
       <div><h2 id="pf-name">${esc(p.name)}${prTop ? ` <span class="prest-badge prest-badge--${prTop.id}" title="${esc(prTop.trophy)}">${prTop.icon}</span>` : ''}</h2><p><span class="tag tag--gold">nível ${p.level}</span> <span class="tag ${prTop ? 'tag--prest' : 'tag--dark'}">${esc(prTop ? prTop.title : p.rank)}</span>${p.pioneer ? ' <span class="tag tag--gold" title="jogou no começo do 21 World: só quem estava lá tem">🌱 pioneiro</span>' : ''}</p>
+      ${ceo.length ? `<p class="pf__ceo">${ceo.slice(0, 6).map(n => `<span class="tag tag--ceo" title="dono da empresa">💼 CEO · ${esc(n)}</span>`).join(' ')}${ceo.length > 6 ? ` <span class="tag tag--dark">+${ceo.length - 6} empresas</span>` : ''}</p>` : ''}
       <p class="big">${brl(p.worth)}</p><p class="muted small">patrimônio</p>${xp}${p.bio ? `<p class="pf__bio">“${esc(p.bio)}”</p>` : ''}</div>
     </div>
     ${pfTabs(p, me, X, st, rate)}
@@ -1475,7 +1482,7 @@ safe('investimentos', () => TR.initTrader());
 safe('tela', () => render());
 safe('salão', () => C.initCasino());
 if (bootErrs.length) { window.__bootErrs = bootErrs; try { localStorage.setItem('21world.lastBootError', JSON.stringify({ at: Date.now(), v: APP_VERSION, errs: bootErrs })); } catch {} setTimeout(() => say(`Uma parte do jogo não carregou (${bootErrs[0].slice(0, 120)}). Mande um print para o suporte.`, true), 1500); }
-// login: sem Supabase configurado segue local; com ele, a tela de entrada aparece antes de tudo
+// login: sem servidor configurado segue local; com ele, a tela de entrada aparece antes de tudo
 Auth.boot().then(async st => {
   if (st === 'gate' || st === 'recovery') return;
   const live = await Live.start().catch(() => 'off');
@@ -1707,7 +1714,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 236;
+const APP_VERSION = 237;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

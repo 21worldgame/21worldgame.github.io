@@ -3812,3 +3812,19 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .pe-item__price { font: 700 var(--text-md, 1rem)/1 var(--font-display, inherit); color: var(--gold); }
 .pe-item__btns { display: flex; gap: 4px; }
 @media (max-width: 520px) { .pe-item { grid-template-columns: 48px 1fr; } .pe-item__img { width: 48px; height: 48px; } }
+
+/* perfil: CEO das empresas e o nº 1 do ranking em versão de luxo (v237) */
+.pf__ceo { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag--ceo { background: linear-gradient(135deg, #1f2937, #0b1220); color: #f5d27a; box-shadow: inset 0 0 0 1px #f5d27a88; text-transform: none; letter-spacing: .01em; }
+#dlg-profile.is-top1 { background: radial-gradient(120% 80% at 50% 0%, #3a2a08 0%, #140e04 45%, #07060a 100%); border: 2px solid transparent; background-clip: padding-box; box-shadow: 0 0 0 2px #e9c46a, 0 0 60px 6px #e9c46a55, 0 30px 80px #000c; }
+#dlg-profile.is-top1::before { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; background: linear-gradient(115deg, transparent 30%, #fff3c41f 45%, transparent 60%) no-repeat; background-size: 250% 100%; animation: pfShine 5s linear infinite; }
+#dlg-profile.is-top1 .pf__avatar { box-shadow: 0 0 0 3px #f5d27a, 0 0 36px 8px #e9c46a88; background: radial-gradient(circle at 50% 30%, #6b4f12, #1a1206); }
+#dlg-profile.is-top1 #pf-name { background: linear-gradient(90deg, #f9e3a3, #e9c46a 40%, #fff6d6 55%, #c9962e); -webkit-background-clip: text; background-clip: text; color: transparent; }
+#dlg-profile.is-top1 .big { color: #f5d27a; text-shadow: 0 0 18px #e9c46a77; }
+.pf__crown { display: grid; justify-items: center; gap: 2px; margin: -4px 0 var(--space-sm); padding: var(--space-xs); border-radius: 14px; background: linear-gradient(90deg, transparent, #e9c46a26, transparent); border-top: 1px solid #e9c46a66; border-bottom: 1px solid #e9c46a66; text-align: center; }
+.pf__crown span { font-size: 2rem; line-height: 1; filter: drop-shadow(0 0 10px #f5d27a); animation: pfCrown 3s ease-in-out infinite; }
+.pf__crown b { color: #f5d27a; letter-spacing: .12em; text-transform: uppercase; font-size: var(--text-sm); }
+.pf__crown small { color: #e9d9a8; opacity: .8; }
+@keyframes pfShine { from { background-position: 150% 0; } to { background-position: -100% 0; } }
+@keyframes pfCrown { 50% { transform: translateY(-3px) rotate(-4deg); } }
+@media (prefers-reduced-motion: reduce) { #dlg-profile.is-top1::before, .pf__crown span { animation: none; } }
