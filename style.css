@@ -3846,3 +3846,4 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .sf-fit__bar .is-ready { background: var(--money); } .sf-fit__bar .is-field { background: repeating-linear-gradient(45deg, var(--hud-accent), var(--hud-accent) 4px, color-mix(in oklab, var(--hud-accent) 60%, transparent) 4px, color-mix(in oklab, var(--hud-accent) 60%, transparent) 8px); }
 .sf-calc { display: grid; gap: 6px; padding: var(--space-sm); border-radius: 14px; background: var(--color-paper-3); border: 1px dashed var(--color-rule-2); }
 .sf-calc .row { gap: 6px; } .sf-calc input { max-width: 12rem; } .sf-calc p { margin: 0; }
+.sf-arm { display: block; opacity: .9; }

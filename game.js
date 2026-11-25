@@ -628,7 +628,7 @@ function sfOut(s) {
   const k = CTR.CROP_OF[sfCalc.g], c = L.CROPS[k], perHa = L.plantCost(s, k, 1), ha = Math.floor((Number(sfCalc.v) || 0) / perHa), sacas = ha * c.yield;
   const free = (s.lands || []).filter(l => l.own && !l.crop && !l.leasedOut && !l.orchard && !l.cane).reduce((t, l) => t + l.ha, 0);
   return ha < 1 ? `Com ${brl(Number(sfCalc.v) || 0)} não dá para plantar 1 hectare de ${CTR.GOODS[sfCalc.g].label} (${brl(perHa)} por hectare).`
-    : `${brl(Number(sfCalc.v))} plantam <b>${int(ha)} ha</b> de ${CTR.GOODS[sfCalc.g].label} (${brl(perHa)}/ha) e rendem <b class="good">≈ ${int(sacas)} sacas</b> (de ${int(sacas * CTR.LO)} a ${int(sacas * CTR.HI)} conforme o clima), colhidas em <b>${c.months} meses</b>. Valem ≈ ${brl(sacas * (s.prices?.[sfCalc.g] || 0))} no preço de hoje. ${free >= ha ? `Você tem ${int(free)} ha livres de terra própria.` : `<span class="bad">Você tem só ${int(free)} ha livres de terra própria: compre ou libere terra.</span>`}`;
+    : `${brl(Number(sfCalc.v))} plantam <b>${int(ha)} ha</b> de ${CTR.GOODS[sfCalc.g].label} (${brl(perHa)}/ha) e rendem <b class="good">≈ ${int(sacas)} sacas</b> (de ${int(sacas * CTR.LO)} a ${int(sacas * CTR.HI)} conforme o clima), colhidas em <b>${c.months} meses</b> (só contam para contrato se couberem no armazém: hoje cabem mais ${int(NG.room(s, sfCalc.g))} sacas). Valem ≈ ${brl(sacas * (s.prices?.[sfCalc.g] || 0))} no preço de hoje. ${free >= ha ? `Você tem ${int(free)} ha livres de terra própria.` : `<span class="bad">Você tem só ${int(free)} ha livres de terra própria: compre ou libere terra.</span>`}`;
 }
 document.addEventListener('input', e => { if (e.target.id !== 'sf-v' && e.target.id !== 'sf-g') return; sfCalc.v = Number($('#sf-v')?.value) || 0; sfCalc.g = $('#sf-g')?.value || 'cafe'; const o = $('#sf-out'); if (o) o.innerHTML = sfOut(S()); });
 document.addEventListener('change', e => { if (e.target.id === 'sf-g') { sfCalc.g = e.target.value; const o = $('#sf-out'); if (o) o.innerHTML = sfOut(S()); } });
@@ -639,11 +639,14 @@ function renderContratos(s) {
   const left = c => c.due - s.month, gl = g => CTR.GOODS[g].label, FC = CTR.forecast(s), IMG = { soja: 'farm-soja', milho: 'farm-colheita', cafe: 'farm-cafe' };
   // barra de quanto o contrato dá para cumprir até o prazo: verde = armazém, amarelo = lavoura que colhe a tempo
   const fitBar = (c, ml) => { const F = CTR.fit(s, c, ml), a = Math.min(1, F.ready / c.qty), b = Math.min(1 - a, F.field / c.qty);
-    const verdict = F.ready >= c.qty ? '<b class="good">✔ já tem tudo no armazém</b>' : F.ok ? `<b class="good">✔ dá para cumprir</b> <small class="muted">${F.safe ? '' : '(se o clima ajudar)'}</small>`
+    const t1 = v => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+    const arm = F.ready >= c.qty ? '' : F.spaceShort ? `<small class="sf-arm bad">📦 <b>falta armazém:</b> o contrato precisa de ${t1(F.needT)} t e só cabem mais ${int(F.room)} sacas (${t1(F.roomT)} t livres de ${t1(F.capT)} t). Compre ou alugue um galpão na aba negócios: colheita sem espaço é vendida na hora com desconto e <b>não conta</b> para o contrato.</small>`
+      : `<small class="sf-arm">📦 para entregar, as sacas precisam estar no seu armazém: este contrato ocupa ${t1(F.needT)} t e você tem ${t1(F.roomT)} t livres.</small>`;
+    const verdict = F.ready >= c.qty ? '<b class="good">✔ já tem tudo no armazém</b>' : F.spaceShort && F.ready + F.field + F.lost >= c.qty ? '<b class="bad">⚠️ a colheita dá, mas não cabe no armazém</b>' : F.ok ? `<b class="good">✔ dá para cumprir</b> <small class="muted">${F.safe ? '' : '(se o clima ajudar)'}</small>`
       : F.inTime ? `<b class="bad">faltam ≈ ${int(F.need)} sacas</b> <small class="muted">plante ≈ ${int(F.ha)} ha de ${CTR.GOODS[c.good].label} (${brl(F.cost)}): colhe em ${F.growMonths} meses</small>`
       : `<b class="bad">faltam ≈ ${int(F.need)} sacas</b> <small class="muted">${CTR.GOODS[c.good].label} leva ${F.growMonths} meses para colher: só com o que já está plantado ou no armazém</small>`;
     return `<div class="sf-fit"><span class="sf-fit__bar" aria-hidden="true"><i class="is-ready" style="width:${(a * 100).toFixed(1)}%"></i><i class="is-field" style="width:${(b * 100).toFixed(1)}%"></i></span>
-      <small>até o prazo você terá <b>${int(F.have)}</b> de ${int(c.qty)} sacas (${int(F.ready)} no armazém${F.field ? ` + ≈ ${int(F.field)} da lavoura` : ''})</small>${verdict}</div>`; };
+      <small>até o prazo você terá <b>${int(F.have)}</b> de ${int(c.qty)} sacas (${int(F.ready)} no armazém${F.field ? ` + ≈ ${int(F.field)} da lavoura` : ''}${F.lost ? `; ≈ ${int(F.lost)} sacas da lavoura não cabem no armazém e serão vendidas na colheita` : ''})</small>${verdict}${arm}</div>`; };
   const panel = Object.entries(FC).filter(([g, f]) => f.ready || f.fields.length || s.contracts.some(c => c.good === g)).map(([g, f]) => `<article class="sf-card">
       <img src="assets/${IMG[g]}.webp" alt="" loading="lazy"><div class="sf-card__body"><h5>${gl(g)}</h5>
       <p class="sf-num"><b>${int(f.ready)}</b><small>sacas prontas para exportar</small></p>
@@ -660,7 +663,7 @@ function renderContratos(s) {
       <p>Compra <b>${int(o.qty)} sacas de ${gl(o.good)}</b> a <b>${brl(o.price)}</b> a saca, entrega em até <b>${o.months} meses</b>.</p>
       <p class="small muted">total ${brl(o.qty * o.price)} · se não entregar: multa de ${brl(o.qty * o.price * CTR.FINE)}</p>${fitBar(o, o.months)}
       <button class="btn btn--glass btn--sm" data-act="ctx-accept" data-id="${esc(o.id)}" ${s.contracts.length >= CTR.MAX_ACTIVE ? 'disabled' : ''}>fechar contrato</button></article>`).join('');
-  box.innerHTML = `<section class="sf"><div class="sf__head"><h4>📊 sua safra para exportação</h4><small class="muted">só conta produção própria (colhida por você). Previsão de ano normal; seca ou geada podem derrubar a colheita.</small></div>
+  box.innerHTML = `<section class="sf"><div class="sf__head"><h4>📊 sua safra para exportação</h4><small class="muted">só conta produção própria (colhida por você) e guardada no seu armazém: colheita que não cabe é vendida na hora e não serve para contrato. Previsão de ano normal; seca ou geada podem derrubar a colheita.</small></div>
     ${panel ? `<div class="sf__grid">${panel}</div>` : '<p class="small muted">Você ainda não tem soja, milho ou café colhidos nem plantados. Plante na aba terras: cada opção mostra quantas sacas o dinheiro vai render.</p>'}
     <div class="sf-calc"><b>🧮 quanto o seu dinheiro rende em sacas?</b><div class="row"><label class="visually-hidden" for="sf-v">valor para plantar</label><input class="input" id="sf-v" type="number" min="0" step="10000" inputmode="numeric" value="${sfCalc.v}">
       <label class="visually-hidden" for="sf-g">produto</label><select class="input" id="sf-g">${Object.keys(CTR.GOODS).map(g => `<option value="${g}"${sfCalc.g === g ? ' selected' : ''}>${gl(g)}</option>`).join('')}</select></div><p class="small" id="sf-out">${sfOut(s)}</p></div></section>${mine ? `<h4>seus contratos</h4><div class="cards cards--3">${mine}</div>` : ''}<h4>propostas deste mês</h4><div class="cards cards--3">${offs || '<p class="muted small">Você já fechou todas as propostas deste mês. Novas chegam no próximo mês do mundo.</p>'}</div>`;
@@ -1310,7 +1313,7 @@ A carta vale ${brl(CD.value(c))}, mas a loja paga só ${Math.round(CD.SELL * 100
   'ctx-accept'(id) { const s = S(), o = CTR.offers(s.month || 1, s.prices).find(x => x.id === id);
     if (!o) return say('Essa proposta acabou: o mês virou e chegaram propostas novas. Confira a lista de novo.', true);
     // confirma com os números de verdade (na virada do mês a lista troca embaixo do dedo: o Buu fechou 2.250 sacas querendo 750)
-    if (!confirm(`Fechar contrato com a ${o.trader}?\n\n${int(o.qty)} sacas de ${CTR.GOODS[o.good].label} a ${brl(o.price)} a saca (total ${brl(o.qty * o.price)})\nEntrega em até ${o.months} meses. Sem entregar: multa de ${brl(o.qty * o.price * CTR.FINE)}.\nDá para desistir sem multa até ${CTR.FREE_QUIT} meses depois de fechar.`)) return;
+    if (!confirm(`Fechar contrato com a ${o.trader}?\n\n${int(o.qty)} sacas de ${CTR.GOODS[o.good].label} a ${brl(o.price)} a saca (total ${brl(o.qty * o.price)})\nEntrega em até ${o.months} meses. Sem entregar: multa de ${brl(o.qty * o.price * CTR.FINE)}.\nDá para desistir sem multa até ${CTR.FREE_QUIT} meses depois de fechar.\n\n📦 Para entregar, as sacas precisam estar no SEU ARMAZÉM (${(o.qty * 0.06).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} t). Hoje cabem mais ${int(CTR.fit(s, o).room)} sacas. Colheita sem espaço é vendida na hora e não conta para o contrato.`)) return;
     if (CTR.offers(S().month || 1, S().prices).every(x => x.id !== id)) return say('O mês virou enquanto você confirmava: essa proposta acabou. Confira as novas.', true);
     const err = CTR.accept(s, o); if (err) return say(err[0].toUpperCase() + err.slice(1), true);
     note(`contrato fechado com a ${o.trader}: ${o.qty} sacas de ${CTR.GOODS[o.good].label} a R$ ${o.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`); say(`Contrato fechado com a ${o.trader}. Entregue em até ${o.months} meses.`); award('contract'); },
@@ -1753,7 +1756,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 247;
+const APP_VERSION = 248;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

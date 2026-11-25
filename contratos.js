@@ -3,6 +3,7 @@
 // Só vale produção própria (rastreabilidade): sacas compradas no mercado não podem ser entregues (senão era só comprar e revender).
 // As ofertas mudam a cada mês do mundo e são as mesmas para todos os jogadores.
 import { CROPS, RENT_SHARE, plantCost } from './logic.js';
+import { room, capacity, UNIT_KG } from './negocios.js';
 export const TRADERS = ['Cargil 21', 'Bungê', 'Cofco China 21', 'Luis Dreifus', 'Amaggy Grãos'];
 export const GOODS = { soja: { label: 'soja', min: 2000, max: 24000, step: 500 }, milho: { label: 'milho', min: 3000, max: 40000, step: 1000 }, cafe: { label: 'café', min: 150, max: 2400, step: 50 } };
 export const PREM = [0.03, 0.08], MONTHS = [3, 6], FINE = 0.1, MAX_ACTIVE = 3, OFFERS = 3, FREE_QUIT = 2;   // desistir sem multa até 2 meses depois de fechar (clique errado)
@@ -64,11 +65,16 @@ export function forecast(s) {
   for (const g of Object.keys(out)) out[g].fields.sort((a, b) => a.left - b.left);
   return out;
 }
-// quanto do contrato dá para cumprir até o prazo: armazém + lavouras que colhem antes do vencimento
+// quanto do contrato dá para cumprir até o prazo: armazém + lavouras que colhem antes do vencimento.
+// Só conta o que CABE no armazém: colheita sem espaço é vendida na hora (negocios.enforce) e não serve para o contrato.
+// ponytail: espaço livre de hoje, sem descontar outras colheitas/contratos que vão disputar o mesmo galpão
 export function fit(s, c, monthsLeft = c.months) {
-  const f = forecast(s)[c.good], by = f.fields.filter(x => x.left <= monthsLeft).reduce((t, x) => t + x.mid, 0), have = f.ready + by;
+  const f = forecast(s)[c.good], by = f.fields.filter(x => x.left <= monthsLeft).reduce((t, x) => t + x.mid, 0);
+  const free = room(s, c.good), fits = Math.min(by, free), have = f.ready + fits;
   const crop = CROPS[CROP_OF[c.good]], need = Math.max(0, c.qty - have), ha = need ? Math.ceil(need / crop.yield) : 0;
-  return { ready: f.ready, field: by, have, need, ha, cost: ha ? plantCost(s, CROP_OF[c.good], ha) : 0, growMonths: crop.months, inTime: crop.months <= monthsLeft, ok: have >= c.qty, safe: f.ready + Math.round(by * LO) >= c.qty };
+  const kg = UNIT_KG[c.good] || 60, spaceShort = Math.max(0, c.qty - f.ready - free);   // sacas do contrato que não têm onde ficar
+  return { ready: f.ready, field: fits, lost: by - fits, have, need, ha, cost: ha ? plantCost(s, CROP_OF[c.good], ha) : 0, growMonths: crop.months, inTime: crop.months <= monthsLeft, ok: have >= c.qty, safe: f.ready + Math.min(free, Math.round(by * LO)) >= c.qty,
+    room: free, roomT: free * kg / 1000, capT: capacity(s), needT: c.qty * kg / 1000, spaceShort, spaceShortT: spaceShort * kg / 1000 };
 }
 // fechamento do mês: contrato vencido sem entrega paga multa de 10% do valor
 export function monthly(s) {
