@@ -5,7 +5,7 @@
 -- 2) Conta voltada no tempo pelo administrador: aparelho que ainda está com o estado de antes (adminRestoreAt menor)
 --    não grava por cima. O jogo dele recebe a recusa, pega a cópia do servidor e recarrega.
 -- Para subir a versão mínima depois: trocar o número em min_app_version() e rodar de novo.
-create or replace function public.min_app_version() returns int language sql immutable as $$ select 207 $$;
+create or replace function public.min_app_version() returns int language sql immutable as $$ select 225 $$;
 
 create or replace function public.saves_min_version() returns trigger language plpgsql as $$
 begin
