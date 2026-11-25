@@ -243,7 +243,7 @@ async function openPlayer(id) {
   const [{ data: save }, { data: grants }, hist] = await Promise.all([
     sb.from('saves').select('data, updated_at').eq('user_id', id).maybeSingle(),
     sb.from('admin_grants').select('id, kind, amount, note, created_at, applied_at').eq('user_id', id).order('created_at', { ascending: false }).limit(20),
-    sb.from('save_history').select('*').eq('user_id', id).order('saved_at', { ascending: false }).limit(260).then(r => (r.error && /column/.test(r.error.message) ? sb.from('save_history').select('id, saved_at, why, money, lands').eq('user_id', id).order('saved_at', { ascending: false }).limit(260) : r)),
+    sb.from('save_history').select('id, saved_at, why, money, lands, chips, level, month, worth').eq('user_id', id).order('saved_at', { ascending: false }).limit(260).then(r => (r.error && /column/.test(r.error.message) ? sb.from('save_history').select('id, saved_at, why, money, lands').eq('user_id', id).order('saved_at', { ascending: false }).limit(260) : r)),
   ]);
   const s = save?.data || {};
   const facts = [['dinheiro', brl(s.money)], ['fichas', int(s.chips)], ['nível', s.level ?? '—'], ['mês do jogo', s.month ?? '—'],
@@ -295,7 +295,9 @@ async function openPlayer(id) {
       ${(hist.data || []).map(h => `<tr class="${/administrador|restaurar/.test(h.why) ? 'ad-mark' : ''}"><td>${when(h.saved_at)}</td><td>${esc(WHY_TXT[h.why] || h.why)}</td><td class="num">${brl(h.money)}</td><td class="num">${h.chips != null ? int(h.chips) : '—'}</td><td class="num">${h.worth != null ? brl(h.worth) : '—'}</td><td class="num">${int(h.lands)}</td><td class="num">${h.level ?? '—'}</td>
         <td><button class="btn btn--glass btn--sm" data-restore="${h.id}" data-when="${esc(when(h.saved_at))}" data-money="${esc(brl(h.money))}">voltar para esta cópia</button></td></tr>`).join('') || '<tr><td colspan="8" class="muted">Nenhuma cópia guardada ainda.</td></tr>'}
       </tbody></table></div>`}
-    ${ledger(s)}`;
+    ${ledger(s)}
+    <section class="ad-full" id="ap-full"><button type="button" class="btn btn--gold" data-full-ledger="${esc(id)}">📒 abrir o livro-caixa completo (todo o histórico)</button>
+      <p class="muted small">O save guarda só os últimos 200 lançamentos. Aqui vem tudo o que o jogo registrou dele desde 23/11/26, com busca, filtros, caixa depois de cada lançamento e planilha.</p></section>`;
   const d = $('#ad-player'); if (!d.open) d.showModal();
 
   $('#ap-grant').onsubmit = async e => {
@@ -468,6 +470,55 @@ document.addEventListener('click', async e => {
   await log('restore_land', r.user_id, { land: r.land }); toast('Terra devolvida. O jogador recebe na próxima vez que abrir o jogo.'); loadLands();
 });
 
+// ---------- livro-caixa completo: tudo do diário (guardado 1 ano), lido só quando o admin pede ----------
+let FL = null;
+const fold = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const dtm = t => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const flName = k => GROUPS.find(x => x[0] === k)?.[1] || k;
+async function loadFull(id) {
+  const box = $('#ap-full'); box.innerHTML = '<p class="muted">Lendo todo o histórico...</p>';
+  try {
+    const rows = (await pageAll(() => sb.from('diario').select('id, at, m, kind, txt, val, money, tab').eq('user_id', id).in('kind', ['log', 'gap']))).reverse();   // mais novo primeiro
+    for (const r of rows) r.g = r.kind === 'gap' ? 'gap' : groupOf(String(r.txt || ''));
+    FL = { id, rows, shown: 500 };
+    const cats = [...new Set(rows.map(r => r.g))].sort((a, b) => flName(a).localeCompare(flName(b)));
+    box.innerHTML = `<h3>📒 livro-caixa completo <small class="muted">${int(rows.length)} lançamentos${rows.length ? ` · de ${dtm(rows.at(-1).at)} a ${dtm(rows[0].at)}` : ''}</small></h3>
+      <div class="row ad-full__f"><input class="input" id="fl-q" type="search" placeholder="buscar (ex.: pix, café, federal)">
+        <select class="input" id="fl-g"><option value="">todas as categorias</option>${cats.map(k => `<option value="${esc(k)}">${esc(k === 'gap' ? '⚠️ dinheiro sem lançamento' : flName(k))}</option>`).join('')}</select>
+        <select class="input" id="fl-t"><option value="">entradas e saídas</option><option value="in">só entradas</option><option value="out">só saídas</option><option value="big">só acima de R$ 50 mil</option></select>
+        <label class="small">de <input class="input" id="fl-a" type="date"></label><label class="small">até <input class="input" id="fl-b" type="date"></label>
+        <button type="button" class="btn btn--glass btn--sm" data-fl-csv>baixar planilha</button></div>
+      <div id="fl-out"></div>`;
+    drawFull();
+  } catch (e) { box.innerHTML = ''; fail(e, 'ler o livro-caixa completo'); }
+}
+function fullRows() {
+  const q = fold($('#fl-q')?.value), g = $('#fl-g')?.value || '', t = $('#fl-t')?.value || '', a = $('#fl-a')?.value, b = $('#fl-b')?.value;
+  const A = a ? Date.parse(`${a}T00:00:00-03:00`) : -Infinity, B = b ? Date.parse(`${b}T23:59:59-03:00`) : Infinity;
+  return FL.rows.filter(r => { const v = Number(r.val) || 0, at = Date.parse(r.at);
+    return (!q || fold(r.txt).includes(q)) && (!g || r.g === g) && (!t || (t === 'in' ? v > 0 : t === 'out' ? v < 0 : Math.abs(v) >= 50000)) && at >= A && at <= B; });
+}
+function drawFull() {
+  const out = $('#fl-out'); if (!out || !FL) return;
+  const R = fullRows(), inn = R.reduce((t, r) => t + Math.max(0, Number(r.val) || 0), 0), outv = R.reduce((t, r) => t + Math.min(0, Number(r.val) || 0), 0), by = {};
+  for (const r of R) { const v = Number(r.val) || 0, c = (by[r.g] ??= { n: 0, in: 0, out: 0 }); c.n++; if (v > 0) c.in += v; else c.out += v; }
+  out.innerHTML = `<div class="ad-tiles ad-tiles--sm"><div class="ad-tile"><span>lançamentos</span><strong>${int(R.length)}</strong></div><div class="ad-tile"><span>entrou</span><strong>${brl(inn)}</strong></div><div class="ad-tile"><span>saiu</span><strong>${brl(outv)}</strong></div><div class="ad-tile"><span>saldo</span><strong>${brl(inn + outv)}</strong></div></div>
+    <details><summary>por categoria</summary><div class="ad-tablewrap"><table><thead><tr><th>categoria</th><th class="num">lançamentos</th><th class="num">entrou</th><th class="num">saiu</th><th class="num">saldo</th></tr></thead><tbody>
+    ${Object.entries(by).sort((a, b) => (b[1].in - b[1].out) - (a[1].in - a[1].out)).map(([k, v]) => `<tr><td>${esc(k === 'gap' ? '⚠️ dinheiro sem lançamento' : flName(k))}</td><td class="num">${int(v.n)}</td><td class="num">${brl(v.in)}</td><td class="num">${brl(v.out)}</td><td class="num">${brl(v.in + v.out)}</td></tr>`).join('')}</tbody></table></div></details>
+    <div class="ad-tablewrap ad-ledger"><table><thead><tr><th>quando</th><th>mês</th><th>categoria</th><th>lançamento</th><th class="num">valor</th><th class="num">caixa depois</th></tr></thead><tbody>
+    ${R.slice(0, FL.shown).map(r => `<tr class="${r.kind === 'gap' ? 'ad-mark' : ''}"><td>${dtm(r.at)}</td><td>${r.m ?? '—'}</td><td>${esc(r.kind === 'gap' ? '⚠️ sem lançamento' : flName(r.g))}</td><td>${esc(r.txt)}</td><td class="num ${r.val < 0 ? 'neg' : ''}">${r.val ? brl(r.val) : ''}</td><td class="num">${r.money != null ? brl(r.money) : '—'}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">Nada com esses filtros.</td></tr>'}</tbody></table></div>
+    ${R.length > FL.shown ? `<p><button type="button" class="btn btn--glass btn--sm" data-fl-more>mostrar mais (${int(R.length - FL.shown)} restantes)</button></p>` : ''}
+    <p class="muted small">"caixa depois" é o caixa no momento em que o jogo enviou o lançamento (lançamentos do mesmo envio mostram o mesmo caixa).</p>`;
+}
+document.addEventListener('input', e => { if (FL && e.target.closest?.('.ad-full__f')) { FL.shown = 500; drawFull(); } });
+document.addEventListener('click', e => {
+  const f = e.target.closest('[data-full-ledger]'); if (f) return loadFull(f.dataset.fullLedger);
+  if (e.target.closest('[data-fl-more]')) { FL.shown += 500; return drawFull(); }
+  if (e.target.closest('[data-fl-csv]') && FL) {
+    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, csv = ['quando;mês;categoria;lançamento;valor;caixa depois', ...fullRows().map(r => [dtm(r.at), r.m ?? '', r.kind === 'gap' ? 'sem lançamento' : flName(r.g), r.txt, r.val ?? 0, r.money ?? ''].map(q).join(';'))].join('\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })); a.download = `livro-caixa-${(users.find(u => u.user_id === FL.id)?.name || FL.id).replace(/[^\w-]+/g, '_')}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }
+});
 // ---------- livro-caixa do jogador por categoria (ficha do jogador) ----------
 function ledger(s) {
   const log = Array.isArray(s.log) ? s.log : [], by = {}, g = e => groupOf(String(e.txt || ''));

@@ -121,3 +121,4 @@ tr.ad-mark td { background: color-mix(in oklab, var(--hud-accent) 10%, transpare
 .ad-prev__note { display: grid; gap: 4px; padding: 10px 12px; border-radius: 12px; border-left: 4px solid var(--hud-accent); background: var(--glass); font-size: 14px; line-height: 1.4; }
 .ad-prev__note b { font-size: 15px; }
 .ad-prev__log td { white-space: normal !important; }
+.ad-full { display: grid; gap: 8px; margin-top: 12px; } .ad-full__f { flex-wrap: wrap; gap: 6px; align-items: center; } .ad-full__f .input { width: auto; }
