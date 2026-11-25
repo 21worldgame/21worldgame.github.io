@@ -1756,7 +1756,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 250;
+const APP_VERSION = 251;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
@@ -1767,12 +1767,18 @@ function drawVBar() {
   const old = latestV > APP_VERSION;
   const html = old ? `<span class="vbar__dot" aria-hidden="true"></span>saiu a <b>v${latestV}</b> · você está na <b>v${APP_VERSION}</b> · <span class="vbar__go">atualizando…</span>`
     : `<span class="vbar__dot" aria-hidden="true"></span><b>v${APP_VERSION}</b> · ${VB_OK[APP_VERSION % VB_OK.length]}`;
-  for (const [id, host] of [['vbar', '.hud'], ['vbar-auth', '#dlg-auth .au__panel']]) {
-    let el = document.getElementById(id); const h = document.querySelector(host); if (!h) continue;
-    if (!el) { el = document.createElement('p'); el.id = id; el.className = 'vbar'; el.setAttribute('role', 'status'); el.title = 'versão do jogo'; h.prepend(el); }
-    el.innerHTML = html; el.classList.toggle('is-old', old);
-  }
+  { let el = document.getElementById('vbar-auth'); const h = document.querySelector('#dlg-auth .au__panel');   // tela de entrada: selo
+    if (h && !el) { el = document.createElement('p'); el.id = 'vbar-auth'; el.className = 'vbar'; el.setAttribute('role', 'status'); h.prepend(el); }
+    if (el) { el.innerHTML = html; el.classList.toggle('is-old', old); } }
+  // no jogo: botãozinho discreto ao lado do mês (relógio do mundo)
+  let c = document.getElementById('vchip'); const wc = document.getElementById('worldclock');
+  if (wc && !c) { c = document.createElement('button'); c.type = 'button'; c.id = 'vchip'; c.className = 'vchip'; wc.after(c); }
+  if (c) { c.innerHTML = old ? `<i aria-hidden="true"></i>v${APP_VERSION} → v${latestV}` : `<i aria-hidden="true"></i>v${APP_VERSION}`; c.classList.toggle('is-old', old);
+    c.title = old ? `Saiu a v${latestV}: toque para atualizar agora` : `Versão v${APP_VERSION}: ${VB_OK[APP_VERSION % VB_OK.length]}`; c.setAttribute('aria-label', c.title); }
 }
+document.addEventListener('click', e => { if (!e.target.closest('#vchip')) return;
+  if (latestV > APP_VERSION) { updateShown = false; checkUpdate(); say(`Buscando a v${latestV}…`); }
+  else { say(`Você está na v${APP_VERSION}, a versão mais nova: ${VB_OK[APP_VERSION % VB_OK.length]}.`); checkUpdate(); } });
 drawVBar();
 async function checkUpdate() {
   if (updateShown || checking) return;   // uma verificação por vez (senão saem dois avisos e duas contagens)

@@ -1,6 +1,6 @@
 // Service worker do 21 World: abre rápido (arquivos do jogo em cache) e atualiza em segundo plano.
 // Nunca guarda chamadas do servidor (login, saves) nem do mapa: essas sempre vão para a rede.
-const VERSION = '21world-v250';
+const VERSION = '21world-v251';
 const CORE = ['./', 'index.html', 'style.css', 'tokens.css', 'base.css', 'game.js', 'pix.js', 'pro.js', 'pro-ui.js', 'cidade.js', 'cidade-ui.js', 'logic.js', 'store.js', 'progress.js', 'casino.js', 'table.js', 'bj.js',
   'avatar.js', 'net.js', 'auth.js', 'authrules.js', 'turnstile.js', 'devguard.js', 'live.js', 'tune.js', 'cfg.js', 'manifest.webmanifest', 'assets/brand/logo-mark.svg', 'assets/brand/logo-anim.svg', 'avisos.js', 'econ.js', 'econ-ui.js', 'invest.js', 'invest-ui.js', 'assets/brand/icon-192.png'];
 
