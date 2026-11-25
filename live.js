@@ -108,9 +108,10 @@ function presence(sb) {
       const me = Auth.account()?.id; if (me) ids.add(me);
       ONLINE.ids = ids; NPC_CLOCK.real = Math.max(1, ids.size);
     });
-    ch.subscribe(st => { if (st === 'SUBSCRIBED') ch.track(info()); });
-    setInterval(() => ch.track(info()), 30000);
-    addEventListener('hashchange', () => ch.track(info()));
+    // cada envio vai para todos os aparelhos online: só manda quando mudou (no máximo 1 por minuto)
+    let last = ''; const send = () => { const i = info(), k = JSON.stringify({ ...i, worth: Math.round(i.worth / 1e5) }); if (k !== last) { last = k; ch.track(i); } };
+    ch.subscribe(st => { if (st === 'SUBSCRIBED') { last = ''; send(); } });
+    setInterval(send, 60000);
   } catch {}
 }
 

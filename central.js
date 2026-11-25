@@ -582,7 +582,7 @@ function watchGrant(gid, uid) {
   }, 2500);
 }
 // números do painel se atualizam sozinhos
-setInterval(() => { if (!$('#ad-app').hidden && !$('[data-panel="overview"]').hidden) loadOverview(); }, 15000);
+setInterval(() => { if (document.visibilityState === 'visible' && !$('#ad-app').hidden && !$('[data-panel="overview"]').hidden) loadOverview(); }, 60000);
 
 // ---------- regras do jogo (game_config.data.tuning, lidas pelo jogo em tune.js) ----------
 import('./tune.js').then(({ DEFAULTS }) => {
@@ -1146,7 +1146,7 @@ document.addEventListener('click', e => {
 $('#ad-vg-reload').addEventListener('click', loadVigia);
 $('#ad-vg-only').addEventListener('change', drawVigia);
 $('#ad-vg-q').addEventListener('input', drawVigia);
-setInterval(() => { if (!$('#ad-app').hidden && !$('[data-panel="vigia"]').hidden) loadVigia(); }, 120000);   // relê tudo a cada 2 min
+// sem releitura automática: cada leitura baixa o save inteiro de todos os jogadores (estourava o tráfego do plano). Use o botão recarregar.
 document.addEventListener('click', async e => {
   const u = e.target.closest('[data-vg-user]'); if (u) { e.preventDefault(); return openPlayer(u.dataset.vgUser); }
   const t = e.target.closest('[data-vg-take]'), bn = e.target.closest('[data-vg-ban]'); if (!t && !bn) return;
