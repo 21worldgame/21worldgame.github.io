@@ -248,7 +248,7 @@ function forceRestore(row, why = 'O administrador voltou a sua conta para um est
   setTimeout(() => location.reload(), 1500);
 }
 export async function push() {
-  if (!sb || !user || pushing || outdated) return false;
+  if (!sb || !user || pushing || outdated || G.devtools) return false;   // devguard.js: modo desenvolvedor aberto
   pushing = true;
   try {
     try { D.take(G.S, user.id, G.now?.() ?? Date.now()); } catch {}   // diário do admin: o que mudou desde o último envio
