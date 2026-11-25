@@ -17,10 +17,10 @@ export const slotOf = now => Math.floor((now - EPOCH) / SLOT);
 // dificuldade extrema (v231, jogos a partir de 25/11/2026 00:00 de Brasília; os anteriores ficam como estavam, a tabela não muda):
 // no campo, o favorito vale bem menos do que o papel diz e cada time tem o "dia" dele (sorteado, ninguém vê antes);
 // as odds continuam saindo do papel, com margem maior. Placar exato vai até 4 x 4, sem "outro placar".
-export const HARD_FROM = Math.floor((Date.UTC(2026, 10, 25, 3) - EPOCH) / SLOT), HARD_MARGIN = 0.35;
+export const HARD_FROM = Math.floor((Date.UTC(2026, 10, 25, 3) - EPOCH) / SLOT), HARD_MARGIN = 0.4;
 const day = (e, sd) => Math.exp((e() - 0.5) * 2 * sd);   // fator do dia: 1 = normal
-function field(h, a, e) {   // médias reais do jogo: diferença de força cortada a 1/4 e dia de cada time
-  const d = (h.r - a.r) / 40, gh = day(e, 1), ga = day(e, 1), c = day(e, 0.7), y = day(e, 0.8);
+function field(h, a, e) {   // médias reais do jogo: diferença de força quase some (1/10) e dia de cada time
+  const d = (h.r - a.r) / 25, gh = day(e, 1.2), ga = day(e, 1.2), c = day(e, 0.7), y = day(e, 0.8);
   return { gh: 1.45 * Math.exp(0.3 * d) * gh, ga: 1.12 * Math.exp(-0.3 * d) * ga, ch: Math.max(2.5, 5.3 + 0.5 * d) * c * day(e, 0.3), ca: Math.max(2.5, 4.4 - 0.5 * d) * c * day(e, 0.3),
     yh: 1.9 * y * day(e, 0.3), ya: 2.3 * y * day(e, 0.3), sh: 12 + 2 * d, sa: 10 - 2 * d };
 }
@@ -116,7 +116,7 @@ export function markets(mt) {
     { id: 'cart', label: 'cartões amarelos', opts: ou(cards, 4.5) },
     { id: 'placar', label: 'placar exato', opts: scores },
   ];
-  for (const m of list) for (const o of m.opts) o.odd = odd(o.p, hard ? HARD_MARGIN : MARGIN);
+  for (const m of list) for (const o of m.opts) o.odd = hard ? Math.min(m.id === 'placar' ? 40 : 3, odd(o.p, HARD_MARGIN)) : odd(o.p);   // teto: a zebra grande não vira mina
   return list;
 }
 
