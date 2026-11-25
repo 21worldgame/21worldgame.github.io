@@ -1,4 +1,4 @@
-// Pix 21: mandar dinheiro ou pagar outro jogador pelo inventário (supabase/pix.sql).
+// Pix 21: mandar dinheiro ou pagar outro jogador pelo inventário (pix.sql).
 // Quem envia paga na hora; quem recebe ganha quando abrir o jogo (de 15 em 15 s enquanto joga), uma vez só.
 import * as Auth from './auth.js';
 import { G, brl, esc, say, note, save, profileOf } from './store.js';

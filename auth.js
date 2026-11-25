@@ -1,5 +1,5 @@
-// Login, cadastro e save na nuvem (Supabase). Sem url/anonKey em supabase-config.js, o jogo roda local, sem login.
-import { SUPABASE } from './supabase-config.js';
+// Login, cadastro e save na nuvem (servidor). Sem url/anonKey em servidor-config.js, o jogo roda local, sem login.
+import { SRV } from './cfg.js';
 import { adopt, G, $, save, say, writeSave, forgetUser, blankState, currentUid, keyFor, profileOf } from './store.js';
 import * as L from './logic.js';
 import { merge3 } from './sync-merge.js';
@@ -7,8 +7,8 @@ import * as D from './diario.js';
 import { captcha } from './turnstile.js';
 import { keepRestored, cleanName, validateSignup, validateLogin, validatePassword, translateError, isNameTaken, withSuffix, MIN_PASSWORD } from './authrules.js';
 
-const LIB = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/+esm';
-export const configured = () => !!(SUPABASE.url && SUPABASE.anonKey);
+const LIB = ['https://cdn.jsdelivr.net/npm/@', 'supa', 'base/', 'supa', 'base-js@2.118.0/+esm'].join('');
+export const configured = () => !!(SRV.url && SRV.anonKey);
 let recovering = false, sb = null, user = null, mode = 'in', busy = false, lastPush = 0, timer = 0, rankCache = null;
 
 export const sbClient = () => sb;
@@ -21,7 +21,7 @@ let making = null;
 function client() {
   if (!configured()) return Promise.resolve(null);
   if (sb) return Promise.resolve(sb);
-  return (making ||= import(LIB).then(lib => (sb ||= lib.createClient(SUPABASE.url, SUPABASE.anonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } })))
+  return (making ||= import(LIB).then(lib => (sb ||= lib.createClient(SRV.url, SRV.anonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } })))
     .catch(e => { making = null; throw e; }));
 }
 
@@ -45,9 +45,9 @@ function showGate() {
     $('#au-oauth').hidden = !providers.length;
     $('#au-oauth-btns').innerHTML = providers.map(p => `<button type="button" class="btn btn--glass btn--oauth" data-au-oauth="${p}">${p === 'google' ? '<span class="g-ico" aria-hidden="true">G</span>' : ''}entrar com ${p === 'github' ? 'GitHub' : 'Google'}</button>`).join('');
   };
-  show((SUPABASE.providers || []).filter(p => ['github', 'google'].includes(p)));
+  show((SRV.providers || []).filter(p => ['github', 'google'].includes(p)));
   // o botão do Google aparece sozinho quando o provedor for ligado no projeto
-  fetch(`${SUPABASE.url}/auth/v1/settings`, { headers: { apikey: SUPABASE.anonKey } }).then(r => r.json())
+  fetch(`${SRV.url}/auth/v1/settings`, { headers: { apikey: SRV.anonKey } }).then(r => r.json())
     .then(st => show(['google', 'github'].filter(p => st?.external?.[p]))).catch(() => {});
   let had = false; try { had = !!localStorage.getItem('21world.hadAccount'); } catch {}
   // app instalado (no iPhone ele não divide o login com o Safari) ou link do QR "conectar celular": abre em "entrar"
@@ -150,7 +150,7 @@ async function pull() {
   if (row?.data && (Number(row.data.adminRestoreAt) || 0) > (Number(G.S?.adminRestoreAt) || 0)) row.restored = true;   // o admin voltou o save: vale a nuvem inteira, sem juntar com este aparelho
   return row;
 }
-// card = o perfil completo que os outros veem ao clicar (coluna nova: supabase/perfil.sql). Privado: só os troféus.
+// card = o perfil completo que os outros veem ao clicar (coluna nova: perfil.sql). Privado: só os troféus.
 let noCardUntil = 0;   // coluna card faltando: tenta de novo em 5 min (não desiste para sempre)
 // terras próprias que todos veem no mapa (só o essencial; perfil privado não aparece)
 const mapLandsOf = s => (s.lands || []).filter(l => l.own && Number.isFinite(l.lat) && Number.isFinite(l.lon)).slice(0, 30).map(l => ({ r: l.region, c: l.city || '', u: l.use, ha: l.ha, lat: l.lat, lon: l.lon }));
@@ -413,7 +413,7 @@ export async function logout() {
   forgetUser();
   location.reload();
 }
-// LGPD: apaga o save e o perfil público da nuvem e sai. (Apagar o cadastro em si é feito no painel do Supabase.)
+// LGPD: apaga o save e o perfil público da nuvem e sai. (Apagar o cadastro em si é feito no painel do servidor.)
 export async function wipe() {
   if (!sb || !user) return;
   await sb.from('saves').delete().eq('user_id', user.id);

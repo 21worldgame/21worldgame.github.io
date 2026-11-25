@@ -1,4 +1,4 @@
-// Central de Profissionais: regras puras (sem tela). Quem guarda e decide tudo é o servidor (supabase/profissionais.sql).
+// Central de Profissionais: regras puras (sem tela). Quem guarda e decide tudo é o servidor (profissionais.sql).
 export const PERIOD = { dia: 'por dia', semana: 'por semana', mes: 'por mês', unico: 'pagamento único' };
 export const PER_ONE = { dia: 'dia', semana: 'semana', mes: 'mês', unico: 'entrega' };
 export const MAX_N = { dia: 90, semana: 52, mes: 12, unico: 1 };

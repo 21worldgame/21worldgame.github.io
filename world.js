@@ -1,8 +1,8 @@
 // Tempo de mundo: um relógio único para todos os jogadores (regras puras).
 // O mês do jogo passa sozinho, igual para todo mundo: de dia em `monthMs` (5 min) e de madrugada, das 01:00 às 09:00
 // de Brasília, em `nightMs` (10 min). Um dia real tem 16 h de dia (192 meses) + 8 h de madrugada (48 meses) = 240 meses.
-// A config (epoch, base, monthMs, nightMs) fica no Supabase e o administrador pode acelerar o mundo para todos.
-// O servidor faz a mesma conta em supabase/mundo.sql (world_month): mudar aqui, mudar lá.
+// A config (epoch, base, monthMs, nightMs) fica no servidor e o administrador pode acelerar o mundo para todos.
+// O servidor faz a mesma conta em mundo.sql (world_month): mudar aqui, mudar lá.
 export const DEFAULT = { epoch: 1795482831120, base: 171,   // sem o servidor, o relógio não volta para o mundo antigo
   monthMs: 5 * 60 * 1000, nightMs: 10 * 60 * 1000 };
 export const NIGHT_FROM = 1, NIGHT_TO = 9;     // madrugada lenta: 01:00 até 09:00 (Brasília)

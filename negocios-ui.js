@@ -7,7 +7,7 @@ const CATS = { banks: { label: 'bancos', list: NG.BANKS, icon: '🏦' }, isps: {
   ...Object.fromEntries(Object.entries(NG.SECTORS).map(([k, S]) => [k, { label: S.label, list: S.brands, icon: S.icon }])) };
 const logo = (c, txt) => `<span class="biz-logo" style="--c:${c.color}">${esc(txt.split(' ').map(w => w[0]).join('').slice(0, 3))}</span>`;
 
-// ---------- dono único de cada marca no jogo inteiro (tabela company_owner, supabase/empresas.sql) ----------
+// ---------- dono único de cada marca no jogo inteiro (tabela company_owner, empresas.sql) ----------
 // sem o servidor (tabela ainda não criada ou jogando sem internet) a compra continua funcionando só no aparelho
 let owners = { ok: false, map: {} };
 const listOf = cat => CATS[cat].list;

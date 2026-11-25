@@ -1,4 +1,4 @@
-// Delegacia do 21 (supabase/delegacia.sql): registrar Boletim de Ocorrência contra outro jogador e acompanhar os seus.
+// Delegacia do 21 (delegacia.sql): registrar Boletim de Ocorrência contra outro jogador e acompanhar os seus.
 // O B.O. cai na aba "delegacia" do painel admin; o denunciado não fica sabendo.
 import * as Auth from './auth.js';
 import { esc, say } from './store.js';

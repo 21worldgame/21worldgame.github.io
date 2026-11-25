@@ -1,5 +1,5 @@
 // Ligação do jogo com o painel administrativo: configuração e eventos, avisos, suspensões e ordens do admin.
-// Se as tabelas do supabase/admin.sql ainda não existirem, tudo aqui fica quieto e o jogo segue normal.
+// Se as tabelas do admin.sql ainda não existirem, tudo aqui fica quieto e o jogo segue normal.
 import { applyTune } from './tune.js';
 import { G, $, esc, brl, int, say, save, note, badge, levelUp, blankState, profileOf } from './store.js';
 import * as P from './progress.js';
@@ -209,7 +209,7 @@ async function applyGrants(sb) {
   if (error || !pend?.length) return;
   const mark = cols => sb.from('admin_grants').update({ applied_at: new Date().toISOString() }).in('id', pend.map(r => r.id)).is('applied_at', null).select(cols);
   let { data: rows, error: e2 } = await mark('id, kind, amount, note, item');
-  if (e2 && /item/i.test(e2.message || '')) ({ data: rows, error: e2 } = await mark('id, kind, amount, note'));   // coluna item ainda não criada (supabase/terras.sql)
+  if (e2 && /item/i.test(e2.message || '')) ({ data: rows, error: e2 } = await mark('id, kind, amount, note'));   // coluna item ainda não criada (terras.sql)
   if (e2 || !rows?.length) return;
   for (const g of rows) {
     const amt = Number(g.amount) || 0, why = g.note ? `: ${g.note}` : '';

@@ -1,4 +1,4 @@
-// Regras puras do cadastro e login (sem DOM, sem rede): validação e tradução de erros do Supabase.
+// Regras puras do cadastro e login (sem DOM, sem rede): validação e tradução de erros do servidor.
 export const MIN_PASSWORD = 8;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 

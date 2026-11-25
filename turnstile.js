@@ -1,8 +1,8 @@
 // Cloudflare Turnstile: o "não sou robô" do Cloudflare no login e no cadastro (barra fazenda de contas e robô tentando senha).
-// Quem confere o token é o próprio Supabase (Authentication > Attack Protection > Captcha, provedor Turnstile, com a chave secreta).
-// Desligado enquanto SUPABASE.turnstile (chave pública do site) estiver vazio. Invisível: só pede um clique se o Cloudflare desconfiar.
+// Quem confere o token é o próprio servidor (Authentication > Attack Protection > Captcha, provedor Turnstile, com a chave secreta).
+// Desligado enquanto SRV.turnstile (chave pública do site) estiver vazio. Invisível: só pede um clique se o Cloudflare desconfiar.
 // Cada token vale para uma chamada: pegue um novo para cada signUp/signInWithPassword.
-import { SUPABASE } from './supabase-config.js';
+import { SRV } from './cfg.js';
 
 let lib = null;
 const load = () => lib ||= new Promise((ok, no) => {
@@ -12,13 +12,13 @@ const load = () => lib ||= new Promise((ok, no) => {
   document.head.append(s);
 });
 
-// box: elemento dentro do formulário onde o desafio aparece se precisar. Sem chave: devolve undefined (Supabase ignora).
+// box: elemento dentro do formulário onde o desafio aparece se precisar. Sem chave: devolve undefined (servidor ignora).
 export async function captcha(box) {
-  if (!SUPABASE.turnstile) return undefined;
+  if (!SRV.turnstile) return undefined;
   const ts = await load();
   box.hidden = false; box.replaceChildren();
   return new Promise((ok, no) => ts.render(box, {
-    sitekey: SUPABASE.turnstile, language: 'pt-br', appearance: 'interaction-only',
+    sitekey: SRV.turnstile, language: 'pt-br', appearance: 'interaction-only',
     callback: t => { ok(t); setTimeout(() => { box.hidden = true; }, 300); },
     'error-callback': () => no(new Error('captcha: falhou')), 'expired-callback': () => no(new Error('captcha: expirou')),
   }));

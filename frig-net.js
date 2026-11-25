@@ -1,4 +1,4 @@
-// Frigoríficos dos jogadores abrem para os outros (supabase/frigorifico.sql). Sem servidor, nada aparece e o jogo segue igual.
+// Frigoríficos dos jogadores abrem para os outros (frigorifico.sql). Sem servidor, nada aparece e o jogo segue igual.
 // Quem abate num frigorífico de jogador paga a taxa do dono; o dono recebe taxa + couro mesmo desligado (fica guardado até ele abrir).
 import * as Auth from './auth.js';
 import * as AB from './abate.js';

@@ -1,4 +1,4 @@
-// Estoque dos acessórios, único para o jogo inteiro (tabela acc_stock no Supabase, ver supabase/acessorios.sql).
+// Estoque dos acessórios, único para o jogo inteiro (tabela acc_stock no servidor, ver acessorios.sql).
 // Cada acessório começa com 35. Comprar na loja tira 1; vender de volta para a loja devolve 1 (até 35).
 // Sem login ou sem a tabela criada: o jogo segue sem limite.
 import * as Auth from './auth.js';

@@ -1,4 +1,4 @@
-// Diário do jogador para o painel admin (supabase/diario.sql; o jogador não vê).
+// Diário do jogador para o painel admin (diario.sql; o jogador não vê).
 // Cada lançamento do livro-caixa vai para o servidor com a hora, a tela, os botões clicados e o saldo.
 // E o dinheiro ou as fichas que mudaram SEM lançamento viram uma linha "sem lançamento": é ali que aparece o furo do jogo.
 import * as L from './logic.js';

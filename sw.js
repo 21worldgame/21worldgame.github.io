@@ -1,8 +1,8 @@
 // Service worker do 21 World: abre rápido (arquivos do jogo em cache) e atualiza em segundo plano.
-// Nunca guarda chamadas do Supabase (login, saves) nem do mapa: essas sempre vão para a rede.
-const VERSION = '21world-v236';
+// Nunca guarda chamadas do servidor (login, saves) nem do mapa: essas sempre vão para a rede.
+const VERSION = '21world-v238';
 const CORE = ['./', 'index.html', 'style.css', 'tokens.css', 'base.css', 'game.js', 'pix.js', 'pro.js', 'pro-ui.js', 'cidade.js', 'cidade-ui.js', 'logic.js', 'store.js', 'progress.js', 'casino.js', 'table.js', 'bj.js',
-  'avatar.js', 'net.js', 'auth.js', 'authrules.js', 'turnstile.js', 'devguard.js', 'live.js', 'tune.js', 'supabase-config.js', 'manifest.webmanifest', 'assets/brand/logo-mark.svg', 'assets/brand/logo-anim.svg', 'avisos.js', 'econ.js', 'econ-ui.js', 'invest.js', 'invest-ui.js', 'assets/brand/icon-192.png'];
+  'avatar.js', 'net.js', 'auth.js', 'authrules.js', 'turnstile.js', 'devguard.js', 'live.js', 'tune.js', 'cfg.js', 'manifest.webmanifest', 'assets/brand/logo-mark.svg', 'assets/brand/logo-anim.svg', 'avisos.js', 'econ.js', 'econ-ui.js', 'invest.js', 'invest-ui.js', 'assets/brand/icon-192.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
@@ -11,7 +11,7 @@ self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 
-const NEVER = /version.json|supabase\.co|arcgisonline|tile|nostr|relay|\/rest\/|\/auth\//;
+const NEVER = /version.json|\/realtime\/|\/storage\/|arcgisonline|tile|nostr|relay|\/rest\/|\/auth\//;
 const LIBS = /cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com|fonts\.(googleapis|gstatic)\.com/;
 
 self.addEventListener('fetch', e => {

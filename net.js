@@ -1,6 +1,6 @@
-// Rede das mesas e do salão. Principal: Supabase Realtime (broadcast + presence) — tudo passa pelo servidor do Supabase,
+// Rede das mesas e do salão. Principal: tempo real do servidor (broadcast + presence) — tudo passa pelo servidor,
 // então funciona em 4G, Wi-Fi de empresa e celular (a conexão direta entre aparelhos falhava nessas redes).
-// Reserva: Trystero sobre relays Nostr públicos, só se o Supabase não estiver configurado ou não carregar.
+// Reserva: Trystero sobre relays Nostr públicos, só se o servidor não estiver configurado ou não carregar.
 // As duas falam a mesma "língua" para o resto do jogo: room.makeAction(nome) → { send(dado, { target }), onMessage },
 // room.onPeerJoin / onPeerLeave / leave() e selfId.
 import { sbReady } from './auth.js';
@@ -21,7 +21,7 @@ export async function net() {
   return p2p();
 }
 
-// sala no Supabase com a mesma cara da sala do Trystero
+// sala no servidor com a mesma cara da sala do Trystero
 function sbRoom(sb, name, onReady) {
   for (const old of sb.getChannels().filter(c => c.topic === `realtime:21w:${name}`)) sb.removeChannel(old);   // saiu e voltou na mesma mesa: canal novo
   const ch = sb.channel(`21w:${name}`, { config: { broadcast: { self: false }, presence: { key: SELF } } });

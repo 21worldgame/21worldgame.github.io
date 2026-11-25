@@ -4,3 +4,10 @@ node_modules/
 .DS_Store
 Thumbs.db
 *.local.sql
+
+# fora do site público (ficam só no computador): regras do servidor, testes, scripts e documentação
+supabase/
+test*.mjs
+confere-publicacao.mjs
+README.md
+SETUP-LOGIN.md

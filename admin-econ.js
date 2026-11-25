@@ -158,7 +158,7 @@ export function pixFarm(pix, users = {}) {
   }).filter(R => R.n >= 2 || R.total >= 20000).sort((a, b) => b.total - a.total);
 }
 
-// ---------- diário (supabase/diario.sql): tudo o que cada jogador fez, com hora e botão clicado ----------
+// ---------- diário (diario.sql): tudo o que cada jogador fez, com hora e botão clicado ----------
 // rows: [{ user_id, at, m, kind, txt, val, money, chips, worth, tab, acts }]. Mostra de onde vem o dinheiro e onde está o furo:
 // "gap" é dinheiro que mudou sem lançamento no livro-caixa; o botão clicado antes de cada gap aponta a tela com defeito.
 export const pattern = t => String(t || '').replace(/\d[\d.,]*/g, '#').replace(/\s+/g, ' ').trim().slice(0, 80);   // "venda de 500 bois" → "venda de # bois"

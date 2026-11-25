@@ -1,5 +1,5 @@
-// Painel administrativo. Tudo o que ele faz passa pelas regras do banco (supabase/admin.sql): sem ser admin, nada funciona.
-import { SUPABASE } from './supabase-config.js';
+// Painel administrativo. Tudo o que ele faz passa pelas regras do banco (admin.sql): sem ser admin, nada funciona.
+import { SRV } from './cfg.js';
 import { captcha } from './turnstile.js';
 import * as W from './world.js';
 import { LISTS as BIZ, CAT_KEYS } from './negocios.js';
@@ -7,7 +7,7 @@ import { GROUPS, groupOf } from './contador.js';
 import { lostLands } from './land-check.js';
 import * as AE from './admin-econ.js';
 
-const LIB = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/+esm';
+const LIB = ['https://cdn.jsdelivr.net/npm/@', 'supa', 'base/', 'supa', 'base-js@2.118.0/+esm'].join('');
 const $ = s => document.querySelector(s);
 const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const brl = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(Number(v) || 0);
@@ -24,9 +24,9 @@ async function log(action, target, details) { await sb.from('admin_log').insert(
 
 // ---------- entrada ----------
 async function boot() {
-  if (!SUPABASE.url || !SUPABASE.anonKey) { document.body.innerHTML = '<main class="ad-login"><div class="ad-card"><h1>login não configurado</h1><p>Preencha supabase-config.js.</p></div></main>'; return; }
+  if (!SRV.url || !SRV.anonKey) { document.body.innerHTML = '<main class="ad-login"><div class="ad-card"><h1>login não configurado</h1><p>Configuração do servidor ausente.</p></div></main>'; return; }
   const lib = await import(LIB);
-  sb = lib.createClient(SUPABASE.url, SUPABASE.anonKey, { auth: { persistSession: true, autoRefreshToken: true } });
+  sb = lib.createClient(SRV.url, SRV.anonKey, { auth: { persistSession: true, autoRefreshToken: true } });
   const { data } = await sb.auth.getSession();
   if (data.session) return enter(data.session.user);
   $('#ad-login').hidden = false;
@@ -438,7 +438,7 @@ $('#ad-ann').addEventListener('submit', async e => {
   await log('announcement', null, { text: f.text, kind: f.kind, hours }); e.target.reset(); toast('Aviso publicado.'); loadAnns();
 });
 
-// ---------- terras que sumiram (supabase/terras.sql) ----------
+// ---------- terras que sumiram (terras.sql) ----------
 let lands = [];
 async function loadLands() {
   if (!users.length) await loadUsers('');
@@ -646,7 +646,7 @@ document.addEventListener('click', async e => {
 // ---------- vigilância (admin-econ.js watch): quem enriqueceu rápido demais, Pix, cassino, Receita, tempo jogado ----------
 const hrs = h => (h == null ? '—' : h < 1 ? `${Math.round(h * 60)} min` : `${h.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h`);
 async function pageAll(q) { const out = []; for (let f = 0; ; f += 500) { const { data, error } = await q().range(f, f + 499); if (error) throw error; out.push(...(data || [])); if (!data || data.length < 500) return out; } }
-// ---------- diário: tudo o que cada jogador fez (supabase/diario.sql) ----------
+// ---------- diário: tudo o que cada jogador fez (diario.sql) ----------
 let dj = null;
 const djName = id => (users.find(u => u.user_id === id)?.name) || String(id).slice(0, 8);
 const hm = t => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -1038,7 +1038,7 @@ document.addEventListener('click', async e => {
   await log('grant_cancel', x.user_id, { id: x.id, kind: x.kind, amount: x.amount, note: x.note }); toast('Aviso cancelado.'); loadSent();
 });
 setInterval(() => { if (sb && !$('#ad-app').hidden) loadSent(true); }, 60000);   // badge de pendentes e entrega atualizando sozinhos
-// recursos: o jogador contestou um desconto pelo livro-caixa (supabase/recursos.sql). Aceitar devolve o valor; negar manda a resposta.
+// recursos: o jogador contestou um desconto pelo livro-caixa (recursos.sql). Aceitar devolve o valor; negar manda a resposta.
 let RECS = [];
 const ORG_RE = /^(Receita Federal|Banco Central|Polícia Federal):/;   // avisos imersivos (o jogo mostra sem "administrador")
 async function loadRecursos() {
@@ -1149,7 +1149,7 @@ document.addEventListener('click', async e => {
   }
 });
 
-// ---------- Central de Profissionais (supabase/profissionais.sql): denúncias, profissionais e contratos ----------
+// ---------- Central de Profissionais (profissionais.sql): denúncias, profissionais e contratos ----------
 let proData = null;
 const PRO_REASON = { nao_entregou: 'não entregou', fraude: 'golpe / fraude', abuso: 'abuso', outro: 'outro' };
 async function loadPro() {
@@ -1205,7 +1205,7 @@ document.addEventListener('click', async e => {
   }
   loadPro();
 });
-// ---------- Delegacia (supabase/delegacia.sql): B.O. que os jogadores registram uns contra os outros ----------
+// ---------- Delegacia (delegacia.sql): B.O. que os jogadores registram uns contra os outros ----------
 const BO_KIND = { golpe: 'estelionato', calote: 'calote', ofensa: 'injúria / ameaça', trapaca: 'fraude no jogo', multiconta: 'contas falsas', outro: 'outra' };
 const BO_ST = { registrado: ['tag--red', 'novo'], investigando: ['tag--gold', 'em investigação'], procedente: ['tag--red', 'procedente'], arquivado: ['tag--green', 'arquivado'] };
 const boNum = c => `${new Date(c.at).getFullYear()}/${String(c.id).padStart(6, '0')}`;

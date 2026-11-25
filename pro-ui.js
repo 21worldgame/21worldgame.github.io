@@ -1,5 +1,5 @@
 // Central de Profissionais (aba "profissionais", em negócios): perfis, serviços, contratos, entregas, avaliações e denúncias.
-// Regras e dinheiro no servidor (supabase/profissionais.sql). O save só recebe o débito da contratação e os créditos liberados,
+// Regras e dinheiro no servidor (profissionais.sql). O save só recebe o débito da contratação e os créditos liberados,
 // com o mesmo cuidado do Pix: o id vai no save (proOut/proGot) e o servidor só marca como recebido depois que o save subiu.
 import * as Auth from './auth.js';
 import { G, brl, esc, say, note, save, badge } from './store.js';
