@@ -1756,7 +1756,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 252;
+const APP_VERSION = 253;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
@@ -1824,7 +1824,6 @@ function showUpdate(auto = true, v = 0, quick = false) {
     <p class="upd__truck" aria-hidden="true">🚚</p><h2 id="upd-h">Chegou carga nova na cidade!</h2>
     <p class="upd__ver"><span>v${APP_VERSION}</span><i aria-hidden="true">→</i><b>v${v || latestV}</b></p>
     <p class="upd__line" id="upd-line">Os caminhões da v${v || latestV} estão descarregando as novidades no 21 World.</p>
-    ${updateMsg ? `<p class="upd__new"><b>O que chegou:</b> ${esc(updateMsg)}</p>` : ''}
     <p class="upd__safe">🔒 Seu progresso fica guardado no cofre antes de recarregar.</p>
     <p class="upd__count"><span class="upd__dot" aria-hidden="true"></span><span id="upd-txt">recarrega em 8 s</span></p>
     <button class="btn btn--gold upd__go" type="button" id="upd-go">atualizar agora</button></div></dialog>`);
