@@ -6,6 +6,7 @@ import { G, $, esc, brl, say, save, note, award, confetti, profileOf } from './s
 import * as sfx from './sfx.js';
 import * as Auth from './auth.js';
 import * as NGU from './negocios-ui.js';
+import * as NG from './negocios.js';
 import * as ACS from './acc-stock.js';
 import * as CD from './cards.js';
 
@@ -135,6 +136,7 @@ export function buy(arg) {
   if (!(p > 0) || p > G.S.money) return say('Dinheiro insuficiente para essa compra.', true);
   const l = lobby.peers.get(pid)?.shop?.find(x => x.id === lid);
   if (l?.kind === 'club' && G.S.fut?.club) return say('Você já comanda um clube: venda o seu antes de comprar outro.', true);
+  if (l?.kind === 'empresa' && NG.companies(G.S) >= NG.MAX_COMPANIES) return say(NG.limitMsg(String(l.label || '').replace(/ \(.*$/, '')), true);   // antes de pagar: o vendedor nem recebe o pedido
   pending.add(lid);
   lobby.sendTrade({ t: 'shopbuy', lid, price: p, name: profileOf().name }, pid);
   setTimeout(() => { if (pending.delete(lid)) { say('O vendedor não respondeu. Tente de novo.', true); render(); } }, 15000);

@@ -158,7 +158,7 @@ export function render() {
 document.addEventListener('click', async e => {
   const b = e.target.closest('[data-biz]'); if (!b) return;
   const s = G.S, a = b.dataset.biz, id = b.dataset.id; let err = null, msg = '';
-  if (a === 'buy') { const C = CATS[b.dataset.cat].list[id], P = NG.SECTORS[b.dataset.cat] ? NG.priceOf(b.dataset.cat, id, s.month || 1) : C.price; if (!confirm(`Comprar a marca ${C.name} por ${brl(P)}? Ela é única no jogo: depois de sua, ninguém mais compra.`)) return;
+  if (a === 'buy') { const C = CATS[b.dataset.cat].list[id], P = NG.SECTORS[b.dataset.cat] ? NG.priceOf(b.dataset.cat, id, s.month || 1) : C.price; if (NG.companies(s) >= NG.MAX_COMPANIES) return say(NG.limitMsg(C.name), true); if (!confirm(`Comprar a marca ${C.name} por ${brl(P)}? Ela é única no jogo: depois de sua, ninguém mais compra.`)) return;
     if (s.money < P) return say('Dinheiro insuficiente para comprar a marca.', true);
     if (owners.ok) {
       if (!Auth.account()) return say('Entre com uma conta para comprar uma empresa: cada marca tem um dono só no jogo inteiro.', true);

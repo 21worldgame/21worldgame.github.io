@@ -97,8 +97,14 @@ export function sanitize(items) {
 }
 
 // aplica a troca de um lado: tira o que deu, põe o que recebeu (novos ids para não colidir)
+// recebe empresa: não pode passar de 2 depois da troca (o que ele dá conta como saída)
+export function canReceive(s, give = [], receive = []) {
+  const inn = receive.filter(i => i?.kind === 'empresa').length; if (!inn) return null;
+  const after = NG.companies(s) - give.filter(i => i?.kind === 'empresa').length + inn;
+  return after > NG.MAX_COMPANIES ? NG.limitMsg(NG.LISTS[receive.find(i => i?.kind === 'empresa').cat]?.[receive.find(i => i?.kind === 'empresa').data?.brand]?.name) : null;
+}
 export function apply(s, give, receive) {
-  const err = canGive(s, give);
+  const err = canGive(s, give) || canReceive(s, give, receive);
   if (err) return err;
   for (const i of give) {
     if (i.kind === 'chips') s.chips -= i.amount;

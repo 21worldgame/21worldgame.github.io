@@ -217,7 +217,7 @@ export function remove(k) { if (!ss) return; ss.mine.splice(Number(k), 1); chang
 export function lock() { if (!ss) return; ss.lock.me = !ss.lock.me; if (!ss.lock.me) ss.ok.me = false; send({ t: 'lock', v: ss.lock.me }); render(); }
 export function confirmTrade() {
   if (!ss || !(ss.lock.me && ss.lock.them)) return;
-  const err = TD.canGive(G.S, ss.mine);
+  const err = TD.canGive(G.S, ss.mine) || (ss.bot ? null : TD.canReceive(G.S, ss.mine, ss.theirs));   // confere antes dos dois lados aplicarem
   if (err) { send({ t: 'cancel', reason: err }); say(err, true); return close(); }
   ss.ok.me = true; send({ t: 'confirm' }); render(); maybeApply();
 }

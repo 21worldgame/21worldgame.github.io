@@ -202,9 +202,14 @@ export function ensure(s) {
 }
 const nid = s => `b${(s.nextId = (s.nextId || 1) + 1)}`;
 export const brandValue = (b, cat, month) => (SECTORS[cat] && b.vg != null ? Math.round((b.paid || LISTS[cat][b.brand].price) * b.vg * 0.85) : Math.round(LISTS[cat][b.brand].price * grow(month - (b.at || month) + 1, 0.0004, 2) * 0.85));
+// no máximo 2 empresas por jogador (galpão não conta). Quem já tinha mais fica com todas, mas só compra outra depois de vender.
+export const MAX_COMPANIES = 2;
+export const companies = s => CAT_KEYS.reduce((t, k) => t + (s.biz?.[k] || []).length, 0);
+export const limitMsg = name => `📜 Junta Comercial 21: o seu CPF já é sócio-administrador de ${MAX_COMPANIES} empresas, o limite permitido para um mesmo empresário. Para assumir ${name ? `a ${name}` : 'outra empresa'}, venda uma das suas primeiro (na loja ou no Feirão 21).`;
 export function buy(s, cat, brand) {
   ensure(s);
   const C = LISTS[cat]?.[brand]; if (!C) return 'marca inválida.';
+  if (companies(s) >= MAX_COMPANIES) return limitMsg(C.name);
   if (s.biz[cat].some(b => b.brand === brand)) return 'você já é dono dessa marca.';
   const price = SECTORS[cat] ? priceOf(cat, brand, s.month || 1) : C.price, deal = SECTORS[cat] && dealOf(cat, brand, s.month || 1);
   if (s.money < price) return 'dinheiro insuficiente para comprar a marca.';
