@@ -160,8 +160,8 @@ export function roll(spot, bait, zone = 1, onSchool = false, rng = Math.random) 
 // espera pela beliscada (s): tempo, hora, cardume, nível e cansaço
 export const waitFor = ({ weather = 1, hour = 1, onSchool = false, perk = 1, tired = 1 }, rng = Math.random) => (5 + rng() * 15) * weather * hour * (onSchool ? 0.5 : 1) * perk * tired;
 // fisgada: dentro da primeira fração da janela = perfeita (anzol bem preso), depois boa, depois o peixe solta
-export const HOOK_WIN = 1.1;
-export const hookGrade = (late, bonus = 0) => (late <= 0.3 + bonus * 0.6 ? { q: 1, label: 'fisgada perfeita!' } : late <= HOOK_WIN + bonus ? { q: 0.72, label: 'fisgou' } : null);
+export const HOOK_WIN = 2.2;   // v233: era 1,1 s, curto demais para quem está no celular
+export const hookGrade = (late, bonus = 0) => (late <= 0.6 + bonus * 0.6 ? { q: 1, label: 'fisgada perfeita!' } : late <= HOOK_WIN + bonus ? { q: 0.72, label: 'fisgou' } : null);
 
 // ---------- briga ----------
 // força do peixe em kg; a linha aguenta R.line. Fricção 1-10: a linha escorrega a partir de drag/10 × 1,05 do limite

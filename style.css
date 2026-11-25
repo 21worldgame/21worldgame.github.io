@@ -3739,6 +3739,10 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .pe__acts { justify-content: center; }
 .pe-hold { user-select: none; -webkit-user-select: none; touch-action: none; min-width: 14rem; }
 .pe-hold[aria-pressed="true"] { filter: brightness(1.15); transform: scale(.98); }
+.pe-calm { min-width: 14rem; opacity: .8; }
+.pe-bite { min-width: 14rem; animation: pe-bite .4s ease-in-out infinite alternate; box-shadow: 0 0 0 4px color-mix(in oklab, var(--hud-accent) 45%, transparent); }
+@keyframes pe-bite { to { transform: scale(1.07); filter: brightness(1.2); } }
+@media (prefers-reduced-motion: reduce) { .pe-bite { animation: none; } }
 .pe__side { display: grid; gap: var(--space-sm); }
 .pe-card { padding: var(--space-sm) var(--space-md); display: grid; gap: var(--space-xs); }
 .pe-card h4 { margin: 0; display: flex; justify-content: space-between; gap: var(--space-xs); align-items: baseline; }

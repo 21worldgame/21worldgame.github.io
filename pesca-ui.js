@@ -58,7 +58,7 @@ function paintActs() {
   a.innerHTML = {
     idle: `<button class="btn btn--gold btn--lg pe-hold" data-pe="cast" aria-pressed="false">segure para arremessar</button>`,
     aim: `<button class="btn btn--gold btn--lg pe-hold" data-pe="cast" aria-pressed="true">solte para arremessar</button>`,
-    wait: `<button class="btn btn--gold btn--lg" data-pe="hook">fisgar!</button><button class="btn btn--glass" data-pe="quit">recolher</button>`,
+    wait: T.bite > 0 ? `<button class="btn btn--gold btn--lg pe-bite" data-pe="hook">🎣 FISGAR AGORA!</button>` : `<button class="btn btn--glass btn--lg pe-calm" data-pe="hook">espere a boia afundar…</button><button class="btn btn--glass" data-pe="quit">recolher</button>`,
     fight: `<button class="btn btn--gold btn--lg pe-hold" data-pe="reel" aria-pressed="false">segure para recolher</button>`,
     land: `<button class="btn btn--gold btn--lg" data-pe="net">tirar da água!</button>`,
     caught: f ? `<button class="btn btn--gold btn--lg" data-pe="keep">pôr na caixa (${brl(PE.fishValue(G.S, { ...f, age: 0 }))})</button><button class="btn btn--glass" data-pe="free">pesque e solte (+${Math.round(PE.xpOf(f) * 1.5)} XP)</button>` : '',
@@ -110,11 +110,11 @@ function hook() {
     T.grade = g; T.fight = PE.newFight(T.fish, P().rod, T.at, g.q, lv()); T.bite = 0; sfx.tick(1); navigator.vibrate?.(60);
     return setMsg(`<b>${cap(g.label)}</b> Recolha em puxadas e solte quando a linha avermelhar. Fricção: ↑ ↓.`, 'fight');
   }
-  T.fish = null; T.school = 0; sfx.play('chip', 0.2);
-  setMsg('Fisgou na beliscada: o peixe se assustou e levou a isca.', 'idle'); render();
+  T.wait += 1.5; sfx.tick(0.15);   // v233: cedo demais só atrasa um pouco; o peixe continua lá
+  setMsg('Calma, foi só uma <b>beliscada</b>. Espere a boia <b>afundar de vez</b> e o botão ficar dourado.');
 }
 function end(msg) { T.fish = null; T.fight = null; T.school = 0; hold.on = false; setMsg(msg, 'idle'); render(); }
-function startLand() { T.land = { x: 0, dir: 1, zone: 0.3 + Math.random() * 0.4, w: Math.max(0.1, 0.24 - PE.SPECIES[T.fish.sp].power * 0.08 - Math.min(0.06, T.fish.kg / 1000)) }; setMsg('Peixe na beira! Aperte <b>tirar da água</b> com o puçá na faixa verde.', 'land'); }
+function startLand() { T.land = { x: 0, dir: 1, zone: 0.3 + Math.random() * 0.4, w: Math.max(0.16, 0.34 - PE.SPECIES[T.fish.sp].power * 0.08 - Math.min(0.06, T.fish.kg / 1000)) }; setMsg('Peixe na beira! Aperte <b>tirar da água</b> com o puçá na faixa verde.', 'land'); }
 function net() {
   const l = T.land; if (!l || T.st !== 'land') return;
   if (Math.abs(l.x - l.zone) <= l.w / 2) {
@@ -124,7 +124,7 @@ function net() {
     sfx.fanfare(); confetti(T.fish.trophy ? 160 : T.rec ? 80 : 30); navigator.vibrate?.([30, 40, 30]); paintActs(); render(); return;
   }
   T.miss++; sfx.play('chip', 0.2); splash(1, 12);
-  if (T.miss >= 2) return end('O peixe bateu o rabo no puçá e voltou para a água. Escapou!');
+  if (T.miss >= 3) return end('O peixe bateu o rabo no puçá e voltou para a água. Escapou!');
   T.fight.d = 6; T.fight.stam = Math.max(T.fight.stam, 0.25); setMsg('Errou o puçá! Ele voltou a brigar: recolha de novo.', 'fight');
 }
 function keepFish() {
@@ -198,6 +198,10 @@ function draw(cv, dt) {
     if (T.st === 'wait' || T.st === 'fly') {   // boia
       x.fillStyle = '#e8432f'; x.beginPath(); x.ellipse(px, py + sink - 6 * u, 5 * u, 8 * u, 0, 0, Math.PI * 2); x.fill();
       x.fillStyle = '#fff'; x.fillRect(px - 5 * u, py + sink - 3 * u, 10 * u, 3 * u);
+      if (T.bite > 0) {   // afundou: anel e "!" grandes em cima da boia
+        const k = (t * 3) % 1; x.strokeStyle = `rgba(255,214,90,${1 - k})`; x.lineWidth = 3 * u; x.beginPath(); x.ellipse(px, py + 4 * u, (10 + k * 40) * u, (4 + k * 14) * u, 0, 0, Math.PI * 2); x.stroke();
+        x.font = `bold ${34 * u}px system-ui`; x.textAlign = 'center'; x.textBaseline = 'bottom'; x.lineWidth = 5 * u; x.strokeStyle = 'rgba(0,0,0,.55)'; x.strokeText('!', px, py - 18 * u); x.fillStyle = '#ffd65a'; x.fillText('!', px, py - 18 * u);
+      }
     } else if (f) {   // peixe: sombra embaixo d'água, fora dela no salto
       const sz = Math.min(70, 16 + Math.sqrt(T.fish.kg) * 8) * u * (0.6 + 0.4 * (1 - Math.min(1, m / S.size)));
       if (jump > 0.05) {

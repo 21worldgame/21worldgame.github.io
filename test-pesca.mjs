@@ -23,7 +23,7 @@ for (let i = 0; i < 500; i++) { const f = P.roll('pesqueiro', 'massa', i % 3); c
 const share = (z, sp) => Array.from({ length: 3000 }, () => P.roll('pesqueiro', 'massa', z)).filter(f => f.sp === sp).length;
 assert.ok(share(2, 'pintado') > share(0, 'pintado') * 2, 'pintado mora no fundo'); assert.ok(share(0, 'tilapia') > share(2, 'tilapia'), 'tilápia na beirada');
 // fisgada: cedo = perfeita, tarde = solta
-assert.equal(P.hookGrade(0.1).q, 1); assert.equal(P.hookGrade(0.8).q, 0.72); assert.equal(P.hookGrade(2), null);
+assert.equal(P.hookGrade(0.1).q, 1); assert.equal(P.hookGrade(0.8).q, 0.72); assert.equal(P.hookGrade(1.5).q, 0.72); assert.equal(P.hookGrade(2.5), null);
 // briga: jogador bom (solta no vermelho e no salto) traz quase todos; segurar sempre sem fricção arrebenta; fricção errada perde peixe grande
 const good = st => st.ten < 0.72 && st.mv !== 'jump' && !(st.warn > 0 && st.next === 'jump');
 const fight = (f, rod, drag, play, n = 200) => { const r = {}; for (let i = 0; i < n; i++) { const st = P.newFight(f, rod, Math.min(30, P.RODS[rod].cast), 1); let x = null, t = 0; while (!x && t < 900) { x = P.step(st, play(st), drag, 0.05); t += 0.05; } r[x || 'tempo'] = (r[x || 'tempo'] || 0) + 1; } return r; };
