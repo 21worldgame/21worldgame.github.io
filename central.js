@@ -763,7 +763,7 @@ async function loadVigia() {
       pageAll(() => sb.from('saves').select('user_id, data, updated_at')),
       soft(pageAll(() => sb.from('save_history').select('user_id, saved_at, money').gt('saved_at', ago(1)))),
       soft(pageAll(() => sb.from('receita_casos').select('user_id'))),
-      soft(pageAll(() => sb.from('admin_grants').select('user_id, amount').eq('kind', 'money').gt('amount', 0))),
+      soft(pageAll(() => sb.from('admin_grants').select('user_id, kind, amount, created_at').in('kind', ['money', 'reset']).order('created_at'))),   // saldo líquido desde o último recomeço
       soft(pageAll(() => sb.from('pix').select('from_id, from_name, to_id, to_name, amount, memo, kind, at').gt('at', ago(7)).order('at', { ascending: false }))),
       soft(pageAll(() => sb.from('pix').select('from_id, from_name, to_id, to_name, amount, memo, at').gt('at', ago(30)))),
       soft(pageAll(() => sb.from('diario').select('user_id, at, created, kind, txt, val, money, worth, acts, tab').in('kind', ['gap', 'inicio', 'log']).gt('at', ago(7)))),   // com 'log': o salto compara com o último lançamento, não com a abertura anterior
@@ -784,7 +784,7 @@ async function loadVigia() {
     const H = by(hist, 'user_id'), R = by(rc, 'user_id'), Gf = by(gifts, 'user_id'), Pin = by(pix, 'to_id'), Pout = by(pix, 'from_id'), U = Object.fromEntries(users.map(u => [u.user_id, u]));
     const players = saves.map(x => { const u = U[x.user_id] || {}; return { id: x.user_id, name: u.name || x.data?.avatar?.name || '(sem nome)', created: u.created_at, banned: u.banned, s: x.data || {},
       hist: (H[x.user_id] || []).map(h => ({ t: Date.parse(h.saved_at), money: Number(h.money) || 0 })), pixIn: Pin[x.user_id] || [], pixOut: Pout[x.user_id] || [],
-      receita: (R[x.user_id] || []).length, gifts: (Gf[x.user_id] || []).reduce((t, g) => t + Number(g.amount), 0),
+      receita: (R[x.user_id] || []).length, gifts: Math.max(0, (Gf[x.user_id] || []).reduce((t, g) => (g.kind === 'reset' ? 0 : t + Number(g.amount)), 0)),   // envio desfeito (valor negativo) desconta; recomeço zera
       farm: F[x.user_id], farmSender: FS[x.user_id], gap: GP[x.user_id]?.gap || 0, gapN: GP[x.user_id]?.gapN || 0, gapPass: GP[x.user_id]?.gapPass || 0, gapOld: GP[x.user_id]?.gapOld || 0, gapOther: GP[x.user_id]?.gapOther || 0, gapList: GP[x.user_id]?.gapList || [], jump: JP[x.user_id] || 0, jumpAt: JA[x.user_id], jumpCloud: JC[x.user_id] || 0 }; });
     vg = { ...AE.watch(players), pix, saves, farm, UI };
     st.textContent = `${players.length} contas analisadas às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
