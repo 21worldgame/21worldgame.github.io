@@ -27,10 +27,17 @@ function snap(s, now, tab) {
 }
 // começo de sessão ou save trocado (nuvem, outro aparelho): o que já está no livro conta como visto e anota o saldo
 // (o painel compara com a linha anterior: dinheiro que mudou entre uma sessão e outra também aparece)
+// mês em que o save abriu, antes de o jogo rodar os meses que passaram com ele fechado (colheita, venda automática...)
+let loadM = null;
+export const atLoad = m => { if (loadM == null && m != null) loadM = m; };
 export function rebase(s, why = 'abriu o jogo', now = Date.now(), tab = '', uid = jr?.uid) {
+  // abertura: o que entrou nesses meses vai junto (antes ficava como "já visto" e o painel acusava salto de dinheiro sem lançamento)
+  const late = why === 'abriu o jogo' && loadM != null ? (s.log || []).filter(e => e && typeof e === 'object' && (Number(e.m) || 0) > loadM) : [];
+  loadM = Infinity;
   for (const e of s.log || []) if (e && typeof e === 'object') seen.add(e);
-  const { money, chips, base } = snap(s, now, tab);
-  jr = { money, chips, uid }; queue.push(row(s, 'inicio', why, 0, base));
+  const { money, chips, base } = snap(s, now, tab), sum = late.reduce((t, e) => t + Math.round(Number(e.val) || 0), 0);
+  jr = { money, chips, uid }; queue.push({ ...row(s, 'inicio', why, 0, base), money: money - sum });   // saldo de quando abriu
+  for (const e of [...late].reverse()) queue.push({ ...row(s, 'log', String(e.txt || '').slice(0, 300), Math.round(Number(e.val) || 0), base), m: e.m ?? s.month ?? 0 });
 }
 // o que é novo desde a última vez, e confere o caixa: tudo que mudou tem que estar no livro-caixa
 export function take(s, uid, now = Date.now(), tab = typeof location !== 'undefined' ? location.hash.slice(1) : '') {

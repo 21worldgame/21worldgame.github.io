@@ -194,9 +194,10 @@ export function diaryReport(rows, names = {}) {
       const k = pattern(r.txt), S = (src[k] ??= { k, in: 0, out: 0, n: 0, players: {}, ex: r.txt }), Q = (p.src[k] ??= { k, net: 0, n: 0 });
       if (v > 0) S.in += v; else S.out -= v; S.n++; S.players[p.name] = (S.players[p.name] || 0) + v; Q.net += v; Q.n++;
       if (v > 0 && !AUTO.test(k)) {   // janela de 1 h por jogador e ação: guarda a pior
-        const w = (win[`${id}|${k}`] ??= []), t = when(r); w.push({ t, v }); while (t - w[0].t > REP_WIN) w.shift();
-        const tot = w.reduce((a, x) => a + x.v, 0);
-        if (w.length >= REP_N && tot >= REP_MIN && (!p.rep || w.length > p.rep.n)) p.rep = { k, ex: r.txt, n: w.length, total: tot, at: r.at };
+        const w = (win[`${id}|${k}`] ??= []), t = when(r); w.push({ t, v, m: r.m }); while (t - w[0].t > REP_WIN) w.shift();
+        const tot = w.reduce((a, x) => a + x.v, 0), months = new Set(w.map(x => x.m)).size;
+        // uma vez por mês do jogo é renda que cai sozinha (empresa, provedor, aluguel): só conta repetido várias vezes no mesmo mês
+        if (w.length >= REP_N && w.length > months * 2 && tot >= REP_MIN && (!p.rep || w.length > p.rep.n)) p.rep = { k, ex: r.txt, n: w.length, total: tot, at: r.at };
       }
     }
     last[id] = r;

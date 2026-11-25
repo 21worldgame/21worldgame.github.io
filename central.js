@@ -104,10 +104,10 @@ for (const id of ['#ad-logout', '#ad-logout2']) $(id).addEventListener('click', 
 
 // ---------- navegação ----------
 // poucos menus: cada um junta várias partes do painel, uma embaixo da outra
-const MENU = { alertas: ['vigia', 'overview'], jogadores: ['players'], investigar: ['diario', 'terras', 'livros'], mundo: ['economy', 'rules', 'owners', 'news'], delegacia: ['bo'], enviados: ['sent'], pedidos: ['pro', 'passwords', 'log'] };
+const MENU = { alertas: ['vigia', 'overview'], jogadores: ['players'], investigar: ['diario', 'terras', 'livros'], mundo: ['economy', 'rules', 'owners', 'news'], delegacia: ['bo'], pano: ['pano'], enviados: ['sent'], pedidos: ['pro', 'passwords', 'log'] };
 let tuneLoad = null;
 const LOAD = { vigia: () => loadVigia(), overview: () => loadOverview(), players: () => loadUsers(), diario: () => { if (!dj) loadDiario(); }, terras: () => loadLands(),
-  economy: () => { loadConfig(); loadEconomy(); }, rules: () => tuneLoad?.(), owners: () => loadOwners(), news: () => loadAnns(), bo: () => loadBo(), sent: () => loadSent(), pro: () => loadPro(), passwords: () => loadPw(), log: () => loadLog() };
+  economy: () => { loadConfig(); loadEconomy(); }, rules: () => tuneLoad?.(), owners: () => loadOwners(), news: () => loadAnns(), bo: () => loadBo(), pano: () => (vg ? drawPano() : loadVigia()), sent: () => loadSent(), pro: () => loadPro(), passwords: () => loadPw(), log: () => loadLog() };
 function show(tab) {
   const g = MENU[tab] ? tab : Object.keys(MENU).find(k => MENU[k].includes(tab)) || 'alertas';
   document.querySelectorAll('.ad-nav button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === g));
@@ -876,11 +876,27 @@ function drawCheats(on) {
         <td class="ad-xl__why">${r.why.map(w => esc(w)).join('<br>')}</td>
         <td class="ad-xl__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(r.id)}">ficha</button><button class="btn btn--glass btn--xs" data-desc="${esc(r.id)}">descontar</button><button class="btn btn--glass btn--xs" data-pano="${esc(r.id)}" title="tirar dos alertas: volta só se aparecer coisa nova">passar o pano</button>${r.excess > 0 ? `<button class="btn btn--glass btn--xs" data-vg-take="${esc(r.id)}">tirar ${AE.brlShort(r.excess)}</button>` : ''}<button class="btn btn--danger btn--xs" data-pun="${esc(r.id)}" data-pun-who="${esc(r.name)}" data-pun-why="${esc(r.why[0] || 'trapaça')}">banir / excluir</button></td></tr>`; }).join('')}
     </tbody></table></div>` : (farms.length ? '' : '<p class="good">Nenhum sinal forte de trapaça agora. 👍</p>');
-  const paid = cleared.filter(r => /^descontado/.test(OKS[r.id].note || '')), wiped = cleared.filter(r => !paid.includes(r));
-  if (paid.length) $('#ad-cheat').insertAdjacentHTML('beforeend', `<p class="small muted ad-cleared">💸 já descontados (acompanhe em <a href="#" data-goto-sent>avisos enviados</a>; voltam aqui se aparecer coisa nova): ${paid.map(r => `<a href="#" data-vg-user="${esc(r.id)}">${esc(r.name)}</a> <small>${esc(OKS[r.id].note)}</small> <button class="btn btn--glass btn--xs" data-pano-undo="${esc(r.id)}">voltar para os alertas</button>`).join(' · ')}</p>`);
-  if (wiped.length) $('#ad-cheat').insertAdjacentHTML('beforeend', `<p class="small muted ad-cleared">🧽 pano passado (fora dos alertas até aparecer coisa nova): ${wiped.map(r => `<a href="#" data-vg-user="${esc(r.id)}">${esc(r.name)}</a> <small>${new Date(OKS[r.id].at).toLocaleDateString('pt-BR')}</small> <button class="btn btn--glass btn--xs" data-pano-undo="${esc(r.id)}">voltar para os alertas</button>`).join(' · ')}</p>`);
+  if (cleared.length) $('#ad-cheat').insertAdjacentHTML('beforeend', `<p class="small muted ad-cleared">🧽 ${cleared.length} com pano passado ou já descontados: <a href="#" data-goto-pano>ver no menu pano passado</a></p>`);
+  drawPano();
 }
 // na ficha do jogador: o que a vigilância viu sobre ele
+// menu "pano passado": todos que saíram dos alertas, se continuam quietos ou se apareceu coisa nova depois
+function drawPano() {
+  const el = $('#ad-pano'); if (!el || !vg) return;
+  const R = Object.fromEntries(vg.rows.map(r => [r.id, r])), ids = Object.keys(OKS);
+  const list = ids.map(id => ({ id, o: OKS[id], r: R[id], name: R[id]?.name || vg.UI?.[id]?.name || String(id).slice(0, 8) })).sort((a, b) => (a.r && !fresh(a.r) ? 1 : 0) - (b.r && !fresh(b.r) ? 1 : 0) || String(b.o.at).localeCompare(String(a.o.at)));
+  const back = list.filter(x => x.r && fresh(x.r)).length;
+  $('#ad-pano-st').textContent = `${list.length} jogador(es) · ${back} voltaram a aparecer nos alertas`;
+  const bd = $('#ad-pano-badge'); if (bd) { bd.hidden = !back; bd.textContent = back; }
+  el.innerHTML = list.map(({ id, o, r, name }) => { const again = r && fresh(r), paid = /^descontado/.test(o.note || '');
+    return `<tr${again ? ' class="ad-alert"' : ''}><td><a href="#" data-vg-user="${esc(id)}"><b>${esc(name)}</b></a></td>
+      <td>${again ? '<span class="tag tag--red">voltou: coisa nova depois do pano</span>' : paid ? '<span class="tag tag--gold">descontado</span>' : '<span class="tag tag--green">quieto</span>'}</td>
+      <td>${o.at ? new Date(o.at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}</td><td><small>${esc(o.note || '')}</small></td>
+      <td class="num">${r ? AE.brlShort(r.worth) : '—'}</td><td class="ad-xl__why"><small>${r?.why?.length ? r.why.map(w => esc(w)).join('<br>') : '<span class="muted">nada agora</span>'}</small></td>
+      <td class="ad-xl__acts"><button class="btn btn--gold btn--xs" data-vg-user="${esc(id)}">ficha</button><button class="btn btn--glass btn--xs" data-pano-undo="${esc(id)}">voltar para os alertas</button></td></tr>`; }).join('')
+    || '<tr><td colspan="7" class="muted">Ninguém com pano passado.</td></tr>';
+}
+document.addEventListener('click', e => { if (e.target.closest('[data-goto-pano]')) { e.preventDefault(); show('pano'); } if (e.target.closest('#ad-pano-reload')) loadVigia(); });
 function cheatBox(id) {
   const r = vg?.rows.find(x => x.id === id); if (!r || !r.score) return '';
   const [lv, tone] = certainty(r.score);

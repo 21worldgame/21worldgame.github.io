@@ -21,6 +21,7 @@ import { sitting as BOTS } from './botpool.js';
 import * as NG from './negocios.js';
 import * as EC from './econ.js';
 import * as INV from './invest.js';
+import * as DJ from './diario.js';
 import * as INVU from './invest-ui.js';
 import * as SH from './shop.js';
 import * as NGU from './negocios-ui.js';
@@ -1614,6 +1615,7 @@ setTimeout(econReal, 8000); setInterval(econReal, 300000);
 function worldMonths() { G.newsQuiet = true; try { worldMonths0(); } finally { G.newsQuiet = false; } }   // fechamento do mês não vira notícia na TV 21
 function worldMonths0() {
   const w = Live.world(), t = Live.now(), target = W.current(w, t), s = S();
+  DJ.atLoad(s.month);   // diário: lembra o mês do save antes de rodar os meses atrasados
   SO.ensure(s); GR.ensure(s); PM.ensure(s); AB.ensure(s); CN.ensure(s); SU.ensure(s); NG.ensure(s); CD.setMonth(s.month); CD.ensure(s);
   { const v = FT.migrate(s); if (v) { note('futebol com preços reais: clube antigo devolvido pelo preço que você pagou', v); say(`O futebol agora tem preços reais. Seu clube foi devolvido e você recebeu ${brl(v)} de volta: escolha um clube de novo na aba futebol.`); save(); } }
   if (s.worldSync !== true) { s.month = target; s.worldSync = true; CD.setMonth(s.month); save(); render(); return; }     // primeira vez: entra no mês atual do mundo
@@ -1714,7 +1716,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 238;
+const APP_VERSION = 239;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
