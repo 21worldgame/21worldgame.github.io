@@ -826,6 +826,13 @@ console.log('logística da cana ok');
   assert.match(AP.place(s, now, slot, 0, 'res', 'h', 5), /mínima/);
   assert.equal(AP.place(s, now, slot, 0, 'res', 'h', 100), null); assert.equal(s.chips, 900);
   assert.match(AP.place(s, AP.slotStart(slot) + AP.PRE + 1, slot, 0, 'res', 'h', 100), /fecharam/);
+  // limite por jogo, não por aposta (repetir 20 mil no mesmo time)
+  const big = { chips: 100000 };
+  assert.equal(AP.place(big, now, slot, 1, 'res', 'h', AP.MAX_BET - 50), null);
+  assert.match(AP.place(big, now, slot, 1, 'res', 'h', 100), /ainda cabem 50/);
+  assert.equal(AP.place(big, now, slot, 1, 'gols', 'o', 50), null);
+  assert.match(AP.place(big, now, slot, 1, 'res', 'a', 10), /já apostou o máximo/);
+  assert.equal(AP.place(big, now, slot, 2, 'res', 'h', 100), null, 'outro jogo tem limite próprio');
   assert.equal(AP.settle(s, now).length, 0, 'não paga antes do fim');
   const r = AP.settle(s, AP.slotStart(slot) + AP.PRE + AP.LIVE);
   assert.equal(r.length, 1); assert.equal(s.chips, 900 + r[0].pay); assert.equal(s.fbets.length, 0);

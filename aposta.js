@@ -126,6 +126,9 @@ export function place(s, now, slot, i, mk, k, stake) {
   if (stake < MIN_BET) return `a aposta mínima é ${MIN_BET} fichas.`;
   if (stake > MAX_BET) return `a aposta máxima é ${MAX_BET.toLocaleString('pt-BR')} fichas.`;
   if (stake > (s.chips || 0)) return 'fichas insuficientes. Compre no caixa do cassino.';
+  // o limite vale por jogo, não por aposta: antes dava para repetir 20 mil várias vezes no mesmo time
+  const used = (s.fbets || []).filter(b => b.slot === slot && b.i === i).reduce((t, b) => t + b.stake, 0);
+  if (used + stake > MAX_BET) return used >= MAX_BET ? `você já apostou o máximo nesse jogo (${MAX_BET.toLocaleString('pt-BR')} fichas).` : `o máximo por jogo é ${MAX_BET.toLocaleString('pt-BR')} fichas: ainda cabem ${(MAX_BET - used).toLocaleString('pt-BR')}.`;
   const mt = matches(slot)[i], m = markets(mt).find(x => x.id === mk), o = m?.opts.find(x => x.k === k);
   if (!o) return 'opção inválida.';
   s.chips -= stake;
