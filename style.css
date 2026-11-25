@@ -3828,3 +3828,21 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 @keyframes pfShine { from { background-position: 150% 0; } to { background-position: -100% 0; } }
 @keyframes pfCrown { 50% { transform: translateY(-3px) rotate(-4deg); } }
 @media (prefers-reduced-motion: reduce) { #dlg-profile.is-top1::before, .pf__crown span { animation: none; } }
+
+/* painel da safra nos contratos de exportação (v240) */
+.sf { display: grid; gap: var(--space-sm); margin-bottom: var(--space-md); padding: var(--space-md); border-radius: 18px; background: linear-gradient(160deg, color-mix(in oklab, var(--money) 10%, var(--color-paper-2)), var(--color-paper-2)); border: 1px solid color-mix(in oklab, var(--money) 30%, transparent); }
+.sf__head { display: grid; gap: 2px; } .sf__head h4 { margin: 0; }
+.sf__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: var(--space-sm); }
+.sf-card { display: grid; grid-template-columns: 72px 1fr; gap: var(--space-sm); padding: var(--space-sm); border-radius: 14px; background: var(--color-paper-3); }
+.sf-card img { width: 72px; height: 72px; object-fit: cover; border-radius: 12px; }
+.sf-card h5 { margin: 0 0 4px; text-transform: capitalize; font-size: var(--text-md, 1rem); }
+.sf-card__body { display: grid; gap: 4px; min-width: 0; }
+.sf-num { margin: 0; display: grid; } .sf-num b { font: 700 1.35rem/1.1 var(--font-display, inherit); color: var(--money); } .sf-num--field b { color: var(--hud-accent); font-size: 1.1rem; }
+.sf-num small { color: var(--color-ink-2, inherit); opacity: .8; font-size: var(--text-xs); }
+.sf-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: var(--text-xs); }
+.sf-list li { display: flex; justify-content: space-between; gap: 6px; border-top: 1px dashed var(--color-rule-2); padding-top: 2px; }
+.sf-fit { display: grid; gap: 3px; font-size: var(--text-sm); }
+.sf-fit__bar { display: flex; height: 9px; border-radius: 5px; overflow: hidden; background: var(--color-paper-3); }
+.sf-fit__bar .is-ready { background: var(--money); } .sf-fit__bar .is-field { background: repeating-linear-gradient(45deg, var(--hud-accent), var(--hud-accent) 4px, color-mix(in oklab, var(--hud-accent) 60%, transparent) 4px, color-mix(in oklab, var(--hud-accent) 60%, transparent) 8px); }
+.sf-calc { display: grid; gap: 6px; padding: var(--space-sm); border-radius: 14px; background: var(--color-paper-3); border: 1px dashed var(--color-rule-2); }
+.sf-calc .row { gap: 6px; } .sf-calc input { max-width: 12rem; } .sf-calc p { margin: 0; }
