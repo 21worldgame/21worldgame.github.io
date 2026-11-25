@@ -645,7 +645,8 @@ document.addEventListener('click', async e => {
 
 // ---------- vigilância (admin-econ.js watch): quem enriqueceu rápido demais, Pix, cassino, Receita, tempo jogado ----------
 const hrs = h => (h == null ? '—' : h < 1 ? `${Math.round(h * 60)} min` : `${h.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h`);
-async function pageAll(q) { const out = []; for (let f = 0; ; f += 500) { const { data, error } = await q().range(f, f + 499); if (error) throw error; out.push(...(data || [])); if (!data || data.length < 500) return out; } }
+// ordem por chave única: sem ela o banco devolve as páginas em ordem solta e a mesma linha vinha 2 vezes (o pano voltava com valores dobrados)
+async function pageAll(q, key = 'id') { const out = []; for (let f = 0; ; f += 500) { const { data, error } = await q().order(key).range(f, f + 499); if (error) throw error; out.push(...(data || [])); if (!data || data.length < 500) return out; } }
 // ---------- diário: tudo o que cada jogador fez (diario.sql) ----------
 let dj = null;
 const djName = id => (users.find(u => u.user_id === id)?.name) || String(id).slice(0, 8);
@@ -760,15 +761,15 @@ async function loadVigia() {
     if (!users.length) await loadUsers('');
     const ago = d => new Date(Date.now() - d * 864e5).toISOString(), soft = p => p.catch(() => []);
     const [saves, hist, rc, gifts, pix, pix30, diary, bans, oks, takes] = await Promise.all([
-      pageAll(() => sb.from('saves').select('user_id, data, updated_at')),
+      pageAll(() => sb.from('saves').select('user_id, data, updated_at'), 'user_id'),
       soft(pageAll(() => sb.from('save_history').select('user_id, saved_at, money').gt('saved_at', ago(1)))),
       soft(pageAll(() => sb.from('receita_casos').select('user_id'))),
       soft(pageAll(() => sb.from('admin_grants').select('user_id, kind, amount, created_at').in('kind', ['money', 'reset']).order('created_at'))),   // saldo líquido desde o último recomeço
       soft(pageAll(() => sb.from('pix').select('from_id, from_name, to_id, to_name, amount, memo, kind, at').gt('at', ago(7)).order('at', { ascending: false }))),
       soft(pageAll(() => sb.from('pix').select('from_id, from_name, to_id, to_name, amount, memo, at').gt('at', ago(30)))),
       soft(pageAll(() => sb.from('diario').select('user_id, at, created, kind, txt, val, money, worth, acts, tab').in('kind', ['gap', 'inicio', 'log']).gt('at', ago(7)))),   // com 'log': o salto compara com o último lançamento, não com a abertura anterior
-      soft(pageAll(() => sb.from('bans').select('user_id, reason, until'))),
-      soft(pageAll(() => sb.from('vigia_ok').select('*'))),
+      soft(pageAll(() => sb.from('bans').select('user_id, reason, until'), 'user_id')),
+      soft(pageAll(() => sb.from('vigia_ok').select('*'), 'user_id')),
       soft(pageAll(() => sb.from('admin_grants').select('user_id, amount, created_at').eq('kind', 'money').lt('amount', 0).gt('created_at', ago(30)))),
     ]);
     OKS = Object.fromEntries(oks.map(o => [o.user_id, o]));
@@ -794,9 +795,10 @@ async function loadVigia() {
 }
 // situação da conta agora: ativa, suspensa até tal dia, banida para sempre ou excluída
 let BANS = {}, KNOWN = new Set(), OKS = {};
-// passou o pano: some dos alertas até aparecer coisa nova (mais pontos, ou +R$ 50 mil sem origem / de Pix)
-const fresh = r => { const o = OKS[r.id]; if (!o) return true; const n = x => Number(x) || 0;
-  return n(r.score) > n(o.score) || n(r.gap) > n(o.gap) + 50000 || n(r.jump) > n(o.jump) + 50000 || n(r.pixInSum) > n(o.pix) + 50000 || n(r.farm?.total) > n(o.pix) + 50000; };
+// passou o pano: só volta com coisa que ACONTECEU depois do pano (regra nova do painel olhando evento antigo não traz de volta)
+const fresh = r => { const o = OKS[r.id]; if (!o) return true; const n = x => Number(x) || 0, t = new Date(o.at).getTime() || 0, after = x => x != null && new Date(x).getTime() > t;
+  const gapNew = (r.gapList || []).filter(g => after(g.at)).reduce((s, g) => s + n(g.val), 0), farmNew = (r.farm?.list || []).filter(p => after(p.at)).reduce((s, p) => s + n(p.amount), 0);
+  return (r.rep && after(r.rep.at)) || (n(r.jump) > 50000 && after(r.jumpAt)) || gapNew > 50000 || farmNew > 50000 || n(r.pixInSum) > n(o.pix) + 50000; };
 function status(id) {
   if (KNOWN.size && !KNOWN.has(id)) return '<span class="tag tag--red">excluída</span>';
   const b = BANS[id]; if (!b) return '<span class="tag tag--green">ativa</span>';

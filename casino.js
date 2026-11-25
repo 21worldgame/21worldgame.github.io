@@ -76,7 +76,7 @@ export async function initCasino() {
   $('#online').innerHTML = lobby ? '<i class="is-on"></i>salão online' : '<i></i>sem conexão: só mesas rápidas';
   announce();
   renderLobby();
-  G.onLogin = loadGlobalRanking; loadGlobalRanking(); setInterval(loadGlobalRanking, 30000);
+  G.onLogin = loadGlobalRanking; loadGlobalRanking(); setInterval(loadGlobalRanking, 60000);
   Auth.onRankChange(loadGlobalRanking);
   setInterval(() => { NPC.CLOCK.real = Math.max(Live.realOnline(), (lobby?.peers.size || 0) + 1); if (!$('#lobby').hidden && $('#lobby-hero')) $('#lobby-hero').innerHTML = lobbyHero(NPC.onlineTotal(Live.now())); renderRanking(); if (lobby) $('#online').innerHTML = `<i class="is-on"></i>${NPC.onlineTotal(Live.now())} jogadores online`; }, 4000);   // os números do mundo andam sozinhos
   G.onRender = renderRanking;
@@ -85,7 +85,7 @@ export async function initCasino() {
 }
 
 let globalRows = null;
-function loadGlobalRanking() { if (!Auth.account()) return; Auth.ranking(25000).then(rows => { if (rows) { globalRows = rows; renderRanking(); } }).catch(() => {}); }
+function loadGlobalRanking() { if (!Auth.account()) return; Auth.ranking(55000).then(rows => { if (rows) { globalRows = rows; renderRanking(); } }).catch(() => {}); }
 let annTimer;
 // outros jogos (truco, sinuca) leem quem está no salão por aqui
 export const peerList = () => (lobby ? [...lobby.peers.entries()] : []);

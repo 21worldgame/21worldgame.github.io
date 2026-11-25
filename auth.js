@@ -398,7 +398,7 @@ async function afterLogin() {
   G.onLogin?.();
 }
 
-// ranking ao vivo desligado: cada gravação de perfil fazia o banco conferir todos os inscritos (esgotava o disco). O ranking é consultado a cada 30 s.
+// ranking ao vivo desligado: cada gravação de perfil fazia o banco conferir todos os inscritos (esgotava o disco). O ranking é consultado a cada 1 min.
 export const onRankChange = () => {};
 function renderAccount() {
   const el = $('#account-line'); if (!el) return;
