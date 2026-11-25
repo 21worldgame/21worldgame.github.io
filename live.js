@@ -229,7 +229,7 @@ async function applyGrants(sb) {
     if (g.kind === 'pioneer') { G.S.pioneer = true; badge('Pioneiro do 21 World', 'Você jogou no começo do game: seu perfil ganhou o selo de pioneiro.', 'mission'); }
     if (g.kind === 'reset') {
       const name = G.S.avatar?.name;
-      const pioneer = G.S.pioneer; G.S = blankState(name && name !== 'você' ? name : ''); if (pioneer) G.S.pioneer = true;   // o selo de pioneiro fica
+      const pioneer = G.S.pioneer; G.S = blankState(name && name !== 'você' ? name : ''); G.S.resetAt = Date.now(); if (pioneer) G.S.pioneer = true;   // o selo de pioneiro fica
       if (amt > 0) G.S.money = amt;   // reset com valor: recomeça com esse dinheiro
       say('O administrador reiniciou o seu progresso.', true);
     }

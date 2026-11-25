@@ -86,7 +86,7 @@ export function setBlocked(key, on) { const b = new Set(G.S.blocked || []); on ?
 export function adopt(state) { G.S = normalize(state); try { localStorage.setItem(keyFor(uid), JSON.stringify(G.S)); } catch {} }
 export function writeSave(u, state) { try { localStorage.setItem(keyFor(u), JSON.stringify(state)); localStorage.setItem(UID_KEY, u); } catch {} }
 export function forgetUser() { try { localStorage.removeItem(UID_KEY); } catch {} }
-export function reset() { G.S = blankState(G.S.avatar?.name && G.S.avatar.name !== 'você' ? G.S.avatar.name : ''); save(); }
+export function reset() { G.S = blankState(G.S.avatar?.name && G.S.avatar.name !== 'você' ? G.S.avatar.name : ''); G.S.resetAt = Date.now(); save(); }   // resetAt: recomeço de verdade (auth.js deixa gravar por cima da nuvem)
 // números de 4 dígitos ou mais com ponto de milhar em qualquer texto do jogo (1000 sacas -> 1.000 sacas); ano (1900-2099) fica igual
 export const dots = t => String(t).replace(/(^|[^\d.,\w/:])(\d{4,})(?![\d.,:\w])/g, (m, a, n) => (/^(19|20)\d\d$/.test(n) ? m : a + Number(n).toLocaleString('pt-BR')));
 export function note(txt, val = 0) { txt = dots(txt); try { G.track?.(G.S, txt, val); } catch {} G.S.log.unshift({ m: G.S.month, txt, val: Math.round(val) }); try { G.onNote?.(txt, val); } catch {}

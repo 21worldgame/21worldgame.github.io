@@ -254,6 +254,12 @@ export async function push() {
   pushing = true; lastPushAt = Date.now();
   try {
     try { D.take(G.S, user.id, G.now?.() ?? Date.now()); } catch {}   // diário do admin: o que mudou desde o último envio
+    // trava: jogo do começo (save deste aparelho perdido) nunca grava por cima do progresso da nuvem; só recomeço de verdade (resetAt).
+    // KuramAlex 25/11: o aparelho abriu vazio na volta do servidor e apagou R$ 1,6 mi de patrimônio.
+    if (base && (Number(G.S.level) || 1) <= 2 && !(Number(G.S.resetAt) > (Number(baseData?.resetAt) || 0))) {
+      const ref = baseData || (await pull().catch(() => null))?.data;
+      if (ref && progressOf(ref) > 3e5 && progressOf(G.S) < progressOf(ref) * 0.1) { const row = await pull().catch(() => null); if (row) takeRemote(row); return false; }
+    }
     const stamp = G.S.savedAt || 0, at = serverIso(), data = { ...G.S, dev: DEV, appV: G.appV || 0 }, snap = JSON.stringify(data);
     let res;
     if (base) res = await sb.from('saves').update({ data, updated_at: at }).eq('user_id', user.id).eq('updated_at', base).select('updated_at');
