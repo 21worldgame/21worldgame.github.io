@@ -158,10 +158,10 @@ function streakHTML(streak, claimedToday) {
   const cur = ((Math.max(1, streak) - 1) % 7) + 1;
   return Array.from({ length: 7 }, (_, i) => {
     const d = i + 1, state = d < cur || (d === cur && claimedToday) ? 'is-got' : d === cur ? 'is-now' : '';
-    return `<div class="day ${state}"><small>dia ${d}</small><strong>+${(d - 1) * 10}%</strong></div>`;
+    return `<div class="day ${state}"><small>dia ${d}</small><strong>+${(d - 1) * 5}%</strong></div>`;
   }).join('');
 }
-const streakBonus = streak => 1 + Math.min(6, ((Math.max(1, streak) - 1) % 7)) * 0.1;
+const streakBonus = streak => 1 + Math.min(6, ((Math.max(1, streak) - 1) % 7)) * 0.05;   // v235: até +30% (era +60%)
 function renderMissions() {
   $('#missions-mini').innerHTML = missionsHTML();
   $('#missions-full').innerHTML = missionsHTML();
@@ -192,9 +192,7 @@ async function spinDaily() {
   const btn = $('#dw-btn'); btn.disabled = true;
   const i = GM.spinDaily(), seg = 360 / GM.DAILY_WHEEL.length;
   const target = landAt(dwAngle, i, GM.DAILY_WHEEL.length, 6, Math.random());
-  sfx.play('ball', 0.3);
-  await spinWheel($('#dw-rot'), { from: dwAngle, to: target, ms: 5600, pin: document.querySelector('.dw__pin'), seg, reduced: RM.matches });
-  dwAngle = target;
+  // v235: o giro do dia é gravado e pago ANTES da animação (antes, recarregar a página no meio do giro dava outro giro até sair o prêmio grande)
   P.claimDaily(S(), today(), yesterday(), false);   // só registra a sequência; o prêmio vem da roda
   const prize = GM.DAILY_WHEEL[i], mult = streakBonus(S().daily.streak) * Live.CFG.daily_mult * PK.mult(S(), 'daily'), amt = Math.round(prize.amount * mult);
   let txt;
@@ -202,7 +200,13 @@ async function spinDaily() {
   if (prize.kind === 'money') { S().money += amt; note('roleta de prêmios do dia', amt); txt = brl(amt); }
   if (prize.kind === 'calves') { S().herd.push({ id: S().nextId++, heads: amt, kg: 180 }); txt = `${amt} bezerros no seu rebanho`; }
   if (prize.kind === 'xp') { P.addXp(S(), amt).forEach(levelUp); txt = `${int(amt)} XP`; }
-  if (prize.kind === 'card') { const id = S().daily.streak >= 5 ? 'ouro' : 'simples', r = CD.openPack(S(), id, Math.random, Live.now(), true); txt = `um ${CD.packInfo(id).label}`; setTimeout(() => showCard(r.cards), 600); }
+  let cards = null; if (prize.kind === 'card') { const id = S().daily.streak >= 5 ? 'ouro' : 'simples', r = CD.openPack(S(), id, Math.random, Live.now(), true); txt = `um ${CD.packInfo(id).label}`; cards = r.cards; }
+  save();
+  // gira sempre (com "reduzir animações" do sistema o giro só fica mais curto; antes pulava direto para o resultado e parecia parado)
+  sfx.play('ball', 0.3);
+  await spinWheel($('#dw-rot'), { from: dwAngle, to: target, ms: RM.matches ? 2500 : 5600, pin: document.querySelector('.dw__pin'), seg });
+  dwAngle = target;
+  if (cards) setTimeout(() => showCard(cards), 600);
   sfx.play('stack', 0.7); confetti(110);
   $('#dl-sub').innerHTML = `<strong class="dw-win">Você ganhou ${txt}!</strong>${mult > 1 ? ` Bônus de sequência +${Math.round((mult - 1) * 100)}%.` : ''} Volte amanhã.`;
   $('#streak').innerHTML = streakHTML(S().daily.streak, true);
@@ -1703,7 +1707,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 234;
+const APP_VERSION = 235;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

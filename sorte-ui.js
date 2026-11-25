@@ -54,7 +54,7 @@ export async function doSpin() {
   save(); busy = true; G.render?.();
   const b = $('#so-btn'); b.disabled = true; b.textContent = 'girando...'; $('#so-sub').textContent = 'Valendo uma carta rara...';
   const to = landAt(angle, r.slice, SLICES, 6, Math.random());
-  await spinWheel($('#so-rot'), { from: angle, to, ms: RM.matches ? 0 : 6200, pin: $('#so-pin'), seg: 360 / SLICES, reduced: RM.matches });
+  await spinWheel($('#so-rot'), { from: angle, to, ms: RM.matches ? 2500 : 6200, pin: $('#so-pin'), seg: 360 / SLICES });   // gira sempre (mais curto com reduzir animações)
   angle = to;
   if (r.win) {
     $('#so-wheel').classList.add('is-win'); sfx.fanfare(); sfx.play('stack', 0.7); confetti(180);
