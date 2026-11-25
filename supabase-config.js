@@ -5,5 +5,6 @@
 export const SUPABASE = {
   url: 'https://musurfbgxdhfaqzpuhhu.supabase.co',
   anonKey: 'sb_publishable_7c62oS19-mNje4JWtkrhtQ_5k66EEL4',   // chave pública (publishable)
+  turnstile: '',   // Cloudflare Turnstile: chave PÚBLICA do site (Site Key). Vazia = desligado. A secreta vai só no painel do Supabase.
   providers: [],    // login social opcional, depois de ativar no painel: ['github'] ou ['github', 'google']
 };

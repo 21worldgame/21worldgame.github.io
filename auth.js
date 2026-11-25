@@ -4,6 +4,7 @@ import { adopt, G, $, save, say, writeSave, forgetUser, blankState, currentUid, 
 import * as L from './logic.js';
 import { merge3 } from './sync-merge.js';
 import * as D from './diario.js';
+import { captcha } from './turnstile.js';
 import { keepRestored, cleanName, validateSignup, validateLogin, validatePassword, translateError, isNameTaken, withSuffix, MIN_PASSWORD } from './authrules.js';
 
 const LIB = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/+esm';
@@ -71,10 +72,10 @@ async function submit(e) {
       const nm = cleanName(f.name), { data: same } = await c.from('public_profiles').select('user_id').ilike('name', nm.replace(/[%_\\]/g, m => '\\' + m)).limit(1);
       if (same?.length) { setMode('in'); setErr(`Já existe uma conta com o nome "${nm}". Se é você jogando em outro aparelho, entre com o mesmo e-mail (ou o mesmo botão do Google) e tudo aparece aqui.`); return; }
       const { data, error } = await c.auth.signUp({ email: f.email.trim(), password: f.password,
-        options: { data: { name: cleanName(f.name) }, emailRedirectTo: location.origin + location.pathname } });
+        options: { data: { name: cleanName(f.name) }, emailRedirectTo: location.origin + location.pathname, captchaToken: await captcha($('#au-cap')) } });
       if (error) throw error;
       if (!data.session) {   // projeto ainda com confirmação ligada: tenta entrar direto (o banco já confirma a conta sozinho)
-        const again = await c.auth.signInWithPassword({ email: f.email.trim(), password: f.password });
+        const again = await c.auth.signInWithPassword({ email: f.email.trim(), password: f.password, options: { captchaToken: await captcha($('#au-cap')) } });
         if (!again.error) { user = again.data.user; $('#au-form [name="password"]').value = ''; await afterLogin(); return; }
         setMode('in');
         $('#au-form [name="password"]').value = '';
@@ -85,7 +86,7 @@ async function submit(e) {
       }
       user = data.session.user;
     } else {
-      const { data, error } = await c.auth.signInWithPassword({ email: f.email.trim(), password: f.password });
+      const { data, error } = await c.auth.signInWithPassword({ email: f.email.trim(), password: f.password, options: { captchaToken: await captcha($('#au-cap')) } });
       if (error) throw error;
       user = data.user;
     }

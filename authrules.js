@@ -31,6 +31,7 @@ export function validateLogin({ email, password }) {
 }
 
 const MAP = [
+  [/captcha/i, 'A verificação do Cloudflare (não sou robô) falhou. Recarregue a página e tente de novo.'],
   [/invalid login credentials/i, 'E-mail ou senha incorretos.'],
   [/email not confirmed/i, 'Confirme seu e-mail pelo link que enviamos antes de entrar.'],
   [/already registered|already been registered|user already exists/i, 'Já existe uma conta com esse e-mail. Use a aba "entrar".'],

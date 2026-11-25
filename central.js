@@ -1,5 +1,6 @@
 // Painel administrativo. Tudo o que ele faz passa pelas regras do banco (supabase/admin.sql): sem ser admin, nada funciona.
 import { SUPABASE } from './supabase-config.js';
+import { captcha } from './turnstile.js';
 import * as W from './world.js';
 import { LISTS as BIZ, CAT_KEYS } from './negocios.js';
 import { GROUPS, groupOf } from './contador.js';
@@ -34,7 +35,8 @@ $('#ad-form').addEventListener('submit', async e => {
   e.preventDefault();
   const f = Object.fromEntries(new FormData(e.target)), err = $('#ad-err');
   err.hidden = true; $('#ad-submit').disabled = true;
-  const { data, error } = await sb.auth.signInWithPassword({ email: String(f.email).trim(), password: f.password });
+  let tok; try { tok = await captcha($('#ad-cap')); } catch { $('#ad-submit').disabled = false; err.textContent = 'A verificação do Cloudflare falhou. Recarregue a página e tente de novo.'; err.hidden = false; return; }
+  const { data, error } = await sb.auth.signInWithPassword({ email: String(f.email).trim(), password: f.password, options: { captchaToken: tok } });
   $('#ad-submit').disabled = false;
   if (error) { err.textContent = /invalid login/i.test(error.message) ? 'E-mail ou senha incorretos.' : /not confirmed/i.test(error.message) ? 'Conta ainda não confirmada no banco do jogo.' : error.message; err.hidden = false; return; }
   e.target.reset();
