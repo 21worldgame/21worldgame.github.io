@@ -14,6 +14,16 @@ export function rng(seed) {
   return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 export const slotOf = now => Math.floor((now - EPOCH) / SLOT);
+// dificuldade extrema (v231, jogos a partir de 25/11/2026 00:00 de Brasília; os anteriores ficam como estavam, a tabela não muda):
+// no campo, o favorito vale bem menos do que o papel diz e cada time tem o "dia" dele (sorteado, ninguém vê antes);
+// as odds continuam saindo do papel, com margem maior. Placar exato vai até 4 x 4, sem "outro placar".
+export const HARD_FROM = Math.floor((Date.UTC(2026, 10, 25, 3) - EPOCH) / SLOT), HARD_MARGIN = 0.35;
+const day = (e, sd) => Math.exp((e() - 0.5) * 2 * sd);   // fator do dia: 1 = normal
+function field(h, a, e) {   // médias reais do jogo: diferença de força cortada a 1/4 e dia de cada time
+  const d = (h.r - a.r) / 40, gh = day(e, 1), ga = day(e, 1), c = day(e, 0.7), y = day(e, 0.8);
+  return { gh: 1.45 * Math.exp(0.3 * d) * gh, ga: 1.12 * Math.exp(-0.3 * d) * ga, ch: Math.max(2.5, 5.3 + 0.5 * d) * c * day(e, 0.3), ca: Math.max(2.5, 4.4 - 0.5 * d) * c * day(e, 0.3),
+    yh: 1.9 * y * day(e, 0.3), ya: 2.3 * y * day(e, 0.3), sh: 12 + 2 * d, sa: 10 - 2 * d };
+}
 export const slotStart = slot => EPOCH + slot * SLOT;
 export function phase(slot, now) { const t = now - slotStart(slot); return t < PRE ? 'pre' : t < PRE + LIVE ? 'live' : 'post'; }
 export const minuteAt = (slot, now) => Math.max(0, Math.min(90, Math.floor((now - slotStart(slot) - PRE) / (LIVE / 90))));
@@ -48,10 +58,10 @@ export function matches(slot) {
   const season = seasonOf(slot), rd = roundOf(slot), pairs = [0, 1, 2].flatMap(d => fixtures(season, d)[rd].map(([h, a]) => [d, CLUBS[d][h], CLUBS[d][a]]));
   const list = pairs.map(([div, home, away], i) => {
     const rt = rates(home, away), e = rng(slot * 131 + i * 17 + 1), events = [];
-    const kick = e() < 0.5 ? 'h' : 'a';
+    const kick = e() < 0.5 ? 'h' : 'a', real = slot >= HARD_FROM ? field(home, away, e) : rt;
     for (let m = 1; m <= 90; m++) for (const [type, kh, ka] of EV) {
-      if (e() < rt[kh] / 90) events.push({ m, type, side: 'h' });
-      if (e() < rt[ka] / 90) events.push({ m, type, side: 'a' });
+      if (e() < real[kh] / 90) events.push({ m, type, side: 'h' });
+      if (e() < real[ka] / 90) events.push({ m, type, side: 'a' });
     }
     return { id: `${slot}-${i}`, slot, i, div, round: rd, season, home, away, rt, kick, events, poss: Math.round(50 + (home.r - away.r) * 0.6 + (e() - 0.5) * 8) };
   });
@@ -87,7 +97,7 @@ export const count = (mt, type, side, upto = 90) => mt.events.filter(ev => ev.ty
 function binom(p, n = 90) { const out = [Math.pow(1 - p, n)]; for (let k = 1; k <= n; k++) out[k] = out[k - 1] * ((n - k + 1) / k) * (p / (1 - p)); return out; }
 function conv(a, b) { const o = new Array(a.length + b.length - 1).fill(0); a.forEach((x, i) => b.forEach((y, j) => { o[i + j] += x * y; })); return o; }
 const over = (d, line) => d.reduce((t, x, k) => t + (k > line ? x : 0), 0);
-export const odd = p => Math.min(60, Math.max(1.03, Math.floor(((1 - MARGIN) / p) * 100) / 100));
+export const odd = (p, mg = MARGIN) => Math.min(60, Math.max(1.03, Math.floor(((1 - mg) / p) * 100) / 100));
 
 export function markets(mt) {
   const { rt, home, away } = mt, gh = binom(rt.gh / 90), ga = binom(rt.ga / 90);
@@ -95,9 +105,9 @@ export function markets(mt) {
   gh.forEach((x, i) => ga.forEach((y, j) => { if (i > j) ph += x * y; else if (i === j) pd += x * y; }));
   const goals = conv(gh, ga), corners = conv(binom(rt.ch / 90), binom(rt.ca / 90)), cards = conv(binom(rt.yh / 90), binom(rt.ya / 90));
   const ou = (d, line) => { const o = over(d, line); return [{ k: 'o', label: `mais de ${String(line).replace('.', ',')}`, p: o }, { k: 'u', label: `menos de ${String(line).replace('.', ',')}`, p: 1 - o }]; };
-  const scores = [];
-  for (let i = 0; i <= 3; i++) for (let j = 0; j <= 3; j++) scores.push({ k: `${i}-${j}`, label: `${i} x ${j}`, p: gh[i] * ga[j] });
-  scores.push({ k: 'outro', label: 'outro placar', p: 1 - scores.reduce((t, s) => t + s.p, 0) });
+  const scores = [], hard = mt.slot >= HARD_FROM, top = hard ? 4 : 3;
+  for (let i = 0; i <= top; i++) for (let j = 0; j <= top; j++) scores.push({ k: `${i}-${j}`, label: `${i} x ${j}`, p: gh[i] * ga[j] });
+  if (!hard) scores.push({ k: 'outro', label: 'outro placar', p: 1 - scores.reduce((t, s) => t + s.p, 0) });
   const list = [
     { id: 'res', label: 'resultado final', opts: [{ k: 'h', label: home.n, p: ph }, { k: 'd', label: 'empate', p: pd }, { k: 'a', label: away.n, p: 1 - ph - pd }] },
     { id: 'kick', label: 'saída de bola', opts: [{ k: 'h', label: home.n, p: 0.5 }, { k: 'a', label: away.n, p: 0.5 }] },
@@ -106,7 +116,7 @@ export function markets(mt) {
     { id: 'cart', label: 'cartões amarelos', opts: ou(cards, 4.5) },
     { id: 'placar', label: 'placar exato', opts: scores },
   ];
-  for (const m of list) for (const o of m.opts) o.odd = odd(o.p);
+  for (const m of list) for (const o of m.opts) o.odd = odd(o.p, hard ? HARD_MARGIN : MARGIN);
   return list;
 }
 

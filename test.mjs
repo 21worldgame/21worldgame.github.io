@@ -829,6 +829,14 @@ console.log('logística da cana ok');
     n++;
   }
   for (const [k, t] of Object.entries(tally)) assert.ok(t.pay / n < 1, `retorno real acima de 1 em ${k}: ${(t.pay / n).toFixed(3)}`);
+  // dificuldade extrema (jogos novos): mesmo apostando sempre na opção mais provável, volta bem menos de 75%; jogos antigos não mudam
+  const H = { n: 0, ret: 0, pl: 0, plw: 0 };
+  for (let sl = AP.HARD_FROM; sl < AP.HARD_FROM + 150; sl++) for (const mt of AP.matches(sl)) for (const m of AP.markets(mt)) {
+    const b = [...m.opts].sort((x, y) => y.p - x.p)[0], w = AP.wins(mt, m.id, b.k); H.n++; H.ret += w ? b.odd : 0;
+    if (m.id === 'placar') { H.pl++; H.plw += w; assert.ok(!m.opts.some(o => o.k === 'outro'), 'sem "outro placar"'); }
+  }
+  assert.ok(H.ret / H.n < 0.75 && H.plw / H.pl < 0.11, `fácil demais: retorno ${(H.ret / H.n).toFixed(2)}, placar ${(H.plw / H.pl).toFixed(3)}`);
+  assert.ok(AP.markets(AP.matches(AP.HARD_FROM - 1)[0]).find(m => m.id === 'placar').opts.some(o => o.k === 'outro'), 'jogo antigo igual');
   const s = { chips: 1000 };
   assert.match(AP.place(s, now, slot, 0, 'res', 'h', 5), /mínima/);
   assert.equal(AP.place(s, now, slot, 0, 'res', 'h', 100), null); assert.equal(s.chips, 900);
