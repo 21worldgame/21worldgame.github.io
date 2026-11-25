@@ -39,6 +39,7 @@ export const current = (w, now = Date.now()) => w.base + Math.floor(since(w, now
 export const progress = (w, now = Date.now()) => { const s = since(w, now); return s - Math.floor(s); };
 // tempo real até virar o mês (n = 1) ou até daqui a n viradas
 export const msUntil = (w, now = Date.now(), n = 1) => Math.max(0, timeAt(w, units(w, Math.max(now, w.epoch)) - progress(w, now) + n) - now);
+export const monthsIn = (w, a, b) => units(w, b) - units(w, a);   // meses do mundo que passam entre dois instantes (dia e madrugada contados certo)
 export const msLeft = (w, now = Date.now()) => msUntil(w, now, 1);
 export const isNight = (now = Date.now()) => { const h = (((now - BRT) % DAY) + DAY) % DAY / H; return h >= NIGHT_FROM && h < NIGHT_TO; };
 export const monthMsAt = (w, now = Date.now()) => (isNight(now) ? nightOf(w) : w.monthMs);   // quanto dura o mês que está passando
