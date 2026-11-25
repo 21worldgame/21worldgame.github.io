@@ -266,7 +266,7 @@ export async function push() {
     else res = await sb.from('saves').insert({ user_id: user.id, data, updated_at: at }).select('updated_at');
     if (res.error || !res.data?.length) {
       // outro aparelho gravou antes (ou a linha já existia): a nuvem vale; este aparelho se atualiza
-      if (res.error && /sem explicacao/i.test(res.error.message || '')) { const r = await pull(); if (r) forceRestore(r, 'O servidor recusou um dinheiro que não veio do jogo. A sua conta voltou para a última gravação válida.'); return false; }   // trava de dinheiro (teto-dinheiro.sql)
+      if (res.error && /sem explicacao/i.test(res.error.message || '')) { const r = await pull(); if (r) forceRestore(r, '🏦 Auditoria do Banco Central 21: uma movimentação do seu caixa não fechou com os livros e foi estornada. Sua conta voltou para o último balanço conferido. Se foi um engano, peça revisão no livro-caixa.'); return false; }   // trava de dinheiro (teto-dinheiro.sql)
       if (res.error && /restaurad/i.test(res.error.message || '')) { const r = await pull(); if (r?.restored) forceRestore(r); return false; }   // o servidor recusou: a conta foi voltada no tempo
       if (res.error && (base || !/duplicate|conflict|23505/i.test(`${res.error.code} ${res.error.message}`))) { lastErrAt = Date.now(); setTimeout(() => { if (dirty()) scheduleSync(); }, 8000); return false; }   // erro de rede: tenta de novo sozinho
       const row = await pull();
