@@ -3847,3 +3847,25 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .sf-calc { display: grid; gap: 6px; padding: var(--space-sm); border-radius: 14px; background: var(--color-paper-3); border: 1px dashed var(--color-rule-2); }
 .sf-calc .row { gap: 6px; } .sf-calc input { max-width: 12rem; } .sf-calc p { margin: 0; }
 .sf-arm { display: block; opacity: .9; }
+
+/* selo de versão no topo (v250) */
+.vbar { margin: 0; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 2px 10px; font: 600 .7rem/1.4 var(--font-body); letter-spacing: .02em; color: rgba(255,255,255,.72);
+  background: linear-gradient(90deg, transparent, rgba(245,184,51,.12), transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vbar b { color: #f5b833; } .vbar__dot { width: 7px; height: 7px; border-radius: 50%; background: #3ddc84; flex: none; }
+.vbar.is-old { color: #fff; background: linear-gradient(90deg, #5a3a05, #2a1d05, #5a3a05); } .vbar.is-old .vbar__dot { background: #f5b833; animation: lpPulse 1.4s infinite; }
+.vbar__go { color: #f5b833; font-weight: 800; }
+.hud > .vbar { flex-basis: 100%; width: 100%; order: -1; }
+.au__panel > .vbar { justify-content: flex-start; padding: 4px 10px; border-radius: 99px; background: rgba(245,184,51,.1); margin-bottom: 8px; width: fit-content; max-width: 100%; }
+/* atualização obrigatória em tela cheia (v250) */
+.upd.upd--full { position: fixed; inset: 0 !important; margin: 0; border: 0; width: 100% !important; height: 100%; max-width: none !important; max-height: none; color: #fff; left: 0 !important; bottom: 0 !important; width: auto !important; max-width: none; z-index: 5000; display: grid !important; place-items: center; padding: 16px !important;
+  border-radius: 0 !important; background: radial-gradient(circle at 50% 30%, rgba(60,40,5,.95), rgba(6,8,16,.97)) !important; box-shadow: none !important; font-size: 1rem; animation: updIn .4s ease-out; }
+.upd__card { width: min(440px, 100%); text-align: center; display: grid; gap: 10px; padding: 24px 20px; border-radius: 22px; background: rgba(12,14,26,.9); border: 1px solid rgba(245,184,51,.55); box-shadow: 0 0 60px rgba(245,184,51,.18); white-space: normal; }
+.upd__card h2 { margin: 0; font: 800 1.35rem/1.2 var(--font-display, var(--font-body)); color: #f5b833; }
+.upd__truck { margin: 0; font-size: 2.6rem; animation: updTruck 1.2s ease-in-out infinite alternate; }
+.upd__ver { margin: 0; display: flex; justify-content: center; align-items: center; gap: 10px; font: 800 1.15rem/1 var(--font-body); } .upd__ver span { opacity: .55; text-decoration: line-through; } .upd__ver b { color: #3ddc84; font-size: 1.4rem; }
+.upd__line, .upd__new, .upd__safe { margin: 0; font-size: .92rem; color: rgba(255,255,255,.85); } .upd__new { background: rgba(245,184,51,.1); border-radius: 12px; padding: 8px 10px; } .upd__safe { font-size: .8rem; opacity: .75; }
+.upd__count { margin: 0; display: flex; justify-content: center; align-items: center; gap: 8px; font-weight: 700; }
+.upd--full .upd__go { justify-self: center; padding: 10px 22px !important; border-radius: 99px; font-size: .95rem !important; }
+.upd--full::backdrop { background: rgba(0,0,0,.6); }
+@keyframes updTruck { from { transform: translateX(-10px); } to { transform: translateX(10px); } }
+@media (prefers-reduced-motion: reduce) { .upd__truck { animation: none; } }

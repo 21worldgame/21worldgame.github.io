@@ -1756,10 +1756,24 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 249;
+const APP_VERSION = 250;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
+// selo da versão no topo (barra do jogo e tela de entrada): a publicada e a deste aparelho
+let latestV = APP_VERSION;
+const VB_OK = ['você está com a cidade em dia', 'tudo novinho por aqui', 'motor afinado: pode acelerar', 'cidade atualizada, mesas abertas'];
+function drawVBar() {
+  const old = latestV > APP_VERSION;
+  const html = old ? `<span class="vbar__dot" aria-hidden="true"></span>saiu a <b>v${latestV}</b> · você está na <b>v${APP_VERSION}</b> · <span class="vbar__go">atualizando…</span>`
+    : `<span class="vbar__dot" aria-hidden="true"></span><b>v${APP_VERSION}</b> · ${VB_OK[APP_VERSION % VB_OK.length]}`;
+  for (const [id, host] of [['vbar', '.hud'], ['vbar-auth', '#dlg-auth .au__panel']]) {
+    let el = document.getElementById(id); const h = document.querySelector(host); if (!h) continue;
+    if (!el) { el = document.createElement('p'); el.id = id; el.className = 'vbar'; el.setAttribute('role', 'status'); el.title = 'versão do jogo'; h.prepend(el); }
+    el.innerHTML = html; el.classList.toggle('is-old', old);
+  }
+}
+drawVBar();
 async function checkUpdate() {
   if (updateShown || checking) return;   // uma verificação por vez (senão saem dois avisos e duas contagens)
   checking = true;
@@ -1771,6 +1785,7 @@ async function checkUpdateNow() {
     const r = await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' });
     if (!r.ok) return;
     const j = await r.json(), v = Number(j.v) || 0;
+    if (v > latestV) { latestV = v; drawVBar(); }
     if (v <= APP_VERSION) return;
     // já tentou esta versão há menos de 2 min: espera (sem laço de recarga). Depois tenta de novo até o código novo entrar,
     // mesmo que o celular tenha recarregado com arquivo velho do cache ou a pessoa tenha fechado o aviso
@@ -1798,18 +1813,28 @@ async function doReload() {
 function showUpdate(auto = true, v = 0, quick = false) {
   updateShown = true;
   try { sessionStorage.setItem('21world.updTried', `${v}@${Date.now()}`); } catch {}
-  const host = [...document.querySelectorAll('dialog[open]')].pop() || document.body;   // janela aberta deixa o resto sem clique
-  host.insertAdjacentHTML('beforeend', `<div class="upd" role="status" title="${esc(updateMsg)}"><span class="upd__dot" aria-hidden="true"></span>
-    <span><strong>Atualização</strong> <span id="upd-txt">recarrega em 15 s</span></span>
-    <button class="upd__go" type="button" id="upd-go">agora</button></div>`);   // sem fechar: a atualização sempre acontece (celular incluso)
+  // tela cheia, sem fechar: a atualização sempre acontece (celular incluso). Só espera terminar a jogada, no máximo 3 min.
+  document.body.insertAdjacentHTML('beforeend', `<dialog class="upd upd--full" aria-labelledby="upd-h"><div class="upd__card">
+    <p class="upd__truck" aria-hidden="true">🚚</p><h2 id="upd-h">Chegou carga nova na cidade!</h2>
+    <p class="upd__ver"><span>v${APP_VERSION}</span><i aria-hidden="true">→</i><b>v${v || latestV}</b></p>
+    <p class="upd__line" id="upd-line">Os caminhões da v${v || latestV} estão descarregando as novidades no 21 World.</p>
+    ${updateMsg ? `<p class="upd__new"><b>O que chegou:</b> ${esc(updateMsg)}</p>` : ''}
+    <p class="upd__safe">🔒 Seu progresso fica guardado no cofre antes de recarregar.</p>
+    <p class="upd__count"><span class="upd__dot" aria-hidden="true"></span><span id="upd-txt">recarrega em 8 s</span></p>
+    <button class="btn btn--gold upd__go" type="button" id="upd-go">atualizar agora</button></div></dialog>`);
+  { const d = document.querySelector('.upd--full'); try { d.showModal(); } catch { d.setAttribute('open', ''); } d.addEventListener('cancel', e => e.preventDefault()); }   // janela própria: fica por cima do login e de qualquer outra janela
   $('#upd-go').addEventListener('click', doReload);
   let closed = false; const node = document.querySelector('.upd');
   if (!auto) return;
-  let left = quick ? 1 : 15;   // voltou para o jogo (celular saindo do segundo plano): atualiza na hora
+  let left = quick ? 1 : 8, waited = 0, lastOthers = -1;   // voltou para o jogo (celular saindo do segundo plano): atualiza na hora
+  const LINES = [`Os caminhões da v${v || latestV} estão descarregando as novidades no 21 World.`, 'O prefeito pediu: todo mundo na mesma versão, ninguém fica para trás.', 'O gerente do banco já guardou seu dinheiro no cofre.', 'Os peões estão terminando de pintar as placas novas da cidade.'];
   const t = setInterval(() => {
     if (closed) { clearInterval(t); return; }
     if (!node.isConnected) document.body.append(node);   // a janela onde estava fechou: volta para a tela
-    if (busyNow()) { $('#upd-txt').textContent = 'depois da jogada'; return; }
+    const others = document.querySelectorAll('dialog[open]:not(.upd)').length;   // abriu outra janela depois (login, mesa...): volta para cima de tudo
+    if (others !== lastOthers) { lastOthers = others; try { node.close(); node.showModal(); } catch {} }
+    const ln = $('#upd-line'); if (ln && left % 3 === 0) ln.textContent = LINES[(left / 3) % LINES.length | 0];
+    if (busyNow() && ++waited < 180) { $('#upd-txt').textContent = 'assim que terminar a sua jogada'; return; }   // no meio da mão/corrida: espera (até 3 min)
     if (--left <= 0) { clearInterval(t); doReload(); return; }
     $('#upd-txt').textContent = `recarrega em ${left} s`;
   }, 1000);
