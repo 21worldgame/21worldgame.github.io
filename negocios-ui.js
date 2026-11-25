@@ -163,8 +163,9 @@ document.addEventListener('click', async e => {
     if (owners.ok) {
       if (!Auth.account()) return say('Entre com uma conta para comprar uma empresa: cada marca tem um dono só no jogo inteiro.', true);
       b.disabled = true;
+      await Auth.push();   // o servidor confere o dinheiro do save da nuvem (compras-servidor.sql)
       const { data } = await Auth.sbClient().rpc('claim_company', { p_brand: id, p_name: profileOf().name });
-      if (data !== 'ok') { b.disabled = false; await refreshOwners(); G.render(); return say(data === 'taken' ? `Alguém comprou a ${C.name} antes de você!` : 'Não deu para registrar a compra agora. Tente de novo.', true); }
+      if (data !== 'ok') { b.disabled = false; await refreshOwners(); G.render(); return say(data === 'taken' ? `Alguém comprou a ${C.name} antes de você!` : data === 'money' ? 'O Banco Central não encontrou esse dinheiro na sua conta. Espere o jogo salvar e tente de novo.' : 'Não deu para registrar a compra agora. Tente de novo.', true); }
       owners.map[id] = { brand: id, owner: Auth.account().id, owner_name: profileOf().name };
     }
     err = NG.buy(s, b.dataset.cat, id); if (err && owners.ok) Auth.sbClient().rpc('release_company', { p_brand: id }); if (!err) { note(`compra da marca ${C.name}`, -P); msg = `${C.name} agora é sua! Administre na aba negócios.`; confetti(60); } }

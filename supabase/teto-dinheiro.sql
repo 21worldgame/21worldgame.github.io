@@ -46,10 +46,12 @@ create or replace function public.worth_room(w0 numeric, mins numeric) returns n
   select 3e6 + 1e5 * least(greatest(mins, 0), 60) + 2e4 * greatest(mins - 60, 0)
        + greatest(coalesce(w0, 0), 0) * 0.1 * least(greatest(mins, 0), 1440) / 60 $$;
 
--- Pix mandado depois de "desde": o patrimônio de quem mandou tem que cair (antes dava para mandar sem descontar do save)
+-- dinheiro mandado a outro jogador depois de "desde" (Pix, frigorífico, Central): o patrimônio de quem mandou tem que cair
+-- (antes dava para mandar sem descontar do save e o outro recebia dinheiro criado do nada)
 create or replace function public.pix_sent(u uuid, desde timestamptz) returns numeric language sql stable security definer set search_path = public as $$
-  select case when to_regclass('public.pix') is null then 0
-              else (select coalesce(sum(amount), 0) from public.pix where from_id = u and to_id <> u and at > desde) end $$;
+  select coalesce((select sum(amount) from public.pix where from_id = u and to_id <> u and at > desde), 0)
+       + coalesce((select sum(pay) from public.abate_job where buyer = u and owner <> u and at > desde), 0)        -- frigorífico de outro jogador
+       + coalesce((select sum(amount) from public.pro_payments where payer = u and at > desde), 0) $$;            -- Central de profissionais
 revoke all on function public.pix_sent(uuid, timestamptz) from public, anon, authenticated;
 
 drop function if exists public.cash_jump_ok(numeric, numeric, numeric);
@@ -66,6 +68,8 @@ begin
   if to_regclass('public.pix') is not null then
     extra := extra + (select coalesce(sum(amount), 0) from pix where to_id = new.user_id and at > now() - interval '24 hours');
   end if;
+  extra := extra + coalesce((select sum(pay) from abate_job where owner = new.user_id and at > now() - interval '24 hours'), 0)
+                 + coalesce((select sum(amount) from pro_payouts where to_id = new.user_id and at > now() - interval '24 hours'), 0);
   if jn(new.data->'money') > 5e9 or w > 5e10 or jsonb_typeof(new.data->'money') is distinct from 'number' then
     raise exception 'dinheiro sem explicacao: gravacao recusada' using errcode = 'P0001';
   end if;

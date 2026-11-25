@@ -1227,7 +1227,9 @@ A carta vale ${brl(CD.value(c))}, mas a loja paga só ${Math.round(CD.SELL * 100
   },
   'rent-land'(idv) {
     const o = find(S().offers, idv); if (!o) return;
-    if (S().money < o.value * L.RENT_PAY * 3) return say(`Para arrendar precisa ter em caixa pelo menos 3 meses de aluguel (${brl(o.value * L.RENT_PAY * 3)}).`, true);   // antes arrendava sem dinheiro e afundava no negativo
+    // caixa para 3 meses de TODOS os aluguéis (os que já paga + este): antes dava para arrendar terra sem fim e afundar no negativo
+    const rentAll = (S().lands || []).filter(l => !l.own).reduce((t, l) => t + L.rentNow(l), 0) + o.value * L.RENT_PAY, needR = rentAll * 3;
+    if (S().money < needR) return say(`Para arrendar precisa ter em caixa 3 meses de todos os seus aluguéis (${brl(needR)}; hoje paga ${brl(rentAll - o.value * L.RENT_PAY)} por mês).`, true);
     S().offers.splice(S().offers.indexOf(o), 1); S().lands.push({ ...o, own: false, leasedOut: false });
     say(`Arrendada por ${brl(o.value * L.RENT_PAY)} ao mês (reajuste de ${Math.round(L.RENT_RAISE * 100)}% ao ano). Pasto para ${L.landCap(o)} cabeças. Lavoura só com trator. O aluguel pago abate a compra depois.`); award('land');
   },
@@ -1699,7 +1701,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 225;
+const APP_VERSION = 226;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

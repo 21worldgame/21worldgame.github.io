@@ -79,8 +79,9 @@ document.addEventListener('click', async e => {
     if (s.money < MI.MINE.price) return say(`Você precisa de ${brl(MI.MINE.price)} para comprar a mineradora.`, true);
     if (!confirm(`Comprar a ${MI.MINE.name} por ${brl(MI.MINE.price)}? É a única do jogo; a manutenção é de ${brl(MI.MINE.upkeep)} por mês.`)) return;
     b.disabled = true;
+    await Auth.push();   // o servidor confere o dinheiro do save da nuvem (compras-servidor.sql)
     const { data, error } = await sb.rpc('claim_gold_mine', { p_name: profileOf().name });
-    if (error || data !== 'ok') { b.disabled = false; await refresh(); G.render(); return say(data === 'taken' ? 'Alguém comprou a mina antes de você!' : 'Não deu para registrar a mina agora. Tente de novo.', true); }
+    if (error || data !== 'ok') { b.disabled = false; await refresh(); G.render(); return say(data === 'taken' ? 'Alguém comprou a mina antes de você!' : data === 'money' ? 'O Banco Central não encontrou esse dinheiro na sua conta. Espere o jogo salvar e tente de novo.' : 'Não deu para registrar a mina agora. Tente de novo.', true); }
     const err = MI.buy(s); if (err) { await sb.rpc('release_gold_mine'); return say(err[0].toUpperCase() + err.slice(1), true); }
     note(`compra da ${MI.MINE.name}`, -MI.MINE.price); confetti(200); say('A única mina de ouro do 21 World agora é sua! Contrate equipes na aba negócios.');
     await refresh(); save(); G.render(); return;
