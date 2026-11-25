@@ -74,3 +74,9 @@ console.log('pesca: cansaço e dois aparelhos ok');
   for (let i = 0; i < 12; i++) P.release(t, { sp: 'tilapia', kg: 0.5, trophy: true }); assert.equal(t.pesca.wall.length, P.WALL);
   assert.ok(P.tipFor('represa', P.WEATHER[0]).length > 10); }
 console.log('pesca: mural ok');
+// loja: isca recomendada por lugar e as iscas novas puxam os peixes certos
+{ assert.equal(P.bestBait('lagoa'), 'minhoca'); assert.equal(P.bestBait('represa'), 'viva');
+  const t = { money: 1000 }; assert.equal(P.buyBait(t, 'artificial', 2).n, 10); assert.equal(t.money, 760);
+  const tuc = b => Array.from({ length: 4000 }, () => P.roll('represa', b, 1)).filter(f => f.sp === 'tucunare').length;
+  assert.ok(tuc('artificial') > tuc('massa') * 1.3, 'artificial puxa tucunaré'); assert.ok(P.baitFish('racao').includes('tambacu')); }
+console.log('pesca: lojinha ok');

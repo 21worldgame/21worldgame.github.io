@@ -35,22 +35,28 @@ export const ZONES = ['beirada', 'meio', 'fundo'];
 export const TICKET_MS = 30 * 60 * 1000;
 // line: o que a linha aguenta (kg de força) · reel: metros por segundo recolhendo · cast: arremesso máximo (m) · spool: linha no carretel (m)
 export const RODS = [
-  { label: 'vara de bambu', price: 0, line: 3, reel: 2.2, cast: 14, spool: 20, maxKg: 4, drag: false },
-  { label: 'vara com molinete', price: 1200, line: 8, reel: 3, cast: 35, spool: 90, maxKg: 18, drag: true },
-  { label: 'carretilha de arremesso', price: 25000, line: 16, reel: 3.6, cast: 55, spool: 120, maxKg: 40, drag: true, backlash: true },
-  { label: 'vara pesada (multifilamento)', price: 32000, line: 45, reel: 4, cast: 65, spool: 300, maxKg: 200, drag: true, backlash: true },
+  { label: 'vara de bambu', price: 0, line: 3, reel: 2.2, cast: 14, spool: 20, maxKg: 4, drag: false, txt: 'Para começar na lagoa. Simples: sem molinete e sem fricção.', color: '#c9a25a' },
+  { label: 'vara com molinete', price: 1200, line: 8, reel: 3, cast: 35, spool: 90, maxKg: 18, drag: true, txt: 'A mais fácil de usar. Libera o pesque-pague e peixe de até 18 kg.', color: '#3b6fb6' },
+  { label: 'carretilha de arremesso', price: 25000, line: 16, reel: 3.6, cast: 55, spool: 120, maxKg: 40, drag: true, backlash: true, txt: 'Arremessa longe: libera a represa. Não use força máxima (embola).', color: '#c0392b' },
+  { label: 'vara pesada (multifilamento)', price: 32000, line: 45, reel: 4, cast: 65, spool: 300, maxKg: 200, drag: true, backlash: true, txt: 'Para os gigantes, como o pirarucu. Linha que aguenta 45 kg.', color: '#8a9bb0' },
 ];
 // isca: puxa a chance de cada peixe (x) e quanto aumenta o peso (big)
 export const BAITS = {
-  minhoca: { label: 'minhoca', pack: 20, price: 30, like: { lambari: 2, tilapia: 1.3, traira: 0.6 }, big: 1 },
-  massa: { label: 'massa de milho', pack: 20, price: 50, like: { tilapia: 1.6, pacu: 1.8, tambacu: 1.6, carpa: 2 }, big: 1.05 },
-  viva: { label: 'isca viva (lambari)', pack: 10, price: 90, like: { traira: 2, tucunare: 1.8, pintado: 2, dourado: 2, pirarucu: 1.6 }, big: 1.15 },
+  minhoca: { label: 'minhoca', pack: 20, price: 30, like: { lambari: 2, tilapia: 1.3, traira: 0.6 }, big: 1, txt: 'A clássica. Boa para lambari e tilápia na lagoa.' },
+  massa: { label: 'massa de milho', pack: 20, price: 50, like: { tilapia: 1.6, pacu: 1.8, tambacu: 1.6, carpa: 2 }, big: 1.05, txt: 'Pacu, tambacu e carpa adoram. A melhor do pesque-pague.' },
+  racao: { label: 'ração de peixe', pack: 30, price: 70, like: { tilapia: 1.5, pacu: 1.7, tambacu: 1.9, carpa: 1.4 }, big: 1, txt: 'Bolinhas de ração: atrai muito tambacu e pacu. Rende 30 arremessos.' },
+  camarao: { label: 'camarão', pack: 15, price: 80, like: { tilapia: 1.4, traira: 1.5, pacu: 1.3, pintado: 1.4 }, big: 1.08, txt: 'Serve para quase tudo. Boa escolha quando não sabe o que usar.' },
+  viva: { label: 'isca viva (lambari)', pack: 10, price: 90, like: { traira: 2, tucunare: 1.8, pintado: 2, dourado: 2, pirarucu: 1.6 }, big: 1.15, txt: 'Para os peixes grandes e bravos da represa: pintado, dourado e pirarucu.' },
+  artificial: { label: 'isca artificial', pack: 5, price: 120, like: { tucunare: 2.6, dourado: 2.1, traira: 1.8 }, big: 1.12, txt: 'Imita um peixinho. A preferida do tucunaré e do dourado.' },
 };
+// melhor isca para um lugar: a que mais puxa os peixes de lá (o que a loja recomenda)
+export const bestBait = spot => Object.entries(BAITS).map(([k, B]) => [k, Object.entries(SPOTS[spot].fish).reduce((t, [sp, w]) => t + w * (B.like[sp] || 1) * SPECIES[sp].kg, 0)]).sort((a, b) => b[1] - a[1])[0][0];
+export const baitFish = k => Object.entries(BAITS[k].like).filter(([, v]) => v > 1).sort((a, b) => b[1] - a[1]).map(([sp]) => SPECIES[sp].label);
 export const COOLERS = [
-  { label: 'isopor', price: 0, cap: 15 },
-  { label: 'caixa térmica 60 L', price: 900, cap: 45 },
-  { label: 'caixa térmica 150 L', price: 4200, cap: 120 },
-  { label: 'freezer na caminhonete', price: 18000, cap: 400 },
+  { label: 'isopor', price: 0, cap: 15, txt: 'Cabe pouco: venda sempre que encher.' },
+  { label: 'caixa térmica 60 L', price: 900, cap: 45, txt: 'Três vezes mais espaço para o pesque-pague.' },
+  { label: 'caixa térmica 150 L', price: 4200, cap: 120, txt: 'Para quem pesca peixe grande na represa.' },
+  { label: 'freezer na caminhonete', price: 18000, cap: 400, txt: 'Cabe até pirarucu. Guarde e venda quando o preço subir.' },
 ];
 export const SPOIL = 0.18, SPOIL_MAX = 4;   // perde 18% do preço a cada mês do mundo no gelo; no 5º mês estraga
 export const TROPHY = 0.8, TROPHY_BONUS = 0.5;   // peixe com 80% do peso máximo vale 50% a mais (vai para restaurante)

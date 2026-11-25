@@ -30,7 +30,7 @@ export function render() {
       <small class="muted">${can ? esc(S.txt) : `precisa de ${PE.RODS[S.rod].label}`}</small></button>`;
   }).join('');
   const bk = PE.boxKg(s), cp = PE.COOLERS[p.cooler].cap, tot = PE.value(s), seen = Object.keys(p.best).length;
-  el.innerHTML = `${p.orders.length ? `<div class="glass pe-card"><h4>encomendas <small class="muted">pagam acima da peixaria · trocam todo mês</small></h4>${p.orders.map(o => { const got = PE.fits(s, o).length; return `<div class="pe-ord"><span><b>${esc(o.who)}</b><small class="muted">${o.n}× ${PE.SPECIES[o.sp].label} de ${String(o.min).replace('.', ',')} kg ou mais, fresco · paga ${Math.round((o.x - 1) * 100)}% a mais</small></span><button class="btn btn--${got >= o.n ? 'gold' : 'glass'} btn--sm" data-pe="deliver" data-id="${esc(o.id)}" ${got >= o.n ? '' : 'disabled'}>${got}/${o.n} entregar</button></div>`; }).join('')}</div>` : ''}
+  el.innerHTML = `${shopHTML(s, p, busy)}${p.orders.length ? `<div class="glass pe-card"><h4>encomendas <small class="muted">pagam acima da peixaria · trocam todo mês</small></h4>${p.orders.map(o => { const got = PE.fits(s, o).length; return `<div class="pe-ord"><span><b>${esc(o.who)}</b><small class="muted">${o.n}× ${PE.SPECIES[o.sp].label} de ${String(o.min).replace('.', ',')} kg ou mais, fresco · paga ${Math.round((o.x - 1) * 100)}% a mais</small></span><button class="btn btn--${got >= o.n ? 'gold' : 'glass'} btn--sm" data-pe="deliver" data-id="${esc(o.id)}" ${got >= o.n ? '' : 'disabled'}>${got}/${o.n} entregar</button></div>`; }).join('')}</div>` : ''}
     <div class="glass pe-card"><h4>caixa térmica <small class="muted">${fmtKg(bk)} de ${cp} kg</small></h4>
       <span class="bar"><i style="transform:scaleX(${Math.min(1, bk / cp).toFixed(3)})"></i></span>
       ${p.box.length ? `<ul class="pe-box">${p.box.map((f, i) => `<li><span>${PE.SPECIES[f.sp].img} ${PE.SPECIES[f.sp].label}${f.trophy ? ' <b class="pe-trophy">troféu</b>' : ''}</span><span class="muted small">${fmtKg(f.kg)}${f.age ? ` · ${f.age} ${f.age === 1 ? 'mês' : 'meses'} no gelo` : ' · fresco'}</span><b class="good">${brl(PE.fishValue(s, f))}</b><button class="btn btn--glass btn--sm" data-pe="sell1" data-id="${i}">vender</button></li>`).join('')}</ul>
@@ -43,12 +43,45 @@ export function render() {
       : `<span class="pe-sp is-off" title="ainda não pescado"><i>❔</i><b>???</b><small>${PE.ZONES[F.zone[0]]}</small></span>`).join('')}</div></div>
     <div class="glass pe-card"><h4>peixaria <small class="muted">preço por kg deste mês</small></h4><div class="pe-prices">${Object.entries(PE.SPECIES).map(([k, F]) => { const m = p.mkt[k] || 1; return `<span>${F.label}<b>R$ ${PE.priceKg(s, k).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <small class="${m >= 1 ? 'good' : 'bad'}">${m >= 1 ? '▲' : '▼'}${Math.abs((m - 1) * 100).toFixed(0)}%</small></b></span>`; }).join('')}</div>
       <p class="muted small">Peixe com ${Math.round(PE.TROPHY * 100)}% do peso máximo da espécie é troféu e vale ${Math.round(PE.TROPHY_BONUS * 100)}% a mais.</p></div>
-    <div class="glass pe-card"><h4>iscas <small class="muted">1 por arremesso</small></h4>${Object.entries(PE.BAITS).map(([k, B]) => `<div class="pe-row"><label><input type="radio" name="pe-bait" value="${k}" ${T.bait === k ? 'checked' : ''} ${busy ? 'disabled' : ''}> ${B.label} <b>${int(p.baits[k] || 0)}</b></label><button class="btn btn--glass btn--sm" data-pe="bait" data-id="${k}">+${B.pack} por ${brl(B.price)}</button></div>`).join('')}</div>
-    <div class="glass pe-card"><h4>varas</h4>${PE.RODS.map((R, i) => `<div class="pe-row"><span>${R.label} <small class="muted">linha ${R.line} kg · arremesso ${R.cast} m · ${R.spool} m de linha${R.drag ? '' : ' · sem fricção'}</small></span>${p.rod === i ? '<b class="good">em uso</b>' : `<button class="btn btn--${p.rods.includes(i) ? 'glass' : 'gold'} btn--sm" data-pe="rod" data-id="${i}" ${busy ? 'disabled' : ''}>${p.rods.includes(i) ? 'usar' : brl(R.price)}</button>`}</div>`).join('')}</div>
-    <div class="glass pe-card"><h4>caixa térmica maior</h4>${PE.COOLERS.map((C, i) => `<div class="pe-row"><span>${C.label} <small class="muted">${C.cap} kg</small></span>${i <= p.cooler ? (i === p.cooler ? '<b class="good">sua</b>' : '<small class="muted">—</small>') : `<button class="btn btn--gold btn--sm" data-pe="cooler" data-id="${i}">${brl(C.price)}</button>`}</div>`).join('')}</div>
     <p class="muted small">Você já tirou ${int(p.n)} ${p.n === 1 ? 'peixe' : 'peixes'} (${fmtKg(p.kg)}) e ganhou ${brl(p.earned)} com pesca.</p>`;
   if (!$('#pe-acts').childElementCount) paintActs();
   paintDrag(); start();
+}
+
+// ---------- lojinha do Seu Tião: iscas, varas e caixas, com desenho, para que serve, preço e botão grande ----------
+const IMG = {
+  minhoca: '<path d="M10 44c8-14 16 6 24-8s14 4 20-10" stroke="#e58b9a" stroke-width="7" fill="none" stroke-linecap="round"/><circle cx="54" cy="26" r="2" fill="#7a3a46"/>',
+  massa: '<circle cx="32" cy="36" r="17" fill="#f2c94c"/><circle cx="26" cy="31" r="3" fill="#fff3b8"/><circle cx="38" cy="41" r="2" fill="#d9a520"/><circle cx="34" cy="28" r="1.6" fill="#d9a520"/>',
+  racao: [[18, 38], [30, 44], [42, 36], [26, 28], [38, 26], [48, 46], [16, 50]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="5.5" fill="#9c6b3c"/><circle cx="${x - 1.5}" cy="${y - 1.5}" r="1.6" fill="#c89664"/>`).join(''),
+  camarao: '<path d="M46 18c-20 0-30 12-28 24 2 10 14 12 20 6" stroke="#f08a4b" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M44 48l8 6-10 0z" fill="#f08a4b"/><circle cx="44" cy="20" r="2" fill="#5a2a10"/><path d="M48 18l10-8M48 20l12-4" stroke="#f08a4b" stroke-width="1.5"/>',
+  viva: '<path d="M10 32c10-12 30-12 40 0-10 12-30 12-40 0z" fill="#b8c4cf"/><path d="M50 32l10-8v16z" fill="#8b98a5"/><circle cx="18" cy="30" r="2" fill="#223"/><path d="M22 32h22" stroke="#e8eef3" stroke-width="2"/>',
+  artificial: '<path d="M8 32c8-10 30-12 42-4l-4 8c-12 6-30 4-38-4z" fill="#27ae60"/><path d="M8 32c8-10 30-12 42-4" fill="#f1c40f" opacity=".7"/><circle cx="16" cy="30" r="3" fill="#fff"/><circle cx="16" cy="30" r="1.4" fill="#000"/><path d="M28 40v8m-3 0a3 3 0 0 0 6 0M42 38v8m-3 0a3 3 0 0 0 6 0" stroke="#999" stroke-width="1.6" fill="none"/>',
+};
+const rodImg = R => `<path d="M8 56L56 8" stroke="${R.color}" stroke-width="${R.line > 20 ? 5 : 3.5}" stroke-linecap="round"/><path d="M56 8q4 20-6 40" stroke="#ddd" stroke-width="1" fill="none"/>${R.drag ? `<circle cx="20" cy="46" r="${R.backlash ? 7 : 6}" fill="#555"/><circle cx="20" cy="46" r="3" fill="#bbb"/>` : ''}<path d="M8 56l8-8" stroke="#3a2a1a" stroke-width="7" stroke-linecap="round"/>`;
+const boxImg = i => { const w = [26, 34, 42, 50][i], h = [20, 24, 28, 32][i], x = 32 - w / 2, y = 50 - h; return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" fill="${['#f4f4f4', '#2e86de', '#e74c3c', '#7f8c8d'][i]}" stroke="#0003"/><rect x="${x}" y="${y}" width="${w}" height="6" rx="3" fill="#fff8"/><rect x="28" y="${y - 4}" width="8" height="5" rx="2" fill="#333"/>`; };
+const svgOf = inner => `<svg viewBox="0 0 64 64" class="pe-item__img" aria-hidden="true">${inner}</svg>`;
+function shopHTML(s, p, busy) {
+  const tab = T.shop || 'iscas', best = PE.bestBait(T.spot), need = PE.SPOTS[T.spot].rod, money = s.money || 0;
+  const tabs = [['iscas', '🪱 iscas'], ['varas', '🎣 varas'], ['caixas', '🧊 caixas']].map(([k, l]) => `<button class="pe-shop__tab${tab === k ? ' is-on' : ''}" data-pe="shop" data-id="${k}" aria-pressed="${tab === k}">${l}</button>`).join('');
+  let items = '';
+  if (tab === 'iscas') items = Object.entries(PE.BAITS).map(([k, B]) => {
+    const n = p.baits[k] || 0, on = T.bait === k, fish = PE.baitFish(k).slice(0, 3).join(', ');
+    return `<article class="pe-item${on ? ' is-on' : ''}">${svgOf(IMG[k] || '')}<div class="pe-item__txt"><b>${esc(cap(B.label))}${k === best ? ' <span class="tag tag--gold">recomendada aqui</span>' : ''}</b>
+      <small>${esc(B.txt || '')}</small><small class="muted">pega ${esc(fish)} · pacote com ${B.pack} · você tem <b>${int(n)}</b></small></div>
+      <div class="pe-item__buy"><span class="pe-item__price">${brl(B.price)}</span>
+        <div class="pe-item__btns">${[1, 5, 10].map(q => `<button class="btn btn--${q === 1 ? 'gold' : 'glass'} btn--sm" data-pe="bait" data-id="${k}" data-n="${q}" ${money < B.price * q ? 'disabled' : ''} title="${q} pacote(s): ${q * B.pack} iscas por ${brl(q * B.price)}">${q === 1 ? 'comprar' : `${q}x`}</button>`).join('')}</div>
+        ${on ? '<span class="good small">✔ usando</span>' : `<button class="btn btn--glass btn--sm" data-pe="usebait" data-id="${k}" ${busy || !n ? 'disabled' : ''}>${n ? 'usar esta' : 'compre antes'}</button>`}</div></article>`;
+  }).join('');
+  if (tab === 'varas') items = PE.RODS.map((R, i) => {
+    const own = p.rods.includes(i), on = p.rod === i;
+    return `<article class="pe-item${on ? ' is-on' : ''}">${svgOf(rodImg(R))}<div class="pe-item__txt"><b>${esc(cap(R.label))}${i === need && !p.rods.some(x => x >= need) ? ' <span class="tag tag--gold">precisa para este lugar</span>' : ''}</b>
+      <small>${esc(R.txt || '')}</small><small class="muted">aguenta ${R.line} kg · joga até ${R.cast} m · ${R.spool} m de linha${R.drag ? '' : ' · sem fricção'}</small></div>
+      <div class="pe-item__buy">${on ? '<span class="good small">✔ em uso</span>' : own ? `<button class="btn btn--glass btn--sm" data-pe="rod" data-id="${i}" ${busy ? 'disabled' : ''}>usar esta</button>` : `<span class="pe-item__price">${brl(R.price)}</span><button class="btn btn--gold btn--sm" data-pe="rod" data-id="${i}" ${busy || money < R.price ? 'disabled' : ''}>comprar</button>`}</div></article>`;
+  }).join('');
+  if (tab === 'caixas') items = PE.COOLERS.map((C, i) => `<article class="pe-item${i === p.cooler ? ' is-on' : ''}">${svgOf(boxImg(i))}<div class="pe-item__txt"><b>${esc(cap(C.label))}</b><small>${esc(C.txt || '')}</small><small class="muted">cabe ${C.cap} kg de peixe</small></div>
+      <div class="pe-item__buy">${i === p.cooler ? '<span class="good small">✔ a sua</span>' : i < p.cooler ? '<small class="muted">você já tem maior</small>' : `<span class="pe-item__price">${brl(C.price)}</span><button class="btn btn--gold btn--sm" data-pe="cooler" data-id="${i}" ${money < C.price ? 'disabled' : ''}>comprar</button>`}</div></article>`).join('');
+  const foot = tab === 'iscas' ? 'Cada arremesso gasta 1 isca. Toque em <b>usar esta</b> para trocar de isca.' : tab === 'varas' ? 'Vara comprada é sua para sempre: troque quando quiser.' : 'Peixe que não cabe na caixa não dá para guardar: venda na peixaria.';
+  return `<div class="glass pe-card pe-shop"><h4>🏪 lojinha do Seu Tião <small class="muted">${brl(money)} no bolso</small></h4><div class="pe-shop__tabs" role="group" aria-label="seções da loja">${tabs}</div><div class="pe-shop__list">${items}</div><p class="muted small">${foot}</p></div>`;
 }
 
 // ---------- botões da pescaria ----------
@@ -157,12 +190,21 @@ function draw(cv, dt) {
   else if (!/chuva|frente/.test(Wt.label)) { const sy = hz * (h < 12 ? 1 - (h - 5) / 7 : (h - 12) / 7) * 0.8 + hz * 0.1; x.fillStyle = h >= 17 || h < 7 ? '#ffb15a' : '#fff3b0'; x.beginPath(); x.arc(W * (0.15 + (h - 5) / 14 * 0.7), sy, 16 * u, 0, Math.PI * 2); x.fill(); }
   if (!night) { if (T.birds.length < 3 && Math.random() < dt * 0.08) T.birds.push({ x: -20, y: hz * (0.15 + Math.random() * 0.4), v: 30 + Math.random() * 30 }); x.strokeStyle = 'rgba(30,30,40,.7)'; x.lineWidth = 1.5 * u; T.birds = T.birds.filter(b => (b.x += b.v * dt * u) < W + 20); for (const b of T.birds) { const fl = Math.sin(t * 9 + b.y) * 4 * u; x.beginPath(); x.moveTo(b.x - 6 * u, b.y - fl); x.lineTo(b.x, b.y); x.lineTo(b.x + 6 * u, b.y - fl); x.stroke(); } }
   if (/nublado|chuva|frente/.test(Wt.label)) { x.fillStyle = 'rgba(80,90,110,.35)'; x.fillRect(0, 0, W, hz); }
+  // nuvens que andam devagar
+  x.fillStyle = night ? 'rgba(200,210,230,.12)' : /nublado|chuva|frente/.test(Wt.label) ? 'rgba(200,205,215,.8)' : 'rgba(255,255,255,.75)';
+  for (let i = 0; i < 4; i++) { const cx = ((i * 0.31 + t * 0.006 * (1 + i * 0.3)) % 1.3 - 0.15) * W, cy = hz * (0.18 + i * 0.13); for (const [dx, dy, r] of [[0, 0, 14], [14, -6, 12], [28, 0, 13], [12, 5, 11]]) { x.beginPath(); x.arc(cx + dx * u, cy + dy * u, r * u, 0, Math.PI * 2); x.fill(); } }
   // morros e mata
   x.fillStyle = '#3f6b3e'; x.beginPath(); x.moveTo(0, hz); for (let i = 0; i <= 10; i++) x.lineTo(i * W / 10, hz - (16 + 18 * Math.abs(Math.sin(i * 1.9 + (T.spot === 'represa' ? 2 : T.spot === 'pesqueiro' ? 1 : 0)))) * u); x.lineTo(W, hz); x.fill();
+  x.fillStyle = '#2f5530'; for (let i = 0; i < 26; i++) { const tx = (i + 0.5) * W / 26, th = (10 + 8 * Math.abs(Math.sin(i * 2.3))) * u; x.beginPath(); x.moveTo(tx - 9 * u, hz); x.lineTo(tx, hz - th - 14 * u); x.lineTo(tx + 9 * u, hz); x.fill(); }
   const w = x.createLinearGradient(0, hz, 0, H); w.addColorStop(0, WATER[T.spot][0]); w.addColorStop(1, WATER[T.spot][1]); x.fillStyle = w; x.fillRect(0, hz, W, H - hz);
   // ondas (mais perto = maiores)
   x.strokeStyle = 'rgba(255,255,255,.14)'; x.lineWidth = 1.5 * u;
   for (let r = 0; r < 9; r++) { const k = r / 9, yy = hz + 8 * u + (H - hz) * k * k; x.beginPath(); for (let i = 0; i <= W; i += 14 * u) x.lineTo(i, yy + Math.sin(i / (30 * u) + t * 1.4 + r) * (1 + k * 4) * u); x.stroke(); }
+  if (!night && !/chuva|frente/.test(Wt.label)) { const gx = W * (0.15 + (h - 5) / 14 * 0.7); x.fillStyle = 'rgba(255,240,180,.18)'; for (let r = 0; r < 7; r++) { const yy = hz + 6 * u + r * 9 * u, ww = (30 - r * 3 + Math.sin(t * 2 + r) * 6) * u; x.fillRect(gx - ww / 2, yy, ww, 2 * u); } }
+  if (T.spot === 'lagoa') for (let i = 0; i < 6; i++) { const lx = W * (0.08 + i * 0.09), ly = hz + (H - hz) * (0.35 + (i % 3) * 0.12); x.fillStyle = '#3c7a3a'; x.beginPath(); x.ellipse(lx, ly, 10 * u, 4 * u, 0, 0.3, Math.PI * 2); x.fill(); if (i % 2) { x.fillStyle = '#f7c6d9'; x.beginPath(); x.arc(lx + 3 * u, ly - 2 * u, 2.5 * u, 0, Math.PI * 2); x.fill(); } }
+  if (T.spot === 'represa') { const bx = W * (0.2 + 0.05 * Math.sin(t * 0.1)), by = hz + 14 * u + Math.sin(t * 1.3) * u; x.fillStyle = '#7a4b2a'; x.beginPath(); x.moveTo(bx - 16 * u, by); x.lineTo(bx + 16 * u, by); x.lineTo(bx + 11 * u, by + 5 * u); x.lineTo(bx - 11 * u, by + 5 * u); x.fill(); x.fillStyle = '#e9e2d0'; x.fillRect(bx - 2 * u, by - 9 * u, 4 * u, 9 * u); x.strokeStyle = '#ccc'; x.lineWidth = u; x.beginPath(); x.moveTo(bx + 2 * u, by - 9 * u); x.lineTo(bx + 26 * u, by + 6 * u); x.stroke(); }
+  T.jumpT = (T.jumpT ?? 6) - dt; if (T.jumpT <= 0) { T.jumpT = 7 + Math.random() * 10; T.jx = { m: S.size * (0.3 + Math.random() * 0.6), k: 0, side: Math.random() < 0.5 ? -1 : 1 }; }
+  if (T.jx && T.st !== 'fight') { const J = T.jx; J.k += dt / 0.9; const [jx, jy] = spotXY(W, H, hz, J.m, 0.4 + J.side); if (J.k < 1) { x.font = `${14 * u}px serif`; x.textAlign = 'center'; x.save(); x.translate(jx + (J.k - 0.5) * 24 * u * J.side, jy - Math.sin(J.k * Math.PI) * 26 * u); x.rotate(J.side * (J.k - 0.5) * 2); x.fillText('🐟', 0, 0); x.restore(); } if (J.k < 2) { x.strokeStyle = `rgba(255,255,255,${0.5 * (1 - J.k / 2)})`; x.lineWidth = u; x.beginPath(); x.ellipse(jx, jy, (4 + J.k * 14) * u, (1.5 + J.k * 4) * u, 0, 0, Math.PI * 2); x.stroke(); } else T.jx = null; }
   // faixas de profundidade
   x.font = `${11 * u}px system-ui`; x.fillStyle = 'rgba(255,255,255,.4)'; x.textAlign = 'right';
   for (const [i, m] of [[0, S.size * 0.3], [1, S.size * 0.65]]) { const [, y] = spotXY(W, H, hz, m); x.fillRect(W * 0.86, y, W * 0.12, 1); x.fillText(`${PE.ZONES[i + 1]} · ${Math.round(m)} m`, W * 0.98, y - 3 * u); }
@@ -304,7 +346,6 @@ document.addEventListener('keydown', e => {
   if (T.st === 'wait') hook(); else if (T.st === 'land') net(); else press(true);
 });
 document.addEventListener('keyup', e => { if (e.key === ' ') press(false); });
-document.addEventListener('change', e => { if (e.target.name === 'pe-bait' && T.st === 'idle') T.bait = e.target.value; });
 document.addEventListener('click', e => {
   const b = e.target.closest?.('[data-pe]'); if (!b) return;
   const s = G.S, a = b.dataset.pe, id = b.dataset.id; let r = null;
@@ -315,8 +356,10 @@ document.addEventListener('click', e => {
   if (a === 'free') return freeFish();
   if (a === 'drag+') return setDrag(1);
   if (a === 'drag-') return setDrag(-1);
-  if (a === 'spot' && T.st === 'idle') { T.spot = id; T.school = 0; T.bait = { represa: 'viva', pesqueiro: 'massa' }[id] || 'minhoca'; return render(); }
-  if (a === 'bait') { r = PE.buyBait(s, id); if (!r.err) { note(`pesca: ${r.n} iscas (${PE.BAITS[id].label})`, -r.cost); say(`+${r.n} iscas de ${PE.BAITS[id].label}.`); } }
+  if (a === 'spot' && T.st === 'idle') { T.spot = id; T.school = 0; { const b = PE.ensure(s).baits, best = PE.bestBait(id); T.bait = b[best] > 0 ? best : Object.keys(PE.BAITS).find(k => b[k] > 0) || best; } return render(); }   // troca de lugar: usa a isca recomendada se tiver
+  if (a === 'shop') { T.shop = id; return render(); }
+  if (a === 'usebait') { if (T.st === 'idle' && (PE.ensure(s).baits[id] || 0) > 0) { T.bait = id; sfx.tick(0.4); say(`Usando ${PE.BAITS[id].label}.`); } return render(); }
+  if (a === 'bait') { r = PE.buyBait(s, id, Number(b.dataset.n) || 1); if (!r.err) { note(`pesca: ${r.n} iscas (${PE.BAITS[id].label})`, -r.cost); say(`+${r.n} iscas de ${PE.BAITS[id].label}.`); } }
   if (a === 'rod' && T.st === 'idle') { const own = PE.ensure(s).rods.includes(+id); if (!own && !confirm(`Comprar ${PE.RODS[id].label} por ${brl(PE.RODS[id].price)}?`)) return; r = PE.buyRod(s, +id); if (!r.err && r.cost) { note(`pesca: compra de ${PE.RODS[id].label}`, -r.cost); say(`${cap(PE.RODS[id].label)} comprada.`); } }
   if (a === 'cooler') { if (!confirm(`Comprar ${PE.COOLERS[id].label} por ${brl(PE.COOLERS[id].price)}?`)) return; r = PE.buyCooler(s, +id); if (!r.err) note(`pesca: compra de ${PE.COOLERS[id].label}`, -r.cost); }
   if (a === 'sellall' || a === 'sell1') { r = PE.sell(s, a === 'sell1' ? [+id] : null); if (!r.err && r.n) { note(`pesca: venda na peixaria (${r.n} ${r.n === 1 ? 'peixe' : 'peixes'}, ${fmtKg(r.kg)})`, r.v); say(`Vendido por ${brl(r.v)}.`); } }
