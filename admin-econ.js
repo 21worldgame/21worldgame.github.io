@@ -124,6 +124,7 @@ export function watch(players, now = Date.now()) {
       if (old > 50000) add(1, `${brlShort(old)} vieram do passe da versão antiga, que pagava sem lançar no livro-caixa (defeito do jogo, corrigido na v201; não é trapaça dele). ${other > 50000 ? '' : parts}`);
     }
     if (r.jumpCloud > 200000 && !(r.jump > 50000)) add(1, `${brlShort(r.jumpCloud)} chegaram com o save de outro aparelho dele: normalmente é venda feita lá (confira no livro-caixa da ficha)`);
+    if (r.rep) { r.pf = true; add(4, `Polícia Federal: repetiu "${r.rep.k}" ${r.rep.n} vezes em 1 h, ${brlShort(r.rep.total)} (${new Date(r.rep.at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}): furo do jogo sendo explorado ou robô clicando`); }
     if (r.jump > 50000) add(3, `abriu o jogo com ${brlShort(r.jump)} a mais do que tinha no último registro do diário, sem nenhum lançamento no meio (save mexido ou outro aparelho)${r.jumpAt ? `: ${new Date(r.jumpAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : ''}`);
     for (const w of r.warn) add(1, w);
     r.why = why;
@@ -166,12 +167,16 @@ const actNames = a => [...new Set(String(a || '').split(', ').map(x => x.replace
 export const PLAY_SINCE = Date.parse('2026-11-23T13:06:39-03:00');   // v184: o jogo começou a medir o tempo jogado
 export const PASS_FIX_AT = Date.parse('2026-11-23T22:39:25-03:00');
 export const gapCause = r => (/pass-claim/.test(r.acts || '') ? 'pass' : Date.parse(r.at) < PASS_FIX_AT ? 'old' : 'other');
+// Polícia Federal: a mesma ação que dá dinheiro repetida REP_N+ vezes em 1 h somando REP_MIN+ (furo explorado ou robô).
+// Renda que cai sozinha todo mês (arrendamento, rendimento, resgate de aplicação) não conta.
+export const REP_N = 10, REP_MIN = 20000, REP_WIN = 36e5;
+const AUTO = /^(arrendamento recebido|rendimento|resgate de investimento|juros|dividendos|lucro das empresas|aluguel)/;
 export function diaryReport(rows, names = {}) {
   const P = {}, src = {}, gapBy = {}, chipBy = {}, jumps = [];
   const nm = id => names[id] || String(id).slice(0, 8);
   const when = r => Date.parse(r.created || r.at);   // hora em que aconteceu no aparelho (a fila offline manda atrasado)
   const sorted = [...rows].sort((a, b) => when(a) - when(b));
-  const last = {};
+  const last = {}, win = {};
   for (const r of sorted) {
     const id = r.user_id, p = (P[id] ??= { id, name: nm(id), in: 0, out: 0, gap: 0, gapN: 0, gapPass: 0, gapOld: 0, gapOther: 0, gapList: [], chips: 0, n: 0, sessions: 0, first: r, last: r, src: {} });
     const v = Number(r.val) || 0; p.n++; p.last = r;
@@ -188,6 +193,11 @@ export function diaryReport(rows, names = {}) {
       if (v > 0) p.in += v; else p.out -= v;
       const k = pattern(r.txt), S = (src[k] ??= { k, in: 0, out: 0, n: 0, players: {}, ex: r.txt }), Q = (p.src[k] ??= { k, net: 0, n: 0 });
       if (v > 0) S.in += v; else S.out -= v; S.n++; S.players[p.name] = (S.players[p.name] || 0) + v; Q.net += v; Q.n++;
+      if (v > 0 && !AUTO.test(k)) {   // janela de 1 h por jogador e ação: guarda a pior
+        const w = (win[`${id}|${k}`] ??= []), t = when(r); w.push({ t, v }); while (t - w[0].t > REP_WIN) w.shift();
+        const tot = w.reduce((a, x) => a + x.v, 0);
+        if (w.length >= REP_N && tot >= REP_MIN && (!p.rep || w.length > p.rep.n)) p.rep = { k, ex: r.txt, n: w.length, total: tot, at: r.at };
+      }
     }
     last[id] = r;
   }

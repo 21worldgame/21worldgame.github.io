@@ -661,6 +661,13 @@ console.log('escalação ok');
   assert.equal(e.players, 2); assert.equal(e.rows.find(x => x.key === 'lavoura').in, 160e6); assert.equal(e.rows.find(x => x.key === 'lavoura').top.name, 'a');
   assert.ok(AE.worthParts(ok).parts.dinheiro === ok.money && AE.activities({ ...ok, fut: { club: 'Remo', div: 1, season: 2, league: { round: 5 } } }).some(a => /Remo/.test(a)));
   console.log('painel: economia do jogador ok');
+  // Polícia Federal: a mesma venda repetida 12x em 1 h vira alerta; arrendamento (automático) e venda espaçada não
+  const T0 = Date.UTC(2026, 10, 24, 12), row = (id, i, txt, gap = 3e5) => ({ user_id: id, kind: 'log', at: new Date(T0 + i * gap).toISOString(), txt, val: 5000 });
+  const dr = AE.diaryReport([...Array.from({ length: 12 }, (_, i) => row('a', i, `venda de ${i + 3} sacas de soja`)), ...Array.from({ length: 20 }, (_, i) => row('b', i, 'arrendamento recebido, sul da bahia')),
+    ...Array.from({ length: 12 }, (_, i) => row('c', i, 'venda de 5 sacas de soja', 20 * 6e4))]), P = Object.fromEntries(dr.players.map(p => [p.id, p]));
+  assert.equal(P.a.rep?.n, 12); assert.ok(!P.b.rep && !P.c.rep, 'automático e espaçado não são alerta');
+  assert.ok(AE.watch([{ id: 'a', name: 'a', s: {}, rep: P.a.rep }]).rows[0].pf, 'vira alerta da PF no painel');
+  console.log('painel: alerta da polícia federal ok');
 }
 { // futebol com preço real (v151): clube da escala antiga é devolvido pelo preço antigo; clube novo não é mexido
   const old = { money: 1000, fut: { club: 'Paysandu', div: 2, squad: [{ id: 'a', ovr: 60 }] }, shop: [{ key: 'player:a' }, { key: 'car:1' }], freeAgents: [{ id: 'b' }] };

@@ -785,7 +785,7 @@ async function loadVigia() {
     const players = saves.map(x => { const u = U[x.user_id] || {}; return { id: x.user_id, name: u.name || x.data?.avatar?.name || '(sem nome)', created: u.created_at, banned: u.banned, s: x.data || {},
       hist: (H[x.user_id] || []).map(h => ({ t: Date.parse(h.saved_at), money: Number(h.money) || 0 })), pixIn: Pin[x.user_id] || [], pixOut: Pout[x.user_id] || [],
       receita: (R[x.user_id] || []).length, gifts: Math.max(0, (Gf[x.user_id] || []).reduce((t, g) => (g.kind === 'reset' ? 0 : t + Number(g.amount)), 0)),   // envio desfeito (valor negativo) desconta; recomeço zera
-      farm: F[x.user_id], farmSender: FS[x.user_id], gap: GP[x.user_id]?.gap || 0, gapN: GP[x.user_id]?.gapN || 0, gapPass: GP[x.user_id]?.gapPass || 0, gapOld: GP[x.user_id]?.gapOld || 0, gapOther: GP[x.user_id]?.gapOther || 0, gapList: GP[x.user_id]?.gapList || [], jump: JP[x.user_id] || 0, jumpAt: JA[x.user_id], jumpCloud: JC[x.user_id] || 0 }; });
+      farm: F[x.user_id], farmSender: FS[x.user_id], gap: GP[x.user_id]?.gap || 0, gapN: GP[x.user_id]?.gapN || 0, gapPass: GP[x.user_id]?.gapPass || 0, gapOld: GP[x.user_id]?.gapOld || 0, gapOther: GP[x.user_id]?.gapOther || 0, gapList: GP[x.user_id]?.gapList || [], jump: JP[x.user_id] || 0, jumpAt: JA[x.user_id], jumpCloud: JC[x.user_id] || 0, rep: GP[x.user_id]?.rep }; });
     vg = { ...AE.watch(players), pix, saves, farm, UI };
     st.textContent = `${players.length} contas analisadas às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
     await handled(takes);
@@ -860,15 +860,15 @@ function drawCheats(on) {
         <div class="ad-tablewrap"><table class="ad-xl"><thead><tr><th>#</th><th>data e hora do Pix</th><th>conta que mandou</th><th>situação</th><th>conta criada em</th><th>idade</th><th class="num">valor</th><th class="num">acumulado</th><th>mensagem</th></tr></thead><tbody>
         ${rows.map(x => `<tr><td class="num">${x.i}</td><td>${dt(x.at)}</td><td><a href="#" data-vg-user="${esc(x.id)}">${esc(x.name)}</a></td><td>${status(x.id)}</td><td>${dt(x.created)}</td><td>${age(x.ageDays)}</td><td class="num">${brl(x.amount)}</td><td class="num">${brl(x.acc)}</td><td>${esc(x.memo)}</td></tr>`).join('')}
         </tbody></table></div></div>`; }).join('')}` : '';
-  const list = vg.rows.filter(r => r.score >= 4 && fresh(r) && !(farms.some(f => f.id === r.id) && r.why.length === 1)).slice(0, 40);
+  const list = vg.rows.filter(r => r.score >= 4 && fresh(r) && !(farms.some(f => f.id === r.id) && r.why.length === 1)).sort((a, b) => (b.pf || 0) - (a.pf || 0)).slice(0, 40);   // alerta da PF no topo
   const cleared = vg.rows.filter(r => OKS[r.id] && !fresh(r));
-  $('#ad-cheat-st').textContent = `${farms.length} fazenda(s) de contas · ${list.length} jogador(es) com sinais fortes · visto em ${dt(Date.now())}`;
+  $('#ad-cheat-st').textContent = `${list.filter(r => r.pf).length ? `🚨 ${list.filter(r => r.pf).length} alerta(s) da Polícia Federal · ` : ''}${farms.length} fazenda(s) de contas · ${list.length} jogador(es) com sinais fortes · visto em ${dt(Date.now())}`;
   // jogadores com sinais fortes: uma linha por jogador, com as datas que importam e os motivos
   const lastPix = (arr = []) => arr.reduce((m, p) => (p.at > m ? p.at : m), '');
   $('#ad-cheat').innerHTML = list.length ? `<div class="ad-tablewrap"><table class="ad-xl"><thead><tr><th>nível</th><th>jogador</th><th>situação</th><th>conta criada</th><th>último save</th><th class="num">patrimônio</th><th class="num">24 h</th><th class="num">horas (total · hoje)</th><th class="num">R$/h</th><th>Pix receb. / env. (último)</th><th class="num">cassino</th><th>motivos</th><th>agir</th></tr></thead><tbody>
     ${list.map(r => { const [lv, tone] = certainty(r.score), sv = r.s?.savedAt;
       return `<tr class="ad-alert"><td><span class="tag tag--${tone}">${lv} · ${r.score}</span></td>
-        <td><a href="#" data-vg-user="${esc(r.id)}"><b>${esc(r.name)}</b></a>${on.has(r.id) ? ' <span class="tag tag--green">online</span>' : ''}</td><td>${status(r.id)}</td>
+        <td><a href="#" data-vg-user="${esc(r.id)}"><b>${esc(r.name)}</b></a>${r.pf ? ' <span class="tag tag--red" title="repetiu a mesma ação que dá dinheiro muitas vezes em 1 h">🚨 Polícia Federal</span>' : ''}${on.has(r.id) ? ' <span class="tag tag--green">online</span>' : ''}</td><td>${status(r.id)}</td>
         <td>${dt(r.created)}</td><td>${sv ? dt(sv) : '—'}</td><td class="num">${AE.brlShort(r.worth)}</td><td class="num ${r.money24 < 0 ? 'bad' : 'good'}">${r.money24 == null ? '—' : AE.brlShort(r.money24)}</td>
         <td class="num">${hrs(r.playH)} · ${hrs(r.todayH)}</td><td class="num">${r.perHour == null ? '—' : AE.brlShort(r.perHour)}</td>
         <td>${AE.brlShort(r.pixInSum)} / ${AE.brlShort(r.pixOutSum)}${lastPix([...(r.pixIn || []), ...(r.pixOut || [])]) ? `<br><small class="muted">${dt(lastPix([...(r.pixIn || []), ...(r.pixOut || [])]))}</small>` : ''}</td>
