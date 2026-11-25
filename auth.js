@@ -363,12 +363,14 @@ export async function ranking(maxAge = 60000) {
 // logo depois de autenticar: escolhe qual save vale e, se trocou de conta, recarrega com o save certo
 async function afterLogin() {
   const previous = currentUid();
-  let cloud = null;
-  try { cloud = await pull(); } catch { say('Não foi possível ler seu save na nuvem. Jogando com o save deste aparelho.', true); }
+  let cloud = null, failed = false;
+  try { cloud = await pull(); } catch { failed = true; say('Não foi possível ler seu save na nuvem. Jogando com o save deste aparelho.', true); }
   loadMeta(); loadBaseData();
   const useCloud = () => { writeSave(user.id, cloud.data); base = cloud.updated_at; setBaseData(cloud.data); pushed = cloud.data?.savedAt || 0; saveMeta(); location.reload(); return new Promise(() => {}); };
   if (previous !== user.id) {
     if (cloud) return useCloud();
+    // servidor fora do ar: NÃO é conta nova (começar do zero assustava o jogador). Espera e tenta de novo.
+    if (failed) { say('O servidor do jogo não respondeu agora. Sua conta está guardada: tentando de novo em 30 segundos...', true); setTimeout(() => location.reload(), 30000); return new Promise(() => {}); }
     const fresh = blankState(cleanName(user.user_metadata?.name || user.user_metadata?.full_name));   // conta nova começa do zero
     writeSave(user.id, fresh); base = ''; pushed = 0; saveMeta();
     location.reload();
