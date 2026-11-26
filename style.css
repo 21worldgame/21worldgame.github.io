@@ -3854,9 +3854,13 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .vbar b { color: #f5b833; } .vbar__dot { width: 7px; height: 7px; border-radius: 50%; background: #3ddc84; flex: none; }
 .vbar.is-old { color: #fff; background: linear-gradient(90deg, #5a3a05, #2a1d05, #5a3a05); } .vbar.is-old .vbar__dot { background: #f5b833; animation: lpPulse 1.4s infinite; }
 .vbar__go { color: #f5b833; font-weight: 800; }
-.vchip { min-width: 0; border: 0; color: inherit; font: inherit; cursor: pointer; text-align: left; }
-.vchip small { display: flex; align-items: center; justify-content: center; gap: 4px; } .vchip small i { width: 6px; height: 6px; border-radius: 50%; background: #3ddc84; }
-.vchip.is-old b { color: #f5b833; } .vchip.is-old small { color: #f5b833; opacity: 1; } .vchip.is-old small i { background: #f5b833; animation: lpPulse 1.4s infinite; }
+/* versão: selinho dentro do cartão do relógio do mundo, no canto direito (sempre junto do mês e ano) */
+#worldclock.has-v { position: relative; padding-right: 70px !important; }
+.vchip { position: absolute; right: 8px; top: 50%; translate: 0 -50%; display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 99px;
+  border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); color: rgba(255,255,255,.7); font: 700 .62rem/1 var(--font-body); cursor: pointer; white-space: nowrap; }
+.vchip i { width: 6px; height: 6px; border-radius: 50%; background: #3ddc84; }
+.vchip:hover, .vchip:focus-visible { color: #fff; border-color: rgba(245,184,51,.6); outline: none; }
+.vchip.is-old { color: #f5b833; border-color: rgba(245,184,51,.7); background: rgba(245,184,51,.14); } .vchip.is-old i { background: #f5b833; animation: lpPulse 1.4s infinite; }
 .au__panel > .vbar { justify-content: flex-start; padding: 4px 10px; border-radius: 99px; background: rgba(245,184,51,.1); margin-bottom: 8px; width: fit-content; max-width: 100%; }
 /* atualização obrigatória em tela cheia (v250) */
 .upd.upd--full { position: fixed; inset: 0 !important; margin: 0; border: 0; width: 100% !important; height: 100%; max-width: none !important; max-height: none; color: #fff; left: 0 !important; bottom: 0 !important; width: auto !important; max-width: none; z-index: 5000; display: grid !important; place-items: center; padding: 16px !important;

@@ -1758,7 +1758,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 263;
+const APP_VERSION = 264;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
@@ -1774,13 +1774,15 @@ function drawVBar() {
     if (el) { el.innerHTML = html; el.classList.toggle('is-old', old); } }
   // no jogo: botãozinho discreto ao lado do mês (relógio do mundo)
   let c = document.getElementById('vchip'); const wc = document.getElementById('worldclock');
-  if (wc && !c) { c = document.createElement('button'); c.type = 'button'; c.id = 'vchip'; c.className = 'worldclock glass vchip'; wc.after(c); }   // mesmo cartão do relógio do mundo
-  if (c) { c.innerHTML = `<span class="worldclock__t">versão</span><b>v${APP_VERSION}</b><small><i aria-hidden="true"></i>${old ? `v${latestV} chegou` : 'em dia'}</small>`; c.classList.toggle('is-old', old);
+  // selinho DENTRO do cartão do relógio do mundo (canto direito): fica sempre junto do mês e ano, em qualquer tela
+  if (wc && !c) { c = document.createElement('span'); c.id = 'vchip'; c.className = 'vchip'; c.setAttribute('role', 'button'); c.tabIndex = 0; wc.append(c); wc.classList.add('has-v');
+    c.addEventListener('click', e => { e.stopPropagation(); vchipGo(); }); c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); vchipGo(); } }); }
+  if (c) { c.innerHTML = `<i aria-hidden="true"></i>v${old ? latestV : APP_VERSION}`; c.classList.toggle('is-old', old);
     c.title = old ? `Saiu a v${latestV}: toque para atualizar agora` : `Versão v${APP_VERSION}: ${VB_OK[APP_VERSION % VB_OK.length]}`; c.setAttribute('aria-label', c.title); }
 }
-document.addEventListener('click', e => { if (!e.target.closest('#vchip')) return;
+function vchipGo() {
   if (latestV > APP_VERSION) { updateShown = false; checkUpdate(); say(`Buscando a v${latestV}…`); }
-  else { say(`Você está na v${APP_VERSION}, a versão mais nova: ${VB_OK[APP_VERSION % VB_OK.length]}.`); checkUpdate(); } });
+  else { say(`Você está na v${APP_VERSION}, a versão mais nova: ${VB_OK[APP_VERSION % VB_OK.length]}.`); checkUpdate(); } }
 drawVBar();
 async function checkUpdate() {
   if (updateShown || checking) return;   // uma verificação por vez (senão saem dois avisos e duas contagens)
