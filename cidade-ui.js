@@ -5,7 +5,7 @@ import * as TV from './news-ui.js';
 import * as NPC from './npcs.js';
 import * as W from './world.js';
 import * as Live from './live.js';
-import { G, esc, ntOff } from './store.js';
+import { G, esc, ntOff, privOn } from './store.js';
 import { avatarSVG } from './avatar.js';
 import { short, headline, KINDS } from './news.js';
 import * as EC from './econ.js';
@@ -19,7 +19,7 @@ const saveHist = () => store(HIST_KEY, [...hist.values()].sort((a, b) => b.at - 
 
 function ctx() {
   const t = Live.now(), w = Live.world();
-  const rows = (G.rankRows?.(500) || []).filter(r => r.worth > 10000).map(r => (r.pid === 'me' && G.S?.privateProfile ? { ...r, name: 'um investidor misterioso' } : r));
+  const rows = (G.rankRows?.(500) || []).filter(r => r.worth > 10000).map(r => (r.pid === 'me' && privOn(G.S) ? { ...r, name: 'um investidor misterioso' } : r));
   const m = W.current(w, t), econ = EC.events(m).filter(e => e.phase !== 'fim').map(e => ({ ...EC.headline(e), phase: e.phase, effect: EC.effectTxt(e, m) }));   // o que está mexendo no mercado e nas lavouras agora
   return { rows, econ, online: Math.max(1, NPC.onlineTotal(t)), monthAt: x => W.current(w, x) + W.progress(w, x) };
 }

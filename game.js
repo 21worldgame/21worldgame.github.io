@@ -1,7 +1,7 @@
 import * as L from './logic.js';
 import * as P from './progress.js';
 import { CATALOG, SLOT, avatarSVG, accsOf, toggleAcc } from './avatar.js';
-import { G, $, esc, brl, int, dots, RM, say, save, note, pay, award, checkAch, confetti, today, yesterday, reset, profileOf, levelUp, ntOff, ntSet, badge, blockKey, isBlocked, setBlocked, every } from './store.js';
+import { G, $, esc, brl, int, dots, RM, say, save, note, pay, award, checkAch, confetti, today, yesterday, reset, profileOf, levelUp, ntOff, ntSet, badge, blockKey, isBlocked, setBlocked, every, privOn } from './store.js';
 import * as C from './casino.js';
 import * as RC from './racing.js';
 import * as sfx from './sfx.js';
@@ -136,6 +136,7 @@ function renderHud() {
   $('#hud-rank').textContent = $('#char-rank').textContent = prTop ? `${prTop.icon} ${prTop.title}` : L.rank(worth);
   $('#hud-ring').dataset.prest = prTop?.id || '';
   $('#hud-level').textContent = s.level;
+  VIP.hud();   // coroa e faixa VIP no anel do nível
   $('#hud-ring').style.setProperty('--p', s.xp / P.xpNeed(s.level));
   P.passEnsure(s, today().slice(0, 7));
   const ptier = P.passTier(s);
@@ -832,7 +833,7 @@ async function linkPhone() {
 function profileExtra(p, me) {
   const tr = p.trophies || [];
   const trophies = `<h3>troféus de patrimônio <small class="muted">${tr.length} de ${L.TROPHIES.length}</small></h3><div class="pf__troph">${L.TROPHIES.map((t, i) => { const pr = PK.PRESTIGE.find(x => x.min === t); return `<span class="troph${tr.includes(t) ? ' is-got' : ''}${i === 0 ? ' troph--selo' : ''}${pr ? ` troph--prest troph--${pr.id}` : ''}" title="${pr ? `${pr.trophy}: ${pr.title} (${mi(t)})` : `${i === 0 ? 'selo' : 'troféu'} de ${mi(t)}`}"><b>${pr ? pr.icon : i === 0 ? '🎖️' : '🏆'}</b><small>${mi(t)}</small></span>`; }).join('')}</div>`;
-  const priv = me && tr.includes(L.PRIVATE_MIN) ? `<div class="pf__acts"><button class="btn btn--glass btn--sm" data-act="toggle-private">${S().privateProfile ? '🔒 perfil privado (tornar público)' : '🔓 perfil público (tornar privado)'}</button></div>` : me ? '<p class="muted small">Ao chegar a R$ 10 milhões você ganha o selo e pode deixar o perfil privado.</p>' : '';
+  const priv = me && VIP.isOn() ? `<div class="pf__acts"><button class="btn btn--glass btn--sm" data-act="toggle-private">${privOn(S()) ? '🔒 perfil privado (tornar público)' : '🔓 perfil público (tornar privado)'}</button> <small class="muted">exclusivo do VIP</small></div>` : me ? '<div class="pf__acts"><button class="btn btn--gold btn--sm" data-act="goto-vip">🔒 perfil privado é exclusivo do VIP</button></div>' : '';
   if (p.private && !me) return { colecoes: trophies + '<p class="pf__private glass">🔒 Este jogador deixou o perfil privado. Só os troféus aparecem.</p>' };
   if (p.noCard) return { colecoes: trophies + '<p class="pf__private glass">Este jogador ainda está numa versão antiga do jogo. Os detalhes aparecem assim que ele abrir ou recarregar o jogo.</p>' };
   const biz = (p.biz || []).map(b => { const c = BIZ_LISTS[b.cat]?.[b.brand]; return c ? `<span class="pf__biz" style="--img:url(assets/biz/${b.brand}.webp)"><small>${esc(c.name)}</small></span>` : ''; }).join('');
@@ -886,7 +887,7 @@ function openProfile(pid, fetched) {
   $('#pf').innerHTML = `${top1 ? '<div class="pf__crown" aria-label="número 1 do ranking"><span>👑</span><b>nº 1 do 21 World</b><small>a maior fortuna do mundo</small></div>' : ''}
     <div class="pf__head">
       <span class="pf__avatar is-full"${prTop ? ` data-prest="${prTop.id}"` : ''}>${avatarSVG(p.look, { label: p.name, full: true })}</span>
-      <div><h2 id="pf-name">${esc(p.name)}${prTop ? ` <span class="prest-badge prest-badge--${prTop.id}" title="${esc(prTop.trophy)}">${prTop.icon}</span>` : ''}</h2><p><span class="tag tag--gold">nível ${p.level}</span> <span class="tag ${prTop ? 'tag--prest' : 'tag--dark'}">${esc(prTop ? prTop.title : p.rank)}</span>${p.pioneer ? ' <span class="tag tag--gold" title="jogou no começo do 21 World: só quem estava lá tem">🌱 pioneiro</span>' : ''}</p>
+      <div><h2 id="pf-name">${esc(p.name)}${prTop ? ` <span class="prest-badge prest-badge--${prTop.id}" title="${esc(prTop.trophy)}">${prTop.icon}</span>` : ''}</h2><p><span class="tag tag--gold">nível ${p.level}</span>${VIP.chip(me ? Auth.account()?.id : p.name)} <span class="tag ${prTop ? 'tag--prest' : 'tag--dark'}">${esc(prTop ? prTop.title : p.rank)}</span>${p.pioneer ? ' <span class="tag tag--gold" title="jogou no começo do 21 World: só quem estava lá tem">🌱 pioneiro</span>' : ''}</p>
       ${ceo.length ? `<p class="pf__ceo">${ceo.slice(0, 6).map(n => `<span class="tag tag--ceo" title="dono da empresa">💼 CEO · ${esc(n)}</span>`).join(' ')}${ceo.length > 6 ? ` <span class="tag tag--dark">+${ceo.length - 6} empresas</span>` : ''}</p>` : ''}
       <p class="big">${brl(p.worth)}</p><p class="muted small">patrimônio</p>${xp}${p.bio ? `<p class="pf__bio">“${esc(p.bio)}”</p>` : ''}</div>
     </div>
@@ -1233,7 +1234,8 @@ const ACTS = {
   'char-tab'(id) { charTab = id; renderChar(); },
   'toggle-nt'() { const on = ntOff('aviso') || ntOff('chat'); ntSet('aviso', on); ntSet('chat', on); say(on ? 'Avisos ligados de novo.' : 'Avisos desligados (erros ainda aparecem).'); openProfile('me'); },
   'close-profile'() { const d = $('#dlg-profile'); if (d.open) d.close(); },
-  'toggle-private'() { const s = S(); if (!(s.trophies || []).includes(L.PRIVATE_MIN)) return say('O perfil privado libera aos R$ 10 milhões.', true); s.privateProfile = !s.privateProfile; save(); say(s.privateProfile ? 'Perfil privado: os outros só veem seus troféus.' : 'Perfil público de novo.'); openProfile('me'); },
+  'toggle-private'() { const s = S(); if (!VIP.isOn()) return say('O perfil privado é exclusivo do VIP: ative na aba VIP.', true); s.privateProfile = !privOn(s); save(); say(s.privateProfile ? 'Perfil privado: os outros só veem seus troféus.' : 'Perfil público de novo.'); openProfile('me'); },
+  'goto-vip'() { document.querySelectorAll('dialog[open]').forEach(d => d.close()); G.goto('vip'); },
   async look(id, b) {
     const k = b.dataset.k, opt = CATALOG[k].opts.find(o => String(o.id) === id), tag = `${k}:${opt.id}`;
     if (opt.price && !S().owned.includes(tag)) {
@@ -1766,7 +1768,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 281;
+const APP_VERSION = 282;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

@@ -1311,17 +1311,20 @@ setInterval(async () => { if ($('#ad-app').hidden) return; const { data } = awai
 setInterval(async () => { if ($('#ad-app').hidden) return; const { data } = await sb.from('pro_reports').select('id').eq('status', 'aberta'); const b = $('#ad-pro-badge'); if (b && data) { b.textContent = data.length; b.hidden = !data.length; } }, 60000);
 
 // ---------- VIP da cidade (vip.sql) ----------
-const VPLAN = { apoiador: ['apoiador', 1, 5], patrono: ['patrono', 1, 15], patrono12: ['patrono', 12, 150], fundador: ['fundador', 1, 50] };
-const VNAME = { apoiador: 'Apoiador R$ 5', patrono: 'Patrono R$ 15', patrono12: 'Patrono anual R$ 150', fundador: 'Fundador R$ 50' };
+// planos do VIP (vip.js): preço por mês; trimestral −10%, anual = 12 pelo preço de 10. Tudo vence: nada é para sempre.
+const VPRICE = { apoiador: 5, patrono: 15, magnata: 29, conselho: 49 }, VOFF = { 1: 0, 3: 0.1, 12: 1 / 6 };
+const VTIER = { apoiador: 'Apoiador', patrono: 'Patrono', magnata: 'Magnata', conselho: 'Conselho' }, VPER = { 1: 'mensal', 3: 'trimestral', 12: 'anual' };
+const vprice = (p, m) => Math.round((VPRICE[p] || 0) * m * (1 - (VOFF[m] || 0)));
+const VNAME = new Proxy({}, { get: (_, k) => VTIER[k] || k });
 async function loadVip() {
   $('#ad-vip-st').textContent = 'carregando...';
-  const [rq, v, m, r] = await Promise.all([sb.from('vip_req').select('id, user_id, name, plan, note, at').eq('done', false).order('at'),
+  const [rq, v, m, r] = await Promise.all([sb.from('vip_req').select('id, user_id, name, plan, months, note, at').eq('done', false).order('at'),
     sb.from('vip').select('*').order('until', { ascending: false }), sb.from('vip_meta').select('*').eq('id', 1).maybeSingle(), sb.rpc('vip_raised')]);
   if (rq.error) { $('#ad-vip-st').textContent = ''; return fail(rq.error, 'carregar o VIP'); }
   const bd = $('#ad-vip-badge'); bd.hidden = !rq.data.length; bd.textContent = rq.data.length;
   $('#ad-vip-st').textContent = `arrecadado no mês: ${brl(r.data)} de ${brl(m.data?.goal)}`;
-  $('#ad-vip-req').innerHTML = rq.data.map(x => `<tr><td>${when(x.at)}</td><td>${esc(x.name)}</td><td>${esc(VNAME[x.plan] || x.plan)}</td><td>${esc(x.note || '')}</td>
-    <td><button class="btn btn--gold btn--xs" data-vip-ok="${x.id}" data-uid="${esc(x.user_id)}" data-plan="${esc(x.plan)}" data-note="${esc(x.note || '')}">Pix conferido: liberar</button> <button class="btn btn--glass btn--xs" data-vip-no="${x.id}">recusar</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">nenhum pedido</td></tr>';
+  $('#ad-vip-req').innerHTML = rq.data.map(x => `<tr><td>${when(x.at)}</td><td>${esc(x.name)}</td><td>${esc(VTIER[x.plan] || x.plan)} ${VPER[x.months || 1] || ''} · ${brl(vprice(x.plan, x.months || 1))}</td><td>${esc(x.note || '')}</td>
+    <td><button class="btn btn--gold btn--xs" data-vip-ok="${x.id}" data-uid="${esc(x.user_id)}" data-plan="${esc(x.plan)}" data-m="${x.months || 1}" data-note="${esc(x.note || '')}">Pix conferido: liberar</button> <button class="btn btn--glass btn--xs" data-vip-no="${x.id}">recusar</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">nenhum pedido</td></tr>';
   const live = d => d && Date.parse(d) > Date.now();
   $('#ad-vip-list').innerHTML = (v.data || []).map(x => `<tr><td>${esc(x.name)}</td><td>${live(x.until) ? esc(x.tier) : '<span class="muted">pausado</span>'}</td><td>${when(x.until)}</td><td class="num">${int(x.months)}</td><td>${x.founder ? `nº ${x.founder} ${esc(x.street || '')}` : ''}</td><td>${esc(x.title || '')}</td>
     <td>${live(x.until) ? `<button class="btn btn--danger btn--xs" data-vip-rev="${esc(x.user_id)}">encerrar</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">ninguém ainda</td></tr>';
@@ -1336,8 +1339,8 @@ async function vipGrant(uid, plan, months, amount, street) {
 document.addEventListener('click', async e => {
   const b = e.target.closest('[data-vip-ok], [data-vip-no], [data-vip-rev], #ad-vip-go, #ad-vip-save, #ad-vip-reload'); if (!b) return;
   if (b.id === 'ad-vip-reload') return loadVip();
-  if (b.dataset.vipOk) { const [p, m, a] = VPLAN[b.dataset.plan] || VPLAN.apoiador; const street = p === 'fundador' ? prompt('Nome da rua do Fundador (pode deixar vazio e pôr depois):', b.dataset.note || '') : null;
-    if (!confirm(`Conferiu o Pix de ${brl(a)} no seu banco? Liberar ${VNAME[b.dataset.plan]}?`)) return; return vipGrant(b.dataset.uid, p, m, a, street); }
+  if (b.dataset.vipOk) { const p = b.dataset.plan, m = Number(b.dataset.m) || 1, a = vprice(p, m); const street = p === 'conselho' ? prompt('Nome da rua do conselheiro (pode deixar vazio: ele escolhe na aba VIP):', b.dataset.note || '') : null;
+    if (!confirm(`Conferiu o Pix de ${brl(a)} no seu banco? Liberar ${VTIER[p] || p} ${VPER[m]} (${m} ${m === 1 ? 'mês' : 'meses'})?`)) return; return vipGrant(b.dataset.uid, p, m, a, street); }
   if (b.dataset.vipNo) { if (!confirm('Recusar este pedido (o Pix não chegou)?')) return; const { error } = await sb.from('vip_req').delete().eq('id', Number(b.dataset.vipNo)); if (error) return fail(error, 'recusar'); return loadVip(); }
   if (b.dataset.vipRev) { if (!confirm('Encerrar o VIP agora? Os meses e selos colecionados continuam.')) return; const { error } = await sb.rpc('vip_revoke', { p_uid: b.dataset.vipRev }); if (error) return fail(error, 'encerrar'); await log('vip-fim', b.dataset.vipRev); return loadVip(); }
   if (b.id === 'ad-vip-go') { const nick = $('#ad-vip-nick').value.trim(); if (!nick) return toast('Escreva o nick.', true);

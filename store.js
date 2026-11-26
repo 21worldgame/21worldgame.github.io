@@ -186,6 +186,8 @@ export function award(ev, n = 1, xp = true) {
 export function checkAch() { P.checkAch(G.S).forEach(a => badge('Conquista desbloqueada', a.txt)); }
 
 // resumo público do jogador (vai para o salão e para a mesa)
+// perfil privado é do VIP: vale enquanto a assinatura estiver ativa (s.vipUntil, gravado pelo vip.js); venceu, volta a público
+export const privOn = s => !!s?.privateProfile && Date.parse(s.vipUntil || 0) > Date.now();
 export function profileOf(s = G.S) {
   const own = s.lands.filter(l => l.own);
   return {
@@ -194,7 +196,7 @@ export function profileOf(s = G.S) {
     stats: s.stats, ach: s.ach, lands: own.length, ha: own.reduce((a, l) => a + l.ha, 0), heads: L.heads(s),
     cars: s.cars.map(c => c.model),
     animals: (s.stable?.animals || []).map(a => ({ kind: a.kind, name: a.name, rating: ST.rating(a), wins: a.wins, ph: a.ph })),
-    crops: L.cropsOf(s), inv: L.investorHist(s), trophies: s.trophies || [], private: !!s.privateProfile && (s.trophies || []).includes(L.PRIVATE_MIN),
+    crops: L.cropsOf(s), inv: L.investorHist(s), trophies: s.trophies || [], private: privOn(s),
     landList: own.slice(0, 10).map(l => ({ region: l.region, ha: l.ha, orchard: !!l.orchard, cane: !!l.cane })),
     biz: ['usinas', 'hotel', 'air', 'boat', 'cars', 'jewel', 'food', 'realty', 'auction', 'banks', 'isps', 'markets'].flatMap(c => (s.biz?.[c] || []).map(b => ({ cat: c, brand: b.brand }))),
     mina: !!s.mina, wh: (s.biz?.wh || []).length, granja: (s.granja?.houses || []).length, suinos: (s.suinos?.barns || []).length,

@@ -34,7 +34,7 @@ export const KB = [
     'Não existe mais taxa para os mais ricos: compras, contas do mês, terras e juros do banco custam o mesmo para qualquer jogador.'] },
   { t: 'troféus e perfil privado', k: ['trofeu', 'trofeus', 'privado', 'selo', 'esconder'], a: [
     'Troféus de patrimônio a cada R$ 10 mi (de 10 a 100 mi). Ficam para sempre, mesmo se a fortuna cair.',
-    'O primeiro troféu (R$ 10 mi) libera o perfil privado: os outros só veem os seus troféus.'] },
+    'O perfil privado é exclusivo do VIP (aba VIP): os outros só veem os seus troféus. Se o VIP vencer, o perfil volta a público.'] },
   // ---------- dinheiro ----------
   { t: 'empréstimo no banco', k: ['emprestimo', 'banco', 'credito', 'parcela', 'juros', 'divida', 'financiar', 'pegar dinheiro'], a: [
     'O banco cobra 1,8% de juros ao mês, igual para todos (empréstimo com terra e gado de garantia, como na vida real; alguns carros, acessórios e terras grandes baixam um pouco) e divide em 12 parcelas. Quem o banco não atende pega com agiota: paga o juro do banco, mais 1 ponto, mais o risco de calote dele. Se der calote, o cobrador recupera 25%.',

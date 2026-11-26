@@ -27,6 +27,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="vip.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
   <script>
   // socorro da abertura: arquivo velho guardado no navegador misturado com arquivo novo trava o jogo na tela "carregando".
@@ -91,7 +92,7 @@
     <div class="container hud__in">
       <div class="brand"><img class="brand__mark" src="assets/brand/logo-anim.svg" width="40" height="40" alt=""><span class="brand__word">21 <b>world</b></span></div>
       <button class="me" data-profile="me" aria-label="ver meu perfil">
-        <span class="me__ring" id="hud-ring"><span class="me__avatar" id="hud-avatar"></span><span class="me__lvl" id="hud-level">1</span></span>
+        <span class="me__ring" id="hud-ring"><i class="me__crown" id="hud-crown" aria-hidden="true" hidden>👑</i><span class="me__avatar" id="hud-avatar"></span><span class="me__lvl" id="hud-level">1</span><b class="me__vip" id="hud-vip" hidden>VIP</b></span>
         <span class="me__txt"><strong id="hud-name">você</strong><span id="hud-rank">iniciante</span></span>
       </button>
       <dl class="stats-hud">
