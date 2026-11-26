@@ -39,7 +39,7 @@ export const KB = [
   { t: 'empréstimo no banco', k: ['emprestimo', 'banco', 'credito', 'parcela', 'juros', 'divida', 'financiar', 'pegar dinheiro'], a: [
     'O banco cobra 1,8% de juros ao mês, igual para todos (empréstimo com terra e gado de garantia, como na vida real; alguns carros, acessórios e terras grandes baixam um pouco) e divide em 12 parcelas. Quem o banco não atende pega com agiota: paga o juro do banco, mais 1 ponto, mais o risco de calote dele. Se der calote, o cobrador recupera 25%.',
     'O limite é a metade do valor das suas terras próprias + 20% do valor do rebanho, menos o que você já deve.',
-    'Parcela sem dinheiro fica atrasada. Duas atrasadas seguidas e o banco toma a sua terra mais cara.'] },
+    'A parcela sai da carteira na virada do mês; previdência, aplicações, estoque e caixa das empresas não pagam parcela. Parcela sem dinheiro na carteira fica atrasada. Duas atrasadas seguidas e o banco toma a sua terra mais cara.'] },
   { t: 'emprestar dinheiro', k: ['emprestar', 'emprestei', 'calote', 'devedor', 'cobrar'], a: [
     'Você pode emprestar para jogadores do mundo: cada pedido mostra juros por mês, prazo (3 a 12 meses) e risco.',
     'Eles pagam uma parcela por mês. Quanto maior o risco, maior a chance de calote, e aí o resto se perde.'] },

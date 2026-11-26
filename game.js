@@ -779,8 +779,8 @@ function renderBanco() {
   const br = L.bankRisk(s), pc = v => `${(v * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
   rollTo($('#credit'), br.limit, brl);
   const cn = $('.credit__note'); if (cn) cn.innerHTML = br.high
-    ? `<b>Cliente de alto patrimônio.</b> Juros de <b>${pc(br.rate)} ao mês</b> em 12 parcelas (risco ${br.premium < 0.5 ? 'moderado' : br.premium < 1.5 ? 'alto' : 'muito alto'} para o banco). Teto do banco para você: ${brl(br.ceiling)}. Duas parcelas atrasadas e o banco toma sua terra mais cara.`
-    : `${pc(br.rate)} ao mês em 12 parcelas, com terra e gado como garantia. Duas parcelas atrasadas e o banco toma sua terra mais cara.`;
+    ? `<b>Cliente de alto patrimônio.</b> Juros de <b>${pc(br.rate)} ao mês</b> em 12 parcelas (risco ${br.premium < 0.5 ? 'moderado' : br.premium < 1.5 ? 'alto' : 'muito alto'} para o banco). Teto do banco para você: ${brl(br.ceiling)}. A parcela sai sozinha <b>da carteira</b> na virada do mês (previdência, aplicações, estoque e caixa das empresas não contam). Duas parcelas sem dinheiro na carteira e o banco toma sua terra mais cara.`
+    : `${pc(br.rate)} ao mês em 12 parcelas, com terra e gado como garantia. A parcela sai sozinha <b>da carteira</b> na virada do mês (previdência, aplicações, estoque e caixa das empresas não contam). Duas parcelas sem dinheiro na carteira e o banco toma sua terra mais cara.`;
   $('#loans').innerHTML = s.loans.length ? s.loans.map(l => `<tr>
     <td class="num">${brl(l.bal)}</td><td class="num">${(l.rate * 100).toFixed(1)}%</td><td class="num">${l.left}</td>
     <td>${l.missed ? '<span class="tag tag--red">atrasada</span>' : '<span class="tag tag--green">em dia</span>'}</td>
@@ -1677,6 +1677,9 @@ function worldMonths0() {
   for (let i = 0; i < p.ticks; i++) {
     EC.apply(s.month, L.ECON, NG.SHOCK, L.CROP_YIELD);   // economia do mundo deste mês: preço de referência e demanda dos setores
     const lines = L.tick(s), rec = [...lines], N = l => { note(l.txt, l.val); rec.push(l); };
+    // parcela atrasada ou terra tomada: aviso na tela (antes só ia para o livro-caixa e o jogador só via a terra sumir)
+    for (const l of lines) if (/^parcela .*atrasada/.test(l.txt)) say(`Parcela ${l.txt.replace(/^parcela | atrasada$/g, '')} atrasada: faltou dinheiro na carteira. Na próxima sem dinheiro, a terra mais cara é tomada.`, true);
+      else if (/ tomou a terra /.test(l.txt)) say(l.txt[0].toUpperCase() + l.txt.slice(1) + ': duas parcelas sem dinheiro na carteira.', true);
     for (const l of ST.monthly(s)) N(l);
     for (const l of GR.monthly(s)) N(l);
     for (const l of PM.monthly(s)) N(l);
@@ -1762,7 +1765,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 275;
+const APP_VERSION = 276;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
