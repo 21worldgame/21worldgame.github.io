@@ -293,17 +293,18 @@ function satThumb(l) {
 const KIND_COLOR = { offer: '--print-gold', own: '--money', rent: '--violet' };
 
 // ---------- quanto falta (todos os processos): dias do mundo (30 por mês) + tempo real, contando o que resta do mês atual ----------
-const dh = m => { const h = Math.round(m / 60), d = Math.floor(h / 24), r = h % 24; return `${d} ${d === 1 ? 'dia' : 'dias'}${r ? ` e ${r} h` : ''}`; };   // dias E horas: '~2 dias' com vencimento 3 dias depois parecia erro
-const realTxt = ms => { const m = Math.max(1, Math.round(ms / 60000)); return m < 60 ? `${m} min` : m < 2880 ? `${Math.round(m / 60)} h` : dh(m); };
 const monthFrac = () => { try { return W.progress(Live.world(), Live.now()); } catch { return 0; } };   // quanto do mês atual já passou (barra anda sozinha)
 function eta(monthsLeft, done = '') {
   if (!(monthsLeft > 0)) return done ? `<span class="eta is-done">✅ ${done}</span>` : '';
   let ms = 0; try { const w = Live.world(); ms = W.msUntil(w, Live.now(), monthsLeft); } catch { return ''; }
   return `<span class="eta" data-until="${Math.round(Live.now() + ms)}">⏳ ${etaTxt(ms)}</span>`;
 }
-function etaTxt(ms) { let mo = ms / 300000; try { const n = Live.now(); mo = W.monthsIn(Live.world(), n, n + ms); } catch {} const d = Math.max(1, Math.ceil(mo * 30 - 1e-6));   // antes: tempo real ÷ duração do mês de agora (de madrugada dava 122 mil dias)
-  const mo2 = Math.round(d / 30), y = Math.round(d / 360), txt = d < 60 ? `${d} ${d === 1 ? 'dia' : 'dias'}` : d < 720 ? `${mo2} meses` : `${y} anos`;   // prazo longo: meses ou anos do mundo
-  return `faltam ~${realTxt(ms)} · ${txt} no jogo`; }   // tempo de verdade primeiro: 'faltam 20 anos · 24 h' confundia
+// quanto falta, no calendário da cidade (imersivo: nada de hora real). Ex.: "faltam 1 ano e 2 meses na cidade · até janeiro do ano 55"
+function etaTxt(ms) {
+  let mo = ms / 300000, label = ''; try { const n = Live.now(), w = Live.world(); mo = W.monthsIn(w, n, n + ms); label = W.dateLabel(W.current(w, n + ms)); } catch {}
+  const d = Math.max(1, Math.ceil(mo * 30 - 1e-6)), m = Math.round(d / 30), a = Math.floor(m / 12), r = m % 12;
+  const txt = d < 45 ? `${d} ${d === 1 ? 'dia' : 'dias'}` : a ? `${a} ${a === 1 ? 'ano' : 'anos'}${r ? ` e ${r} ${r === 1 ? 'mês' : 'meses'}` : ''}` : `${m} meses`;
+  return `faltam ${txt} na cidade${label && d >= 45 ? ` · até ${label}` : ''}`; }
 G.eta = eta; G.monthFrac = monthFrac;
 setInterval(() => { for (const el of document.querySelectorAll('.eta[data-until]')) { const ms = Number(el.dataset.until) - Live.now(); el.textContent = ms > 0 ? `⏳ ${etaTxt(ms)}` : '✅ pronto na virada do mês'; } }, 5000);
 function orchardBox(l) {
@@ -1758,7 +1759,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 264;
+const APP_VERSION = 265;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
