@@ -228,7 +228,7 @@ function renderChar() {
   $('#char-name-show').textContent = a.name || 'você';
   if (document.activeElement !== $('#char-name')) $('#char-name').value = a.name || '';
   $('#char-name').disabled = locked;
-  $('#char-name-hint').textContent = locked ? `Nome trocado no mês ${s.nameAt}. Próxima troca no mês ${s.nameAt + 10} do mundo (faltam ${s.nameAt + 10 - s.month}).` : 'Você pode trocar o nome a cada 10 meses do mundo. Ele fica salvo quando você sair do campo.';
+  $('#char-name-hint').textContent = !VIP.isOn() ? '🔒 Trocar o nick é exclusivo do VIP (aba VIP).' : locked ? `Nome trocado no mês ${s.nameAt}. Próxima troca no mês ${s.nameAt + 10} do mundo (faltam ${s.nameAt + 10 - s.month}).` : 'VIP: você pode trocar o nick a cada 10 meses do mundo. Ele fica salvo quando você sair do campo.';
   document.querySelectorAll('[data-char]').forEach(b => { const on = b.dataset.char === charTab; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', String(on)); });
   document.querySelectorAll('.char-sec').forEach(x => { x.hidden = x.id !== `cs-${charTab}`; });
   if (charTab === 'identidade') {
@@ -1455,7 +1455,7 @@ $('#create-form').addEventListener('submit', e => {
 $('#code-form').addEventListener('submit', e => { e.preventDefault(); C.joinOnline(new FormData(e.target).get('code')); });
 
 // nome: pode trocar a cada 10 meses do mundo (a troca vale quando você sai do campo ou aperta Enter)
-function nameLocked() { return S().nameAt != null && S().month < S().nameAt + 10; }   // troca de nome: a cada 10 meses do mundo
+function nameLocked() { return !VIP.isOn() || (S().nameAt != null && S().month < S().nameAt + 10); }   // trocar o nick é do VIP (a cada 10 meses do mundo); o servidor também barra (vip-v3.sql)
 $('#char-name').addEventListener('change', e => {
   if (nameLocked()) return;
   const n = e.target.value.trim().slice(0, 18);
@@ -1768,7 +1768,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 282;
+const APP_VERSION = 283;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
