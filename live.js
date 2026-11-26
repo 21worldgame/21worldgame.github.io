@@ -222,6 +222,10 @@ async function applyGrants(sb) {
       G.S.lands.push({ ...g.item, own: true }); note(`terra devolvida pelo administrador: ${g.item.ha} ha, ${g.item.region}`);
       badge('Administrador', `Sua terra de ${int(g.item.ha)} ha em ${g.item.region} foi devolvida${why}.`, 'mission');
     }
+    if (g.kind === 'unland' && g.item?.id != null) {   // compra de terra desfeita: tira o lote e devolve o que pagou (só se a terra ainda está com ele)
+      const i = (G.S.lands || []).findIndex(l => String(l.id) === String(g.item.id));
+      if (i >= 0) { const l = G.S.lands.splice(i, 1)[0]; G.S.money += amt; note(`compra desfeita: ${l.ha} ha, ${l.region}${why}`, amt); badge('Administrador', `A compra de ${int(l.ha)} ha em ${l.region} foi desfeita e ${brl(amt)} voltaram para a sua carteira${why}.`, 'mission'); }
+    }
     if (g.kind === 'setmoney') { G.S.money = amt; note(`carteira zerada pelo administrador${why}`, amt); badge('Administrador', `Sua carteira agora tem ${brl(amt)}${why}.`, 'mission'); }
     if (g.kind === 'pioneer') { G.S.pioneer = true; badge('Pioneiro do 21 World', 'Você jogou no começo do game: seu perfil ganhou o selo de pioneiro.', 'mission'); }
     if (g.kind === 'reset') {

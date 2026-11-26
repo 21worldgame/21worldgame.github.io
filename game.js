@@ -1248,6 +1248,8 @@ const ACTS = {
     const o = find(S().offers, idv);
     const al = o && EC.saturationAlert(o.region, REG_INFO, L.REGIONS);   // região saturada: avisa com os números e sugere outras
     if (al && !confirm(`${al.title}\n\n${al.text}${al.alt.length ? `\n\nTalvez seja hora de explorar outras regiões:\n${al.alt.map(a => `• ${a.name} (${a.use}): ${a.why}`).join('\n')}` : ''}\n\nComprar mesmo assim?`)) return;
+    // a lista de ofertas troca na virada do mês: confirma o que está comprando (antes o clique caía na oferta nova do mesmo lugar)
+    if (o && !confirm(`Comprar ${int(o.ha)} ha em ${o.region} por ${brl(o.value)}?`)) return;
     if (o && pay(o.value, `compra de ${o.ha} ha, ${o.region}`)) {
       S().offers.splice(S().offers.indexOf(o), 1); S().lands.push({ ...o, own: true, leasedOut: false, cost: o.value, bought: S().month }); say('Terra registrada no seu nome.'); award('land');
     }
@@ -1760,7 +1762,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 270;
+const APP_VERSION = 271;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
