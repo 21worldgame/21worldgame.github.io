@@ -1,7 +1,7 @@
 // Pix 21: mandar dinheiro ou pagar outro jogador pelo inventário (pix.sql).
 // Quem envia paga na hora; quem recebe ganha quando abrir o jogo (de 15 em 15 s enquanto joga), uma vez só.
 import * as Auth from './auth.js';
-import { G, brl, esc, say, note, save, profileOf } from './store.js';
+import { G, brl, esc, say, note, save, profileOf, every } from './store.js';
 
 const box = () => document.getElementById('pix');
 let to = null, kind = 'pix', found = [], hist = [], off = false, sending = false, qTimer = 0;
@@ -124,5 +124,5 @@ document.addEventListener('click', e => {
 const watchInv = () => { const p = document.getElementById('p-inventario'); if (!p) return setTimeout(watchInv, 500);
   new MutationObserver(() => { if (!p.hidden) setTimeout(() => { render(); loadHist(); }, 50); }).observe(p, { attributes: true, attributeFilter: ['hidden'] }); };
 watchInv();
-setInterval(claim, 60000);
+every(120000, claim);   // cota do servidor (era 1 min)
 setTimeout(() => { render(); loadHist(); claim(); }, 4000);

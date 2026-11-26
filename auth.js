@@ -314,7 +314,7 @@ async function checkRemote() {
     if (row && !sameAt(row.updated_at, base) && !pushing) mergeRemote(row);
   } catch {}
 }
-setInterval(checkRemote, 20000);   // o aviso do outro aparelho chega pelo Realtime; isto é só a rede de segurança
+setInterval(checkRemote, 60000);   // cota do servidor (era 20 s). O aviso do outro aparelho chega pelo Realtime; isto é só a rede de segurança
 // sincronização na tela (perfil): quando gravou por último, se há algo pendente, e o botão "sincronizar agora"
 let syncedAt = 0;
 export const syncInfo = () => ({ on: !!user, at: syncedAt, pending: !!user && dirty(), email: user?.email || '' });

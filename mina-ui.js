@@ -2,7 +2,7 @@
 import * as MI from './mina.js';
 import * as Auth from './auth.js';
 import { payBar } from './negocios-ui.js';
-import { G, $, esc, brl, int, say, save, note, confetti, profileOf } from './store.js';
+import { G, $, esc, brl, int, say, save, note, confetti, profileOf, every } from './store.js';
 
 let owner = { loaded: false, ok: false, id: null, name: null, since: null };
 export async function refresh() {
@@ -16,7 +16,7 @@ export async function refresh() {
   if (owner.ok && G.S.mina && owner.id !== me) { const v = MI.saleValue(G.S); G.S.money += v; note('mina de ouro saiu do seu nome: valor devolvido', v); delete G.S.mina; save(); say(`A mina de ouro não está mais no seu nome. Você recebeu ${brl(v)}.`, true); G.render(); }
   return owner;
 }
-setInterval(refresh, 120000); setTimeout(refresh, 3000);
+every(300000, refresh); setTimeout(refresh, 3000);
 
 // ---------- ouro ao vivo: onça (gold-api.com) x dólar (awesomeapi / open.er-api), de 10 em 10 min; sem internet vale o último preço guardado ----------
 const LIVE_KEY = '21world.goldLive';
@@ -32,7 +32,7 @@ export async function refreshGold() {
   } catch { live.ok = false; }
   if (live.oz && G.S && MI.setSpot(G.S, live.oz, live.fx)) G.render?.();   // o preço do ouro no save acompanha o mercado real
 }
-setInterval(refreshGold, 600000); setTimeout(refreshGold, 2000);
+every(600000, refreshGold); setTimeout(refreshGold, 2000);
 const liveLine = () => !live.oz ? 'preço de reserva (sem internet)' : `US$ ${int(live.oz)} a onça × R$ ${live.fx.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} = <b>R$ ${(live.oz / MI.OZ * live.fx).toFixed(0)}/g</b> · ${live.ok ? 'ao vivo' : 'último preço guardado'}${live.at ? `, atualizado há ${Math.max(0, Math.round((Date.now() - live.at) / 60000))} min` : ''}`;
 const FLEET_ICO = { furar: '🔩', escavar: '🚜', carregar: '🏗️', transportar: '🚛' };
 const mine = () => owner.ok && owner.id && owner.id === Auth.account()?.id && G.S.mina;

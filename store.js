@@ -202,3 +202,12 @@ export function profileOf(s = G.S) {
     listings: (s.shop || []).slice(0, 12).map(l => ({ label: String(l.label || '').slice(0, 60), price: l.price, kind: l.kind })),
   };
 }
+
+// cota do servidor: timer de rede que dorme com a aba escondida (aba esquecida aberta gastava tráfego e logs à toa).
+// Ao voltar para a aba, roda uma vez se já passou o intervalo.
+export function every(ms, fn) {
+  let last = 0;
+  const run = () => { if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return; last = Date.now(); fn(); };
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Date.now() - last >= ms) run(); });
+  return setInterval(run, ms);
+}

@@ -1,7 +1,7 @@
 // Ligação do jogo com o painel administrativo: configuração e eventos, avisos, suspensões e ordens do admin.
 // Se as tabelas do admin.sql ainda não existirem, tudo aqui fica quieto e o jogo segue normal.
 import { applyTune } from './tune.js';
-import { G, $, esc, brl, int, say, save, note, badge, levelUp, blankState, profileOf } from './store.js';
+import { G, $, esc, brl, int, say, save, note, badge, levelUp, blankState, profileOf, every } from './store.js';
 import * as P from './progress.js';
 import * as Auth from './auth.js';
 import * as W from './world.js';
@@ -46,10 +46,12 @@ export async function start() {
   maintenance();
   realtime(sb);
   clearInterval(timer);
-  timer = setInterval(async () => {
-    await loadConfig(sb); await loadAnnouncements(sb); await loadCycle(sb); maintenance();
+  let ticks = 0;
+  timer = every(120000, async () => {   // cota do servidor: a cada 2 min (era 1), parado com a aba escondida
+    if (ticks++ % 2) { await loadConfig(sb); await loadAnnouncements(sb); }   // configuração e avisos mudam pouco: a cada 4 min
+    await loadCycle(sb); maintenance();
     if (Auth.account()) { if (await checkBan(sb)) return; await applyGrants(sb); if (!isAdmin) await receita(sb); }
-  }, 60000);   // cota do servidor: 1 conferência por minuto
+  });
   return banned ? 'banned' : 'ok';
 }
 

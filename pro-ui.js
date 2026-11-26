@@ -2,7 +2,7 @@
 // Regras e dinheiro no servidor (profissionais.sql). O save só recebe o débito da contratação e os créditos liberados,
 // com o mesmo cuidado do Pix: o id vai no save (proOut/proGot) e o servidor só marca como recebido depois que o save subiu.
 import * as Auth from './auth.js';
-import { G, brl, esc, say, note, save, badge } from './store.js';
+import { G, brl, esc, say, note, save, badge, every } from './store.js';
 import { avatarSVG } from './avatar.js';
 import * as PR from './pro.js';
 
@@ -316,4 +316,4 @@ const watchPanel = () => { const p = panel(); if (!p) return setTimeout(watchPan
   if (!p.hidden) open(); };
 watchPanel();
 setTimeout(sync, 5000);
-setInterval(sync, 30000);
+every(180000, sync);   // cota do servidor: era a cada 30 s com 5 consultas (o maior número de chamadas)

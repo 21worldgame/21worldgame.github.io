@@ -4,7 +4,7 @@ import * as Auth from './auth.js';
 import * as AB from './abate.js';
 import * as Live from './live.js';
 import * as W from './world.js';
-import { G, say, note, save, brl, int, profileOf } from './store.js';
+import { G, say, note, save, brl, int, profileOf, every } from './store.js';
 
 export let plants = [];   // frigoríficos abertos de outros jogadores, com vagas do mês
 const bucket = () => W.current(Live.world(), Live.now());   // o mês do mundo, igual ao servidor (world_month)
@@ -54,4 +54,4 @@ document.addEventListener('change', e => {
   save(); publish(); say(ab.open === false ? 'Frigorífico fechado para outros jogadores.' : `Frigorífico aberto para outros jogadores a ${brl(ab.fee ?? AB.PLAYER.fee)} por cabeça.`);
 });
 const tick = () => { refresh(); claim(); publish(); };
-setTimeout(tick, 6000); setInterval(tick, 60000);
+setTimeout(tick, 6000); every(180000, tick);   // cota do servidor (era 1 min)

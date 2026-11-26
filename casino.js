@@ -3,7 +3,7 @@ import * as L from './logic.js';
 import { Table } from './table.js';
 import { openLobby, openTableRoom, net } from './net.js';
 import { NPC_LOOKS, avatarSVG } from './avatar.js';
-import { G, $, esc, int, ms, sleep, say, save, award, profileOf, confetti } from './store.js';
+import { G, $, esc, int, ms, sleep, say, save, award, profileOf, confetti, every } from './store.js';
 import * as sfx from './sfx.js';
 import * as Auth from './auth.js';
 import * as Live from './live.js';
@@ -76,7 +76,7 @@ export async function initCasino() {
   $('#online').innerHTML = lobby ? '<i class="is-on"></i>salão online' : '<i></i>sem conexão: só mesas rápidas';
   announce();
   renderLobby();
-  G.onLogin = loadGlobalRanking; loadGlobalRanking(); setInterval(loadGlobalRanking, 60000);
+  G.onLogin = loadGlobalRanking; loadGlobalRanking(); every(180000, loadGlobalRanking);
   Auth.onRankChange(loadGlobalRanking);
   setInterval(() => { NPC.CLOCK.real = Math.max(Live.realOnline(), (lobby?.peers.size || 0) + 1); if (!$('#lobby').hidden && $('#lobby-hero')) $('#lobby-hero').innerHTML = lobbyHero(NPC.onlineTotal(Live.now())); renderRanking(); if (lobby) $('#online').innerHTML = `<i class="is-on"></i>${NPC.onlineTotal(Live.now())} jogadores online`; }, 4000);   // os números do mundo andam sozinhos
   G.onRender = renderRanking;
@@ -98,14 +98,18 @@ let play = { game: null };
 // cada jogo avisa aqui onde você está e a aposta da vez; vai junto no anúncio do salão para os outros verem
 export function setPlay(patch) { const n = { ...play, ...patch }; if (JSON.stringify(n) !== JSON.stringify(play)) { play = n; announce(); } }
 export const playersIn = game => peerList().filter(([, p]) => p.play?.game === game && p.profile).map(([pid, p]) => ({ pid, name: p.profile.name, look: p.profile.look, bet: Number(p.play.bet) || 0, out: Number(p.play.out) || 0 }));
+// cota do servidor: cada anúncio vai para TODOS do salão (presença). Antes saía a cada jogada (400 ms) e era o maior gasto de
+// tráfego; agora no máximo 1 a cada 12 s, e só quando mudou de verdade
+let annAt = 0, annLast = '';
 export function announce() {
-  clearTimeout(annTimer);
+  if (annTimer) return;
   annTimer = setTimeout(() => {
-    if (!lobby) return;
+    annTimer = 0; if (!lobby) return;
     const tables = cur?.host && cur.pub ? [summary(cur.table.view())] : [];
     const games = Object.values(G.gameHosts || {}).map(f => f()).filter(Boolean);   // mesas de truco e sinuca que eu hospedo
-    lobby.announce({ profile: profileOf(), tables, games, shop: SH.publicListings(G.S), play });
-  }, 400);
+    const d = { profile: profileOf(), tables, games, shop: SH.publicListings(G.S), play }, k = JSON.stringify(d);
+    if (k === annLast) return; annLast = k; annAt = Date.now(); lobby.announce(d);
+  }, annAt ? Math.max(400, 12000 - (Date.now() - annAt)) : 400);
 }
 const summary = v => ({ id: v.id, lock: !!cur?.pass, name: v.name, minBet: v.minBet, phase: v.phase, house: cur?.house || null,
   seats: v.seats.map(s => ({ kind: s.kind, name: s.name, look: s.look })) });

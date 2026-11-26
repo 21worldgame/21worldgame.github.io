@@ -1,7 +1,7 @@
 // Telas dos negócios: aba "negócios" (administrar) e as vitrines da loja (marcas e galpões à venda).
 import * as NG from './negocios.js';
 import * as Auth from './auth.js';
-import { G, $, esc, brl, int, say, save, note, confetti, profileOf } from './store.js';
+import { G, $, esc, brl, int, say, save, note, confetti, profileOf, every } from './store.js';
 
 const CATS = { banks: { label: 'bancos', list: NG.BANKS, icon: '🏦' }, isps: { label: 'provedores de internet', list: NG.ISPS, icon: '📡' }, markets: { label: 'supermercados', list: NG.MARKETS, icon: '🛒' }, usinas: { label: 'usinas', list: NG.USINAS, icon: '🏭' },
   ...Object.fromEntries(Object.entries(NG.SECTORS).map(([k, S]) => [k, { label: S.label, list: S.brands, icon: S.icon }])) };
@@ -35,7 +35,7 @@ export async function refreshOwners() {
   if (changed) save();
   if (changed || document.querySelector('#loja-biz:not(:empty), #neg-shop:not(:empty)')) G.render();
 }
-setInterval(refreshOwners, 120000); setTimeout(refreshOwners, 4000);
+every(300000, refreshOwners); setTimeout(refreshOwners, 4000);
 const takenBy = brand => { const r = owners.ok && owners.map[brand]; return r && r.owner !== Auth.account()?.id ? (r.owner_name || 'outro jogador') : null; };
 
 // ---------- loja: marcas à venda ----------

@@ -1,7 +1,7 @@
 import * as L from './logic.js';
 import * as P from './progress.js';
 import { CATALOG, SLOT, avatarSVG, accsOf, toggleAcc } from './avatar.js';
-import { G, $, esc, brl, int, dots, RM, say, save, note, pay, award, checkAch, confetti, today, yesterday, reset, profileOf, levelUp, ntOff, ntSet, badge, blockKey, isBlocked, setBlocked } from './store.js';
+import { G, $, esc, brl, int, dots, RM, say, save, note, pay, award, checkAch, confetti, today, yesterday, reset, profileOf, levelUp, ntOff, ntSet, badge, blockKey, isBlocked, setBlocked, every } from './store.js';
 import * as C from './casino.js';
 import * as RC from './racing.js';
 import * as sfx from './sfx.js';
@@ -1650,10 +1650,10 @@ function econSync() {
   } catch (e) { console.error('economia', e); }
 }
 const regionCounts = () => Auth.mapLands?.().then(rows => { const c = {}; for (const l of rows || []) if (l.region) c[l.region] = (c[l.region] || 0) + 1; for (const l of S().lands || []) if (l.own) c[l.region] = (c[l.region] || 0) + 1; REG_COUNTS = c; econSync(); }).catch(() => {});
-setTimeout(regionCounts, 9000); setInterval(regionCounts, 300000);
+setTimeout(regionCounts, 9000); every(600000, regionCounts);
 econSync(); setInterval(econSync, 60000);
 const econReal = () => Auth.cropsCloud?.().then(rows => { EC.setReal(rows, S().month); econSync(); }).catch(() => {});
-setTimeout(econReal, 8000); setInterval(econReal, 300000);
+setTimeout(econReal, 8000); every(600000, econReal);
 
 // ---------- tempo de mundo: o mês passa sozinho, igual para todos ----------
 // Um relógio único (config do servidor) define o mês do mundo. O jogo do jogador acompanha: roda os meses que faltam
@@ -1762,7 +1762,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 273;
+const APP_VERSION = 274;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
