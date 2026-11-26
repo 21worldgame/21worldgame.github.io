@@ -3879,3 +3879,4 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .wh-why h4 { margin: 0; } .wh-why ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 4px; font-size: var(--text-sm); } .wh-why p { margin: 0; }
 .upd--truck > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; }
 .lg-when { white-space: nowrap; font-size: var(--text-xs, .78rem); font-variant-numeric: tabular-nums; } .lg-when small { display: block; opacity: .6; }
+.ivp-calc { display: grid; gap: 8px; padding: var(--space-md); margin-top: var(--space-sm); } .ivp-calc h4 { margin: 0; } .ivp-calc .row { flex-wrap: wrap; gap: 8px; } .ivp-calc .field { min-width: 9rem; flex: 1; } .ivp-calc p { margin: 0; }

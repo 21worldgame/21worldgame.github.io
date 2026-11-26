@@ -9,11 +9,12 @@ export const PRODUCTS = {   // taxas reais de nov/2026 (Selic 13,75% ao ano = ~1
   previdencia: { name: 'Previdência 21', icon: '🛡️', months: 576, rate: 0.011, desc: 'O mais longo e o que mais rende. Para quem pensa no futuro.', early: 0.1 },
 };
 export const MIN = 10000, CAP_SHARE = 0.25, CAP_MAX = 50e6;
-// a partir de sábado 28/11/2026 00:00 (Brasília) os juros de aplicação nova caem 40% (rendia demais).
-// Aplicação com prazo guarda a taxa do dia em que entrou (contrato); a poupança (sem prazo) segue a taxa do momento.
-export const CUT_AT = Date.UTC(2026, 10, 28, 3), CUT = 0.6;
-export const rateNow = (kind, now = Date.now()) => { const r = PRODUCTS[kind]?.rate || 0; return now >= CUT_AT ? Math.round(r * CUT * 1e5) / 1e5 : r; };
-export const rateOf = (i, now = Date.now()) => { const P = PRODUCTS[i.kind]; return !P ? 0 : !P.months ? rateNow(i.kind, now) : i.rate ?? P.rate; };   // aplicação antiga sem 'rate' = taxa antiga
+// quinta 26/11/2026 00:00 (Brasília): corrida à Previdência quase quebrou o Banco 21 (TV 21) e os juros de aplicação NOVA despencam.
+// Quem já tinha dinheiro aplicado fica com a taxa do dia em que aplicou (contrato), inclusive na poupança.
+export const CUT_AT = Date.UTC(2026, 10, 26, 3);
+export const NEW_RATE = { poupanca: 0.0016, cdb: 0.0029, lca: 0.003, tesouro: 0.0031, previdencia: 0.0032 };
+export const rateNow = (kind, now = Date.now()) => (now >= CUT_AT ? NEW_RATE[kind] ?? 0 : PRODUCTS[kind]?.rate || 0);
+export const rateOf = i => { const P = PRODUCTS[i.kind]; return !P ? 0 : i.rate ?? P.rate; };   // aplicação antiga sem 'rate' = taxa antiga
 export const total = s => (s.invest || []).reduce((t, i) => t + i.amt + (i.acc || 0), 0);
 export const cap = (s, worth) => Math.max(0, Math.min(CAP_MAX, Math.max(1e6, worth * CAP_SHARE)) - (s.invest || []).reduce((t, i) => t + i.amt, 0));
 export const finalOf = (kind, amt, rate = rateNow(kind)) => { const P = PRODUCTS[kind]; return Math.round(amt * (1 + rate * P.months)); };
@@ -38,7 +39,7 @@ export function monthly(s, now = Date.now()) {
   const out = [];
   for (const i of [...(s.invest || [])]) {
     const P = PRODUCTS[i.kind]; if (!P) continue;
-    i.acc = Math.round(((i.acc || 0) + i.amt * rateOf(i, now)) * 100) / 100;
+    i.acc = Math.round(((i.acc || 0) + i.amt * rateOf(i)) * 100) / 100;
     if (!P.months) continue;
     if (--i.left > 0) continue;
     s.invest = s.invest.filter(x => x !== i);

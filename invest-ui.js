@@ -7,10 +7,9 @@ import * as TV from './news-ui.js';
 import { G, $, esc, brl, say, save, note, feed } from './store.js';
 
 const pct = v => `${(v * 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/0$/, '')}%`;
-const dh = m => { const h = Math.round(m / 60), d = Math.floor(h / 24), r = h % 24; return `${d} ${d === 1 ? 'dia' : 'dias'}${r ? ` e ${r} h` : ''}`; };   // dias E horas: '~2 dias' com vencimento 3 dias depois parecia erro
-const real = months => { let ms = months * 300000; try { ms = W.msUntil(Live.world(), Live.now(), months); } catch {} const m = Math.round(ms / 60000); return m < 60 ? `~${m} min` : m < 2880 ? `~${Math.round(m / 60)} h` : `~${dh(m)}`; };
-// dia e hora (Brasília) em que vence: o tempo real varia porque de madrugada (1h às 9h) o mês do mundo anda mais devagar
-const due = months => { let ms = months * 300000; try { ms = W.msUntil(Live.world(), Live.now(), months); } catch {} let n = Date.now(); try { n = Live.now(); } catch {} return new Date(n + ms).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); };
+// prazo no calendário da cidade (o relógio do mundo no topo mostra o mês e o ano de agora)
+const anos = m => { const a = Math.floor(m / 12), r = m % 12; return a ? `${a} ${a === 1 ? 'ano' : 'anos'}${r ? ` e ${r} ${r === 1 ? 'mês' : 'meses'}` : ''}` : `${r} ${r === 1 ? 'mês' : 'meses'}`; };
+const venc = m => W.dateLabel((G.S.month || 1) + m);
 const worth = () => L.netWorth(G.S);
 
 export function render() {
@@ -20,7 +19,7 @@ export function render() {
   const def = Math.max(INV.MIN, Math.min(Math.floor(s.money), Math.floor(room), 100000));
   el.innerHTML = `<div class="ivp-sum glass"><div><span class="muted small">aplicado</span><b>${brl(inv)}</b></div><div><span class="muted small">já rendeu</span><b class="good">${brl(acc)}</b></div><div><span class="muted small">ainda pode aplicar</span><b>${brl(room)}</b></div></div>
     <div class="ivp-grid">${Object.entries(INV.PRODUCTS).map(([k, P]) => `<article class="ivp-card glass">
-      <div class="ivp-card__top"><span class="ivp-card__ico" aria-hidden="true">${P.icon}</span><div><h4>${esc(P.name)}</h4><small class="muted">${P.months ? `prazo: ${P.months} meses do mundo (${Math.round(P.months / 12)} anos no jogo) = ${real(P.months)} de verdade. Aplicando agora, vence ${due(P.months)}` : 'sem prazo, resgate quando quiser'}</small></div></div>
+      <div class="ivp-card__top"><span class="ivp-card__ico" aria-hidden="true">${P.icon}</span><div><h4>${esc(P.name)}</h4><small class="muted">${P.months ? `prazo de ${P.months} meses (${anos(P.months)} na cidade). Aplicando agora, vence em ${venc(P.months)}` : 'sem prazo, resgate quando quiser'}</small></div></div>
       <p class="ivp-card__rate"><b>${pct(INV.rateNow(k, Live.now()))}</b> ao mês${P.months ? ` · <span class="good">+${Math.round(INV.rateNow(k, Live.now()) * P.months * 1000) / 10}% no fim</span>` : ''}</p>
       <p class="small muted">${esc(P.desc)}${P.months ? ` Sair antes: ${P.early ? `perde o rendimento e ${Math.round(P.early * 100)}% do valor aplicado` : 'perde o rendimento'}.` : ''}</p>
       <div class="ivp-card__form"><input class="input" type="number" min="${INV.MIN}" step="1000" value="${def}" inputmode="numeric" data-inv-amt="${k}" aria-label="valor para aplicar no ${esc(P.name)}"><button class="btn btn--gold btn--sm" data-inv-apply="${k}">aplicar</button></div>
@@ -28,17 +27,31 @@ export function render() {
     <h4>seus investimentos</h4>
     <ul class="ivp-list">${mine.map(i => { const P = INV.PRODUCTS[i.kind], done = P.months ? (P.months - i.left) / P.months : 0;
       return `<li class="glass"><span class="ivp-card__ico" aria-hidden="true">${P.icon}</span><div class="ivp-list__info"><b>${esc(P.name)}</b><span class="small">aplicado ${brl(i.amt)} · rendeu <b class="good">${brl(i.acc || 0)}</b>${P.months ? ` · no fim: ${brl(INV.finalOf(i.kind, i.amt, INV.rateOf(i)))} (${pct(INV.rateOf(i))} ao mês contratado)` : ''}</span>
-        ${P.months ? `<span class="bar"><i style="transform:scaleX(${done.toFixed(3)})"></i></span>${G.eta?.(i.left) || ''}<span class="small">📅 vence <b>${due(i.left)}</b> (horário de Brasília)</span><span class="small muted">faltam ${i.left} de ${P.months} meses do mundo (${Math.round(i.left / 12)} anos no jogo)</span>` : ''}</div>
+        ${P.months ? `<span class="bar"><i style="transform:scaleX(${done.toFixed(3)})"></i></span><span class="small">⏳ faltam <b>${i.left} meses</b> (${anos(i.left)} na cidade) · 📅 vence em <b>${venc(i.left)}</b></span>` : ''}</div>
         <button class="btn btn--glass btn--sm" data-inv-out="${i.id}">${P.months ? `sair antes (${brl(INV.earlyValue(i))})` : 'resgatar'}</button></li>`; }).join('') || '<li class="muted small">Nenhum investimento ainda. O dinheiro aplicado continua contando no seu patrimônio.</li>'}</ul>
-    <p class="muted small">Investimento é para guardar dinheiro com segurança: rende menos que terras e empresas. Juros simples sobre o valor aplicado; teto de 25% do patrimônio (no máximo R$ 50 mi). No vencimento, tudo volta sozinho para a sua conta. O prazo é em meses do mundo: de madrugada (1h às 9h) o mês dura o dobro, por isso as horas que faltam podem mudar, mas o dia do vencimento mostrado já conta isso.</p>`;
+    <p class="muted small">Investimento é para guardar dinheiro com segurança: rende menos que terras e empresas. Juros simples sobre o valor aplicado; teto de 25% do patrimônio (no máximo R$ 50 mi). No vencimento, tudo volta sozinho para a sua conta. O prazo corre no calendário da cidade: o relógio do mundo, no topo, mostra o mês e o ano de hoje.</p>
+    <section class="glass ivp-calc"><h4>🧮 calculadora do investidor</h4>
+      <div class="row"><label class="field"><span>produto</span><select class="input" id="ivc-k">${Object.entries(INV.PRODUCTS).map(([k, P]) => `<option value="${k}"${k === ivc.k ? ' selected' : ''}>${esc(P.name)}</option>`).join('')}</select></label>
+      <label class="field"><span>valor</span><input class="input" id="ivc-v" type="number" min="0" step="1000" inputmode="numeric" value="${ivc.v}"></label>
+      <label class="field"><span>daqui a quantos meses?</span><input class="input" id="ivc-m" type="number" min="1" max="2000" inputmode="numeric" value="${ivc.m}"></label></div>
+      <p class="small" id="ivc-out">${ivcOut()}</p></section>`;
 }
+// calculadora: quanto rende e quando vence, no calendário da cidade; e em que mês/ano a cidade estará daqui a N meses
+const ivc = { k: 'previdencia', v: 100000, m: 12 };
+function ivcOut() {
+  const P = INV.PRODUCTS[ivc.k], r = INV.rateNow(ivc.k, Live.now()), v = Math.max(0, Number(ivc.v) || 0), m = Math.max(1, Math.min(2000, Math.floor(Number(ivc.m) || 1)));
+  const fim = P.months ? `Fica <b>${P.months} meses</b> (${anos(P.months)}) e devolve <b class="good">${brl(INV.finalOf(ivc.k, v, r))}</b> em ${venc(P.months)}.` : 'Não tem prazo: resgata quando quiser.';
+  return `${esc(P.name)} hoje: <b>${pct(r)} ao mês</b>. ${brl(v)} rendem <b>${brl(v * r)}</b> por mês da cidade. ${fim}<br>Em <b>${m} meses</b> (${anos(m)}) ${P.months && m < P.months ? `terá rendido ${brl(v * r * m)}, ainda preso até ${venc(P.months)}` : P.months ? 'já terá vencido' : `terá rendido ${brl(v * r * m)}`}. A cidade estará em <b>${venc(m)}</b>.`;
+}
+document.addEventListener('input', e => { if (!['ivc-k', 'ivc-v', 'ivc-m'].includes(e.target.id)) return; ivc.k = document.getElementById('ivc-k').value; ivc.v = document.getElementById('ivc-v').value; ivc.m = document.getElementById('ivc-m').value; const o = document.getElementById('ivc-out'); if (o) o.innerHTML = ivcOut(); });
+document.addEventListener('change', e => { if (e.target.id === 'ivc-k') { ivc.k = e.target.value; const o = document.getElementById('ivc-out'); if (o) o.innerHTML = ivcOut(); } });
 const prev = (k, amt) => { const P = INV.PRODUCTS[k]; amt = Math.floor(Number(amt) || 0); return amt >= INV.MIN ? (P.months ? `aplicando ${brl(amt)}, recebe <b class="good">${brl(INV.finalOf(k, amt, INV.rateNow(k, Live.now())))}</b> no vencimento` : `rende ~${brl(amt * INV.rateNow(k, Live.now()))} por mês`) : `mínimo ${brl(INV.MIN)}`; };
 document.addEventListener('input', e => { const k = e.target.dataset?.invAmt; if (k) { const p = document.querySelector(`[data-inv-prev="${k}"]`); if (p) p.innerHTML = prev(k, e.target.value); } });
 document.addEventListener('click', e => {
   const a = e.target.closest('[data-inv-apply]');
   if (a) {
     const k = a.dataset.invApply, P = INV.PRODUCTS[k], amt = Math.floor(Number(document.querySelector(`[data-inv-amt="${k}"]`)?.value) || 0);
-    if (P.months && !confirm(`Aplicar ${brl(amt)} no ${P.name} por ${P.months} meses do mundo (${real(P.months)}, vence ${due(P.months)})? Sair antes ${P.early ? `custa o rendimento e ${Math.round(P.early * 100)}% do valor` : 'custa o rendimento'}.`)) return;
+    if (P.months && !confirm(`Aplicar ${brl(amt)} no ${P.name} por ${P.months} meses (${anos(P.months)} na cidade, vence em ${venc(P.months)})? Sair antes ${P.early ? `custa o rendimento e ${Math.round(P.early * 100)}% do valor` : 'custa o rendimento'}.`)) return;
     const err = INV.apply(G.S, k, amt, worth(), Live.now()); if (err) return say(err[0].toUpperCase() + err.slice(1), true);
     note(`investimento: aplicação no ${P.name}`, -amt); say(`${brl(amt)} aplicados no ${P.name}.`); save(); G.render?.(); return;
   }
