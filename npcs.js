@@ -74,19 +74,21 @@ export function gamerNick(k) {
   return r(15) < 0.3 ? n.toLowerCase() : n.slice(0, 16);
 }
 export const RENAME_START = Date.UTC(2026, 10, 21, 12), RENAME_DAYS = 60;
+// bots da história da TV 21 nunca trocam de nick: ReiDoGado e A Boiadeira (queda do cassino) e os do fundo 21 Capital (FALLEN e HEAVY abaixo)
+export const STORY = new Set(['n0', 'n1', 'n2', 'n3', 'n5', 'n71', 'n112']);
 for (const n of [...BASE, ...EXTRA]) {
   n.orig = n.nick;
-  if (r0(n.i * 13 + 5) < 0.7) {
+  if (r0(n.i * 13 + 5) < 0.7 && !STORY.has(n.id)) {
     let g = '', k = n.i * 31;
     do g = gamerNick(k++); while (used.has(g.toLowerCase()));
     used.add(g.toLowerCase()); n.gnick = g; n.renameAt = RENAME_START + Math.floor(r0(n.i * 13 + 6) * RENAME_DAYS * 864e5);
   }
 }
 // 26/11/2026: nicks escolhidos pelo dono do jogo. Um bot por vez, numa hora só dele, ao longo de 10 dias (~11 por dia), troca de nick
-// como gente de verdade troca (os dois da história da TV, ReiDoGado e A Boiadeira, ficam). O nick antigo continua achando o jogador.
+// como gente de verdade troca (os da história da TV, STORY, ficam com o nick de sempre). O nick antigo continua achando o jogador.
 export const NEW_NICKS = ["Menina do MAL", "Cola no pai", "Flamengo Pai", "Menfis", "Arlequina", "Vim do Lolzin", "Cs2 AKNA AWP", "777 BROX", "Main Diana", "Carlos BA", "Vitoria S.A", "Paula JJ", "Bruninha rp", "GTA IV - KillerM", "Moises", "Fofo do pai", "Nenem", "Esa Adc", "Neizin RP", "VEM NENEM", "Luiza abs", "KKKKKK", "Vózinha", "Main is Vayne", "INSS N APOSENTO", "Lendario", "Funkeiro de Okley", "Reizinho", "Papalegua", "Killer2", "The Best", "O King", "Marquinho", "RED Kill", "ZAC", "KS Ou Coca ?", "NIKE RIO", "Zé da Manga ADJ", "JJ", "DJ Kevin", "Adrien", "Dj Ana", "Molister", "CC dê", "Malandro do 33", "CPX Dodo", "LALA", "PAULISTINHA", "KIKO DA FF", "Viciado em ARAM", "GTA é VIDA", "POZE DO RODO", "Aninha do trader", "Nunca LA ELE", "NET PX", "ZOREIA", "AmisterD", "SADASDDSA", "VIM PRA AMAR", "O MAL", "OS Karate UFC", "Marcao MAP", "Coelho 888", "BOLA 12", "Jogada de MASTER", "Baianinho de MAUA", "ARACAJU JU JU", "Tigresa", "Rafa_x3", "Ryan DDP", "IK 47VV", "Korea RX", "XT ou NENET", "Garagem MOKS", "Moca CPX", "Fla até Morre !", "Versa", "Unin Turbinado", "Zé da Cachumba", "Bola de Aço", "Truqueiro", "777", "CAssia Cassino", "o CAIXA", "Br30", "Avzin Red", "APK Haha", "Coringa", "VOA I", "Rastafari", "Bob Marley", "Reggae Ana", "OPTIMUS PRIME", "VOVO DO TRADER", "Trader na veia", "Travada da Coluna", "Rees", "Renatinha 777", "777 Cassino PD", "Noémia", "putz", "Perdx", "Prdrox", "Neorox", "ALOX", "LUIZIN", "LKSO", "Churras", "88 Bola", "MC CATRA"];
 export const NEW_START = Date.UTC(2026, 10, 26, 3), NEW_DAYS = 10;
-{ const pool = [...BASE, ...EXTRA].filter(n => n.id !== 'n0' && n.id !== 'n1').sort((a, b) => r0(a.i * 7 + 101) - r0(b.i * 7 + 101)), L = NEW_NICKS.length;
+{ const pool = [...BASE, ...EXTRA].filter(n => !STORY.has(n.id)).sort((a, b) => r0(a.i * 7 + 101) - r0(b.i * 7 + 101)), L = NEW_NICKS.length;
   let k = 0; for (const nm of NEW_NICKS) { if (used.has(nm.toLowerCase()) || k >= pool.length) continue; used.add(nm.toLowerCase());
     const n = pool[k]; n.unick = nm; n.unickAt = NEW_START + Math.floor((k + r0(n.i * 5 + 77)) / L * NEW_DAYS * 864e5); k++; } }
 for (const n of [...BASE, ...EXTRA]) {
