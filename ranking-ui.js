@@ -5,9 +5,6 @@ import * as Live from './live.js';
 import * as W from './world.js';
 import { G, $, esc, brl, int, profileOf } from './store.js';
 import { avatarSVG } from './avatar.js';
-import * as VIP from './vip.js';
-import * as Auth from './auth.js';
-const vk = r => (r.pid === 'me' ? Auth.account()?.id : String(r.pid || '').startsWith('u:') ? r.pid : null);   // selo VIP só de jogador de verdade
 
 let cat = 'worth', last = new Map(), page = 0, onlyOn = false, query = '';
 const PER = 25;
@@ -53,7 +50,7 @@ export function render() {
   document.querySelectorAll('[data-rkcat]').forEach(b => b.classList.toggle('is-on', b.dataset.rkcat === cat));
   // pódio
   const pod = [1, 0, 2].map(i => top[i]).map((r, k) => r ? `<button class="podium__p podium__p--${[2, 1, 3][k]}" data-profile="${esc(r.pid || '')}" ${r.pid ? '' : 'disabled'}>
-      <span class="podium__frame">${[2, 1, 3][k] === 1 ? '<i class="podium__crown" aria-hidden="true">👑</i>' : `<i class="podium__medal" aria-hidden="true">${[2, 1, 3][k] === 2 ? '🥈' : '🥉'}</i>`}<i class="podium__spark" aria-hidden="true"></i><span class="podium__av">${avatarSVG(r.look || {}, { label: r.name })}</span></span><b class="${VIP.cls(vk(r))}">${esc(r.name)}${VIP.tag(vk(r))}</b><small>${C1.fmt(C1.val(r))}</small><span class="podium__base">${[2, 1, 3][k]}º</span></button>` : '').join('');
+      <span class="podium__frame">${[2, 1, 3][k] === 1 ? '<i class="podium__crown" aria-hidden="true">👑</i>' : `<i class="podium__medal" aria-hidden="true">${[2, 1, 3][k] === 2 ? '🥈' : '🥉'}</i>`}<i class="podium__spark" aria-hidden="true"></i><span class="podium__av">${avatarSVG(r.look || {}, { label: r.name })}</span></span><b>${esc(r.name)}</b><small>${C1.fmt(C1.val(r))}</small><span class="podium__base">${[2, 1, 3][k]}º</span></button>` : '').join('');
   $('#rk-podium').innerHTML = pod;
   // você
   const next = myIdx > 0 ? all[myIdx - 1] : null, gap = next ? C1.val(next) - C1.val(me) : 0;
@@ -68,7 +65,7 @@ export function render() {
     const was = last.get(r.name), mv = was === undefined ? '' : was > i ? `<i class="rk__mv is-up">▲${was - i}</i>` : was < i ? `<i class="rk__mv is-down">▼${i - was}</i>` : '';
     return `<li><button class="rkrow${r.pid === 'me' ? ' is-me' : ''}${i < 3 ? ` is-top${i + 1}` : ''}" data-profile="${esc(r.pid || '')}" ${r.pid ? '' : 'disabled'}>
       <span class="rkrow__pos">${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span><span class="rkrow__av">${r.online ? '<i class="rkrow__on" title="online agora"></i>' : ''}${avatarSVG(r.look || {}, { label: r.name })}</span>
-      <span class="rkrow__name"><span class="${VIP.cls(vk(r))}">${esc(r.name)}</span>${VIP.tag(vk(r))}${r.pid === 'me' ? ' <small>você</small>' : ''}${mv}<small>${VIP.title(vk(r)) ? `<i class="vtitle">${esc(VIP.title(vk(r)))}</i> · ` : ''}nível ${r.level} · ${esc(r.rank || '')}</small></span>
+      <span class="rkrow__name">${esc(r.name)}${r.pid === 'me' ? ' <small>você</small>' : ''}${mv}<small>nível ${r.level} · ${esc(r.rank || '')}</small></span>
       <span class="rkrow__val">${C1.fmt(C1.val(r))}</span></button></li>`;
   }).join('');
   if (!me && !C1.min) $('#rk-me').innerHTML = '<div class="rk-me__txt"><b>Você ainda não está no ranking</b><span class="small">Quem está nos R$ 10 mil do começo não ganha posição. Passe disso para entrar.</span></div>';

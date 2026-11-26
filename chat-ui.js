@@ -4,7 +4,6 @@
 import * as CH from './chat.js';
 import * as FE from './feira.js';
 import * as Auth from './auth.js';
-import * as VIP from './vip.js';
 import { G, $, esc, brl, say, save, note, profileOf, notice, ntOff, isBlocked } from './store.js';
 import * as sfx from './sfx.js';
 import * as NPC from './npcs.js';
@@ -124,7 +123,7 @@ function drawConv() {
   el.innerHTML = list.map(m => {
     const d = new Date(m.at).toLocaleDateString('pt-BR'), sep = d !== day ? `<li class="rz__day">${(day = d) === new Date().toLocaleDateString('pt-BR') ? 'hoje' : d}</li>` : '';
     return `${sep}<li class="${m.hi ? 'is-hi' : ''} ${m.mine ? 'is-me' : ''} ${m.pv ? 'is-pv' : ''} ${m.mention ? 'is-mention' : ''}">
-      ${!m.mine && conv === 'all' ? `<button class="chat-name" type="button" data-mention="${esc(m.name)}" title="mencionar ${esc(m.name)}"><span class="${VIP.cls(m.name)}">${esc(m.name)}</span>${VIP.tag(m.name)}</button><small>nv ${m.level}</small>${m.pid && who(m.pid) ? `<button class="chat-pvbtn" type="button" data-conv="${esc(m.pid)}" title="conversar no privado">PV</button>` : ''}` : ''}
+      ${!m.mine && conv === 'all' ? `<button class="chat-name" type="button" data-mention="${esc(m.name)}" title="mencionar ${esc(m.name)}">${esc(m.name)}</button><small>nv ${m.level}</small>${m.pid && who(m.pid) ? `<button class="chat-pvbtn" type="button" data-conv="${esc(m.pid)}" title="conversar no privado">PV</button>` : ''}` : ''}
       <span class="rz__msg">${esc(m.text).replace(/@([^\s@]{2,18})/g, '<b class="chat-at">@$1</b>')}</span><time>${time(m.at)}</time></li>`;
   }).join('') || `<li class="is-sys">${conv === 'all' ? 'Ninguém falou ainda. Anuncie o que você vende ou procura!' : 'Comece a conversa. Só vocês dois veem.'}</li>`;
   if (stick) el.scrollTop = el.scrollHeight;
