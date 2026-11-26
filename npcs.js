@@ -91,6 +91,13 @@ export const NEW_START = Date.UTC(2026, 10, 26, 3), NEW_DAYS = 10;
 { const pool = [...BASE, ...EXTRA].filter(n => !STORY.has(n.id)).sort((a, b) => r0(a.i * 7 + 101) - r0(b.i * 7 + 101)), L = NEW_NICKS.length;
   let k = 0; for (const nm of NEW_NICKS) { if (used.has(nm.toLowerCase()) || k >= pool.length) continue; used.add(nm.toLowerCase());
     const n = pool[k]; n.unick = nm; n.unickAt = NEW_START + Math.floor((k + r0(n.i * 5 + 77)) / L * NEW_DAYS * 864e5); k++; } }
+// 25/11 23:00 (Brasília): nicks com cara de robô (…Ouro, Barão…, Cometa…, Touro…, Magnata…) trocam já: o nome novo que estava marcado
+// para depois chega agora; sem nome novo, entra o nick gamer; sem nenhum, um nome de gente. Fazendeiro_Ouro é da história: fica.
+export const FIX_AT = Date.UTC(2026, 10, 26, 2, 0);
+{ const FIX = ['n45', 'n54', 'n56', 'n64', 'n70', 'n90', 'n93', 'n97', 'n109', 'n120', 'n124', 'n142', 'n150', 'n160', 'n171', 'n46', 'n48', 'n91', 'n108', 'n158'], NAME = { n56: 'Pedrão Ribeirão', n46: 'Tiaguinho do Pneu', n48: 'Lara Moraes', n91: 'Gaúcho do Truco', n108: 'Juninho Placas', n158: 'Dona Cida 21' };
+  for (const n of [...BASE, ...EXTRA]) { if (!FIX.includes(n.id) || STORY.has(n.id)) continue;
+    if (!n.unick && !n.gnick && NAME[n.id] && !used.has(NAME[n.id].toLowerCase())) { n.unick = NAME[n.id]; used.add(n.unick.toLowerCase()); }
+    if (n.unick) n.unickAt = Math.min(n.unickAt ?? FIX_AT, FIX_AT); else if (n.gnick) n.renameAt = Math.min(n.renameAt, FIX_AT); } }
 for (const n of [...BASE, ...EXTRA]) {
   delete n.nick;
   Object.defineProperty(n, 'nick', { enumerable: true, get() { const t = Date.now(); return this.unick && t >= this.unickAt ? this.unick : this.gnick && t >= this.renameAt ? this.gnick : this.orig; } });
