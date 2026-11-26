@@ -303,7 +303,7 @@ function eta(monthsLeft, done = '') {
 }
 function etaTxt(ms) { let mo = ms / 300000; try { const n = Live.now(); mo = W.monthsIn(Live.world(), n, n + ms); } catch {} const d = Math.max(1, Math.ceil(mo * 30 - 1e-6));   // antes: tempo real ÷ duração do mês de agora (de madrugada dava 122 mil dias)
   const mo2 = Math.round(d / 30), y = Math.round(d / 360), txt = d < 60 ? `${d} ${d === 1 ? 'dia' : 'dias'}` : d < 720 ? `${mo2} meses` : `${y} anos`;   // prazo longo: meses ou anos do mundo
-  return `faltam ${txt} · ~${realTxt(ms)}`; }
+  return `faltam ~${realTxt(ms)} · ${txt} no jogo`; }   // tempo de verdade primeiro: 'faltam 20 anos · 24 h' confundia
 G.eta = eta; G.monthFrac = monthFrac;
 setInterval(() => { for (const el of document.querySelectorAll('.eta[data-until]')) { const ms = Number(el.dataset.until) - Live.now(); el.textContent = ms > 0 ? `⏳ ${etaTxt(ms)}` : '✅ pronto na virada do mês'; } }, 5000);
 function orchardBox(l) {
@@ -1758,7 +1758,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 261;
+const APP_VERSION = 262;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
@@ -1774,8 +1774,8 @@ function drawVBar() {
     if (el) { el.innerHTML = html; el.classList.toggle('is-old', old); } }
   // no jogo: botãozinho discreto ao lado do mês (relógio do mundo)
   let c = document.getElementById('vchip'); const wc = document.getElementById('worldclock');
-  if (wc && !c) { c = document.createElement('button'); c.type = 'button'; c.id = 'vchip'; c.className = 'vchip'; wc.after(c); }
-  if (c) { c.innerHTML = old ? `<i aria-hidden="true"></i>v${APP_VERSION} → v${latestV}` : `<i aria-hidden="true"></i>v${APP_VERSION}`; c.classList.toggle('is-old', old);
+  if (wc && !c) { c = document.createElement('button'); c.type = 'button'; c.id = 'vchip'; c.className = 'worldclock glass vchip'; wc.after(c); }   // mesmo cartão do relógio do mundo
+  if (c) { c.innerHTML = `<span class="worldclock__t">versão</span><b>v${APP_VERSION}</b><small><i aria-hidden="true"></i>${old ? `v${latestV} chegou` : 'em dia'}</small>`; c.classList.toggle('is-old', old);
     c.title = old ? `Saiu a v${latestV}: toque para atualizar agora` : `Versão v${APP_VERSION}: ${VB_OK[APP_VERSION % VB_OK.length]}`; c.setAttribute('aria-label', c.title); }
 }
 document.addEventListener('click', e => { if (!e.target.closest('#vchip')) return;
