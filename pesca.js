@@ -1,3 +1,4 @@
+import * as CY from './ciclo.js';   // ciclo do mercado: preço da peixaria
 // Pesqueiro (regras puras, sem DOM): lugares, varas, iscas, caixa térmica, arremesso, briga com física, peixaria e encomendas.
 // A pesca só anda com a tela aberta (pesca-ui.js): arremessa, espera a boia afundar, fisga, cansa o peixe sem arrebentar a linha e tira com o puçá.
 // Briga no modelo dos simuladores: a linha arrebenta quando a força passa do limite dela; a fricção do molinete deixa a linha
@@ -106,7 +107,7 @@ export function ensure(s) {
 }
 export const boxKg = s => ensure(s).box.reduce((t, f) => t + f.kg, 0);
 export const freeKg = s => COOLERS[ensure(s).cooler].cap - boxKg(s);
-export const priceKg = (s, sp) => Math.round(SPECIES[sp].kg * (ensure(s).mkt[sp] || 1) * 100) / 100;
+export const priceKg = (s, sp) => Math.round(SPECIES[sp].kg * (ensure(s).mkt[sp] || 1) * CY.mult('pesca') * 100) / 100;   // ciclo do mercado (ciclo.js)
 export function fishValue(s, f) {
   const fresh = Math.max(0, 1 - SPOIL * (f.age || 0));
   return Math.round(f.kg * priceKg(s, f.sp) * fresh * (f.trophy ? 1 + TROPHY_BONUS : 1));

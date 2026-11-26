@@ -704,7 +704,7 @@ function renderCarros() {
       <div class="ccard__body">
         <h4>${esc(c.name)}</h4>
         <p class="price">${brl(c.price)}</p>
-        <dl class="specs"><div><dt>potência</dt><dd>${c.hp} cv</dd></div><div><dt>máxima</dt><dd>${c.top} km/h</dd></div><div><dt>IPVA e seguro</dt><dd>${brl(c.price * L.CAR_UPKEEP)}/mês</dd></div></dl>
+        <dl class="specs"><div><dt>potência</dt><dd>${c.hp} cv</dd></div><div><dt>máxima</dt><dd>${c.top} km/h</dd></div><div><dt>${L.upkeepTxt(id)}</dt><dd>${brl(c.price * L.carUpkeep(id))}/mês</dd></div></dl>
         <p class="small good perk">vantagem: ${esc([c.perk, PK.label(PK.CAR_PERKS[id])].filter(Boolean).join(', '))}</p>
         <button class="btn btn--gold" data-act="buy-car" data-id="${id}">comprar</button>
       </div></article>`;
@@ -728,7 +728,7 @@ function mineShop(s) {
   const card = ([id, c]) => { const n = s.cars.filter(x => x.model === id).length;
     return `<article class="glass ccard ccard--maq"><div class="ccard__photo"><img src="assets/${c.img}.webp" alt="${esc(c.name)}" loading="lazy"><span class="tag tag--green">${esc(MI.ROLES[c.role])}</span>${n ? `<span class="tag tag--gold ccard__own">${n} na mina</span>` : ''}</div>
       <div class="ccard__body"><h4>${esc(c.name)}</h4><p class="price">${brl(c.price)}</p><p class="small good perk">${esc(c.perk)}</p>
-        <p class="muted small">desvaloriza ${String(L.CAR_DEPREC * 100).replace('.', ',')}% e paga ${brl(c.price * L.CAR_UPKEEP)} de IPVA e seguro por mês</p>
+        <p class="muted small">desvaloriza ${String(L.CAR_DEPREC * 100).replace('.', ',')}% e paga ${brl(c.price * L.carUpkeep(id))} de ${L.upkeepTxt(id)} por mês</p>
         <button class="btn btn--gold" data-act="buy-car" data-id="${id}">${n ? 'comprar mais um' : 'comprar'}</button></div></article>`; };
   const status = !s.mina ? '<small class="muted">(rendem quando você for dono da mineradora)</small>'
     : lack.length ? `<span class="tag tag--red">faltam: ${esc(lack.join(', '))}</span>` : `<span class="tag tag--green">frota completa: ${int(cap.t)} t/mês (limite: ${esc(cap.limit)})</span>`;
@@ -742,7 +742,7 @@ function renderMaq(s) {
     const cov = multi ? `<p class="small ${n >= PM.need(s, id) ? 'good' : 'bad'}">você tem ${n} · seu pomar de ${int(PM.orchardHa(s))} ha pede ${PM.need(s, id)} (cada ${id === 'pulv' ? 'um' : 'uma'} atende ${PM.COVER[id]} ha)</p>` : '';
     return `<article class="glass ccard ccard--maq"><div class="ccard__photo"><img src="assets/${c.img}.webp" alt="${esc(c.name)}" loading="lazy"><span class="tag tag--green">${c.cat}</span>${n ? `<span class="tag tag--gold ccard__own">${multi ? `${n} na fazenda` : 'na fazenda'}</span>` : ''}</div>
       <div class="ccard__body"><h4>${esc(c.name)}</h4><p class="price">${brl(c.price)}</p>
-        <p class="small good perk">vantagem: ${esc(c.perk)}</p>${cov}<p class="muted small">desvaloriza ${String(L.CAR_DEPREC * 100).replace('.', ',')}% e paga ${brl(c.price * L.CAR_UPKEEP)} de seguro por mês</p>
+        <p class="small good perk">vantagem: ${esc(c.perk)}</p>${cov}<p class="muted small">desvaloriza ${String(L.CAR_DEPREC * 100).replace('.', ',')}% e paga ${brl(c.price * L.carUpkeep(id))} de ${L.upkeepTxt(id)} por mês</p>
         ${owned ? '<button class="btn btn--glass" disabled>já está na fazenda</button>' : `<button class="btn btn--gold" data-act="buy-car" data-id="${id}">${multi && n ? 'comprar mais um' : 'comprar'}</button>`}</div></article>`; };
   const list = crop => Object.entries(L.CARS).filter(([, c]) => c.crop === crop).map(([id, c]) => card(id, c)).join('');
   const hv = s.caneHarvester, colh = `<article class="glass ccard ccard--maq"><div class="ccard__photo"><img src="assets/maq-colhedora.webp" alt="colhedora de cana" loading="lazy"><span class="tag tag--green">cana</span>${hv ? '<span class="tag tag--gold ccard__own">na fazenda</span>' : ''}</div>
@@ -1762,7 +1762,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 271;
+const APP_VERSION = 272;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

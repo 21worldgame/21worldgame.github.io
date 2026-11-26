@@ -1,5 +1,6 @@
 import { T } from './tune.js';
 import { mult } from './perks.js';
+import * as CY from './ciclo.js';   // ciclo do mercado: movimento das empresas
 // Negócios (regras puras): bancos, provedores de internet, supermercados e galpões de armazenagem.
 // Você compra só a MARCA (sem caixa); todos os custos mensais saem do seu bolso. Lucro baixo de propósito,
 // mas a marca valoriza devagar com o tempo do mundo: é investimento de longo prazo.
@@ -134,7 +135,7 @@ export function sellUnit(s, cat, id, t) {
 // mês da rede: ocupação × faturamento cheio − custo fixo
 // ---------- demanda dos setores: ciclos longos iguais para todos (0,83 a 1,17) × choque de crise/evento (econ.js) ----------
 export const SHOCK = {};   // setor → multiplicador da demanda enquanto um evento durar (preenchido pela economia do mundo)
-export const sectorTrend = (cat, m) => { const k = Object.keys(SECTORS).indexOf(cat) + 1; return +((1 + 0.12 * Math.sin(m * 0.045 + k * 1.7) + 0.05 * Math.sin(m * 0.13 + k)) * (SHOCK[cat] || 1)).toFixed(3); };
+export const sectorTrend = (cat, m) => { const k = Object.keys(SECTORS).indexOf(cat) + 1; return +((1 + 0.12 * Math.sin(m * 0.045 + k * 1.7) + 0.05 * Math.sin(m * 0.13 + k)) * (SHOCK[cat] || 1) * CY.mult('empresas')).toFixed(3); };
 export const trendLabel = v => (v >= 1.06 ? 'em alta' : v <= 0.94 ? 'em baixa' : 'estável');
 // a marca valoriza conforme a gestão: reputação alta e setor em alta fazem crescer; reputação ruim e setor fraco desvalorizam
 export const brandGrowth = (rep, trend) => 0.002 + 0.006 * (rep - 0.6) + 0.02 * (trend - 1);

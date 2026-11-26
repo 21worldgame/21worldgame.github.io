@@ -1,4 +1,5 @@
 import * as PK from './perks.js';
+import * as CY from './ciclo.js';   // ciclo do mercado: prêmios e valor dos animais
 // Canil e haras: comprar, treinar e inscrever galgos e cavalos em provas. Lógica pura, sem DOM.
 import { runRace, officialTimes } from './race.js';
 
@@ -42,7 +43,7 @@ export function price(kind, r, pot = r + 12) { return Math.round((KINDS[kind].ba
 export const BREED_PREM = { psi: 1.25, qm: 1.12, arabe: 1.15, mangalarga: 1.08, crioulo: 1.02 };
 export function value(a) {
   const f = retired(a) ? 0.15 : Math.min(1, ageFactor(a.kind, a.age) + 0.1), prem = (BREED_PREM[a.breed] || 1) * (1 + 0.12 * (a.stars || 0));
-  return Math.round((price(a.kind, rating(a), a.pot) * f * SALE * prem) / 100) * 100;
+  return Math.round((price(a.kind, rating(a), a.pot) * f * SALE * prem * CY.mult('canil')) / 100) * 100;
 }
 export const animalsValue = s => (s.stable?.animals || []).reduce((t, a) => t + value(a), 0);
 export const trainCost = a => Math.round((KINDS[a.kind].train * (0.5 + rating(a) / 50)) / 10) * 10;
@@ -155,7 +156,7 @@ export function enter(s, id, evId, rng = Math.random) {
   const order = runRace({ dogs: runners.map((r, i) => ({ p: w[i] / tot })) }, rng);
   const T = officialTimes(order, rng, K.baseTime, K.timeScale);
   const pos = order.findIndex(i => runners[i].id === a.id);
-  const prize = Math.round((ev.prize[pos] || 0) * PK.mult(s, 'race'));
+  const prize = Math.round((ev.prize[pos] || 0) * PK.mult(s, 'race') * CY.mult('canil'));
   s.money += prize;
   a.runs++; a.earn += prize; if (pos === 0) a.wins++;
   a.best = Math.max(a.best, prize);

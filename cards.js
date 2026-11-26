@@ -1,3 +1,4 @@
+import * as CY from './ciclo.js';   // ciclo do mercado: valor das cartas
 // Cartas colecionáveis e coleções (regras puras).
 // Cada raridade tem um valor de base (comum 3 mil, rara 5 mil, lendária 8 mil, exclusiva 10 mil) que sobe bem devagar
 // enquanto a carta fica com o dono (GROWTH ao dia, até +50%). A loja do jogo paga pouco (SELL do valor):
@@ -85,7 +86,7 @@ let month = 0;   // mês do mundo agora (o jogo avisa em setMonth)
 export const setMonth = m => { month = m || 0; };
 export const baseValue = c => RARITY[rarityOf(c)].value;
 export const growth = c => Math.min(GROWTH_MAX, 1 + Math.max(0, month - (c?.born ?? month)) / PACK_DAY * GROWTH);
-export const value = c => Math.round(baseValue(c) * growth(c));
+export const value = c => Math.round(baseValue(c) * growth(c) * CY.mult('cartas'));
 export const ensure = s => { s.colls ??= {}; for (const c of s.cards || []) c.born ??= s.month || 0; };
 export const label = c => (c?.set ? `${itemOf(c)?.name || 'carta'} (${SETS[c.set].name}, ${RARITY[rarityOf(c)].label})` : `${champ(c.champ).name} (${tier(c.tier).label})`);
 

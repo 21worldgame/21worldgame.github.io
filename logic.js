@@ -1,4 +1,5 @@
 import { T } from './tune.js';
+import { good as cycleGood } from './ciclo.js';
 import { value as cardValue } from './cards.js';
 import { value as suinosValue, PRICES as SU_PRICES } from './suinos.js';
 import { value as pescaValue } from './pesca.js';
@@ -138,7 +139,8 @@ export const rentNow = l => Math.round(l.value * (l.rate ?? RENT_PAY) * (1 + REN
 export const rentCredit = l => Math.min((l.paid || 0) * RENT_CREDIT, l.value * RENT_CREDIT_CAP);
 export const buyRentedPrice = l => Math.round(l.value - rentCredit(l));
 // máquinas próprias barateiam o plantio (não paga o serviço de terceiros). O trator vale o maior; o resto soma, com teto de 15% (vida real)
-export const MACH_PLANT = { deere: 0.1, massey: 0.07, plantadeira: 0.03, colheitadeira: 0.05, autopropelido: 0.03, drone: 0.01 }, MACH_MAX = 0.15;
+// v272: desconto proporcional ao preço (antes o trator dava 10% por 650 mil e a colheitadeira 5% por 3,6 mi) e teto de 12% (era 15%)
+export const MACH_PLANT = { deere: 0.09, massey: 0.06, plantadeira: 0.03, colheitadeira: 0.05, autopropelido: 0.03, drone: 0.02 }, MACH_MAX = 0.12;
 export function machDiscount(s) {
   const own = new Set((s.cars || []).filter(c => !c.lentTo).map(c => c.model)); if ((s.amigos?.tools || []).some(t => t.type === 'trator')) own.add('deere');
   let d = Math.max(own.has('deere') ? MACH_PLANT.deere : 0, own.has('massey') ? MACH_PLANT.massey : 0);
@@ -176,7 +178,7 @@ export const CARS = {
   onix: { name: 'Chevrolé Ônyx', type: 'hatch', price: 100000, cat: 'popular', img: 'car-onix', hp: 116, top: 190 },
   hilux: { name: 'Toyoda Hilox', type: 'picape', price: 335000, cat: 'picape', img: 'car-hilux', hp: 204, top: 180 },
   sw4: { name: 'Toyoda SW5', type: 'suv', price: 420000, cat: 'SUV', img: 'car-sw4', hp: 204, top: 180 },
-  deere: { name: 'John Dear 6215', type: 'trator', price: 650000, cat: 'agrícola', img: 'car-deere', hp: 125, top: 40, perk: 'plantio 10% mais barato' },
+  deere: { name: 'John Dear 6215', type: 'trator', price: 690000, cat: 'agrícola', img: 'car-deere', hp: 125, top: 40, perk: 'plantio 9% mais barato' },
   scania: { name: 'Scanya R540 boiadeiro', type: 'caminhao', price: 1020000, cat: 'agrícola', img: 'car-scania', hp: 540, top: 110, perk: 'vende gado sem taxa de frete' },
   porsche: { name: 'Porshe 912 Carreira', type: 'esportivo', price: 990000, cat: 'esportivo', img: 'car-porsche', hp: 385, top: 293 },
   g63: { name: 'Mercedez G36 AMJ', type: 'suv', price: 2150000, cat: 'luxo', img: 'car-g63', hp: 585, top: 220 },
@@ -195,18 +197,22 @@ export const CARS = {
   x5: { name: 'BMV X5 M Competição', type: 'suv', price: 1250000, cat: 'luxo', img: 'car-x5', hp: 625, top: 290 },
   f296: { name: 'Ferrári 296 GTB', type: 'super', price: 4000000, cat: 'superesportivo', img: 'car-296', hp: 830, top: 330 },
   cullinan: { name: 'Rolz-Roice Culinã', type: 'suv', price: 6500000, cat: 'luxo', img: 'car-cullinan', hp: 571, top: 250 },
-  massey: { name: 'Massei Fergusom 4707', type: 'trator', price: 330000, cat: 'agrícola', img: 'maq-massey', hp: 75, top: 35, perk: 'plantio 7% mais barato (trator pequeno)' },
-  drone: { name: 'Drone Agrás T50 (pulverização)', type: 'maquina', crop: 'graos', price: 180000, cat: 'lavoura', img: 'maq-drone', hp: 0, top: 40, perk: 'plantio 1% mais barato' },
-  plantadeira: { name: 'Jondir 1770 plantadeira 16 linhas', type: 'maquina', crop: 'graos', price: 650000, cat: 'lavoura', img: 'maq-plantadeira', hp: 0, top: 15, perk: 'plantio 3% mais barato' },
+  massey: { name: 'Massei Fergusom 4707', type: 'trator', price: 300000, cat: 'agrícola', img: 'maq-massey', hp: 75, top: 35, perk: 'plantio 6% mais barato (trator pequeno)' },
+  drone: { name: 'Drone Agrás T50 (pulverização)', type: 'maquina', crop: 'graos', price: 180000, cat: 'lavoura', img: 'maq-drone', hp: 0, top: 40, perk: 'plantio 2% mais barato' },
+  plantadeira: { name: 'Jondir 1770 plantadeira 16 linhas', type: 'maquina', crop: 'graos', price: 560000, cat: 'lavoura', img: 'maq-plantadeira', hp: 0, top: 15, perk: 'plantio 3% mais barato' },
   graneleiro: { name: 'Volvu FH bitrem graneleiro', type: 'maquina', crop: 'graos', price: 1150000, cat: 'lavoura', img: 'maq-graneleiro', hp: 540, top: 90, perk: 'vende soja, milho e café 1% mais caro (frete próprio)' },
-  autopropelido: { name: 'Jactu Uniporte 3030 autopropelido', type: 'maquina', crop: 'graos', price: 1400000, cat: 'lavoura', img: 'maq-autopropelido', hp: 0, top: 30, perk: 'plantio 3% mais barato (pulverização própria)' },
-  colheitadeira: { name: 'John Dear S780 colheitadeira', type: 'maquina', crop: 'graos', price: 3600000, cat: 'lavoura', img: 'maq-colheitadeira', hp: 0, top: 25, perk: 'plantio 5% mais barato (colheita própria, sem pagar o serviço)' },
+  autopropelido: { name: 'Jactu Uniporte 3030 autopropelido', type: 'maquina', crop: 'graos', price: 1150000, cat: 'lavoura', img: 'maq-autopropelido', hp: 0, top: 30, perk: 'plantio 3% mais barato (pulverização própria)' },
+  colheitadeira: { name: 'John Dear S780 colheitadeira', type: 'maquina', crop: 'graos', price: 2900000, cat: 'lavoura', img: 'maq-colheitadeira', hp: 0, top: 25, perk: 'plantio 5% mais barato (colheita própria, sem pagar o serviço)' },
   ...MINE_EQUIP,   // frota da mineradora (mina.js): vendida na loja 21
   veyron: { name: 'Bugati Veiron 61.4', type: 'super', price: 15000000, cat: 'hiperesportivo', img: 'car-veyron', hp: 1001, top: 407 },
 };
 export const OLD_CARS = { vento: 'onix', bravo: 'hilux', serra: 'sw4', campeiro: 'deere', boiadeiro: 'scania', falcao: 'porsche', tempesta: 'huracan' };
 export const CAR_DEPREC = 0.01;    // desvaloriza ~12% ao ano (tabela Fipe)
 export const CAR_UPKEEP = 0.006;   // IPVA 4% + seguro ~3,5% ao ano = ~0,6% ao mês
+// v272: custo por tipo. Máquina agrícola, trator e caminhão de trabalho não pagam IPVA (só seguro, ~0,35%/mês);
+// luxo e superesportivo têm seguro caro (~0,85%/mês). O carro de luxo é gasto de status, a máquina é ferramenta
+export const carUpkeep = m => { const c = CARS[m] || {}; return c.type === 'maquina' || c.type === 'trator' || c.type === 'caminhao' || c.crop ? 0.0035 : /luxo|superesportivo|hiperesportivo/.test(c.cat || '') ? 0.0085 : CAR_UPKEEP; };
+export const upkeepTxt = m => (carUpkeep(m) < CAR_UPKEEP ? 'seguro (máquina não paga IPVA)' : 'IPVA e seguro');
 export const CAR_BUYBACK = 0.92;   // a concessionária recompra com margem
 export const cattleFee = s => (hasVehicle(s, 'caminhao') ? 0 : MARKET_FEE);
 
@@ -360,7 +366,7 @@ export function tick(s, rng = Math.random) {
   const add = (txt, val = 0) => { s.money += val; log.push({ m: s.month, txt, val: Math.round(val) }); };
 
   s.prev = { ...s.prices };
-  for (const k of Object.keys(s.prices)) { const b = ANCHOR[k] && ANCHOR[k] * (ECON[k] || 1); let v = walk(b ? s.prices[k] + (b - s.prices[k]) * 0.1 : s.prices[k], rng, 0.06);   // ancorado: volta 10%/mês ao preço base, sem isso frango/ração derivavam sem limite e a granja virava prejuízo certo
+  for (const k of Object.keys(s.prices)) { const b = ANCHOR[k] && ANCHOR[k] * (ECON[k] || 1) * cycleGood(k); let v = walk(b ? s.prices[k] + (b - s.prices[k]) * 0.1 : s.prices[k], rng, 0.06);   // ancorado: volta 10%/mês ao preço base, sem isso frango/ração derivavam sem limite e a granja virava prejuízo certo
     if (b) v = Math.min(b * 1.25, Math.max(b * 0.8, v));   // faixa realista: save antigo já derivado volta no próximo mês
     s.prices[k] = v < 100 ? Math.round(v * 100) / 100 : Math.round(v); }   // preço pequeno (frango, ração) anda em centavos
   // terra acompanha o mercado: volta 10% por mês para o valor de laudo e oscila ±2% (antes subia 0,6% todo mês para sempre;
@@ -393,7 +399,7 @@ export function tick(s, rng = Math.random) {
   }
 
   for (const c of s.cars || []) {
-    add(`IPVA e seguro, ${CARS[c.model].name}`, -c.value * CAR_UPKEEP);
+    add(`${upkeepTxt(c.model)}, ${CARS[c.model].name}`, -c.value * carUpkeep(c.model));
     c.value = Math.round(c.value * (1 - CAR_DEPREC));
   }
 

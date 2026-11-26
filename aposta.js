@@ -3,6 +3,7 @@
 // 1 min de pré-jogo (apostas abertas, relatório dos times), 2,5 min de jogo ao vivo (90 minutos), 30 s de resultado.
 // As odds saem do mesmo modelo que simula o jogo, com 7% de margem da casa: ninguém tem vantagem garantida.
 import { CLUBS } from './futebol.js';
+import * as CY from './ciclo.js';   // ciclo do mercado: cota de TV
 
 export const PRE = 60000, LIVE = 150000, POST = 30000, SLOT = PRE + LIVE + POST, ROUNDS = 38, MARGIN = 0.07;
 export const DIVS = ['Série A', 'Série B', 'Série C'];
@@ -177,7 +178,7 @@ export function tvIncome(s, now) {
   for (let sl = Math.max(s.fbTv + 1, done - TV_MAX + 1); sl <= done; sl++) {
     const k = matches(sl).findIndex(m => m.home.n === club || m.away.n === club); if (k < 0) continue;
     const mt = matches(sl)[k], [h, a] = finals(sl)[k], home = mt.home.n === club, won = home ? h > a : a > h, d = mt.div;
-    const val = TV[d] + (won ? TV_WIN[d] : 0);
+    const val = Math.round((TV[d] + (won ? TV_WIN[d] : 0)) * CY.mult('futebol'));
     s.money += val; out.push({ txt: `cota de TV: ${mt.home.n} ${h} x ${a} ${mt.away.n} (${DIVS[d]}, rodada ${mt.round + 1})${won ? ' + bônus de vitória' : ''}`, val });
   }
   s.fbTv = done; return out;

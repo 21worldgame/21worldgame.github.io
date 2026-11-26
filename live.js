@@ -8,6 +8,7 @@ import * as W from './world.js';
 import { CLOCK as NPC_CLOCK } from './npcs.js';
 import * as L from './logic.js';
 import { avatarSVG } from './avatar.js';
+import * as CY from './ciclo.js';
 
 export const CFG = { xp_mult: 1, daily_mult: 1, job_mult: 1, prize_mult: 1, maintenance: false, maintenance_msg: '', event: '' };
 const num = (v, d) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Math.min(10, Number(v)) : d);
@@ -31,6 +32,7 @@ export async function start() {
   const sb = Auth.sbClient();
   if (!sb) { worldReady = true; return 'off'; }
   await loadConfig(sb);
+  await loadCycle(sb);
   worldReady = true;
   await loadAnnouncements(sb);
   let banned = false;
@@ -45,10 +47,16 @@ export async function start() {
   realtime(sb);
   clearInterval(timer);
   timer = setInterval(async () => {
-    await loadConfig(sb); await loadAnnouncements(sb); maintenance();
+    await loadConfig(sb); await loadAnnouncements(sb); await loadCycle(sb); maintenance();
     if (Auth.account()) { if (await checkBan(sb)) return; await applyGrants(sb); if (!isAdmin) await receita(sb); }
   }, 60000);   // cota do servidor: 1 conferência por minuto
   return banned ? 'banned' : 'ok';
+}
+
+// ciclo do mercado (ciclo.js): só pergunta ao servidor quando o período de 12 h muda (cota: 1 chamada a cada 12 h por aparelho)
+async function loadCycle(sb) {
+  if (CY.data()?.period === CY.periodOf(now())) return;
+  try { const { data, error } = await sb.rpc('market_now'); if (!error && data) { CY.set(data); G.render?.(); } } catch {}
 }
 
 // Receita Federal: 1ª vez que o patrimônio dispara é só o aviso; se disparar de novo em até 24 h, pausa a conta (receita.sql)
