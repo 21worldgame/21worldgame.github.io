@@ -293,7 +293,8 @@ function satThumb(l) {
 const KIND_COLOR = { offer: '--print-gold', own: '--money', rent: '--violet' };
 
 // ---------- quanto falta (todos os processos): dias do mundo (30 por mês) + tempo real, contando o que resta do mês atual ----------
-const realTxt = ms => { const m = Math.max(1, Math.round(ms / 60000)); return m < 60 ? `${m} min` : m < 2880 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} dias`; };
+const dh = m => { const h = Math.round(m / 60), d = Math.floor(h / 24), r = h % 24; return `${d} ${d === 1 ? 'dia' : 'dias'}${r ? ` e ${r} h` : ''}`; };   // dias E horas: '~2 dias' com vencimento 3 dias depois parecia erro
+const realTxt = ms => { const m = Math.max(1, Math.round(ms / 60000)); return m < 60 ? `${m} min` : m < 2880 ? `${Math.round(m / 60)} h` : dh(m); };
 const monthFrac = () => { try { return W.progress(Live.world(), Live.now()); } catch { return 0; } };   // quanto do mês atual já passou (barra anda sozinha)
 function eta(monthsLeft, done = '') {
   if (!(monthsLeft > 0)) return done ? `<span class="eta is-done">✅ ${done}</span>` : '';
@@ -1757,7 +1758,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 257;
+const APP_VERSION = 258;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

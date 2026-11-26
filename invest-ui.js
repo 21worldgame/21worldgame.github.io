@@ -7,7 +7,8 @@ import * as TV from './news-ui.js';
 import { G, $, esc, brl, say, save, note, feed } from './store.js';
 
 const pct = v => `${(v * 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/0$/, '')}%`;
-const real = months => { let ms = months * 300000; try { ms = W.msUntil(Live.world(), Live.now(), months); } catch {} const m = Math.round(ms / 60000); return m < 60 ? `~${m} min` : m < 2880 ? `~${Math.round(m / 60)} h` : `~${Math.round(m / 1440)} dias`; };
+const dh = m => { const h = Math.round(m / 60), d = Math.floor(h / 24), r = h % 24; return `${d} ${d === 1 ? 'dia' : 'dias'}${r ? ` e ${r} h` : ''}`; };   // dias E horas: '~2 dias' com vencimento 3 dias depois parecia erro
+const real = months => { let ms = months * 300000; try { ms = W.msUntil(Live.world(), Live.now(), months); } catch {} const m = Math.round(ms / 60000); return m < 60 ? `~${m} min` : m < 2880 ? `~${Math.round(m / 60)} h` : `~${dh(m)}`; };
 // dia e hora (Brasília) em que vence: o tempo real varia porque de madrugada (1h às 9h) o mês do mundo anda mais devagar
 const due = months => { let ms = months * 300000; try { ms = W.msUntil(Live.world(), Live.now(), months); } catch {} let n = Date.now(); try { n = Live.now(); } catch {} return new Date(n + ms).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); };
 const worth = () => L.netWorth(G.S);
