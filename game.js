@@ -1666,7 +1666,7 @@ function worldMonths0() {
   if (p.skipped) {
     s.month += p.skipped; note(`o mundo avançou ${p.skipped} meses enquanto você esteve fora (sem cobranças)`);
     // investimento no banco não para quando a pessoa some: rende (e vence) todos os meses que ela ficou fora, igual à vida real
-    for (let k = 0; k < p.skipped; k++) for (const l of INV.monthly(s)) note(l.txt, l.val);
+    for (let k = 0; k < p.skipped; k++) for (const l of INV.monthly(s, Live.now())) note(l.txt, l.val);
   }
   const before = s.money, logBefore = s.log.length; let harvests = 0;
   const closes = [];   // o que cada fechamento lançou (o contador mostra exatamente isso)
@@ -1680,7 +1680,7 @@ function worldMonths0() {
     for (const l of SU.monthly(s)) N(l);
     for (const l of PE.monthly(s)) N(l);
     for (const l of NG.monthly(s)) N(l);
-    for (const l of INV.monthly(s)) N(l);   // investimentos do banco: rende e paga o que venceu
+    for (const l of INV.monthly(s, Live.now())) N(l);   // investimentos do banco: rende e paga o que venceu
     for (const l of CTR.monthly(s)) { N(l); say(l.txt[0].toUpperCase() + l.txt.slice(1) + '.', true); }   // contrato de exportação vencido
     for (const l of MI.monthly(s)) { N(l); if (l.big) { confetti(220); say(l.txt); } }
     for (const l of NG.enforce(s)) { N(l); say(l.txt[0].toUpperCase() + l.txt.slice(1) + '. Compre galpões na loja.', true); }
@@ -1758,7 +1758,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 258;
+const APP_VERSION = 259;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

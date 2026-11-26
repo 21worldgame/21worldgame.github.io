@@ -9,16 +9,21 @@ export const PRODUCTS = {   // taxas reais de nov/2026 (Selic 13,75% ao ano = ~1
   previdencia: { name: 'Previdência 21', icon: '🛡️', months: 576, rate: 0.011, desc: 'O mais longo e o que mais rende. Para quem pensa no futuro.', early: 0.1 },
 };
 export const MIN = 10000, CAP_SHARE = 0.25, CAP_MAX = 50e6;
+// a partir de sábado 28/11/2026 00:00 (Brasília) os juros de aplicação nova caem 40% (rendia demais).
+// Aplicação com prazo guarda a taxa do dia em que entrou (contrato); a poupança (sem prazo) segue a taxa do momento.
+export const CUT_AT = Date.UTC(2026, 10, 28, 3), CUT = 0.6;
+export const rateNow = (kind, now = Date.now()) => { const r = PRODUCTS[kind]?.rate || 0; return now >= CUT_AT ? Math.round(r * CUT * 1e5) / 1e5 : r; };
+export const rateOf = (i, now = Date.now()) => { const P = PRODUCTS[i.kind]; return !P ? 0 : !P.months ? rateNow(i.kind, now) : i.rate ?? P.rate; };   // aplicação antiga sem 'rate' = taxa antiga
 export const total = s => (s.invest || []).reduce((t, i) => t + i.amt + (i.acc || 0), 0);
 export const cap = (s, worth) => Math.max(0, Math.min(CAP_MAX, Math.max(1e6, worth * CAP_SHARE)) - (s.invest || []).reduce((t, i) => t + i.amt, 0));
-export const finalOf = (kind, amt) => { const P = PRODUCTS[kind]; return Math.round(amt * (1 + P.rate * P.months)); };
-export function apply(s, kind, amt, worth) {
+export const finalOf = (kind, amt, rate = rateNow(kind)) => { const P = PRODUCTS[kind]; return Math.round(amt * (1 + rate * P.months)); };
+export function apply(s, kind, amt, worth, now = Date.now()) {
   const P = PRODUCTS[kind]; amt = Math.floor(Number(amt) || 0);
   if (!P) return 'investimento inválido.';
   if (amt < MIN) return `o mínimo é R$ ${MIN.toLocaleString('pt-BR')}.`;
   if (amt > (s.money || 0)) return 'dinheiro insuficiente.';
   const room = cap(s, worth); if (amt > room) return `o banco aceita até R$ ${Math.floor(room).toLocaleString('pt-BR')} a mais em investimentos para você (teto: 25% do patrimônio, no máximo R$ 50 mi).`;
-  s.money -= amt; (s.invest ??= []).push({ id: `iv${(s.nextId = (s.nextId || 1) + 1)}`, kind, amt, acc: 0, left: P.months, at: s.month || 1 });
+  s.money -= amt; (s.invest ??= []).push({ id: `iv${(s.nextId = (s.nextId || 1) + 1)}`, kind, amt, acc: 0, left: P.months, at: s.month || 1, rate: rateNow(kind, now) });
   return null;
 }
 // sair antes: perde o rendimento e, nos longos, uma taxa sobre o valor aplicado
@@ -29,11 +34,11 @@ export function withdraw(s, id) {
   return { value: v, loss: Math.round(i.amt + (i.acc || 0) - v), name: PRODUCTS[i.kind].name };
 }
 // fecha o mês: rende e paga o que venceu. A devolução do valor aplicado não é lucro (fica fora do pedágio); o rendimento é
-export function monthly(s) {
+export function monthly(s, now = Date.now()) {
   const out = [];
   for (const i of [...(s.invest || [])]) {
     const P = PRODUCTS[i.kind]; if (!P) continue;
-    i.acc = Math.round(((i.acc || 0) + i.amt * P.rate) * 100) / 100;
+    i.acc = Math.round(((i.acc || 0) + i.amt * rateOf(i, now)) * 100) / 100;
     if (!P.months) continue;
     if (--i.left > 0) continue;
     s.invest = s.invest.filter(x => x !== i);
