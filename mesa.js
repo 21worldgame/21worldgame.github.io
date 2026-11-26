@@ -9,7 +9,7 @@ import { sync as proSync, openPro } from './pro-ui.js';
 
 const sb = () => Auth.sbClient(), me = () => Auth.account()?.id;
 const CB = 'https://api.exchange.coinbase.com/products/BTC-USD';
-const PAY = { 1: 1.7, 5: 1.8, 10: 1.88 };
+const PAY = { 1: 1.55, 5: 1.65, 10: 1.72 };   // v285 (igual ao servidor); acerto só conta se andar mais de 0,02% (spread)
 const MSG = { login: 'Entre na sua conta.', banned: 'Conta bloqueada.', min: 'Valor abaixo do mínimo.', max: 'Máximo de R$ 500 mil por operação.',
   saldo: 'Saldo insuficiente na mesa. Deposite primeiro.', abertas: 'Você já tem 5 operações abertas.', rapido: 'Aguarde 5 segundos entre operações.',
   preco: 'A cotação real não respondeu agora. Tente de novo em instantes.', args: 'Operação inválida.', worth: 'Valor maior que o seu patrimônio.',
@@ -72,7 +72,7 @@ export function candles(tf = 1, count = 60) {
   const last = out.at(-1); if (spot && last) { last.c = spot; last.h = Math.max(last.h, spot); last.l = Math.min(last.l, spot); }
   return out.slice(-count);
 }
-export const sizeHTML = (amt, dur) => `Acertou em ${dur} min: recebe <b class="good">${brl(Math.floor(amt * PAY[dur]))}</b> (${String(PAY[dur]).replace('.', ',')}x). Preço <b>real</b> do Bitcoin (Coinbase): a entrada é a cotação no clique e o resultado é o fechamento real do minuto em que vence, liquidado pelo servidor. Sai do <b>saldo da mesa</b> (deposite abaixo). De R$ 100 a R$ 500 mil por operação.`;
+export const sizeHTML = (amt, dur) => `Acertou em ${dur} min: recebe <b class="good">${brl(Math.floor(amt * PAY[dur]))}</b> (${String(PAY[dur]).replace('.', ',')}x). Preço <b>real</b> do Bitcoin (Coinbase): a entrada é a cotação no clique e o resultado é o fechamento real do minuto em que vence, liquidado pelo servidor. Só conta acerto se o preço andar mais de 0,02% para o seu lado. Sai do <b>saldo da mesa</b> (deposite abaixo). De R$ 100 a R$ 500 mil por operação.`;
 export const posHTML = () => openList();
 export const histHTML = () => { const d = trades.filter(t => t.status !== 'aberta' && !t.copy_id).slice(0, 15); return d.length ? d.map(row).join('') : '<li class="muted small">Sem operações encerradas.</li>'; };
 export function acctHTML() {

@@ -12,7 +12,7 @@ const fmtLeft = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${M
 
 export function initTrader() {
   G.S.trades ??= []; G.S.trHist ??= [];
-  $('#tr-assets').innerHTML = `<button class="tr-asset tr-asset--real" data-act="tr-asset" data-id="${MESA.REAL}"><strong>BTC real</strong><span id="tr-q-${MESA.REAL}"></span><small>ao vivo · copy</small></button>` + Object.entries(MK.ASSETS).map(([k, a]) => `<button class="tr-asset" data-act="tr-asset" data-id="${k}"><strong>${a.ticker}</strong><span id="tr-q-${k}"></span></button>`).join('');
+  $('#tr-assets').innerHTML = `<button class="tr-asset tr-asset--real" data-act="tr-asset" data-id="${MESA.REAL}"><strong>BTC real</strong><span id="tr-q-${MESA.REAL}"></span><small>ao vivo · copy</small></button>` + Object.entries(MK.ASSETS).filter(([k]) => !MK.NO_OPEN.has(k)).map(([k, a]) => `<button class="tr-asset" data-act="tr-asset" data-id="${k}"><strong>${a.ticker}</strong><span id="tr-q-${k}"></span></button>`).join('');
   pickAsset(cur); pickDur(dur);
   const cv = $('#tr-canvas');
   cv.addEventListener('mousemove', e => { const r = cv.getBoundingClientRect(); hover = { x: e.clientX - r.left, y: e.clientY - r.top }; draw(); });
@@ -94,7 +94,7 @@ function render() {
   $('#tr-ch').textContent = `${ch >= 0 ? '▲' : '▼'} ${Math.abs(ch).toFixed(2)}% em 1 h`;
   $('#tr-ch').className = ch >= 0 ? 'good' : 'bad';
   $('#tr-hl').textContent = `máx ${MK.fmt(cur, Math.max(...vis.map(c => c.h)))}  mín ${MK.fmt(cur, Math.min(...vis.map(c => c.l)))}  ${A.unit}`;
-  $('#tr-size').innerHTML = `Acertou em ${dur} min: recebe <b class="good">${brl(Math.round(amt * MK.payout(dur)))}</b> (${x(MK.payout(dur))}, lucro de ${Math.round((MK.payout(dur) - 1) * 100)}%). Quanto mais longo o tempo, mais paga: 1 min ${x(MK.payout(1))} · 5 min ${x(MK.payout(5))} · 10 min ${x(MK.payout(10))}. Errou ou ficou igual: perde ${brl(amt)}. Máximo de ${brl(MK.MAX_STAKE)} por operação e lucro de até ${brl(MK.DAY_GAIN)} por dia na mesa.`;
+  $('#tr-size').innerHTML = `Acertou em ${dur} min: recebe <b class="good">${brl(Math.round(amt * MK.payout(dur)))}</b> (${x(MK.payout(dur))}, lucro de ${Math.round((MK.payout(dur) - 1) * 100)}%). Quanto mais longo o tempo, mais paga: 1 min ${x(MK.payout(1))} · 5 min ${x(MK.payout(5))} · 10 min ${x(MK.payout(10))}. Errou, ficou igual ou andou menos de 0,02% (spread da corretora): perde ${brl(amt)}. Máximo de ${brl(MK.MAX_STAKE)} por operação e lucro de até ${brl(MK.DAY_GAIN)} por dia na mesa.`;
   $('#tr-pos').innerHTML = G.S.trades.length ? G.S.trades.map(p => {
     const cp = MK.price(p.asset, t), ahead = p.side * (cp - p.entry) > 0;
     return `<li class="tr-p"><div><strong class="${p.side > 0 ? 'good' : 'bad'}">${p.side > 0 ? '▲ sobe' : '▼ desce'} ${MK.ASSETS[p.asset].ticker}</strong>
@@ -169,7 +169,7 @@ function buildTicker() {
   btn.addEventListener('click', e => { e.stopPropagation(); place(); el.hidden = !el.hidden; btn.setAttribute('aria-expanded', String(!el.hidden)); updateTicker(); });
   document.addEventListener('click', e => { if (!el.hidden && !e.target.closest('.tkmenu')) close(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
-  el.addEventListener('click', e => { const k = e.target.closest('[data-tk]')?.dataset.tk; if (!k) return; close(); if (MK.ASSETS[k]) { G.goto?.('trader'); pickAsset(k); } else G.goto?.('mercado'); });
+  el.addEventListener('click', e => { const k = e.target.closest('[data-tk]')?.dataset.tk; if (!k) return; close(); if (MK.ASSETS[k]) { G.goto?.('trader'); pickAsset(MK.NO_OPEN.has(k) ? MESA.REAL : k); } else G.goto?.('mercado'); });
   updateTicker();
 }
 function updateTicker() {
