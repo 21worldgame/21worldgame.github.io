@@ -24,6 +24,7 @@ export function accept(s, offer) {
   ensure(s);
   if (!offer || !GOODS[offer.good] || !(offer.price > 0)) return 'proposta inválida.';
   if (s.contracts.some(c => c.id === offer.id)) return 'você já fechou esse contrato.';
+  if ((s.ctxDone || []).includes(offer.id)) return 'essa proposta já foi cumprida: a trading só compra uma vez. Espere as propostas novas do mês.';   // antes dava para fechar e entregar a mesma de novo (Buu, 25/11)
   if (s.contracts.length >= MAX_ACTIVE) return `no máximo ${MAX_ACTIVE} contratos abertos ao mesmo tempo.`;
   s.contracts.push({ ...offer, due: (s.month || 1) + offer.months, at: s.month || 1 });
   return null;
@@ -45,7 +46,7 @@ export function deliver(s, id) {
   if (ready(s, c.good) < c.qty) return { err: `faltam ${(c.qty - ready(s, c.good)).toLocaleString('pt-BR')} sacas de ${GOODS[c.good].label} da sua colheita no armazém.` };
   s.stock[c.good] -= c.qty; s.colhido[c.good] -= c.qty;
   const v = Math.round(c.qty * c.price); s.money += v;
-  s.contracts = s.contracts.filter(x => x !== c);
+  s.contracts = s.contracts.filter(x => x !== c); s.ctxDone = [...(s.ctxDone || []), c.id].slice(-30);   // proposta cumprida não volta
   return { value: v, c };
 }
 // ---------- previsão de safra (só mostra; a colheita de verdade continua igual: ±25% de clima e 8% de chance de quebra) ----------
