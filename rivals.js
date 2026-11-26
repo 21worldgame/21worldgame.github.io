@@ -21,18 +21,24 @@ export function huntLevel(t = Date.now(), top = T.huntLead) {
   return HUNT_LOW + (top - HUNT_LOW) * (ss((u - 0.5) / 0.2) - ss((u - 0.92) / 0.08));   // sobe bem devagar (~12 h)
 }
 export const NEAR = [1.03, 1.09, 1.17];   // vizinhos: sempre tem alguém logo acima de você
+// 26/11/2026: os grandes especuladores do topo (caçadores, vizinhos e os dois caídos) desmontam as posições e voltam para a
+// fortuna própria deles, cada um num momento diferente dentro de RETREAT_DAYS reais (TV 21): os jogadores de verdade ficam em cima.
+export const RETREAT = Date.UTC(2026, 10, 26, 4, 0), RETREAT_DAYS = 4;
+const h01 = k => { const x = Math.sin(k * 91.17 + 7.3) * 43758.5453; return x - Math.floor(x); };
+export const retreatOf = (id, t = Date.now()) => { const k = Number(String(id).replace(/\D/g, '')) || 0, D = RETREAT_DAYS * 864e5; return ss((t - RETREAT - h01(k) * 0.6 * D) / (0.4 * D)); };   // cada um larga em ~1,6 dia
 export const hunted = SHOWN;   // id do npc -> fortuna mostrada no ranking (worthAt devolve esta: nível e perfil batem em todas as telas)
 export function rivals(month, leader = 0, me = 0, t = Date.now()) {
   const rows = NPCS.filter(n => month >= startMonth(n)).map(n => { const worth = npcWorth(n, month, t, true); return { away: isAway(n) || (FALLEN.has(n.id) && t >= FALL), pid: `npc:${n.id}`, id: n.id, name: n.nick, worth, look: n.look }; });
   hunted.clear();
+  const pull = (r, to) => { r.worth = Math.round(r.worth + (to - r.worth) * (1 - retreatOf(r.id, t))); hunted.set(r.id, r.worth); };   // RETREAT: o puxão some aos poucos
   const early = month < EARLY;   // largada: os jogadores têm chance de passar os bots
   if (leader > 0 && T.hunt && !early) [...rows].filter(r => !r.away).sort((a, b) => b.worth - a.worth).slice(0, HUNT.length).forEach((r, k) => {
     const chase = Math.round(Math.min(leader * T.huntLead, leader * (HUNT[k] / HUNT[0]) * huntLevel(t) * (1 + HUNT_WAVE * Math.sin(month * 0.9 + k * 2.1))) * crashHunt(t) * (HEAVY.has(r.id) ? heavyOf(t) : 1));   // quebra do fundo: o topo também cai e volta devagar   // nunca passa muito do 1º
-    if (chase > r.worth) { r.worth = chase; hunted.set(r.id, chase); }
+    if (chase > r.worth) pull(r, chase);
   });
   if (T.near && !early && me > 0 && me < leader) {   // quem não é o líder sempre tem 3 concorrentes logo acima (os seguintes depois dos caçadores)
     const free = [...rows].filter(r => !r.away).sort((a, b) => b.worth - a.worth).filter(r => !hunted.has(r.id)).slice(0, NEAR.length);
-    free.forEach((r, k) => { const near = Math.round(me * NEAR[k] * (1 + 0.03 * Math.sin(month * 1.3 + k))); if (near > r.worth && near < leader) { r.worth = near; hunted.set(r.id, near); } });
+    free.forEach((r, k) => { const near = Math.round(me * NEAR[k] * (1 + 0.03 * Math.sin(month * 1.3 + k))); if (near > r.worth && near < leader) pull(r, near); });
   }
   if (t >= FALL) {   // os dois caídos: posição que sobe devagar; acima do 1º acompanham o ciclo da disputa (o jogador ainda pode liderar)
     const vals = [...rows.filter(r => !FALLEN.has(r.id)).map(r => r.worth), leader].filter(v => v > 0).sort((a, b) => b - a), u = ss((t - FALL) / (CLIMB_DAYS * 864e5));
@@ -41,7 +47,7 @@ export function rivals(month, leader = 0, me = 0, t = Date.now()) {
       const fin = leader > 0 ? leader * huntLevel(t) * (r.id === 'n1' ? 0.99 : 1.005) : top * 1.01;
       let w; if (p >= 0) { const i = Math.max(0, Math.min(Math.floor(p), vals.length - 2)), f = p - i, a = vals[i] || top, b = vals[i + 1] || a * 0.95; w = a * (b / a) ** f; }   // entre o vizinho de cima e o de baixo
       else w = top + (fin - top) * Math.min(1, -p / 0.5);
-      r.worth = Math.round(w * (1 + 0.004 * Math.sin(t / 36e5 * 1.7 + (r.id === 'n1' ? 2 : 0)))); hunted.set(r.id, r.worth);
+      pull(r, w * (1 + 0.004 * Math.sin(t / 36e5 * 1.7 + (r.id === 'n1' ? 2 : 0))));
     }
   }
   return rows.map(({ id, away, ...r }) => ({ ...r, level: npcLevel(r.worth), rank: rank(r.worth) }));

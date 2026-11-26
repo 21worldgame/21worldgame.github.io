@@ -111,6 +111,8 @@ export const FALL = Date.UTC(2026, 10, 24, 16, 40), FALLEN = new Set(['n0', 'n1'
 // fortuna que o ranking mostra agora (rivals.js: caçadores do topo, vizinhos e os dois caídos). worthAt devolve esta para o "agora",
 // então nível, perfil, chat, mesas e amigos batem com o ranking. raw = true: a fortuna de base, sem o ranking (só rivals.js usa)
 export const SHOWN = new Map();
+// 26/11/2026: os especuladores saem do topo (rivals.js RETREAT) e a fortuna de base dos bots para de crescer: os jogadores ficam em cima
+export const GROW_STOP = Date.UTC(2026, 10, 26, 4, 0);
 // todos os jogadores do mundo perdem 25% em 3 h reais a partir daí (devagar, sem salto): mais disputa para quem tem conta
 const ss = x => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 // 24/11/2026 15:40: quebra do fundo 21 Capital (TV 21). Quem tinha dinheiro no fundo perde 20%, devagar, ao longo de 12 h (ninguém fica sem nada).
@@ -165,13 +167,14 @@ export const PERF = { fn: null };
 export function worthAt(n, month, t = Date.now(), raw = false) {
   if (!raw && SHOWN.has(n.id) && Math.abs(t - Date.now()) < 120000) return SHOWN.get(n.id);   // agora: o mesmo número do ranking
   const fell = FALLEN.has(n.id) && t >= FALL;
+  const wm = month; month = Math.min(month, current(CLOCK.world, GROW_STOP));   // GROW_STOP: a fortuna de base para de crescer (as ondas seguem)
   const m = Math.min(48, Math.max(0, month - 1) * 48 / EARLY);   // arrancada esticada pela largada inteira (2 dias reais)
   const late = Math.min(NPC_LATE_CAP, NPC_LATE ** Math.max(0, month - 49)), NPC_RAMP = T.npcRampDays * 144;   // depois seguem crescendo devagar, até 6x
-  const wave = 1 + 0.07 * Math.sin(month * 0.7 + n.i * 2.1) + 0.03 * Math.sin(month * 2.3 + n.i);
+  const wave = 1 + 0.07 * Math.sin(wm * 0.7 + n.i * 2.1) + 0.03 * Math.sin(wm * 2.3 + n.i);
   const boost = 1 + (T.npcBoost - 1) * Math.min(1, m / 48);   // mundo novo continua alcançável
   const r = Math.min(1, Math.max(0, (month - NPC_RAMP_START) / NPC_RAMP));   // 0 em 19/11/2026, 1 daqui a um mês
   const start = 10000 * (Math.max(10000, n.base) / 10000) ** (m / 48);   // todo bot começa o mundo com R$ 10 mil e chega à fortuna dele no mês 49
-  return Math.round(start * (1 + n.g * 0.55) ** m * (1 + (boost * late - 1) * r) * wave * form(n, t) * (PERF.fn ? PERF.fn(n, month) : 1) * dropOf(t) * heavyBase(n, t) * (fell ? 0.15 : 1));   // caído e o ranking ainda não calculou: uma fração do que tinha
+  return Math.round(start * (1 + n.g * 0.55) ** m * (1 + (boost * late - 1) * r) * wave * form(n, t) * (PERF.fn ? PERF.fn(n, wm) : 1) * dropOf(t) * heavyBase(n, t) * (fell ? 0.15 : 1));   // caído e o ranking ainda não calculou: uma fração do que tinha
 }
 // chegada: cada bot entra no mundo num momento diferente das primeiras 24 h reais (144 meses): o ranking enche aos poucos, como gente de verdade chegando
 export const startMonth = n => 1 + Math.floor(hash(n.i * 13 + 7) * 144);
