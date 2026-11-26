@@ -121,6 +121,7 @@
         <button type="button" data-cat="fazenda"><svg><use href="#i-herd"/></svg>fazenda</button>
         <button type="button" data-cat="negocios"><svg><use href="#i-chart"/></svg>negócios</button>
         <button type="button" data-cat="voce"><svg><use href="#i-user"/></svg>você</button>
+        <button type="button" data-cat="vip" class="cat--vip"><span aria-hidden="true">⚜️</span>VIP</button>
       </div>
       <div class="tabs" role="tablist">
         <button role="tab" id="t-inicio" data-tab="inicio" aria-controls="p-inicio" aria-selected="false" tabindex="-1"><svg><use href="#i-news"/></svg>notícias</button>
@@ -147,6 +148,7 @@
         <button role="tab" id="t-livro" data-tab="livro" aria-controls="p-livro" aria-selected="false" tabindex="-1"><svg><use href="#i-book"/></svg>livro-caixa</button>
         <button role="tab" id="t-equipe" data-tab="equipe" aria-controls="p-equipe" aria-selected="false" tabindex="-1"><svg><use href="#i-book"/></svg>equipe<span class="pill pill--team" id="team-badge" hidden>0</span></button>
         <button role="tab" id="t-pro" data-tab="pro" aria-controls="p-pro" aria-selected="false" tabindex="-1"><svg><use href="#i-user"/></svg>profissionais<span class="pill" id="pro-badge" hidden>0</span></button>
+        <button role="tab" id="t-vip" data-tab="vip" aria-controls="p-vip" aria-selected="false" tabindex="-1"><span aria-hidden="true">⚜️</span>VIP da cidade</button>
       </div>
     </nav>
     <div class="ann-bar" id="ann-bar" role="status" hidden></div>
@@ -388,7 +390,7 @@
 
     <!-- TRADER -->
     <section id="p-trader" role="tabpanel" aria-labelledby="t-trader" class="panel" hidden>
-      <div class="listhead"><h2>mesa de operações</h2><span class="muted small">Preços ao vivo, iguais para todos. Escolha sobe ou desce e o tempo: o valor entra em jogo na hora e só volta se você acertar.</span></div>
+      <div class="listhead"><h2>mesa de operações</h2><span class="muted small">Escolha sobe ou desce e o tempo: o valor entra em jogo na hora e só volta se você acertar. <b>BTC real</b> usa o preço de verdade do Bitcoin, entra no ranking de traders e pode ser copiado.</span></div>
       <div class="tr-assets" id="tr-assets"></div>
       <div class="tr-grid">
         <div class="glass tr-chart">
@@ -398,6 +400,7 @@
         </div>
         <aside class="glass tr-ticket">
           <h3>boleta</h3>
+          <div class="mesa-acct" id="mesa-acct" hidden></div>
           <label class="field"><span>valor da aposta em R$</span><input class="input" name="tr-amt" type="number" min="100" step="100" value="1000" inputmode="numeric"></label>
           <span class="muted small">tempo da operação</span>
           <div class="seg" role="group" aria-label="tempo da operação"><button class="segbtn is-on" data-act="tr-dur" data-id="1">1 min</button><button class="segbtn" data-act="tr-dur" data-id="5">5 min</button><button class="segbtn" data-act="tr-dur" data-id="10">10 min</button></div>
@@ -406,8 +409,8 @@
           <h3>em andamento</h3><ul class="tr-list" id="tr-pos"></ul>
           <h3>histórico</h3><ul class="tr-list tr-list--h" id="tr-hist"></ul>
         </aside>
+        <aside class="glass mesa-side" id="mesa-side" aria-label="ranking de traders e copy trade"></aside>
       </div>
-      <div class="glass mesa" id="mesa"></div>
     </section>
 
     <!-- TRABALHO -->
@@ -751,6 +754,7 @@
     </section>
 
     <section id="p-pro" role="tabpanel" aria-labelledby="t-pro" class="panel" hidden></section>
+    <section id="p-vip" role="tabpanel" aria-labelledby="t-vip" class="panel vip" hidden></section>
 
     <section id="p-livro" role="tabpanel" aria-labelledby="t-livro" class="panel">
       <h2>livro-caixa</h2>

@@ -3885,15 +3885,22 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .lg-when { white-space: nowrap; font-size: var(--text-xs, .78rem); font-variant-numeric: tabular-nums; } .lg-when small { display: block; opacity: .6; }
 .ivp-calc { display: grid; gap: 8px; padding: var(--space-md); margin-top: var(--space-sm); } .ivp-calc h4 { margin: 0; } .ivp-calc .row { flex-wrap: wrap; gap: 8px; } .ivp-calc .field { min-width: 9rem; flex: 1; } .ivp-calc p { margin: 0; }
 
-/* Mesa Profissional (mesa.js): BTC real, ranking de traders e copy trade */
-.mesa { margin-top: var(--space-lg); padding: var(--space-lg); display: grid; gap: var(--space-md); }
-.mesa-head { display: grid; gap: var(--space-sm); }
-.mesa-head h2 small { font-size: .55em; font-weight: 600; opacity: .7; }
-.mesa-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: var(--space-md); }
-.mesa-chart { padding: var(--space-md); display: grid; gap: var(--space-sm); align-content: start; }
-#mesa-canvas { width: 100%; height: 280px; display: block; --tr-up: var(--money); --tr-down: var(--color-error); --tr-grid: oklch(100% 0 0 / 0.06); --tr-text: var(--color-ink-2); }
-.mesa-bal b { font-size: 1.25em; }
-.mesa-note { padding: var(--space-sm) var(--space-md); border-radius: 12px; background: color-mix(in srgb, var(--hud-accent) 12%, transparent); }
-.mesa-rank td, .mesa-rank th { white-space: nowrap; }
+/* BTC real (mesa.js) integrado à mesa de operações: conta na boleta e ranking de traders na lateral */
+.tr-grid:has(.mesa-side) { grid-template-columns: minmax(0, 1fr) minmax(0, 21rem) minmax(0, 20rem); }
+.tr-asset--real { box-shadow: inset 0 0 0 1px var(--hud-accent); }
+.tr-asset--real small { font-size: var(--text-xs, .7rem); opacity: .7; }
+.mesa-acct { display: grid; gap: var(--space-xs); padding: var(--space-sm); border-radius: 12px; background: color-mix(in srgb, var(--hud-accent) 8%, transparent); }
+.mesa-bal b { font-size: 1.2em; }
+.mesa-side { padding: var(--space-md); display: grid; gap: var(--space-sm); align-content: start; max-height: 52rem; overflow: auto; }
+.mesa-note { margin: 0; padding: var(--space-xs) var(--space-sm); border-radius: 10px; background: color-mix(in srgb, var(--hud-accent) 12%, transparent); }
+.mesa-rk { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.mesa-rk li, .mesa-cp { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-xs); align-items: center; padding: 6px 8px; border-radius: 10px; background: var(--glass-2); }
+.mesa-cp { grid-template-columns: minmax(0, 1fr) auto; }
+.mesa-rk__n { min-width: 1.6em; text-align: center; font-weight: 700; }
+.mesa-rk__who, .mesa-cp > div:first-child { display: grid; min-width: 0; }
+.mesa-rk__who b, .mesa-cp b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mesa-rk__who small, .mesa-cp small { font-size: var(--text-xs, .72rem); opacity: .85; }
+.mesa-rk__v { display: grid; justify-items: end; gap: 2px; }
 .mesa-copy { padding: var(--space-md); border-radius: 12px; background: color-mix(in srgb, var(--hud-accent) 8%, transparent); display: grid; gap: var(--space-sm); margin: var(--space-sm) 0; }
-@media (max-width: 760px) { .mesa-grid { grid-template-columns: 1fr; } #mesa-canvas { height: 200px; } .mesa { padding: var(--space-md); } }
+@media (max-width: 1400px) { .tr-grid:has(.mesa-side) { grid-template-columns: minmax(0, 1fr) minmax(0, 21rem); } .mesa-side { grid-column: 1 / -1; max-height: none; } }
+@media (max-width: 64rem) { .tr-grid:has(.mesa-side) { grid-template-columns: minmax(0, 1fr); } }

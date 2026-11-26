@@ -4,14 +4,15 @@ import * as MK from './market.js';
 import * as Live from './live.js';
 import { G, $, esc, brl, int, say, save, award, note, confetti } from './store.js';
 import * as sfx from './sfx.js';
+import * as MESA from './mesa.js';   // "BTC real": preço da Coinbase, operação no servidor, ranking e copy
 
-let cur = 'boi', tf = 1, dur = 1, hover = null, timer = 0;
+let cur = MESA.REAL, tf = 1, dur = 1, hover = null, timer = 0;
 const now = () => Live.now();
 const fmtLeft = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
 export function initTrader() {
   G.S.trades ??= []; G.S.trHist ??= [];
-  $('#tr-assets').innerHTML = Object.entries(MK.ASSETS).map(([k, a]) => `<button class="tr-asset" data-act="tr-asset" data-id="${k}"><strong>${a.ticker}</strong><span id="tr-q-${k}"></span></button>`).join('');
+  $('#tr-assets').innerHTML = `<button class="tr-asset tr-asset--real" data-act="tr-asset" data-id="${MESA.REAL}"><strong>BTC real</strong><span id="tr-q-${MESA.REAL}"></span><small>ao vivo · copy</small></button>` + Object.entries(MK.ASSETS).map(([k, a]) => `<button class="tr-asset" data-act="tr-asset" data-id="${k}"><strong>${a.ticker}</strong><span id="tr-q-${k}"></span></button>`).join('');
   pickAsset(cur); pickDur(dur);
   const cv = $('#tr-canvas');
   cv.addEventListener('mousemove', e => { const r = cv.getBoundingClientRect(); hover = { x: e.clientX - r.left, y: e.clientY - r.top }; draw(); });
@@ -37,7 +38,9 @@ function settleNow() {
   save(); G.render();
 }
 
-export function pickAsset(a) { cur = a; document.querySelectorAll('.tr-asset').forEach(b => b.classList.toggle('is-on', b.dataset.id === a)); render(); }
+export function pickAsset(a) { cur = a; document.querySelectorAll('.tr-asset').forEach(b => b.classList.toggle('is-on', b.dataset.id === a)); const ac = $('#mesa-acct'); if (ac) { ac.hidden = a !== MESA.REAL; if (!ac.hidden) ac.innerHTML = MESA.acctHTML(); } render(); }
+const real = () => cur === MESA.REAL;
+const fmtP = v => (real() ? MESA.fmt(v) : MK.fmt(cur, v));
 const x = v => String(v).replace('.', ',') + 'x';
 // velas e tempo da operação andam juntos: mudar um muda o outro (o gráfico mostra o tempo que vale para a boleta)
 export function pickTf(v) {
@@ -51,6 +54,7 @@ export const pickLev = () => {};
 
 export function open(side) {
   const stake = Math.floor(Number($('[name="tr-amt"]').value) || 0);
+  if (real()) return MESA.openReal(side, stake, dur).then(render);
   const r = MK.open(G.S, { asset: cur, side, stake, minutes: dur }, now());
   if (r.err) return say(r.err[0].toUpperCase() + r.err.slice(1), true);
   const t = r.trade, tk = MK.ASSETS[cur].ticker;
@@ -68,6 +72,21 @@ function render() {
     const ch = MK.change(a, t, 60) * 100, q = $(`#tr-q-${a}`);
     if (q) { q.textContent = `${ch >= 0 ? '+' : ''}${ch.toFixed(2)}%`; q.className = ch >= 0 ? 'good' : 'bad'; }
   }
+  { const ch = MESA.change1h() * 100, q = $(`#tr-q-${MESA.REAL}`); if (q) { q.textContent = MESA.spotNow() ? `${ch >= 0 ? '+' : ''}${ch.toFixed(2)}%` : '…'; q.className = ch >= 0 ? 'good' : 'bad'; } }
+  const amt = Math.floor(Number($('[name="tr-amt"]').value) || 0);
+  if (real()) {
+    const vis = MESA.candles(tf, 60), px = MESA.spotNow(), ch = MESA.change1h() * 100;
+    $('#tr-name').textContent = 'Bitcoin real (BTC/USD · Coinbase)';
+    $('#tr-price').textContent = px ? MESA.fmt(px) : 'carregando…';
+    $('#tr-price').className = `tr-price ${ch >= 0 ? 'good' : 'bad'}`;
+    $('#tr-ch').textContent = `${ch >= 0 ? '▲' : '▼'} ${Math.abs(ch).toFixed(2)}% em 1 h`; $('#tr-ch').className = ch >= 0 ? 'good' : 'bad';
+    $('#tr-hl').textContent = vis.length ? `máx ${MESA.fmt(Math.max(...vis.map(c => c.h)))}  mín ${MESA.fmt(Math.min(...vis.map(c => c.l)))}` : '';
+    $('#tr-size').innerHTML = MESA.sizeHTML(amt, dur);
+    $('#tr-pos').innerHTML = MESA.posHTML();
+    $('#tr-hist').innerHTML = MESA.histHTML();
+    if (vis.length > 1) draw(vis);
+    return;
+  }
   const A = MK.ASSETS[cur], px = MK.price(cur, t), ch = MK.change(cur, t, 60) * 100, vis = MK.candles(cur, t, tf, 60);
   $('#tr-name').textContent = `${A.name} (${A.ticker})`;
   $('#tr-price').textContent = MK.fmt(cur, px);
@@ -75,7 +94,6 @@ function render() {
   $('#tr-ch').textContent = `${ch >= 0 ? '▲' : '▼'} ${Math.abs(ch).toFixed(2)}% em 1 h`;
   $('#tr-ch').className = ch >= 0 ? 'good' : 'bad';
   $('#tr-hl').textContent = `máx ${MK.fmt(cur, Math.max(...vis.map(c => c.h)))}  mín ${MK.fmt(cur, Math.min(...vis.map(c => c.l)))}  ${A.unit}`;
-  const amt = Math.floor(Number($('[name="tr-amt"]').value) || 0);
   $('#tr-size').innerHTML = `Acertou em ${dur} min: recebe <b class="good">${brl(Math.round(amt * MK.payout(dur)))}</b> (${x(MK.payout(dur))}, lucro de ${Math.round((MK.payout(dur) - 1) * 100)}%). Quanto mais longo o tempo, mais paga: 1 min ${x(MK.payout(1))} · 5 min ${x(MK.payout(5))} · 10 min ${x(MK.payout(10))}. Errou ou ficou igual: perde ${brl(amt)}. Máximo de ${brl(MK.MAX_STAKE)} por operação e lucro de até ${brl(MK.DAY_GAIN)} por dia na mesa.`;
   $('#tr-pos').innerHTML = G.S.trades.length ? G.S.trades.map(p => {
     const cp = MK.price(p.asset, t), ahead = p.side * (cp - p.entry) > 0;
@@ -90,7 +108,7 @@ function render() {
 
 function draw(vis) {
   const cv = $('#tr-canvas'); if (!cv || !cv.offsetWidth) return;
-  vis ??= MK.candles(cur, now(), tf, 60);
+  vis ??= real() ? MESA.candles(tf, 60) : MK.candles(cur, now(), tf, 60); if (vis.length < 2) return;
   const dpr = devicePixelRatio || 1, W = cv.offsetWidth, H = cv.offsetHeight;
   if (cv.width !== Math.round(W * dpr)) { cv.width = W * dpr; cv.height = H * dpr; }
   const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
@@ -98,7 +116,7 @@ function draw(vis) {
   const up = css('--tr-up'), down = css('--tr-down'), grid = css('--tr-grid'), text = css('--tr-text');
   const axisW = 84, chartH = H - 24, t = now();
   let hi = Math.max(...vis.map(c => c.h)), lo = Math.min(...vis.map(c => c.l));
-  const mine = G.S.trades.filter(p => p.asset === cur);
+  const mine = real() ? MESA.openLines() : G.S.trades.filter(p => p.asset === cur);
   for (const p of mine) { hi = Math.max(hi, p.entry); lo = Math.min(lo, p.entry); }
   const padV = (hi - lo) * 0.08 || hi * 0.001; hi += padV; lo -= padV;
   const y = v => 10 + ((hi - v) / (hi - lo)) * (chartH - 10), cw = (W - axisW) / vis.length;
@@ -106,7 +124,7 @@ function draw(vis) {
   for (let i = 0; i <= 5; i++) {
     const v = lo + ((hi - lo) * i) / 5, yy = y(v);
     g.strokeStyle = grid; g.lineWidth = 1; g.beginPath(); g.moveTo(0, yy); g.lineTo(W - axisW, yy); g.stroke();
-    g.fillStyle = text; g.fillText(MK.fmt(cur, v), W - axisW + 8, yy);
+    g.fillStyle = text; g.fillText(fmtP(v), W - axisW + 8, yy);
   }
   // horário embaixo
   g.fillStyle = text;
@@ -126,13 +144,13 @@ function draw(vis) {
     g.fillStyle = col; g.fillRect(W - axisW, yy - 10, axisW, 20); g.fillStyle = css('--shade'); g.fillText(label, W - axisW + 6, yy);
   };
   for (const p of mine) hline(p.entry, p.side > 0 ? up : down, `${p.side > 0 ? '▲' : '▼'} ${fmtLeft(p.exp - t)}`, [2, 3]);
-  const px = MK.price(cur, t), last = vis.at(-1);
-  hline(px, last.c >= last.o ? up : down, MK.fmt(cur, px));
+  const px = real() ? (MESA.spotNow() || vis.at(-1).c) : MK.price(cur, t), last = vis.at(-1);
+  hline(px, last.c >= last.o ? up : down, fmtP(px));
   if (hover && hover.x < W - axisW) {
     const i = Math.min(vis.length - 1, Math.max(0, Math.floor(hover.x / cw))), c = vis[i];
     g.strokeStyle = text; g.setLineDash([3, 3]); g.beginPath(); g.moveTo(i * cw + cw / 2, 0); g.lineTo(i * cw + cw / 2, H - 20); g.moveTo(0, hover.y); g.lineTo(W - axisW, hover.y); g.stroke(); g.setLineDash([]);
     g.fillStyle = css('--tr-tip'); g.fillRect(8, 8, 330, 22); g.fillStyle = text;
-    g.fillText(`${new Date(c.t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}  A ${MK.fmt(cur, c.o)}  M ${MK.fmt(cur, c.h)}  m ${MK.fmt(cur, c.l)}  F ${MK.fmt(cur, c.c)}`, 14, 19);
+    g.fillText(`${new Date(c.t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}  A ${fmtP(c.o)}  M ${fmtP(c.h)}  m ${fmtP(c.l)}  F ${fmtP(c.c)}`, 14, 19);
   }
 }
 

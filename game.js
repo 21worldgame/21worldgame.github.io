@@ -55,6 +55,7 @@ import './avisos.js';
 import './econ-ui.js';
 import * as SHUI from './shop-ui.js';
 import * as RKUI from './ranking-ui.js';
+import * as VIP from './vip.js';
 import { openDeal } from './deal-ui.js';
 import * as BO from './bot-offers.js';
 import * as Live from './live.js';
@@ -1045,7 +1046,7 @@ document.addEventListener('submit', e => { if (e.target.id === 'tr-chat-form') {
 
 // desempenho: cada aba só é desenhada quando está aberta (ou quando o usuário entra nela)
 const PANELS = { inicio: () => HOME.render(), personagem: () => renderChar(), terras: () => renderTerras(), gado: () => renderGado(), mercado: () => renderMercado(),
-  carros: () => renderLoja('carros'), suinos: () => SUU.render(), pesca: () => PEU.render(), negocios: () => { NGU.render(); renderAbate(); }, banco: () => renderBanco(), livro: () => renderLivro(), equipe: () => SFU.render(), haras: () => { SUI.render(); LEU.render(); }, futebol: () => FUI.render(), inventario: () => renderInv(), ranking: () => RKUI.render(), laranja: () => renderPomar(), cana: () => renderCana(), cartas: () => renderCartas(), granja: () => renderGranja(), loja: () => renderLoja(), mesa: () => C.renderLobby() };
+  carros: () => renderLoja('carros'), suinos: () => SUU.render(), pesca: () => PEU.render(), negocios: () => { NGU.render(); renderAbate(); }, banco: () => renderBanco(), livro: () => renderLivro(), equipe: () => SFU.render(), haras: () => { SUI.render(); LEU.render(); }, futebol: () => FUI.render(), inventario: () => renderInv(), ranking: () => RKUI.render(), vip: () => VIP.render(), laranja: () => renderPomar(), cana: () => renderCana(), cartas: () => renderCartas(), granja: () => renderGranja(), loja: () => renderLoja(), mesa: () => C.renderLobby() };
 let currentTab = 'mesa';
 // cada parte da tela desenha separada: se uma der erro, as outras continuam (a tela nunca fica travada)
 let uiErrAt = 0;
@@ -1477,8 +1478,8 @@ for (const ev of ['mouseover', 'mouseout', 'focusin', 'focusout']) {
 const tabs = [...document.querySelectorAll('[role="tab"]')];
 // menu por categoria: a linha de cima escolhe a categoria, a de baixo mostra só as páginas dela
 const CATS = { inicio: ['inicio'], jogos: ['mesa', 'corridas', 'pesca', 'cartas', 'futebol'], fazenda: ['terras', 'gado', 'suinos', 'granja', 'laranja', 'cana', 'haras'],
-  negocios: ['negocios', 'trader', 'mercado', 'banco', 'livro', 'equipe', 'pro'], voce: ['personagem', 'inventario', 'loja', 'ranking'] };
-const CAT_NAME = { inicio: 'início', jogos: 'jogos', fazenda: 'fazenda', negocios: 'negócios', voce: 'você' };
+  negocios: ['negocios', 'trader', 'mercado', 'banco', 'livro', 'equipe', 'pro'], voce: ['personagem', 'inventario', 'loja', 'ranking'], vip: ['vip'] };
+const CAT_NAME = { inicio: 'início', jogos: 'jogos', fazenda: 'fazenda', negocios: 'negócios', voce: 'você', vip: 'VIP' };
 const catOf = n => Object.keys(CATS).find(c => CATS[c].includes(n)) || 'jogos';
 const lastIn = {};
 document.getElementById('cats')?.addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (b) G.goto(lastIn[b.dataset.cat] || CATS[b.dataset.cat][0]); });
@@ -1765,7 +1766,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 278;
+const APP_VERSION = 279;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
