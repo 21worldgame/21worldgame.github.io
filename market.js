@@ -15,6 +15,11 @@ export const TIMEFRAMES = [1, 5, 10];         // minutos por vela
 export const PAYOUT = { 1: 1.7, 5: 1.8, 10: 1.88 }   // teto: a melhor estratégia acerta ~52% em 10 min, empate de 1,88x é 53,2%;   // acertou: recebe Nx o valor (quanto mais longo, mais paga); errou ou empatou: perde
 export const payout = minutes => PAYOUT[minutes];
 export const MIN_STAKE = 100;
+// limites (v277): o preço é uma conta fixa no código, então quem a copia sabe o futuro (Light Yagami acertou 14 seguidas com até R$ 11 mi).
+// ponytail: limite, não trava; trava de verdade só com o preço sorteado no servidor
+export const MAX_STAKE = 200000, DAY_GAIN = 1e6;
+const day = now => new Date(now - 3 * 36e5).toISOString().slice(0, 10);   // dia de Brasília
+export const dayGain = (s, now) => (s.trDay?.d === day(now) ? s.trDay.net : 0);
 
 // Passeio aleatório determinístico (mesmo valor para o mesmo instante em qualquer aparelho), montado como ponte browniana:
 // o futuro não dá para prever pelo gráfico (antes era uma curva suave e dava para lucrar apostando contra o movimento).
@@ -51,7 +56,9 @@ export function open(s, { asset, side, stake, minutes }, now) {
   if (!DURATIONS.includes(minutes)) return { err: 'escolha 1, 5 ou 10 minutos.' };
   stake = Math.floor(Number(stake) || 0);
   if (stake < MIN_STAKE) return { err: `o valor mínimo é R$ ${MIN_STAKE}.` };
+  if (stake > MAX_STAKE) return { err: `o valor máximo por operação é R$ ${MAX_STAKE.toLocaleString('pt-BR')}.` };
   if (stake > s.money) return { err: 'dinheiro insuficiente.' };
+  if (dayGain(s, now) >= DAY_GAIN) return { err: `você já lucrou R$ ${DAY_GAIN.toLocaleString('pt-BR')} na mesa hoje: ela abre de novo amanhã.` };
   s.money -= stake;                                      // o dinheiro entra em jogo na hora
   const t = { id: s.nextId++, asset, side: side > 0 ? 1 : -1, stake, minutes, entry: price(asset, now), pay: payout(minutes), at: now, exp: now + minutes * 60000 };
   (s.trades ??= []).push(t);
@@ -68,6 +75,7 @@ export function settle(s, now) {
     if (now < t.exp) continue;
     const final = price(t.asset, t.exp), win = t.side * (final - t.entry) > 0, back = win ? Math.round(t.stake * (t.pay ?? 1.85)) : 0;   // sem pay = aberta antes da v199, quando tudo pagava 1,85x
     s.money += back; s.trades.splice(s.trades.indexOf(t), 1);
+    const dd = day(t.exp); s.trDay = { d: dd, net: (s.trDay?.d === dd ? s.trDay.net : 0) + back - t.stake };
     const r = { ...t, final, win, back };
     s.trHist = [r, ...(s.trHist || [])].slice(0, 15);
     done.push(r);

@@ -76,7 +76,7 @@ function render() {
   $('#tr-ch').className = ch >= 0 ? 'good' : 'bad';
   $('#tr-hl').textContent = `máx ${MK.fmt(cur, Math.max(...vis.map(c => c.h)))}  mín ${MK.fmt(cur, Math.min(...vis.map(c => c.l)))}  ${A.unit}`;
   const amt = Math.floor(Number($('[name="tr-amt"]').value) || 0);
-  $('#tr-size').innerHTML = `Acertou em ${dur} min: recebe <b class="good">${brl(Math.round(amt * MK.payout(dur)))}</b> (${x(MK.payout(dur))}, lucro de ${Math.round((MK.payout(dur) - 1) * 100)}%). Quanto mais longo o tempo, mais paga: 1 min ${x(MK.payout(1))} · 5 min ${x(MK.payout(5))} · 10 min ${x(MK.payout(10))}. Errou ou ficou igual: perde ${brl(amt)}.`;
+  $('#tr-size').innerHTML = `Acertou em ${dur} min: recebe <b class="good">${brl(Math.round(amt * MK.payout(dur)))}</b> (${x(MK.payout(dur))}, lucro de ${Math.round((MK.payout(dur) - 1) * 100)}%). Quanto mais longo o tempo, mais paga: 1 min ${x(MK.payout(1))} · 5 min ${x(MK.payout(5))} · 10 min ${x(MK.payout(10))}. Errou ou ficou igual: perde ${brl(amt)}. Máximo de ${brl(MK.MAX_STAKE)} por operação e lucro de até ${brl(MK.DAY_GAIN)} por dia na mesa.`;
   $('#tr-pos').innerHTML = G.S.trades.length ? G.S.trades.map(p => {
     const cp = MK.price(p.asset, t), ahead = p.side * (cp - p.entry) > 0;
     return `<li class="tr-p"><div><strong class="${p.side > 0 ? 'good' : 'bad'}">${p.side > 0 ? '▲ sobe' : '▼ desce'} ${MK.ASSETS[p.asset].ticker}</strong>

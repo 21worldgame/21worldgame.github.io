@@ -247,6 +247,15 @@ function forceRestore(row, why = 'O administrador voltou a sua conta para um est
   say(why, true);
   setTimeout(() => location.reload(), 1500);
 }
+// a trava de dinheiro recusou de novo logo depois de voltar a conta (o mesmo ganho se repete ao abrir): não recarrega sem parar
+// (Light Yagami 26/11: aposta pendente do trader resolvia a cada abertura e o jogo recarregava em loop). Para de gravar e avisa.
+function auditLoop() {
+  const k = '21world.auditAt', last = Number(localStorage.getItem(k)) || 0;
+  try { localStorage.setItem(k, String(Date.now())); } catch {}
+  if (Date.now() - last > 180000) return false;
+  outdated = true; say('🏦 Auditoria do Banco Central 21: sua conta está em revisão. O jogo não vai gravar até o administrador conferir; fale com ele.', true);
+  return true;
+}
 const PUSH_GAP = 20000;
 let lastPushAt = 0, profKey = '', profAt = 0;
 export async function push() {
@@ -266,7 +275,7 @@ export async function push() {
     else res = await sb.from('saves').insert({ user_id: user.id, data, updated_at: at }).select('updated_at');
     if (res.error || !res.data?.length) {
       // outro aparelho gravou antes (ou a linha já existia): a nuvem vale; este aparelho se atualiza
-      if (res.error && /sem explicacao/i.test(res.error.message || '')) { const r = await pull(); if (r) forceRestore(r, '🏦 Auditoria do Banco Central 21: uma movimentação do seu caixa não fechou com os livros e foi estornada. Sua conta voltou para o último balanço conferido. Se foi um engano, peça revisão no livro-caixa.'); return false; }   // trava de dinheiro (teto-dinheiro.sql)
+      if (res.error && /sem explicacao/i.test(res.error.message || '')) { if (auditLoop()) return false; const r = await pull(); if (r) forceRestore(r, '🏦 Auditoria do Banco Central 21: uma movimentação do seu caixa não fechou com os livros e foi estornada. Sua conta voltou para o último balanço conferido. Se foi um engano, peça revisão no livro-caixa.'); return false; }   // trava de dinheiro (teto-dinheiro.sql)
       if (res.error && /restaurad/i.test(res.error.message || '')) { const r = await pull(); if (r?.restored) forceRestore(r); return false; }   // o servidor recusou: a conta foi voltada no tempo
       if (res.error && (base || !/duplicate|conflict|23505/i.test(`${res.error.code} ${res.error.message}`))) { lastErrAt = Date.now(); setTimeout(() => { if (dirty()) scheduleSync(); }, 8000); return false; }   // erro de rede: tenta de novo sozinho
       const row = await pull();
