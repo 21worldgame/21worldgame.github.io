@@ -794,9 +794,10 @@ function renderBanco() {
 
 function renderLivro() {
   const s = S();
+  const cal = m => (m ? `${W.monthName(m)}, ano ${W.yearOf(m)}` : '');   // mesmo calendário do relógio do mundo (não o número interno do mês)
   const when = t => new Date(t).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   $('#log').innerHTML = s.log.length ? s.log.slice(0, 80).map(e => `<tr>
-    <td class="lg-when">${e.at ? `${when(e.at)}<small>mês ${e.m}</small>` : `<small>mês ${e.m}</small>`}</td><td>${esc(dots(e.txt))}${e.gid ? (e.appeal ? ' <span class="tag">recurso enviado</span>' : ` <button class="btn btn--glass btn--sm" data-appeal="${e.gid}">recorrer</button>`) : ''}</td><td class="num ${e.val < 0 ? 'bad' : e.val > 0 ? 'good' : ''}">${e.val ? brl(e.val) : ''}</td></tr>`).join('')
+    <td class="lg-when">${e.at ? `${when(e.at)}<small>${cal(e.m)}</small>` : `<small>${cal(e.m)}</small>`}</td><td>${esc(dots(e.txt))}${e.gid ? (e.appeal ? ' <span class="tag">recurso enviado</span>' : ` <button class="btn btn--glass btn--sm" data-appeal="${e.gid}">recorrer</button>`) : ''}</td><td class="num ${e.val < 0 ? 'bad' : e.val > 0 ? 'good' : ''}">${e.val ? brl(e.val) : ''}</td></tr>`).join('')
     : '<tr><td colspan="3" class="empty">Nada lançado ainda. Jogue uma mão ou passe o mês.</td></tr>';
 }
 
@@ -1759,7 +1760,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 265;
+const APP_VERSION = 266;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
