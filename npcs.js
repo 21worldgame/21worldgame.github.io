@@ -81,8 +81,17 @@ for (const n of [...BASE, ...EXTRA]) {
     do g = gamerNick(k++); while (used.has(g.toLowerCase()));
     used.add(g.toLowerCase()); n.gnick = g; n.renameAt = RENAME_START + Math.floor(r0(n.i * 13 + 6) * RENAME_DAYS * 864e5);
   }
+}
+// 26/11/2026: nicks escolhidos pelo dono do jogo. Um bot por vez, numa hora só dele, ao longo de 10 dias (~11 por dia), troca de nick
+// como gente de verdade troca (os dois da história da TV, ReiDoGado e A Boiadeira, ficam). O nick antigo continua achando o jogador.
+export const NEW_NICKS = ["Menina do MAL", "Cola no pai", "Flamengo Pai", "Menfis", "Arlequina", "Vim do Lolzin", "Cs2 AKNA AWP", "777 BROX", "Main Diana", "Carlos BA", "Vitoria S.A", "Paula JJ", "Bruninha rp", "GTA IV - KillerM", "Moises", "Fofo do pai", "Nenem", "Esa Adc", "Neizin RP", "VEM NENEM", "Luiza abs", "KKKKKK", "Vózinha", "Main is Vayne", "INSS N APOSENTO", "Lendario", "Funkeiro de Okley", "Reizinho", "Papalegua", "Killer2", "The Best", "O King", "Marquinho", "RED Kill", "ZAC", "KS Ou Coca ?", "NIKE RIO", "Zé da Manga ADJ", "JJ", "DJ Kevin", "Adrien", "Dj Ana", "Molister", "CC dê", "Malandro do 33", "CPX Dodo", "LALA", "PAULISTINHA", "KIKO DA FF", "Viciado em ARAM", "GTA é VIDA", "POZE DO RODO", "Aninha do trader", "Nunca LA ELE", "NET PX", "ZOREIA", "AmisterD", "SADASDDSA", "VIM PRA AMAR", "O MAL", "OS Karate UFC", "Marcao MAP", "Coelho 888", "BOLA 12", "Jogada de MASTER", "Baianinho de MAUA", "ARACAJU JU JU", "Tigresa", "Rafa_x3", "Ryan DDP", "IK 47VV", "Korea RX", "XT ou NENET", "Garagem MOKS", "Moca CPX", "Fla até Morre !", "Versa", "Unin Turbinado", "Zé da Cachumba", "Bola de Aço", "Truqueiro", "777", "CAssia Cassino", "o CAIXA", "Br30", "Avzin Red", "APK Haha", "Coringa", "VOA I", "Rastafari", "Bob Marley", "Reggae Ana", "OPTIMUS PRIME", "VOVO DO TRADER", "Trader na veia", "Travada da Coluna", "Rees", "Renatinha 777", "777 Cassino PD", "Noémia", "putz", "Perdx", "Prdrox", "Neorox", "ALOX", "LUIZIN", "LKSO", "Churras", "88 Bola", "MC CATRA"];
+export const NEW_START = Date.UTC(2026, 10, 26, 3), NEW_DAYS = 10;
+{ const pool = [...BASE, ...EXTRA].filter(n => n.id !== 'n0' && n.id !== 'n1').sort((a, b) => r0(a.i * 7 + 101) - r0(b.i * 7 + 101)), L = NEW_NICKS.length;
+  let k = 0; for (const nm of NEW_NICKS) { if (used.has(nm.toLowerCase()) || k >= pool.length) continue; used.add(nm.toLowerCase());
+    const n = pool[k]; n.unick = nm; n.unickAt = NEW_START + Math.floor((k + r0(n.i * 5 + 77)) / L * NEW_DAYS * 864e5); k++; } }
+for (const n of [...BASE, ...EXTRA]) {
   delete n.nick;
-  Object.defineProperty(n, 'nick', { enumerable: true, get() { return this.gnick && Date.now() >= this.renameAt ? this.gnick : this.orig; } });
+  Object.defineProperty(n, 'nick', { enumerable: true, get() { const t = Date.now(); return this.unick && t >= this.unickAt ? this.unick : this.gnick && t >= this.renameAt ? this.gnick : this.orig; } });
 }
 // mundo recomeçado: as bios antigas falavam de time, haras, galgo, fazenda e carta que ninguém tem mais. Todo bot começa com uma frase de quem acabou de chegar
 const FRESH = ['bora', 'sem tempo, só passando', 'foco no gado', 'aceito parceria', 'chama no pv', 'devagar e sempre', '🐂', 'agro é a base de tudo', 'comecei agora, bora', 'recomeçando do zero kkk', 'primeiro dia por aqui', 'sem nada ainda, vamos ver', 'rumo ao primeiro milhão', 'recomecei do zero, sem drama', 'novo por aqui, pega leve', 'meta: sair dos 10 mil', 'soja, gado e empresa', 'vivendo de safra e dividendo', 'compro na baixa, vendo na alta', 'diversificar é a regra', 'compro terra, chama no pv'];
@@ -110,7 +119,7 @@ export const dropOf = t => (1 - 0.25 * ss((t - FALL) / (3 * 36e5))) * crashOf(t)
 export const AWAY = { 'ReiDoGado': Date.UTC(2026, 10, 21, 15, 20), 'A Boiadeira': Date.UTC(2026, 10, 21, 15, 20) };
 export const isAway = (n, now = Date.now()) => (AWAY[typeof n === 'string' ? byNick(n)?.orig ?? n : n?.orig ?? n?.nick] || 0) > now;
 export const byId = id => NPCS.find(n => n.id === id);
-export const byNick = nick => NPCS.find(n => n.nick === nick) || NPCS.find(n => n.orig === nick || n.gnick === nick);   // nick antigo ainda acha o jogador
+export const byNick = nick => NPCS.find(n => n.nick === nick) || NPCS.find(n => n.orig === nick || n.gnick === nick || n.unick === nick);   // nick antigo ainda acha o jogador
 export const nicks = (from, n) => Array.from({ length: n }, (_, k) => NPCS[(from + k * 7) % NPCS.length].nick);
 
 // ---------- vida de cada bot ----------
