@@ -37,7 +37,10 @@ export function renderLobby() {
       <div class="tcard3__foot"><span class="muted small">${kind === 'online' ? `jogando agora${t.watchers ? ` · ${t.watchers} assistindo` : ''}` : 'você + parceiro contra dupla'}</span>
         <span class="row">${kind === 'online' ? `<button class="btn btn--glass btn--sm" data-tr="watch" data-id="${esc(t.id)}">assistir</button>` : ''}<button class="btn btn--gold" data-tr="${kind === 'online' ? 'join' : 'house'}" data-id="${esc(t.id)}" ${kind === 'online' && t.humans >= 4 ? 'disabled' : ''}>${kind === 'online' && t.humans >= 4 ? 'cheia' : 'jogar'}</button></span></div></article>`;
   };
-  el.innerHTML = online.map(t => card(t, 'online')).join('') + HOUSE.map(t => card(t, 'house')).join('');
+  // mesa da casa com gente de verdade jogando: o cartão da casa vira a partida ao vivo (miniaturas de quem está sentado + entrar/assistir)
+  const live = id => online.find(g => g.house === id);
+  el.innerHTML = online.filter(g => !g.house || !HOUSE.some(h => h.id === g.house)).map(t => card(t, 'online')).join('')
+    + HOUSE.map(t => (live(t.id) ? card({ ...live(t.id), name: t.name, stake: t.stake }, 'online') : card(t, 'house'))).join('');
 }
 G.gameHosts ??= {};
 G.gameHosts.truco = () => (cur?.host && cur.pub && cur.engine ? { kind: 'truco', id: cur.id, lock: !!cur.pass, house: cur.house, watchers: cur.watchers?.size || 0, name: cur.engine.name, stake: cur.engine.stake, humans: cur.engine.seats.filter(s => s.kind === 'human').length,
