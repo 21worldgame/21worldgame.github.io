@@ -104,11 +104,11 @@ for (const id of ['#ad-logout', '#ad-logout2']) $(id).addEventListener('click', 
 
 // ---------- navegação ----------
 // poucos menus: cada um junta várias partes do painel, uma embaixo da outra
-const MENU = { alertas: ['vigia', 'overview'], jogadores: ['players'], investigar: ['diario', 'terras', 'livros'], mundo: ['economy', 'rules', 'owners', 'news'], delegacia: ['bo'], pano: ['pano'], enviados: ['sent'], pedidos: ['pro', 'passwords', 'log'] };
+const MENU = { alertas: ['vigia', 'overview'], jogadores: ['players'], investigar: ['diario', 'terras', 'livros'], mundo: ['economy', 'rules', 'owners', 'news'], delegacia: ['bo'], pano: ['pano'], enviados: ['sent'], vip: ['vip'], pedidos: ['pro', 'passwords', 'log'] };
 let tuneLoad = null;
 let vgAt = 0;   // vigilância lida há pouco: trocar de menu não relê tudo (cada leitura baixa vários MB); o botão atualizar relê
 const LOAD = { vigia: () => (vg && Date.now() - vgAt < 600000 ? drawVigia() : loadVigia()), overview: () => loadOverview(), players: () => loadUsers(), diario: () => { if (!dj) loadDiario(); }, terras: () => loadLands(),
-  economy: () => { loadConfig(); loadEconomy(); }, rules: () => tuneLoad?.(), owners: () => loadOwners(), news: () => loadAnns(), bo: () => loadBo(), pano: () => (vg ? drawPano() : loadVigia()), sent: () => loadSent(), pro: () => loadPro(), passwords: () => loadPw(), log: () => loadLog() };
+  economy: () => { loadConfig(); loadEconomy(); }, rules: () => tuneLoad?.(), owners: () => loadOwners(), news: () => loadAnns(), bo: () => loadBo(), pano: () => (vg ? drawPano() : loadVigia()), sent: () => loadSent(), vip: () => loadVip(), pro: () => loadPro(), passwords: () => loadPw(), log: () => loadLog() };
 function show(tab) {
   const g = MENU[tab] ? tab : Object.keys(MENU).find(k => MENU[k].includes(tab)) || 'alertas';
   document.querySelectorAll('.ad-nav button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === g));
@@ -1309,3 +1309,47 @@ document.addEventListener('click', async e => {
 });
 setInterval(async () => { if ($('#ad-app').hidden) return; const { data } = await sb.from('bo_casos').select('id').eq('status', 'registrado'); const b = $('#ad-bo-badge'); if (b && data) { b.textContent = data.length; b.hidden = !data.length; } }, 60000);
 setInterval(async () => { if ($('#ad-app').hidden) return; const { data } = await sb.from('pro_reports').select('id').eq('status', 'aberta'); const b = $('#ad-pro-badge'); if (b && data) { b.textContent = data.length; b.hidden = !data.length; } }, 60000);
+
+// ---------- VIP da cidade (vip.sql) ----------
+const VPLAN = { apoiador: ['apoiador', 1, 5], patrono: ['patrono', 1, 15], patrono12: ['patrono', 12, 150], fundador: ['fundador', 1, 50] };
+const VNAME = { apoiador: 'Apoiador R$ 5', patrono: 'Patrono R$ 15', patrono12: 'Patrono anual R$ 150', fundador: 'Fundador R$ 50' };
+async function loadVip() {
+  $('#ad-vip-st').textContent = 'carregando...';
+  const [rq, v, m, r] = await Promise.all([sb.from('vip_req').select('id, user_id, name, plan, note, at').eq('done', false).order('at'),
+    sb.from('vip').select('*').order('until', { ascending: false }), sb.from('vip_meta').select('*').eq('id', 1).maybeSingle(), sb.rpc('vip_raised')]);
+  if (rq.error) { $('#ad-vip-st').textContent = ''; return fail(rq.error, 'carregar o VIP'); }
+  const bd = $('#ad-vip-badge'); bd.hidden = !rq.data.length; bd.textContent = rq.data.length;
+  $('#ad-vip-st').textContent = `arrecadado no mês: ${brl(r.data)} de ${brl(m.data?.goal)}`;
+  $('#ad-vip-req').innerHTML = rq.data.map(x => `<tr><td>${when(x.at)}</td><td>${esc(x.name)}</td><td>${esc(VNAME[x.plan] || x.plan)}</td><td>${esc(x.note || '')}</td>
+    <td><button class="btn btn--gold btn--xs" data-vip-ok="${x.id}" data-uid="${esc(x.user_id)}" data-plan="${esc(x.plan)}" data-note="${esc(x.note || '')}">Pix conferido: liberar</button> <button class="btn btn--glass btn--xs" data-vip-no="${x.id}">recusar</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">nenhum pedido</td></tr>';
+  const live = d => d && Date.parse(d) > Date.now();
+  $('#ad-vip-list').innerHTML = (v.data || []).map(x => `<tr><td>${esc(x.name)}</td><td>${live(x.until) ? esc(x.tier) : '<span class="muted">pausado</span>'}</td><td>${when(x.until)}</td><td class="num">${int(x.months)}</td><td>${x.founder ? `nº ${x.founder} ${esc(x.street || '')}` : ''}</td><td>${esc(x.title || '')}</td>
+    <td>${live(x.until) ? `<button class="btn btn--danger btn--xs" data-vip-rev="${esc(x.user_id)}">encerrar</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">ninguém ainda</td></tr>';
+  const M = m.data || {}; $('#ad-vip-pix').value = M.pix || ''; $('#ad-vip-goal').value = M.goal || 140; $('#ad-vip-q').value = M.poll?.q || ''; $('#ad-vip-opts').value = (M.poll?.opts || []).join('\n');
+  const P = M.poll; $('#ad-vip-res').textContent = P ? `votos: ${P.opts.map((o, i) => `${o} ${(v.data || []).filter(x => live(x.until) && x.vote_key === P.key && x.vote === i).length}`).join(' · ')}` : '';
+}
+async function vipGrant(uid, plan, months, amount, street) {
+  const { error } = await sb.rpc('vip_grant', { p_uid: uid, p_plan: plan, p_months: months, p_amount: amount, p_street: street || null });
+  if (error) return fail(error, 'liberar o VIP');
+  await log('vip', uid, `${plan} ${months} mês(es) R$ ${amount}${street ? ` rua ${street}` : ''}`); toast('VIP liberado: o selo aparece no jogo em até 10 min.'); loadVip();
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-vip-ok], [data-vip-no], [data-vip-rev], #ad-vip-go, #ad-vip-save, #ad-vip-reload'); if (!b) return;
+  if (b.id === 'ad-vip-reload') return loadVip();
+  if (b.dataset.vipOk) { const [p, m, a] = VPLAN[b.dataset.plan] || VPLAN.apoiador; const street = p === 'fundador' ? prompt('Nome da rua do Fundador (pode deixar vazio e pôr depois):', b.dataset.note || '') : null;
+    if (!confirm(`Conferiu o Pix de ${brl(a)} no seu banco? Liberar ${VNAME[b.dataset.plan]}?`)) return; return vipGrant(b.dataset.uid, p, m, a, street); }
+  if (b.dataset.vipNo) { if (!confirm('Recusar este pedido (o Pix não chegou)?')) return; const { error } = await sb.from('vip_req').delete().eq('id', Number(b.dataset.vipNo)); if (error) return fail(error, 'recusar'); return loadVip(); }
+  if (b.dataset.vipRev) { if (!confirm('Encerrar o VIP agora? Os meses e selos colecionados continuam.')) return; const { error } = await sb.rpc('vip_revoke', { p_uid: b.dataset.vipRev }); if (error) return fail(error, 'encerrar'); await log('vip-fim', b.dataset.vipRev); return loadVip(); }
+  if (b.id === 'ad-vip-go') { const nick = $('#ad-vip-nick').value.trim(); if (!nick) return toast('Escreva o nick.', true);
+    const { data } = await sb.from('public_profiles').select('user_id, name').ilike('name', nick.replace(/[%_\\]/g, m => '\\' + m)).limit(2);
+    if (!data?.length) return toast('Nick não encontrado.', true); if (data.length > 1) return toast('Mais de um nick parecido: escreva o nick exato.', true);
+    const plan = $('#ad-vip-plan').value, months = Number($('#ad-vip-m').value) || 1, amt = Number($('#ad-vip-amt').value) || 0;
+    if (!confirm(`Liberar ${plan} por ${months} mês(es) para ${data[0].name} (pago ${brl(amt)})?`)) return; return vipGrant(data[0].user_id, plan, months, amt, $('#ad-vip-street').value.trim()); }
+  if (b.id === 'ad-vip-save') {
+    const q = $('#ad-vip-q').value.trim(), opts = $('#ad-vip-opts').value.split('\n').map(x => x.trim()).filter(Boolean).slice(0, 6);
+    const { data: cur } = await sb.from('vip_meta').select('poll').eq('id', 1).maybeSingle();
+    const same = cur?.poll && cur.poll.q === q && JSON.stringify(cur.poll.opts) === JSON.stringify(opts);   // mudou a pergunta: votação nova, votos zeram
+    const poll = q && opts.length >= 2 ? (same ? cur.poll : { key: String(Date.now()), q, opts }) : null;
+    const { error } = await sb.from('vip_meta').update({ pix: $('#ad-vip-pix').value.trim(), goal: Math.max(1, Number($('#ad-vip-goal').value) || 140), poll }).eq('id', 1);
+    if (error) return fail(error, 'salvar'); await log('vip-usina', null, q || 'sem votação'); toast('Usina e votação salvas.'); loadVip(); }
+});
