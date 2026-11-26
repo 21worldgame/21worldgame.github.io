@@ -47,7 +47,7 @@ export async function start() {
   timer = setInterval(async () => {
     await loadConfig(sb); await loadAnnouncements(sb); maintenance();
     if (Auth.account()) { if (await checkBan(sb)) return; await applyGrants(sb); if (!isAdmin) await receita(sb); }
-  }, 30000);
+  }, 60000);   // cota do servidor: 1 conferência por minuto
   return banned ? 'banned' : 'ok';
 }
 
@@ -85,11 +85,8 @@ let rtOn = false;
 function realtime(sb) {
   if (rtOn) return; rtOn = true;
   try {
-    const me = Auth.account()?.id, ch = sb.channel('live-game');
-    if (me) ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_grants', filter: `user_id=eq.${me}` }, () => applyGrants(sb));
-    ch.on('postgres_changes', { event: '*', schema: 'public', table: 'game_config' }, async () => { await loadConfig(sb); maintenance(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, async () => { await loadAnnouncements(sb); maintenance(); })
-      .subscribe();
+    // escuta de tabelas ao vivo desligada: as tabelas nem estavam no tempo real (nunca disparava) e mantinha o servidor varrendo o banco.
+    // Ordens do administrador, configuração e avisos chegam pela conferência de 1 em 1 minuto.
   } catch {}
   presence(sb);
 }

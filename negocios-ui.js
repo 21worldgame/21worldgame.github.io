@@ -35,7 +35,7 @@ export async function refreshOwners() {
   if (changed) save();
   if (changed || document.querySelector('#loja-biz:not(:empty), #neg-shop:not(:empty)')) G.render();
 }
-setInterval(refreshOwners, 30000); setTimeout(refreshOwners, 4000);
+setInterval(refreshOwners, 120000); setTimeout(refreshOwners, 4000);
 const takenBy = brand => { const r = owners.ok && owners.map[brand]; return r && r.owner !== Auth.account()?.id ? (r.owner_name || 'outro jogador') : null; };
 
 // ---------- loja: marcas à venda ----------

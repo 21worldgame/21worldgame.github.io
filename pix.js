@@ -124,5 +124,5 @@ document.addEventListener('click', e => {
 const watchInv = () => { const p = document.getElementById('p-inventario'); if (!p) return setTimeout(watchInv, 500);
   new MutationObserver(() => { if (!p.hidden) setTimeout(() => { render(); loadHist(); }, 50); }).observe(p, { attributes: true, attributeFilter: ['hidden'] }); };
 watchInv();
-setInterval(claim, 30000);
+setInterval(claim, 60000);
 setTimeout(() => { render(); loadHist(); claim(); }, 4000);

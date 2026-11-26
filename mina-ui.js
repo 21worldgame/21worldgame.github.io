@@ -16,7 +16,7 @@ export async function refresh() {
   if (owner.ok && G.S.mina && owner.id !== me) { const v = MI.saleValue(G.S); G.S.money += v; note('mina de ouro saiu do seu nome: valor devolvido', v); delete G.S.mina; save(); say(`A mina de ouro não está mais no seu nome. Você recebeu ${brl(v)}.`, true); G.render(); }
   return owner;
 }
-setInterval(refresh, 30000); setTimeout(refresh, 3000);
+setInterval(refresh, 120000); setTimeout(refresh, 3000);
 
 // ---------- ouro ao vivo: onça (gold-api.com) x dólar (awesomeapi / open.er-api), de 10 em 10 min; sem internet vale o último preço guardado ----------
 const LIVE_KEY = '21world.goldLive';

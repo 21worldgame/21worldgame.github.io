@@ -106,7 +106,8 @@ for (const id of ['#ad-logout', '#ad-logout2']) $(id).addEventListener('click', 
 // poucos menus: cada um junta várias partes do painel, uma embaixo da outra
 const MENU = { alertas: ['vigia', 'overview'], jogadores: ['players'], investigar: ['diario', 'terras', 'livros'], mundo: ['economy', 'rules', 'owners', 'news'], delegacia: ['bo'], pano: ['pano'], enviados: ['sent'], pedidos: ['pro', 'passwords', 'log'] };
 let tuneLoad = null;
-const LOAD = { vigia: () => loadVigia(), overview: () => loadOverview(), players: () => loadUsers(), diario: () => { if (!dj) loadDiario(); }, terras: () => loadLands(),
+let vgAt = 0;   // vigilância lida há pouco: trocar de menu não relê tudo (cada leitura baixa vários MB); o botão atualizar relê
+const LOAD = { vigia: () => (vg && Date.now() - vgAt < 600000 ? drawVigia() : loadVigia()), overview: () => loadOverview(), players: () => loadUsers(), diario: () => { if (!dj) loadDiario(); }, terras: () => loadLands(),
   economy: () => { loadConfig(); loadEconomy(); }, rules: () => tuneLoad?.(), owners: () => loadOwners(), news: () => loadAnns(), bo: () => loadBo(), pano: () => (vg ? drawPano() : loadVigia()), sent: () => loadSent(), pro: () => loadPro(), passwords: () => loadPw(), log: () => loadLog() };
 function show(tab) {
   const g = MENU[tab] ? tab : Object.keys(MENU).find(k => MENU[k].includes(tab)) || 'alertas';
@@ -807,7 +808,7 @@ document.addEventListener('click', e => {
 
 let vg = null;
 async function loadVigia() {
-  const st = $('#ad-vg-st'); st.textContent = 'lendo saves, Pix e histórico...'; $('#ad-vg-reload').disabled = true;
+  const st = $('#ad-vg-st'); st.textContent = 'lendo saves, Pix e histórico...'; $('#ad-vg-reload').disabled = true; vgAt = Date.now();
   try {
     if (!users.length) await loadUsers('');
     const ago = d => new Date(Date.now() - d * 864e5).toISOString(), soft = p => p.catch(() => []);
