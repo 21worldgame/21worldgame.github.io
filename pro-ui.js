@@ -5,6 +5,7 @@ import * as Auth from './auth.js';
 import { G, brl, esc, say, note, save, badge, every } from './store.js';
 import { avatarSVG } from './avatar.js';
 import * as PR from './pro.js';
+import * as MESA from './mesa.js';
 
 const $ = s => document.querySelector(s);
 const sb = () => Auth.sbClient(), me = () => Auth.account()?.id;
@@ -122,7 +123,7 @@ function viewSearch() {
 }
 const card = p => { const fp = PR.fromPrice(p), s = (p.services || []).find(x => Number(x.price) === fp);
   return `<article class="pro-card${PR.suspended(p) ? ' is-susp' : ''}"><header>${av(p.user_id, p.name)}<div><h3>${esc(p.name)}</h3><p>${esc(p.title)}</p></div></header>
-    <div>${stars(p.stars, p.rating_n)}</div><div class="pro-seals">${PR.seals(p).map(x => tag(x.label, x.tone, x.tip)).join('')}</div>
+    <div>${stars(p.stars, p.rating_n)}</div><div class="pro-seals">${PR.seals(p).map(x => tag(x.label, x.tone, x.tip)).join('')}${/trader/i.test(p.title || '') ? tag('📈 copy trade', 'gold', 'Contrate um serviço deste trader para poder copiar as operações dele na Mesa Profissional.') : ''}</div>
     <p class="small">${p.done} contrato(s) concluído(s) · ${(p.services || []).length} serviço(s)</p>
     ${s ? `<p class="pro-price">a partir de <b>${brl(fp)}</b> <small>${PR.PERIOD[s.period]}</small></p>` : '<p class="small muted">sem serviços</p>'}
     <button type="button" class="btn btn--gold btn--sm" data-pro="open" data-id="${esc(p.user_id)}">ver perfil</button></article>`; };
@@ -132,6 +133,7 @@ async function openProfile(id) {
   const p = pros.find(x => x.user_id === id); if (!p) return;
   const d = document.getElementById('dlg-pro'), host = document.getElementById('pro-dlg'); if (!d || !host) return;
   host.innerHTML = profileHTML(p, []); if (!d.open) d.showModal();
+  if (/trader/i.test(p.title || '')) { await Promise.all([MESA.loadRank(), loadContracts()]).catch(() => {}); host.innerHTML = profileHTML(p, []); }
   const { data } = await sb().from('pro_reviews').select('stars, text, client_name, at').eq('pro_id', id).order('at', { ascending: false }).limit(20);
   host.innerHTML = profileHTML(p, data || []);
 }
@@ -142,6 +144,7 @@ function profileHTML(p, reviews) {
     <div class="pro-stats">${[['contratos concluídos', p.done], ['entregas no prazo', p.delivered], ['períodos sem entrega', p.late], ['faturado na Central', brl(p.earned)], ['na Central desde', new Date(p.created_at).toLocaleDateString('pt-BR')]]
       .map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('')}</div>
     <div class="pro-trophies">${PR.trophies(p).map(t => `<span class="pro-trophy${t.got ? ' is-got' : ''}" title="${esc(t.label)}${t.got ? '' : ' (ainda não)'}">${t.icon}<small>${esc(t.label)}</small></span>`).join('')}</div>
+    ${MESA.copyHTML(p, contracts.some(c => c.client_id === me() && c.pro_id === p.user_id && c.status === 'ativo'))}
     ${p.bio ? `<h3>apresentação</h3><p class="pro-text">${esc(p.bio)}</p>` : ''}
     ${p.cv ? `<h3>currículo</h3><p class="pro-text">${esc(p.cv)}</p>` : ''}
     <h3>serviços</h3>
@@ -155,6 +158,9 @@ function profileHTML(p, reviews) {
     ${reviews.length ? `<ul class="pro-reviews">${reviews.map(r => `<li><span class="pro-stars">${PR.starsTxt(r.stars)}</span> <b>${esc(r.client_name || 'jogador')}</b> <small class="muted">${ago(r.at)}</small>${r.text ? `<p>${esc(r.text)}</p>` : ''}</li>`).join('')}</ul>` : '<p class="small muted">Ainda sem avaliações.</p>'}
     ${self ? '<button type="button" class="btn btn--glass btn--sm" data-pro="edit">editar meu perfil</button>' : ''}`;
 }
+
+// abrir o perfil de alguém vindo de outra tela (ranking da Mesa Profissional)
+export async function openPro(id) { G.goto?.('pro'); await open(); await openProfile(id); }
 
 // contratos
 function viewContracts() {
@@ -248,7 +254,7 @@ async function hire(proId, svcId) {
     const r = await rpc('pro_hire', { p_pro: proId, p_service: svcId, p_periods: n }); if (!r) return;
     const [, cid, pid] = r.split(':');
     G.S.money -= tot; (G.S.proOut ||= []).push(Number(pid)); note(`Central: contrato #${cid} (${s.title}) com ${p.name}`, -tot); save(); G.render?.();
-    say(`Contrato #${cid} fechado com ${p.name}. Acompanhe em "meus contratos".`);
+    say(`Contrato #${cid} fechado com ${p.name}. Acompanhe em "meus contratos".${/trader/i.test(p.title || '') ? ' Agora você já pode copiar as operações dele: abra o perfil de novo e use o copy trade.' : ''}`);
     document.getElementById('dlg-pro')?.close(); view = 'contratos'; await loadContracts(); paint();
   } finally { lock = false; }
 }

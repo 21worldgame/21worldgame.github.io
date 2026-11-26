@@ -3884,3 +3884,16 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .upd--truck > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; }
 .lg-when { white-space: nowrap; font-size: var(--text-xs, .78rem); font-variant-numeric: tabular-nums; } .lg-when small { display: block; opacity: .6; }
 .ivp-calc { display: grid; gap: 8px; padding: var(--space-md); margin-top: var(--space-sm); } .ivp-calc h4 { margin: 0; } .ivp-calc .row { flex-wrap: wrap; gap: 8px; } .ivp-calc .field { min-width: 9rem; flex: 1; } .ivp-calc p { margin: 0; }
+
+/* Mesa Profissional (mesa.js): BTC real, ranking de traders e copy trade */
+.mesa { margin-top: var(--space-lg); padding: var(--space-lg); display: grid; gap: var(--space-md); }
+.mesa-head { display: grid; gap: var(--space-sm); }
+.mesa-head h2 small { font-size: .55em; font-weight: 600; opacity: .7; }
+.mesa-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: var(--space-md); }
+.mesa-chart { padding: var(--space-md); display: grid; gap: var(--space-sm); align-content: start; }
+#mesa-canvas { width: 100%; height: 280px; display: block; --tr-up: var(--money); --tr-down: var(--color-error); --tr-grid: oklch(100% 0 0 / 0.06); --tr-text: var(--color-ink-2); }
+.mesa-bal b { font-size: 1.25em; }
+.mesa-note { padding: var(--space-sm) var(--space-md); border-radius: 12px; background: color-mix(in srgb, var(--hud-accent) 12%, transparent); }
+.mesa-rank td, .mesa-rank th { white-space: nowrap; }
+.mesa-copy { padding: var(--space-md); border-radius: 12px; background: color-mix(in srgb, var(--hud-accent) 8%, transparent); display: grid; gap: var(--space-sm); margin: var(--space-sm) 0; }
+@media (max-width: 760px) { .mesa-grid { grid-template-columns: 1fr; } #mesa-canvas { height: 200px; } .mesa { padding: var(--space-md); } }
