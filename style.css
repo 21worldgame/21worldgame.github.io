@@ -3880,3 +3880,4 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .wh-why { display: grid; gap: 6px; padding: var(--space-md); margin-bottom: var(--space-sm); border: 1px solid color-mix(in oklab, var(--money) 35%, transparent); }
 .wh-why h4 { margin: 0; } .wh-why ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 4px; font-size: var(--text-sm); } .wh-why p { margin: 0; }
 .upd--truck > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; }
+.lg-when { white-space: nowrap; font-size: var(--text-xs, .78rem); font-variant-numeric: tabular-nums; } .lg-when small { display: block; opacity: .6; }

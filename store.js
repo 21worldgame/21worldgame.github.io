@@ -73,7 +73,10 @@ function load() {
 }
 export const G = { S: load(), render: () => {}, afterSave: null };
 export function save() {
-  G.S.savedAt = Date.now();
+  const now = Date.now(); G.S.savedAt = now;
+  // livro-caixa com dia e hora: carimba os lançamentos novos (os de antes da v257 ficam com at 0 = sem hora conhecida)
+  const lg = G.S.log || []; if (!G.S.logAt) { for (const e of lg) if (!('at' in e)) e.at = 0; G.S.logAt = 1; }
+  for (const e of lg) { if ('at' in e) break; e.at = now; }
   try { localStorage.setItem(keyFor(uid), JSON.stringify(G.S)); } catch {}
   G.afterSave?.();
 }
@@ -89,7 +92,7 @@ export function forgetUser() { try { localStorage.removeItem(UID_KEY); } catch {
 export function reset() { G.S = blankState(G.S.avatar?.name && G.S.avatar.name !== 'você' ? G.S.avatar.name : ''); G.S.resetAt = Date.now(); save(); }   // resetAt: recomeço de verdade (auth.js deixa gravar por cima da nuvem)
 // números de 4 dígitos ou mais com ponto de milhar em qualquer texto do jogo (1000 sacas -> 1.000 sacas); ano (1900-2099) fica igual
 export const dots = t => String(t).replace(/(^|[^\d.,\w/:])(\d{4,})(?![\d.,:\w])/g, (m, a, n) => (/^(19|20)\d\d$/.test(n) ? m : a + Number(n).toLocaleString('pt-BR')));
-export function note(txt, val = 0) { txt = dots(txt); try { G.track?.(G.S, txt, val); } catch {} G.S.log.unshift({ m: G.S.month, txt, val: Math.round(val) }); try { G.onNote?.(txt, val); } catch {}
+export function note(txt, val = 0) { txt = dots(txt); try { G.track?.(G.S, txt, val); } catch {} G.S.log.unshift({ m: G.S.month, txt, val: Math.round(val), at: Date.now() }); try { G.onNote?.(txt, val); } catch {}
   if (val >= 2000) SFX.cash(val >= Math.max(1e6, (G.S.money || 0) * 0.05)); }   // onNote: TV 21 (news-ui) · dinheiro entrando: som (valor pequeno não toca)
 export function pay(v, why) {   // preço igual para todos (v151: acabou o acréscimo para os mais ricos)
   if (v > G.S.money) { say(`Dinheiro insuficiente para ${why}.`, true); return false; }
