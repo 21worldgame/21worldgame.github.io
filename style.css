@@ -3886,12 +3886,16 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .ivp-calc { display: grid; gap: 8px; padding: var(--space-md); margin-top: var(--space-sm); } .ivp-calc h4 { margin: 0; } .ivp-calc .row { flex-wrap: wrap; gap: 8px; } .ivp-calc .field { min-width: 9rem; flex: 1; } .ivp-calc p { margin: 0; }
 
 /* BTC real (mesa.js) integrado à mesa de operações: conta na boleta e ranking de traders na lateral */
-.tr-grid:has(.mesa-side) { grid-template-columns: minmax(0, 1fr) minmax(0, 21rem) minmax(0, 20rem); }
+/* gráfico grande à esquerda (2 linhas); à direita a boleta e, embaixo dela, o ranking de traders */
+.tr-grid:has(.mesa-side) { grid-template-columns: minmax(0, 1fr) minmax(0, 22rem); grid-template-rows: auto 1fr; }
+.tr-grid:has(.mesa-side) > .tr-chart { grid-row: 1 / span 2; align-self: stretch; display: flex; flex-direction: column; }
+.tr-grid:has(.mesa-side) #tr-canvas { height: clamp(460px, 70vh, 820px); }
+.tr-grid:has(.mesa-side) > .mesa-side { grid-column: 2; }
 .tr-asset--real { box-shadow: inset 0 0 0 1px var(--hud-accent); }
 .tr-asset--real small { font-size: var(--text-xs, .7rem); opacity: .7; }
 .mesa-acct { display: grid; gap: var(--space-xs); padding: var(--space-sm); border-radius: 12px; background: color-mix(in srgb, var(--hud-accent) 8%, transparent); }
 .mesa-bal b { font-size: 1.2em; }
-.mesa-side { padding: var(--space-md); display: grid; gap: var(--space-sm); align-content: start; max-height: 52rem; overflow: auto; }
+.mesa-side { padding: var(--space-md); display: grid; gap: var(--space-sm); align-content: start; max-height: 40rem; overflow: auto; }
 .mesa-note { margin: 0; padding: var(--space-xs) var(--space-sm); border-radius: 10px; background: color-mix(in srgb, var(--hud-accent) 12%, transparent); }
 .mesa-rk { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .mesa-rk li, .mesa-cp { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-xs); align-items: center; padding: 6px 8px; border-radius: 10px; background: var(--glass-2); }
@@ -3902,5 +3906,4 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .mesa-rk__who small, .mesa-cp small { font-size: var(--text-xs, .72rem); opacity: .85; }
 .mesa-rk__v { display: grid; justify-items: end; gap: 2px; }
 .mesa-copy { padding: var(--space-md); border-radius: 12px; background: color-mix(in srgb, var(--hud-accent) 8%, transparent); display: grid; gap: var(--space-sm); margin: var(--space-sm) 0; }
-@media (max-width: 1400px) { .tr-grid:has(.mesa-side) { grid-template-columns: minmax(0, 1fr) minmax(0, 21rem); } .mesa-side { grid-column: 1 / -1; max-height: none; } }
-@media (max-width: 64rem) { .tr-grid:has(.mesa-side) { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 64rem) { .tr-grid:has(.mesa-side) { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; } .tr-grid:has(.mesa-side) > .tr-chart { grid-row: auto; } .tr-grid:has(.mesa-side) > .mesa-side { grid-column: auto; max-height: none; } .tr-grid:has(.mesa-side) #tr-canvas { height: 380px; } }
