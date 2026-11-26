@@ -98,13 +98,26 @@ export const FIX_AT = Date.UTC(2026, 10, 26, 2, 0);
   for (const n of [...BASE, ...EXTRA]) { if (!FIX.includes(n.id) || STORY.has(n.id)) continue;
     if (!n.unick && !n.gnick && NAME[n.id] && !used.has(NAME[n.id].toLowerCase())) { n.unick = NAME[n.id]; used.add(n.unick.toLowerCase()); }
     if (n.unick) n.unickAt = Math.min(n.unickAt ?? FIX_AT, FIX_AT); else if (n.gnick) n.renameAt = Math.min(n.renameAt, FIX_AT); } }
+// 26/11/2026 18:30 UTC: os nicks do dono que ainda não tinham entrado deixam de ser troca de nome de bot antigo (deixava rastro:
+// jogador velho com nível e histórico aparecendo com outro nome) e viram jogadores NOVOS, chegando aos poucos em 3 dias, como
+// gente se cadastrando. As 17 trocas que já tinham acontecido ficam. Os novos começam com R$ 10 mil e crescem devagar
+// (fortuna final de R$ 40 mil a R$ 1,2 mi): nunca passam o topo dos jogadores de verdade e nunca caçam o líder (rivals.js).
+export const NEW_CUT = Date.UTC(2026, 10, 26, 18, 30), FRESH_DAYS = 3;
+const later = [];
+for (const n of [...BASE, ...EXTRA]) if (n.unick && n.unickAt >= NEW_CUT) { later.push(n.unick); delete n.unick; delete n.unickAt; }
+const FRESHB = later.map((nick, k) => {
+  const i = BASE.length + EXTRA.length + k, w = r0(i * 3 + 41);
+  return { id: `n${i}`, i, nick, orig: nick, base: Math.round(40000 + w * w * w * 1160000), g: 0.02, bio: '', ramp: 2 + r0(i * 3 + 43) * 4,
+    arriveAt: NEW_CUT + Math.floor((k + r0(i * 3 + 45)) / later.length * FRESH_DAYS * 864e5),
+    look: { name: nick, skin: 1 + Math.floor(r0(i + 2500) * 5), hair: HAIR[Math.floor(r0(i + 2900) * 6)], hairColor: 1 + Math.floor(r0(i + 3300) * 5), beard: ['nenhuma', 'por fazer', 'cavanhaque', 'bigode', 'cheia'][Math.floor(r0(i + 3700) * 5)], eyes: 1 + (i % 4), outfit: OUT[Math.floor(r0(i + 4100) * 6)], cloth: 1 + Math.floor(r0(i + 4500) * 8), acc: ACC[Math.floor(r0(i + 4900) * ACC.length)] } };
+});
 for (const n of [...BASE, ...EXTRA]) {
   delete n.nick;
   Object.defineProperty(n, 'nick', { enumerable: true, get() { const t = Date.now(); return this.unick && t >= this.unickAt ? this.unick : this.gnick && t >= this.renameAt ? this.gnick : this.orig; } });
 }
 // mundo recomeçado: as bios antigas falavam de time, haras, galgo, fazenda e carta que ninguém tem mais. Todo bot começa com uma frase de quem acabou de chegar
 const FRESH = ['bora', 'sem tempo, só passando', 'foco no gado', 'aceito parceria', 'chama no pv', 'devagar e sempre', '🐂', 'agro é a base de tudo', 'comecei agora, bora', 'recomeçando do zero kkk', 'primeiro dia por aqui', 'sem nada ainda, vamos ver', 'rumo ao primeiro milhão', 'recomecei do zero, sem drama', 'novo por aqui, pega leve', 'meta: sair dos 10 mil', 'soja, gado e empresa', 'vivendo de safra e dividendo', 'compro na baixa, vendo na alta', 'diversificar é a regra', 'compro terra, chama no pv'];
-export const NPCS = [...BASE, ...EXTRA].map(n => ({ ...n, bio: hash(n.i * 59 + 11) < 0.45 ? '' : FRESH[Math.floor(hash(n.i * 61 + 3) * FRESH.length)] }));   // ~45% sem recado no perfil
+export const NPCS = [...BASE, ...EXTRA, ...FRESHB].map(n => ({ ...n, bio: hash(n.i * 59 + 11) < 0.45 ? '' : FRESH[Math.floor(hash(n.i * 61 + 3) * FRESH.length)] }));   // ~45% sem recado no perfil
 // 24/11/2026 13:40: a fortuna de cassino do ReiDoGado e da A Boiadeira foi tomada (TV 21: "mafioso do cassino", sem nomes).
 // Caem para o 13º/14º lugar e voltam bem devagar, só com gado, terra e negócios (rivals.js calcula e guarda aqui). Perfil sempre aberto.
 export const FALL = Date.UTC(2026, 10, 24, 16, 40), FALLEN = new Set(['n0', 'n1']);
@@ -113,6 +126,8 @@ export const FALL = Date.UTC(2026, 10, 24, 16, 40), FALLEN = new Set(['n0', 'n1'
 export const SHOWN = new Map();
 // 26/11/2026: os especuladores saem do topo (rivals.js RETREAT) e a fortuna de base dos bots para de crescer: os jogadores ficam em cima
 export const GROW_STOP = Date.UTC(2026, 10, 26, 4, 0);
+// 26/11/2026 18:30 UTC: os antigos perdem mais 12%, devagar, em 2 dias (gente nova chegando divide o mercado)
+const oldDim = t => 1 - 0.12 * Math.min(1, Math.max(0, (t - NEW_CUT) / (2 * 864e5))) ** 2 * (3 - 2 * Math.min(1, Math.max(0, (t - NEW_CUT) / (2 * 864e5))));
 // todos os jogadores do mundo perdem 25% em 3 h reais a partir daí (devagar, sem salto): mais disputa para quem tem conta
 const ss = x => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 // 24/11/2026 15:40: quebra do fundo 21 Capital (TV 21). Quem tinha dinheiro no fundo perde 20%, devagar, ao longo de 12 h (ninguém fica sem nada).
@@ -131,7 +146,8 @@ export const AWAY = { 'ReiDoGado': Date.UTC(2026, 10, 21, 15, 20), 'A Boiadeira'
 export const isAway = (n, now = Date.now()) => (AWAY[typeof n === 'string' ? byNick(n)?.orig ?? n : n?.orig ?? n?.nick] || 0) > now;
 export const byId = id => NPCS.find(n => n.id === id);
 export const byNick = nick => NPCS.find(n => n.nick === nick) || NPCS.find(n => n.orig === nick || n.gnick === nick || n.unick === nick);   // nick antigo ainda acha o jogador
-export const nicks = (from, n) => Array.from({ length: n }, (_, k) => NPCS[(from + k * 7) % NPCS.length].nick);
+const OLDN = () => NPCS.filter(x => !x.arriveAt);
+export const nicks = (from, n) => { const o = OLDN(); return Array.from({ length: n }, (_, k) => o[(from + k * 7) % o.length].nick); };
 
 // ---------- vida de cada bot ----------
 // Vontade de jogar (0 a 1): ondas lentas de vários dias, diferentes para cada um (fase "viciado" e fase "sumido").
@@ -165,6 +181,7 @@ export const NPC_RAMP_START = 440;   // força final e dias da rampa: painel adm
 export const PERF = { fn: null };
 // fortuna no mês do mundo (pode ser fracionário: anda devagar entre um mês e outro)
 export function worthAt(n, month, t = Date.now(), raw = false) {
+  if (n.arriveAt) { const d = Math.max(0, (t - n.arriveAt) / 864e5); return Math.round((10000 + (n.base - 10000) * (1 - Math.exp(-d / n.ramp)) * Math.min(1, Math.max(0, (month - 1) / EARLY))) * (1 + 0.05 * Math.sin(month * 0.7 + n.i)) * form(n, t)); }   // novo: R$ 10 mil e sobe devagar
   if (!raw && SHOWN.has(n.id) && Math.abs(t - Date.now()) < 120000) return SHOWN.get(n.id);   // agora: o mesmo número do ranking
   const fell = FALLEN.has(n.id) && t >= FALL;
   const wm = month; month = Math.min(month, current(CLOCK.world, GROW_STOP));   // GROW_STOP: a fortuna de base para de crescer (as ondas seguem)
@@ -174,10 +191,10 @@ export function worthAt(n, month, t = Date.now(), raw = false) {
   const boost = 1 + (T.npcBoost - 1) * Math.min(1, m / 48);   // mundo novo continua alcançável
   const r = Math.min(1, Math.max(0, (month - NPC_RAMP_START) / NPC_RAMP));   // 0 em 19/11/2026, 1 daqui a um mês
   const start = 10000 * (Math.max(10000, n.base) / 10000) ** (m / 48);   // todo bot começa o mundo com R$ 10 mil e chega à fortuna dele no mês 49
-  return Math.round(start * (1 + n.g * 0.55) ** m * (1 + (boost * late - 1) * r) * wave * form(n, t) * (PERF.fn ? PERF.fn(n, wm) : 1) * dropOf(t) * heavyBase(n, t) * (fell ? 0.15 : 1));   // caído e o ranking ainda não calculou: uma fração do que tinha
+  return Math.round(start * (1 + n.g * 0.55) ** m * (1 + (boost * late - 1) * r) * wave * form(n, t) * (PERF.fn ? PERF.fn(n, wm) : 1) * dropOf(t) * heavyBase(n, t) * oldDim(t) * (fell ? 0.15 : 1));   // caído e o ranking ainda não calculou: uma fração do que tinha
 }
 // chegada: cada bot entra no mundo num momento diferente das primeiras 24 h reais (144 meses): o ranking enche aos poucos, como gente de verdade chegando
-export const startMonth = n => 1 + Math.floor(hash(n.i * 13 + 7) * 144);
+export const startMonth = n => (n.arriveAt ? current(CLOCK.world, n.arriveAt) : 1 + Math.floor(hash(n.i * 13 + 7) * 144));   // os novos (FRESHB): chegam na hora deles
 export const levelFor = worth => Math.max(1, Math.min(60, Math.round(Math.log10(Math.max(10, worth)) * 7 - 28)));
 
 // negócios do bot: a cada janela de 3 h em que ele estava com vontade de jogar, fecha um negócio do tamanho da fortuna dele
@@ -238,15 +255,16 @@ const int = v => v.toLocaleString('pt-BR');
 // perfil completo (para a janela de perfil)
 export function profile(n, month) {
   const worth = worthAt(n, month), r = k => hash(n.i * 31 + k), lv = levelFor(worth);
-  const age = Math.min(1, Math.max(0, (month - 1) / EARLY));   // 0 no mês 1: sem partidas, conquistas, bichos nem negócios; chega ao normal na largada (2 dias)
-  const cm = Math.min(month, Math.max(1, current(CLOCK.world, CASINO_STOP))), cw = worthAt(n, cm, CASINO_STOP - 1), cage = FALLEN.has(n.id) ? 0 : Math.min(1, Math.max(0, (cm - 1) / EARLY));   // cassino parado no dia em que largou
+  const fr = n.arriveAt ? Math.min(1, Math.max(0, (Date.now() - n.arriveAt) / (3 * 864e5))) : null;   // novo (FRESHB): perfil de quem acabou de chegar
+  const age = fr ?? Math.min(1, Math.max(0, (month - 1) / EARLY));   // 0 no mês 1: sem partidas, conquistas, bichos nem negócios; chega ao normal na largada (2 dias)
+  const cm = Math.min(month, Math.max(1, current(CLOCK.world, CASINO_STOP))), cw = worthAt(n, cm, CASINO_STOP - 1), cage = FALLEN.has(n.id) || fr != null ? 0 : Math.min(1, Math.max(0, (cm - 1) / EARLY));   // cassino parado no dia em que largou
   const hands = Math.round((80 + levelFor(cw) * 45 + r(1) * 400) * cage), cars = Object.keys(CARS).filter(c => CARS[c].type !== 'maquina' && CARS[c].price < worth * 0.6).slice(-1 - Math.floor(r(2) * 2));
   return {
     npc: true, id: n.id, name: n.nick, look: n.look, level: lv, rank: rank(worth), worth, bio: FALLEN.has(n.id) ? ['recomeçando do zero, só no gado e na terra', 'boi no pasto e terra no nome'][n.i] : n.bio, open: FALLEN.has(n.id),
     stats: { hands, wins: Math.round(hands * (0.38 + r(3) * 0.08)), best: Math.round((150 + r(4) * Math.min(cw / 3000, 2500)) * cage), races: Math.round(r(5) * 60 * cage), raceWins: Math.round(r(6) * 14 * cage) },
-    lands: Math.floor(worth / 250000), ha: Math.floor(worth / 250000) * (30 + Math.floor(r(7) * 70)), ...assets(n, worth, Math.floor(worth / 250000), Math.floor(worth / 250000) * (30 + Math.floor(r(7) * 70)), age), pioneer: hash(n.i * 89 + 5) < 0.35, heads: Math.floor(worth / 60000) * 10,
+    lands: Math.floor(worth / 250000), ha: Math.floor(worth / 250000) * (30 + Math.floor(r(7) * 70)), ...assets(n, worth, Math.floor(worth / 250000), Math.floor(worth / 250000) * (30 + Math.floor(r(7) * 70)), age), pioneer: !n.arriveAt && hash(n.i * 89 + 5) < 0.35, heads: Math.floor(worth / 60000) * 10,
     cars, animals: Array.from({ length: Math.floor(r(8) * 3 * age) }, (_, k) => ({ kind: k % 2 ? 'horse' : 'dog', name: '', rating: 50 + Math.floor(r(9 + k) * 30), wins: Math.floor(r(12 + k) * 8) })),
-    achCount: Math.floor(Math.min(20, 2 + Math.floor(lv / 2)) * age), deals: [...fundo(n, worth), ...deals(n, worth).filter(d => Date.now() - d.at < (month - 1) * 3e5)].sort((a, b) => b.at - a.at).slice(0, 6),   // negócio só desde que o mundo começou (ponytail: assume 5 min por mês)
+    achCount: Math.floor(Math.min(20, 2 + Math.floor(lv / 2)) * age), deals: [...fundo(n, worth), ...deals(n, worth).filter(d => Date.now() - d.at < (month - 1) * 3e5 && d.at >= (n.arriveAt || 0))].sort((a, b) => b.at - a.at).slice(0, 6),   // negócio só desde que o mundo começou (ponytail: assume 5 min por mês)
   };
 }
 
@@ -256,10 +274,10 @@ const CURVE = [58, 46, 38, 33, 30, 31, 36, 42, 48, 52, 55, 58, 62, 60, 57, 58, 6
 const smooth = t => { const i = Math.floor(t), f = t - i, u = f * f * (3 - 2 * f); return hash(i) * (1 - u) + hash(i + 1) * u; };
 export function onlineCount(now = Date.now()) {
   const h = ((now / 3600000 - 3) % 24 + 24) % 24, i = Math.floor(h), f = h - i;
-  const base = CURVE[i] * (1 - f) + CURVE[(i + 1) % 24] * f;   // curva do dia (30 a 102) vira 68 a 159 jogadores: pico à noite, vale de madrugada
-  return Math.max(ONLINE_MIN, Math.min(ONLINE_MAX, Math.round(68 + (base - 30) / 72 * 83 + (smooth(now / 420000) - 0.5) * 10 + (smooth(now / 90000) - 0.5) * 4)));   // gente entrando e saindo a cada poucos minutos
+  const base = CURVE[i] * (1 - f) + CURVE[(i + 1) % 24] * f;   // curva do dia (30 a 102) vira 70 a 138 jogadores: pico à noite, vale de madrugada
+  return Math.max(ONLINE_MIN, Math.min(ONLINE_MAX, Math.round(70 + Math.max(0, (base - 30) / 72) ** 0.55 * 68 + (smooth(now / 420000) - 0.5) * 16 + (smooth(now / 90000) - 0.5) * 6)));   // 70 de madrugada, 123 a 138 no pico; varia a cada poucos minutos   // gente entrando e saindo a cada poucos minutos
 }
-export const ONLINE_MIN = 68, ONLINE_MAX = 159;
+export const ONLINE_MIN = 70, ONLINE_MAX = 138;
 // total que todas as telas mostram: bots online + jogadores de verdade (ranking, chat, salão)
 export const onlineTotal = (now = Date.now()) => onlineSet(now).size + CLOCK.real;
 // quem está online agora (rodízio a cada 20 min; sempre os mesmos para todos os aparelhos)

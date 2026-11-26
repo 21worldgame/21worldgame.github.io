@@ -37,6 +37,7 @@ export const feverOf = w => { const j = Math.floor(w / 10); return h(j * 3.3 + 5
 function npcMix(w, prevMult) {
   const tot = Object.fromEntries(GOODS.map(k => [k, 0])), fever = feverOf(w);
   for (const n of NPCS) {
+    if (n.arriveAt) continue;   // jogadores novos (npcs.js FRESHB) não reescrevem a história da economia
     const P = PERSONAS[personaOf(n)], fav = favOf(n);
     let sum = 0; const wts = {};
     for (const k of GOODS) {

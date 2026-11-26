@@ -3,7 +3,8 @@ import { CARS, CAR_BUYBACK } from './logic.js';
 import { CATALOG } from './avatar.js';
 import { newDeal } from './bots.js';
 import { NPCS, worthAt } from './npcs.js';
-const BOT_NAMES = NPCS.slice(8).map(n => n.nick);
+const OLD = NPCS.filter(n => !n.arriveAt);   // os novos (npcs.js FRESHB) não vendem no Feirão antes de chegar
+const BOT_NAMES = OLD.slice(8).map(n => n.nick);
 import { GOODS } from './trade.js';
 
 // índice da economia: patrimônio mediano dos jogadores do ranking comparado a R$ 500 mil.
@@ -20,7 +21,7 @@ const pick = (a, rng) => a[Math.floor(rng() * a.length)];
 export function refresh(s, idx = 1, rng = Math.random) {
   if (s.feira?.month === s.month) return s.feira;
   // realismo: bot só negocia o que cabe em 40% do patrimônio do mais rico deles (mundo novo = feira quase vazia)
-  const cap = 0.4 * Math.max(...NPCS.slice(8).map(n => worthAt(n, s.month || 1)));
+  const cap = 0.4 * Math.max(...OLD.slice(8).map(n => worthAt(n, s.month || 1)));
   const list = [], models = Object.keys(CARS).filter(m => CARS[m].price <= Math.min(cap, Math.max(400000, (s.money || 0) * 3)));
   for (let i = 0; i < 3 && models.length; i++) {
     const m = pick(models, rng), age = 0.7 + rng() * 0.25, value = Math.round(CARS[m].price * age);

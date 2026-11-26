@@ -11,7 +11,7 @@ const SPEC = [
   ['av', 15], ['sub', 4], ['am-21', 6], ['am-pk', 5], ['am-tr', 3], ['am-sn', 1], ['rl', 8],
 ];
 const POOL = {};
-{ let k = 0; for (const [id, n] of SPEC) POOL[id] = NPCS.filter(x => !FALLEN.has(x.id)).slice(k, k += n).map(x => x.nick); }   // os dois caídos não sentam mais em mesa nenhuma
+{ let k = 0; for (const [id, n] of SPEC) POOL[id] = NPCS.filter(x => !FALLEN.has(x.id) && !x.arriveAt).slice(k, k += n).map(x => x.nick); }   // os dois caídos não sentam mais em mesa nenhuma
 // quem está de folga (npcs.js AWAY) é trocado por um reserva ('sub'), também único; volta sozinho depois do horário
 let nextSub = 0; const SUB = {};
 const swap = nick => (isAway(nick) ? (SUB[nick] ??= POOL.sub[nextSub++ % POOL.sub.length]) : nick);
