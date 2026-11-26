@@ -78,7 +78,7 @@ export const GROUPS = [
   ['compras', 'compras, vendas e Pix', /^(loja|feira|Feirão|compra:|venda:|troca com|Pix|pagamento|leilão)/],
   ['haras', 'canil e haras', /ração e cuidados|haras|canil|veterin/],
   ['veiculos', 'veículos e máquinas', /IPVA e seguro/],
-  ['terras', 'terras', /arrendamento|ITR|banco tomou|^(compra|venda) de \d+ ha/],
+  ['terras', 'terras', /arrendamento|ITR|banco tomou|terra tomada|^(compra|venda) de \d+ ha/],
   ['banco', 'banco e empréstimos', /parcela|calote/],
   ['outros', 'outros', /./],
 ];

@@ -414,6 +414,8 @@ export function tick(s, rng = Math.random) {
       if (land) {
         s.lands.splice(s.lands.indexOf(land), 1);
         add(`${loan.from || 'banco'} tomou a terra em ${land.region} (${land.ha} ha)`);
+        // terra vale mais que a dívida: quita e devolve a sobra (antes a diferença sumia: Buu perdeu 50 ha de R$ 588 mil por R$ 78 mil)
+        if (land.value > loan.bal) add(`sobra da terra tomada, devolvida pelo ${loan.from || 'banco'} (dívida de R$ ${Math.round(loan.bal).toLocaleString('pt-BR')} quitada)`, land.value - loan.bal);
         loan.bal = Math.max(0, loan.bal - land.value); loan.missed = 0;
       } else add('parcela atrasada, sem garantia para executar');
     } else add(`parcela ${who} atrasada`);
