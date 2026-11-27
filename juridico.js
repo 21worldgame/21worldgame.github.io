@@ -64,6 +64,7 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-carta]'); if (b) { const c = cache.find(x => String(x.id) === b.dataset.carta); if (c) letter(c, nameOf()); return; }
   if (e.target.closest('[data-carta-mine]')) { e.preventDefault(); mine(); }
   if (e.target.closest('[data-regras]')) { e.preventDefault(); rules(); }
+  const t = e.target.closest('[data-rtab]'); if (t) rules(t.dataset.rtab);
 });
 
 // Lei do 21: regras de conduta (genéricas de propósito: não ensinar o que o jogo confere)
@@ -76,9 +77,16 @@ const LAW = [
   ['🤝', 'Palavra e respeito', 'Golpe, calote e ofensa no chat dão B.O.', 'suspensão da conta'],
 ];
 const STEPS = ['aviso', 'estorno', 'suspensão', 'prisão da conta'];
-export function rules() {
-  const d = box();
-  d.innerHTML = `<article class="ct ct--law">${head}
+// regras e informações: abas (lei e vantagens; o conteúdo das vantagens vem do jogo, G.vguiaHTML em game.js)
+const TABS = [['lei', '⚖️ lei do 21'], ['vantagens', '⚡ vantagens']];
+export function rules(tab = 'lei') {
+  const d = box(), nav = `<nav class="rtabs" role="tablist">${TABS.map(([k, l]) => `<button type="button" role="tab" data-rtab="${k}" aria-selected="${k === tab}" class="${k === tab ? 'is-on' : ''}">${l}</button>`).join('')}</nav>`;
+  if (tab === 'vantagens' && G.vguiaHTML) {
+    d.innerHTML = `<article class="ct ct--law">${head}${nav}<h2 id="ct-t" class="ct__title">Guia das vantagens</h2>${G.vguiaHTML()}
+      <div class="row ct__acts"><button class="btn btn--gold" type="button" data-close>fechar</button></div></article>`;
+    if (!d.open) d.showModal(); d.scrollTop = 0; return;
+  }
+  d.innerHTML = `<article class="ct ct--law">${head}${nav}
     <h2 id="ct-t" class="ct__title">Lei do 21 World</h2>
     <p class="ct__lead">O que <b>não pode</b> no 21 World. Na dúvida, jogue limpo.</p>
     <ol class="law">${LAW.map(([i, t, no, pena], n) => `<li><span class="law__i" aria-hidden="true">${i}</span><div><b>Art. ${n + 1}º · ${t}</b><p>${no}</p><em>pena: ${pena}</em></div></li>`).join('')}</ol>

@@ -293,6 +293,18 @@ function renderChar() {
   }
 }
 
+// guia público das vantagens (aba "vantagens" em regras e informações, juridico.js): todas as fontes e o teto de cada efeito, das regras em vigor
+G.vguiaHTML = () => {
+  const txt = p => p.src === 'car' ? `${L.CARS[p.id]?.name || p.id} (concessionária) ${pctTxt(p.v)}` : p.src === 'acc' ? `${p.id} (acessório) ${pctTxt(p.v)}`
+    : p.src === 'land' ? `terras: ${p.txt}` : p.src === 'scale' ? `escala da produção: ${p.txt}` : `${p.txt} ${pctTxt(p.v)}`;
+  const keys = Object.keys(PK.EFFECTS).filter(k => PK.paths(k).length);
+  const maq = Object.entries(L.MACH_PLANT).sort((a, b) => b[1] - a[1]).map(([m, v]) => `<li>${esc(L.CARS[m]?.name || m)} −${Math.round(v * 100)}%</li>`).join('');
+  return `<p class="ct__lead">Vantagens são pequenas e para sempre. Cada uma soma tudo o que você possui, até o <b>teto</b>. Carro repetido não soma. As suas estão em <b>você › personagem › vantagens</b>.</p>
+    <div class="vg-list">${keys.map(k => { const c = PK.CAPS[k]; return `<section class="vg-item"><h3>${esc(PK.EFFECTS[k])}${c != null ? ` <span>teto ${pctTxt(c)}</span>` : ''}</h3>
+      <ul>${PK.paths(k).map(p => `<li>${esc(txt(p))}</li>`).join('')}</ul></section>`; }).join('')}
+      <section class="vg-item"><h3>máquinas da lavoura <span>teto −${Math.round(L.MACH_MAX * 100)}%</span></h3><p>Desconto no plantio de soja, milho e café, fora dos tetos acima. Só vale o maior trator.</p><ul>${maq}</ul></section></div>`;
+};
+
 // ---------- terras: satélite real (Esri World Imagery) ----------
 const SAT = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer';
 const LABELS = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer';
@@ -1781,7 +1793,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 312;
+const APP_VERSION = 313;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
