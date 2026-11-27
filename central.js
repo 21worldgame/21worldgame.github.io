@@ -698,7 +698,35 @@ async function loadLog() {
     <td class="small">${esc(detailsTxt(l.details))}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nada registrado.</td></tr>';
 }
 
-boot().catch(e => fail(e, 'iniciar o painel'));
+boot().then(watchVersion).catch(e => fail(e, 'iniciar o painel'));
+
+// ---------- versão nova publicada: faixa embaixo e recarrega sozinho (igual ao caminhãozinho do jogo) ----------
+// O aviso do servidor (21w:versao) só sai depois que o site já serve todos os arquivos novos; a conferência a cada
+// 2 min é reserva e só age quando vê a mesma versão nova duas vezes seguidas (dá tempo do GitHub publicar o resto).
+async function watchVersion() {
+  if (!sb) return;
+  const getV = () => fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()).then(j => j).catch(() => null);
+  const base = Number((await getV())?.v) || 0; if (!base) return;
+  let seen = 0, on = false;
+  const hit = async (j, sure) => {
+    const v = Number(j?.v) || 0; if (on || v <= base) return;
+    if (!sure && seen !== v) { seen = v; return; }
+    on = true;
+    await Promise.all(['central-r7k2.html', 'central.js', 'central.css'].map(f => fetch(f, { cache: 'reload' }).catch(() => {})));   // renova a cópia do navegador
+    const bar = document.createElement('div'); bar.className = 'ad-upd'; bar.setAttribute('role', 'status');
+    bar.innerHTML = `<span>🚚 <b>versão nova v${v}</b>${j.msg ? ` · ${esc(String(j.msg).slice(0, 120))}` : ''} · <span id="ad-upd-t">15 s</span></span><button class="btn btn--gold btn--xs" type="button">atualizar agora</button>`;
+    document.body.append(bar); bar.querySelector('button').onclick = () => location.reload();
+    // não recarrega no meio do trabalho: ficha/janela aberta ou campo com o cursor dentro (espera até 10 min)
+    let left = 15, wait = 0;
+    setInterval(() => {
+      const busy = document.querySelector('dialog[open]') || document.activeElement?.matches?.('input:not(#ad-qs), textarea, select');
+      if (busy && ++wait < 600) { $('#ad-upd-t').textContent = 'quando você terminar'; return; }
+      if (--left <= 0) location.reload(); else $('#ad-upd-t').textContent = `${left} s`;
+    }, 1000);
+  };
+  sb.channel('21w:versao').on('broadcast', { event: 'v' }, () => getV().then(j => hit(j, true))).subscribe();
+  setInterval(() => getV().then(j => hit(j, false)), 120000);
+}
 
 // acompanha a ordem até o jogo do jogador aplicar (sem precisar recarregar o painel)
 function watchGrant(gid, uid) {
