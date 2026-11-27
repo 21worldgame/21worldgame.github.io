@@ -31,14 +31,14 @@ export const COLORS = { ouro: 'Ouro', esmeralda: 'Esmeralda', rubi: 'Rubi', safi
 export const GLOW = { aurora: 'Aurora (brilho)', fogo: 'Fogo (brilho)', neon: 'Neon (brilho)', arcoiris: 'Arco-íris (brilho)' };   // Magnata para cima
 export const BLACKC = { ouroliquido: 'Ouro líquido (Black)', diamante: 'Diamante (Black)', imperial: 'Imperial (Black)' };   // Linha Black
 export const SEATS = 21;
-const PERKS = {
-  apoiador: ['🔒 Perfil privado: esconda seu patrimônio e suas terras', '✏️ Pode trocar o nick (só VIP)', 'Selo ao lado do nick no ranking, no salão e no chat', 'Selo exclusivo do mês para o álbum', 'Sequência: Bronze, Prata, Ouro, Diamante e Lenda', 'Nome no Mural da Usina'],
-  patrono: ['Tudo do Apoiador', 'Nick colorido (6 cores)', 'Título embaixo do nick: "Barão do Café"', 'Vota na carga do mês'],
-  magnata: ['Tudo do Patrono', 'Nick com brilho animado: Aurora, Fogo, Neon, Arco-íris', 'Moldura de luxo no ranking e no salão', 'Destaque no topo do Mural'],
-  conselho: [`Uma das ${SEATS} cadeiras do mês (numerada)`, 'Uma rua da cidade com o nome que você escolher', 'Tudo do Magnata', 'Não renovou? A cadeira vai para o próximo da fila'],
-  barao: ['Tudo do Conselho, sem disputar cadeira', 'Faixa BLACK preta e ouro no seu nível', 'Cores exclusivas: Ouro líquido, Diamante, Imperial', 'Nome no Hall da Linha Black'],
-  imperador: ['Só 3 tronos por mês: trono numerado', 'Faixa IMPERADOR e coroa dourada animada', 'Tudo do Barão', 'Primeiro nome do Hall, logo abaixo dos Mecenas'],
-  mecenas: [`Valor livre a partir de ${brl(MEC_MIN)} por mês`, 'Faixa MECENAS: a marca mais rara da cidade', 'Tudo do Imperador, sem disputar trono', 'Topo do Hall dos Mecenas, em ordem de apoio'],
+const PERKS = {   // v315: 3 linhas curtas por plano (a página é para bater o olho)
+  apoiador: ['Perfil privado e troca de nick', 'Selo no ranking, salão e chat', 'Selo do mês no álbum'],
+  patrono: ['Tudo do Apoiador', 'Nick colorido e título', 'Vota na novidade do mês'],
+  magnata: ['Tudo do Patrono', 'Nick com brilho animado', 'Moldura de luxo'],
+  conselho: ['Tudo do Magnata', `Cadeira numerada (${SEATS} por mês)`, 'Rua com o seu nome'],
+  barao: ['Tudo do Conselho, sem fila', 'Faixa BLACK preta e ouro', 'Cores exclusivas'],
+  imperador: ['Tudo do Barão', 'Só 3 tronos por mês', 'Coroa dourada animada'],
+  mecenas: [`Valor livre (mín. ${brl(MEC_MIN)})`, 'Faixa MECENAS, a mais rara', 'Topo do Hall'],
 };
 
 let rows = [], meta = { pix: '', goal: 140, poll: null, open: false }, raised = 0, myReq = null, myPre = null, preN = { n: 0, pos: 0 }, at = 0, loading = null, period = 1, pick = 'patrono', mecAmt = 1000;
@@ -146,18 +146,17 @@ function draw() {
   const vTot = votes.reduce((a, b) => a + b, 0) || 1, canVote = rankOf(mine) >= 2;
   const renewTier = mine?.tier || pick;
   el.innerHTML = `
-  <header class="vip-hero">
+  <header class="vip-hero vip-hero--slim">
     <div class="vip-hero__glow" aria-hidden="true"></div>
-    <p class="vip-kick">⚜️ Salão Nobre · VIP da cidade${meta.open ? '' : ' <span class="vip-soon">em breve · pré-venda aberta</span>'}</p>
+    <p class="vip-kick">⚜️ VIP da cidade${meta.open ? '' : ' <span class="vip-soon">pré-venda aberta</span>'}</p>
     <h2 class="vip-title">Brilhe em <span>21 World</span></h2>
-    <p class="vip-lead">Nick que brilha, selo que cresce a cada mês seguido, cadeira no Conselho e uma rua com o seu nome. Quem apoia mantém a <b>Usina 21</b> ligada e a cidade inteira vê.</p>
+    <p class="vip-lead">Nick que brilha, selo no ranking e lugar no Conselho. <b>Só aparência:</b> não dá dinheiro nem vantagem no jogo.</p>
     <div class="vip-chips">
-      <span class="vip-chip">🔥 <b>${act.length}</b> ${act.length === 1 ? 'apoiando' : 'apoiando'} este mês</span>
-      <span class="vip-chip${free <= 5 ? ' vip-chip--hot' : ''}">🏛️ <b>${SEATS - free}/${SEATS}</b> cadeiras do Conselho</span>
-      <span class="vip-chip vip-chip--time">${stampNow[0]} selo <b>${esc(stampNow[1])}</b> some em <b data-vip-clock="month">${span(monthEnd())}</b></span>
+      <span class="vip-chip">🔥 <b>${act.length}</b> apoiando</span>
+      <span class="vip-chip${free <= 5 ? ' vip-chip--hot' : ''}">🏛️ <b>${SEATS - free}/${SEATS}</b> cadeiras</span>
+      <span class="vip-chip">⚡ usina <b>${Math.round(pct * 100)}%</b></span>
+      <span class="vip-chip vip-chip--time">${stampNow[0]} selo do mês some em <b data-vip-clock="month">${span(monthEnd())}</b></span>
     </div>
-    <div class="vip-usina" role="img" aria-label="usina do mês: ${Math.round(pct * 100)}% da meta"><i style="transform:scaleX(${pct.toFixed(3)})"></i><span>${pct >= 1 ? '💡 Usina do mês paga! Obrigado, cidade' : `⚡ ${Math.round(pct * 100)}% da Usina do mês paga`}</span></div>
-    <p class="vip-fine">Só VIP pode <b>deixar o perfil privado</b> e <b>trocar o nick</b>. Fora isso, VIP é aparência e reconhecimento: <b>não dá dinheiro, juros, terra nem vantagem nas mesas</b>. O jogo continua justo para todos.</p>
   </header>
 
   ${mine?.tier ? `<section class="vip-me vip-me--${on ? mine.tier : 'off'}">
@@ -174,20 +173,11 @@ function draw() {
   </section>` : ''}
 
 
-  ${meta.open ? '' : `<section class="vip-pre">
-    <div class="vip-pre__ribbon">PRÉ-VENDA</div>
-    <p class="vip-kick">🎟️ só para quem entrar agora</p>
-    <h3 class="vip-pre__title">Garanta seu lugar <span>antes de abrir</span></h3>
-    <p class="vip-lead">O VIP abre em breve. Quem entra na lista da pré-venda agora leva o que <b>nunca mais vai ser vendido</b>:</p>
-    <ul class="vip-pre__perks">
-      <li><span>🎟️</span><b>Selo Pioneiro VIP</b><small>exclusivo da pré-venda, só quem entrou na lista tem. Depois do lançamento ele some da loja.</small></li>
-      <li><span>🎁</span><b>+1 mês grátis</b><small>no primeiro plano que você ativar no lançamento.</small></li>
-      <li><span>🔒</span><b>Preço de lançamento congelado</b><small>por 12 meses, mesmo se o preço subir depois.</small></li>
-      <li><span>👑</span><b>Primeiro na fila</b><small>prioridade nas 21 cadeiras do Conselho e nos 3 tronos de Imperador na abertura.</small></li>
-      <li><span>✨</span><b>Mural dos Pioneiros</b><small>seu nome gravado na parede da Usina 21 como um dos primeiros apoiadores da cidade.</small></li>
-    </ul>
-    <div class="vip-pre__count"><b>${int(preN.n || 0)}</b><span>${(preN.n || 0) === 1 ? 'pessoa já entrou' : 'pessoas já entraram'} na pré-venda${myPre ? ` · você é o <b>nº ${int(preN.pos || 0)}</b>` : ''}</span></div>
-    <button class="btn btn--gold vip-cta" type="button" data-vip="gopre">${myPre ? '✅ você está na lista · ver meu pedido' : '🎟️ quero entrar na pré-venda'}</button>
+  ${meta.open ? '' : `<section class="vip-pre vip-pre--slim">
+    <div><b class="vip-pre__title">🎟️ Pré-venda: entre antes de abrir</b>
+      <p class="vip-pre__chips"><span>🎟️ selo Pioneiro</span><span>🎁 +1 mês grátis</span><span>🔒 preço congelado por 12 meses</span><span>👑 prioridade no Conselho</span></p>
+      <small>${int(preN.n || 0)} ${(preN.n || 0) === 1 ? 'pessoa já entrou' : 'pessoas já entraram'}${myPre ? ` · você é o nº ${int(preN.pos || 0)}` : ''} · não paga nada agora</small></div>
+    <button class="btn btn--gold vip-cta" type="button" data-vip="gopre">${myPre ? '✅ ver meu pedido' : 'entrar na pré-venda'}</button>
   </section>`}
   <section class="vip-plans-wrap">
     <div class="vip-plans-head"><h3>Escolha seu brilho</h3>
@@ -195,24 +185,22 @@ function draw() {
     <div class="vip-plans">${Object.entries(TIERS).filter(([, T]) => !T.black).map(([k, T]) => { const tot = priceOf(k, period), cur = on && mine.tier === k;
       return `<article class="vip-plan vip-plan--${k}${pick === k ? ' is-pick' : ''}">
       ${k === 'patrono' ? '<span class="vip-plan__tag">mais escolhido</span>' : k === 'magnata' ? '<span class="vip-plan__tag vip-plan__tag--lux">✨ mais brilho</span>' : k === 'conselho' ? `<span class="vip-plan__tag vip-plan__tag--hot">${free ? `restam ${free} de ${SEATS} este mês` : 'cadeiras ocupadas'}</span>` : ''}
-      <div class="vip-plan__ico">${T.ico}</div><h4>${T.name}</h4><p class="vip-plan__pitch">${esc(T.pitch)}</p>
+      <div class="vip-plan__ico">${T.ico}</div><h4>${T.name}</h4>
       <p class="vip-plan__price"><b>${brl(Math.round(tot / period * 100) / 100)}</b><small>/mês</small></p>
       <p class="vip-plan__tot">${period > 1 ? `${brl(tot)} por ${period} meses` : 'renova todo mês'}</p>
       <div class="vip-plan__prev">${nickAs(k, k === mine?.tier ? mine.color : null)}</div>
       <ul>${PERKS[k].map(x => `<li>${esc(x)}</li>`).join('')}</ul>
       <button class="btn ${k === 'patrono' || k === 'magnata' ? 'btn--gold' : 'btn--glass'} vip-plan__btn" type="button" data-vip="pick" data-plan="${k}"${meta.open && k === 'conselho' && !free && !(on && mine.tier === 'conselho') ? ' disabled' : ''}>${!meta.open ? '🎟️ quero na pré-venda' : cur ? 'renovar' : `quero ser ${T.name.split(' ')[0]}`}</button></article>`; }).join('')}</div>
-    <p class="vip-fine">Assinatura: vale pelo período pago e vence. Avisamos 5 dias antes no jogo. Renovou até 7 dias depois de vencer, a sequência continua.</p>
+    <p class="vip-fine">Vale pelo período pago e vence. Avisamos 5 dias antes; renovou em até 7 dias, a sequência continua.</p>
   </section>
 
   <section class="vip-black">
     <div class="vip-black__shine" aria-hidden="true"></div>
-    <p class="vip-kick">🖤 Linha Black · para quem quer ir além</p>
-    <h3 class="vip-black__title">Linha <span>Black</span></h3>
-    <p class="vip-lead">Preto e ouro. Pouquíssimos na cidade. Para quem quer apoiar de verdade e ser lembrado: tronos limitados, faixa própria no nível e o topo do Hall.</p>
+    <h3 class="vip-black__title">Linha <span>Black</span> <small>preto e ouro, pouquíssimos na cidade</small></h3>
     <div class="vip-plans vip-plans--black">${Object.entries(TIERS).filter(([, T]) => T.black).map(([k, T]) => { const cur = on && mine.tier === k, lim = k === 'imperador' && !tFree && !cur;
       return `<article class="vip-plan vip-plan--black vip-plan--${k}${pick === k ? ' is-pick' : ''}">
       ${k === 'imperador' ? `<span class="vip-plan__tag vip-plan__tag--hot">${tFree ? `${tFree} de ${CAP.imperador} tronos livres` : 'tronos ocupados'}</span>` : k === 'mecenas' ? '<span class="vip-plan__tag">o mais alto</span>' : '<span class="vip-plan__tag">entrada da Black</span>'}
-      <div class="vip-plan__ico">${T.ico}</div><h4>${T.name}</h4><p class="vip-plan__pitch">${esc(T.pitch)}</p>
+      <div class="vip-plan__ico">${T.ico}</div><h4>${T.name}</h4>
       ${T.free ? `<p class="vip-plan__price"><b>${brl(mecAmt)}</b><small>/mês</small></p>
         <div class="vip-amt">${[600, 1000, 2500, 5000].map(v => `<button type="button" class="${mecAmt === v ? 'is-on' : ''}" data-vip="amt" data-v="${v}">${brl(v)}</button>`).join('')}</div>
         <label class="field vip-amt__in"><span>ou digite (mín. ${brl(MEC_MIN)})</span><input class="input" id="vip-amt" type="number" min="${MEC_MIN}" step="50" value="${mecAmt}" inputmode="numeric"></label>`
@@ -220,21 +208,6 @@ function draw() {
       <div class="vip-plan__prev">${nickAs(k, k === mine?.tier ? mine.color : null)}</div>
       <ul>${PERKS[k].map(x => `<li>${esc(x)}</li>`).join('')}</ul>
       <button class="btn btn--gold vip-plan__btn" type="button" data-vip="pick" data-plan="${k}"${meta.open && lim ? ' disabled' : ''}>${!meta.open ? '🎟️ quero na pré-venda' : cur ? 'renovar' : `quero ser ${T.name}`}</button></article>`; }).join('')}</div>
-    <div class="vip-thrones">${thrones.map((v, i) => `<div class="${v ? 'is-on' : ''}"><span>👑 trono ${i + 1}</span>${v ? `<b class="${cls(v.user_id)}">${esc(v.name)}</b>` : '<small>livre este mês</small>'}</div>`).join('')}</div>
-  </section>
-
-  <section class="vip-grid">
-    <div class="vip-card">
-      <h3>🏅 Sequência de meses</h3>
-      <ol class="vip-ladder">${[...LEVELS].reverse().map(([n, e, nm]) => `<li class="${(mine?.streak || 0) >= n ? 'is-got' : ''}"><span>${e}</span><b>${nm}</b><small>${n} ${n === 1 ? 'mês' : 'meses'} seguidos</small></li>`).join('')}</ol>
-      <p class="small muted">O selo ao lado do nick mostra a sequência. Parou mais de 7 dias, zera.</p>
-    </div>
-    <div class="vip-card">
-      <h3>📒 Álbum de ${year}</h3>
-      <ol class="vip-album">${STAMPS.map(([e, n], i) => { const k = `${year}-${String(i + 1).padStart(2, '0')}`, got = (mine?.stamps || []).includes(k);
-        return `<li class="${got ? 'is-got' : ''}${k === nowYm ? ' is-now' : ''}${!got && k < nowYm ? ' is-lost' : ''}" title="${esc(n)}${got ? ': seu!' : k < nowYm ? ': esse mês já passou' : k === nowYm ? ': só este mês!' : ''}"><span>${got ? e : k < nowYm ? '✖' : k === nowYm ? e : '?'}</span><small>${esc(n)}</small></li>`; }).join('')}</ol>
-      <p class="small">${(mine?.stamps || []).includes(nowYm) ? `✅ O selo ${stampNow[0]} ${esc(stampNow[1])} já é seu.` : `${stampNow[0]} <b>${esc(stampNow[1])}</b> só existe neste mês: acaba em <b data-vip-clock="month">${span(monthEnd())}</b>.`}</p>
-    </div>
   </section>
 
   ${poll ? `<section class="vip-card vip-poll"><h3>🗳️ Carga do mês: quem decide são os VIPs</h3><p>${esc(poll.q || 'Qual novidade chega primeiro?')}</p>
@@ -269,12 +242,29 @@ function draw() {
     <p class="small muted">Apoio é voluntário, vale pelo período pago e não volta como dinheiro no jogo. Menores de idade: peça para um responsável.</p>
   </section>`}
 
+  <details class="vip-more"><summary>Ver mais: sequência, álbum do ano, Conselho e Hall</summary>
+  <section class="vip-grid">
+    <div class="vip-card">
+      <h3>🏅 Sequência de meses</h3>
+      <ol class="vip-ladder">${[...LEVELS].reverse().map(([n, e, nm]) => `<li class="${(mine?.streak || 0) >= n ? 'is-got' : ''}"><span>${e}</span><b>${nm}</b><small>${n} ${n === 1 ? 'mês' : 'meses'} seguidos</small></li>`).join('')}</ol>
+      <p class="small muted">O selo ao lado do nick mostra a sequência. Parou mais de 7 dias, zera.</p>
+    </div>
+    <div class="vip-card">
+      <h3>📒 Álbum de ${year}</h3>
+      <ol class="vip-album">${STAMPS.map(([e, n], i) => { const k = `${year}-${String(i + 1).padStart(2, '0')}`, got = (mine?.stamps || []).includes(k);
+        return `<li class="${got ? 'is-got' : ''}${k === nowYm ? ' is-now' : ''}${!got && k < nowYm ? ' is-lost' : ''}" title="${esc(n)}${got ? ': seu!' : k < nowYm ? ': esse mês já passou' : k === nowYm ? ': só este mês!' : ''}"><span>${got ? e : k < nowYm ? '✖' : k === nowYm ? e : '?'}</span><small>${esc(n)}</small></li>`; }).join('')}</ol>
+      <p class="small">${(mine?.stamps || []).includes(nowYm) ? `✅ O selo ${stampNow[0]} ${esc(stampNow[1])} já é seu.` : `${stampNow[0]} <b>${esc(stampNow[1])}</b> só existe neste mês: acaba em <b data-vip-clock="month">${span(monthEnd())}</b>.`}</p>
+    </div>
+  </section>
+
+
   <section class="vip-card vip-wall"><h3>🏛️ Conselho da Cidade <small class="muted">${SEATS - free}/${SEATS} cadeiras · renova todo mês</small></h3>
     <ol class="vip-seats">${seats.map((v, i) => `<li class="${v ? 'is-on' : ''}"><span>${i + 1}</span>${v ? `<b class="${cls(v.user_id)}">${esc(v.name)}</b>${v.street ? `<small>🛣️ ${esc(v.street)}</small>` : ''}` : '<small>livre</small>'}</li>`).join('')}</ol>
     ${act.some(v => TIERS[v.tier]?.black) ? `<h3>🖤 Hall da Linha Black</h3><ol class="vip-hall">${act.filter(v => TIERS[v.tier]?.black).map(v => `<li class="vip-hall__${v.tier}"><span>${TIERS[v.tier].ico}</span><b class="${cls(v.user_id)}">${esc(v.name)}</b><small>${TIERS[v.tier].name}${v.tier === 'imperador' && v.founder ? ` · trono ${v.founder}` : ''}</small></li>`).join('')}</ol>` : ''}
     <h3>✨ Quem mantém a luz acesa</h3>
     ${act.length ? `<ul class="vip-names">${act.map(v => `<li class="vip-names__${v.tier}">${tag(v.user_id)} <b class="${cls(v.user_id)}">${esc(v.name)}</b>${title(v.user_id) ? ` <small class="vtitle">${esc(title(v.user_id))}</small>` : ''}</li>`).join('')}</ul>` : '<p class="small muted">Ainda ninguém este mês. O primeiro nome do mural pode ser o seu.</p>'}
-  </section>`;
+    <h3>👑 Tronos de Imperador</h3><div class="vip-thrones">${thrones.map((v, i) => `<div class="${v ? 'is-on' : ''}"><span>👑 trono ${i + 1}</span>${v ? `<b class="${cls(v.user_id)}">${esc(v.name)}</b>` : '<small>livre este mês</small>'}</div>`).join('')}</div>
+  </section></details>`;
 }
 // relógios da tela (sem rede)
 setInterval(() => {
