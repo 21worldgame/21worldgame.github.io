@@ -63,4 +63,32 @@ setTimeout(check, 8000); setInterval(check, 180000);
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-carta]'); if (b) { const c = cache.find(x => String(x.id) === b.dataset.carta); if (c) letter(c, nameOf()); return; }
   if (e.target.closest('[data-carta-mine]')) { e.preventDefault(); mine(); }
+  if (e.target.closest('[data-regras]')) { e.preventDefault(); rules(); }
 });
+
+// Lei do 21: regras de conduta (genéricas de propósito: não ensinar o que o jogo confere)
+const LAW = [
+  ['👥', 'Uma pessoa, uma conta', 'Nada de conta laranja nem "fazenda de contas". Na Operação Espelho, quem fez isso foi preso.', 'prisão da conta e confisco de tudo'],
+  ['🤖', 'Nada de robô', 'Auto-clicker, macro ou script jogando no seu lugar.', 'bloqueio e investigação'],
+  ['🐞', 'Achou bug? Avise, não use', 'Quem registra o B.O. não é punido.', 'a Receita estorna tudo que veio do bug'],
+  ['📒', 'Todo dinheiro tem origem', 'O que entra no caixa precisa estar no livro-caixa.', 'estorno e análise da conta'],
+  ['📈', 'Mesa de operações limpa', 'Não opere os dois lados ao mesmo tempo.', 'bloqueio da mesa'],
+  ['🤝', 'Palavra e respeito', 'Golpe, calote e ofensa no chat dão B.O.', 'suspensão da conta'],
+];
+const STEPS = ['aviso', 'estorno', 'suspensão', 'prisão da conta'];
+export function rules() {
+  const d = box();
+  d.innerHTML = `<article class="ct ct--law">${head}
+    <h2 id="ct-t" class="ct__title">Lei do 21 World</h2>
+    <p class="ct__lead">O que <b>não pode</b> no 21 World. Na dúvida, jogue limpo.</p>
+    <ol class="law">${LAW.map(([i, t, no, pena], n) => `<li><span class="law__i" aria-hidden="true">${i}</span><div><b>Art. ${n + 1}º · ${t}</b><p>${no}</p><em>pena: ${pena}</em></div></li>`).join('')}</ol>
+    <h3 class="law__h">Como funciona a punição</h3>
+    <p class="law__steps">${STEPS.map(s => `<span>${s}</span>`).join('<i aria-hidden="true">›</i>')}</p>
+    <p class="law__note">Quanto mais grave ou repetido, mais longe na escada.</p>
+    <h3 class="law__h">Pode ficar tranquilo</h3>
+    <ul class="law__ok"><li>Ganhar muito jogando certo não é crime.</li>
+      <li>Se algo acontecer na sua conta, o jurídico explica por carta, em <b>perfil › jurídico</b>.</li></ul>
+    <div class="row ct__acts"><button class="btn btn--gold" type="button" data-close>entendi as regras</button></div>
+  </article>`;
+  if (!d.open) d.showModal();
+}
