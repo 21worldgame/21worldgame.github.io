@@ -1,6 +1,6 @@
 // Vantagens de quem tem carro e acessórios (regras puras). Vale o que a pessoa POSSUI, não só o que está usando.
 // Cada efeito é um multiplicador somado: dois itens de +10% dão +20%.
-import { rewards as collRewards } from './cards.js';
+import { rewards as collRewards, SETS } from './cards.js';
 export const EFFECTS = {
   xp: 'XP ganho', daily: 'roleta do dia', perda: 'pontos de perda (mortalidade e praga)', casino: 'ganho de fichas no cassino', animais: 'preço de pintinhos, leitões e bezerros',
   loan: 'juros do banco', race: 'prêmios das provas', ticket: 'bilheteria do clube', cattle: 'preço de venda do gado', frango: 'preço de venda do frango', plant: 'custo do plantio',
@@ -50,7 +50,34 @@ export const ACC_PERKS = {
   'capacete de mineiro': { ouro: 0.01 },
 };
 // teto de cada efeito somando TUDO (carros, terras, acessórios, coleções e prestígio). Sem teto, quem junta tudo dobra a economia dos outros.
-export const CAPS = { xp: 0.25, daily: 0.5, race: 0.3, ticket: 0.1, loan: -0.2, plant: -0.08, animais: -0.1, cattle: 0.08, frango: 0.08, suino: 0.08, grain: 0.08, laranja: 0.08, cana: 0.08, ouro: 0.05, biz: 0.08, casino: 0.02 };
+// v311: teto que dá para alcançar. Plantio (terras 5%), filhotes (coleção 5%) e ouro (capacete 1%) tinham teto acima de tudo o que existe.
+export const CAPS = { xp: 0.25, daily: 0.5, race: 0.3, ticket: 0.1, loan: -0.2, plant: -0.05, animais: -0.05, cattle: 0.08, frango: 0.08, suino: 0.08, grain: 0.08, laranja: 0.08, cana: 0.08, ouro: 0.01, biz: 0.08, casino: 0.02 };
+
+// escala da produção (v311): quem produz muito fecha contrato de volume e vende um pouco mais caro, como na vida real.
+// Antes frango, suíno, laranja e cana só tinham o acessório (2%) e o teto de 8% era inalcançável.
+// [unidade, quanto cada uma dá, teto da escala]
+export const SCALE = { frango: ['galpão da granja', 0.01, 0.06], suino: ['barracão de suínos', 0.01, 0.06], laranja: ['50 ha de pomar', 0.01, 0.06],
+  cana: ['100 ha de canavial', 0.01, 0.06], grain: ['200 ha de lavoura ou café em terra própria', 0.01, 0.05], biz: ['empresa', 0.02, 0.04] };
+export function scaleBonuses(s) {
+  const own = (s.lands || []).filter(l => l && l.own), ha = f => own.filter(f).reduce((t, l) => t + (Number(l.ha) || 0), 0);
+  const n = { frango: s.granja?.houses?.length || 0, suino: s.suinos?.barns?.length || 0, laranja: Math.floor(ha(l => l.orchard) / 50), cana: Math.floor(ha(l => l.cane) / 100),
+    grain: Math.floor(ha(l => l.use === 'lavoura' || l.use === 'café') / 200), biz: Object.values(s.biz || {}).reduce((t, a) => t + (Array.isArray(a) ? a.length : 0), 0) };
+  const out = {}; for (const [k, [, per, max]] of Object.entries(SCALE)) if (n[k]) out[k] = Math.min(max, n[k] * per);
+  return out;
+}
+// como chegar ao teto de um efeito: todas as fontes que existem no jogo (a página do personagem marca as que você já tem)
+const LAND_HOW = { xp: '1% por terra própria, até 10%', cattle: '1% por terra própria de pasto, até 4%', plant: '1% por terra própria de lavoura ou café, até 5%',
+  loan: '5% com 100 ha próprios, 10% com 500 ha', daily: '5% por terra própria com casa sede, até 10%' };
+export function paths(k) {
+  const out = [];
+  for (const [id, p] of Object.entries(CAR_PERKS)) if (p[k]) out.push({ src: 'car', id, v: p[k] });
+  for (const [id, p] of Object.entries(ACC_PERKS)) if (p[k]) out.push({ src: 'acc', id, v: p[k] });
+  if (LAND_HOW[k]) out.push({ src: 'land', txt: LAND_HOW[k] });
+  if (SCALE[k]) { const [u, per, max] = SCALE[k]; out.push({ src: 'scale', txt: `${Math.round(per * 100)}% por ${u}, até ${Math.round(max * 100)}%` }); }
+  for (const [id, c] of Object.entries(SETS)) if (c.reward?.[k]) out.push({ src: 'coll', id, txt: `coleção ${c.name} completa`, v: c.reward[k] });
+  for (const p of PRESTIGE) if (p.perk[k]) out.push({ src: 'prest', id: p.min, txt: `${p.icon} ${p.title} (patrimônio de R$ ${p.min >= 1e9 ? `${p.min / 1e9} bi` : `${p.min / 1e6} mi`})`, v: p.perk[k] });
+  return out;
+}
 
 // terras próprias: cada tipo de lote dá uma vantagem, com teto
 const cap = (v, m) => Math.min(m, v);
@@ -93,6 +120,7 @@ export function bonuses(s) {
   const out = {};
   for (const c of new Set((s.cars || []).map(c => c.model))) add(out, CAR_PERKS[c]);        // dois carros iguais não somam
   add(out, landBonuses(s.lands));
+  add(out, scaleBonuses(s));
   for (const tag of s.owned || []) if (tag.startsWith('acc:')) add(out, ACC_PERKS[tag.slice(4)]);
   for (const r of collRewards(s)) add(out, r);                                                // coleções de cartas completas
   for (const p of prestigeOf(s.trophies)) add(out, p.perk);                                   // marcos de R$ 100 mi para cima
@@ -100,9 +128,9 @@ export function bonuses(s) {
   return out;
 }
 // de onde vem cada vantagem (para a página do personagem): total (já com o teto), soma crua e o que cada fonte dá
-export const SOURCES = { carros: 'carros e máquinas', terras: 'terras', acessorios: 'acessórios', colecoes: 'coleções de cartas', prestigio: 'troféus' };
+export const SOURCES = { carros: 'carros e máquinas', terras: 'terras', escala: 'escala da produção', acessorios: 'acessórios', colecoes: 'coleções de cartas', prestigio: 'troféus' };
 export function breakdown(s) {
-  const src = { carros: {}, terras: landBonuses(s.lands), acessorios: {}, colecoes: {}, prestigio: {} };
+  const src = { carros: {}, terras: landBonuses(s.lands), escala: scaleBonuses(s), acessorios: {}, colecoes: {}, prestigio: {} };
   for (const c of new Set((s.cars || []).map(c => c.model))) add(src.carros, CAR_PERKS[c]);
   for (const tag of s.owned || []) if (tag.startsWith('acc:')) add(src.acessorios, ACC_PERKS[tag.slice(4)]);
   for (const r of collRewards(s)) add(src.colecoes, r);

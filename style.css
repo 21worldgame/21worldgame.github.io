@@ -4004,3 +4004,16 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .law__steps i { color: #7a1f2b; font-style: normal; font-weight: 800; }
 .law__note { margin: 6px 0 0; font-size: .85rem; color: #5b6270; }
 .law__ok { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; font-size: .92rem; } .law__ok li::marker { content: "✓  "; color: #15803d; font-weight: 800; }
+/* v311: aba vantagens do personagem: coluna larga, lista com rolagem própria, resumo e "como chegar ao teto" */
+.panel--char.is-wide { grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); }
+.panel--char.is-wide .stage { min-height: 420px; }
+#cs-vantagens .perks { margin: 0; padding: 10px; max-height: calc(100dvh - 300px); min-height: 260px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(125,211,252,.6) transparent; }
+#cs-vantagens .perks::-webkit-scrollbar { width: 8px; } #cs-vantagens .perks::-webkit-scrollbar-thumb { background: rgba(125,211,252,.55); border-radius: 8px; }
+#cs-vantagens .perks ul.perk-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; font-size: .9rem; }
+.perk-sum { position: sticky; top: -10px; z-index: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: -10px -10px 8px; padding: 10px; background: color-mix(in srgb, var(--color-paper, #0b1020) 92%, transparent); backdrop-filter: blur(6px); border-bottom: 1px solid var(--glass-edge); }
+.perk-sum div { display: grid; padding: 6px 10px; border-radius: 10px; background: var(--glass-2); } .perk-sum b { font: 800 1.35rem/1.1 var(--font-display); color: #ffd76a; } .perk-sum small { color: var(--color-muted); font-size: .72rem; }
+.perk-row.is-zero { opacity: .62; } .perk-row.is-top { border-color: rgba(74,222,128,.55); }
+.perk-row__top b small { color: var(--color-muted); font-weight: 600; }
+.perk-how summary { cursor: pointer; font-size: .78rem; font-weight: 700; color: #7dd3fc; } .perk-how ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 3px; font-size: .8rem; color: var(--color-muted); }
+.perk-how li.is-have { color: var(--money); }
+@media (max-width: 60rem) { .panel--char.is-wide { grid-template-columns: minmax(0, 1fr); } .panel--char.is-wide .stage { display: none; } #cs-vantagens .perks { max-height: none; overflow: visible; } }

@@ -270,14 +270,26 @@ function renderChar() {
       <button type="button" class="btn btn--glass btn--sm" data-act="look" data-k="acc" data-id="nenhum" ${worn.length ? '' : 'disabled'}>tirar todos</button></div>`
       + [...SLOT_ORDER, ...Object.keys(bySlot).filter(k => !SLOT_ORDER.includes(k))].filter(k => bySlot[k]).map(k => `<fieldset class="accslot"><legend>${SLOT_ICON[k] || '✨'} ${k}</legend><div class="accgrid">${bySlot[k].map(card).join('')}</div></fieldset>`).join('');
   }
+  $('#p-personagem').classList.toggle('is-wide', charTab === 'vantagens');
   if (charTab === 'vantagens') {
-    const bd = PK.breakdown(s), keys = Object.keys(bd);
-    const row = k => { const r = bd[k], neg = k === 'loan' || k === 'plant' || k === 'animais', good = neg ? r.total < 0 : r.total > 0, cap = r.cap, fill = cap ? Math.min(1, Math.abs(r.total) / Math.abs(cap)) : 0, hit = cap && Math.abs(r.raw) > Math.abs(cap) + 1e-9;
-      return `<li class="perk-row"><div class="perk-row__top"><span>${esc(PK.EFFECTS[k])}</span><b class="${good ? 'good' : 'bad'}">${pctTxt(r.total)}</b></div>
-        ${cap ? `<span class="bar perk-bar"><i style="transform:scaleX(${fill.toFixed(3)})"></i></span><small class="muted">teto ${pctTxt(cap)}${hit ? ` · você já passou: ${pctTxt(r.raw)} contam só até o teto` : ''}</small>` : ''}
-        <div class="perk-src">${Object.entries(r.parts).map(([n, v]) => `<span class="tag tag--dark">${esc(PK.SOURCES[n])} ${pctTxt(v)}</span>`).join('')}</div></li>`; };
-    $('#char-perks').innerHTML = keys.length ? `<p class="small muted">Tudo que dá vantagem, separado por efeito e por fonte. Cada efeito tem um teto geral para o jogo ficar justo.</p><ul class="perk-list">${keys.map(row).join('')}</ul>`
-      : '<p class="empty glass">Nenhuma vantagem ainda. Carros, terras, acessórios, coleções de cartas e troféus de patrimônio dão vantagens pequenas e permanentes.</p>';
+    // todos os efeitos que têm teto: barra até o teto, de onde vem o que você tem e, aberto, todas as fontes do jogo (✔ = já é seu)
+    const bd = PK.breakdown(s), cars = new Set((s.cars || []).map(c => c.model)), done = new Set(CD.completed(s)), trophies = new Set(s.trophies || []);
+    const keys = Object.keys(PK.EFFECTS).filter(k => PK.CAPS[k] != null || bd[k]).sort((x, y) => (bd[y] ? 1 : 0) - (bd[x] ? 1 : 0));
+    const has = p => p.src === 'car' ? cars.has(p.id) : p.src === 'acc' ? s.owned.includes(`acc:${p.id}`) : p.src === 'coll' ? done.has(p.id) : p.src === 'prest' ? trophies.has(p.id) : null;
+    const pathTxt = p => p.src === 'car' ? `${L.CARS[p.id]?.name || p.id} (concessionária) ${pctTxt(p.v)}` : p.src === 'acc' ? `${p.id} (acessório) ${pctTxt(p.v)}`
+      : p.src === 'land' ? `terras: ${p.txt}` : p.src === 'scale' ? `escala: ${p.txt}` : `${p.txt} ${pctTxt(p.v)}`;
+    let full = 0;
+    const row = k => { const r = bd[k] || { total: 0, raw: 0, cap: PK.CAPS[k] ?? null, parts: {} }, neg = k === 'loan' || k === 'plant' || k === 'animais' || k === 'perda', cap = r.cap;
+      const fill = cap ? Math.min(1, Math.abs(r.total) / Math.abs(cap)) : 0, top = cap && fill >= 1 - 1e-9; if (top) full++;
+      const ps = PK.paths(k).map(p => { const h = has(p); return `<li class="${h ? 'is-have' : ''}">${h ? '✔' : h === false ? '○' : '•'} ${esc(pathTxt(p))}</li>`; }).join('');
+      return `<li class="perk-row${r.total ? '' : ' is-zero'}${top ? ' is-top' : ''}"><div class="perk-row__top"><span>${esc(PK.EFFECTS[k])}</span><b class="${r.total ? (neg ? r.total < 0 : r.total > 0) ? 'good' : 'bad' : 'muted'}">${pctTxt(r.total)}${cap ? `<small> / ${pctTxt(cap)}</small>` : ''}</b></div>
+        ${cap ? `<span class="bar perk-bar"><i style="transform:scaleX(${fill.toFixed(3)})"></i></span>` : ''}
+        ${Object.keys(r.parts).length ? `<div class="perk-src">${Object.entries(r.parts).map(([n, v]) => `<span class="tag tag--dark">${esc(PK.SOURCES[n])} ${pctTxt(v)}</span>`).join('')}</div>` : ''}
+        ${ps ? `<details class="perk-how"><summary>${top ? 'no teto ✔ · ver fontes' : 'como chegar ao teto'}</summary><ul>${ps}</ul></details>` : ''}</li>`; };
+    const list = keys.map(row).join(''), on = keys.filter(k => bd[k]?.total).length;
+    $('#char-perks').innerHTML = `<div class="perk-sum"><div><b>${on}</b><small>vantagens ativas</small></div><div><b>${full}</b><small>no teto</small></div><div><b>${keys.length}</b><small>no jogo</small></div></div>
+      <p class="small muted">Cada vantagem soma carros, terras, escala da produção, acessórios, coleções e troféus, até o teto. Abra "como chegar ao teto" para ver todas as fontes: ✔ você já tem, ○ falta.</p>
+      <ul class="perk-list">${list}</ul>`;
   }
 }
 
@@ -1769,7 +1781,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 310;
+const APP_VERSION = 311;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
