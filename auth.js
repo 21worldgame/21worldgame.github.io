@@ -93,6 +93,8 @@ async function submit(e) {
     $('#au-form [name="password"]').value = '';
     await afterLogin();
   } catch (err) {
+    // conta presa pela Polícia Federal (prisao.sql): o login é recusado e aparece a cela
+    if (/banned/i.test(err?.message || '') && await (await import('./prisao.js')).check(await client(), f.email.trim())) { setErr(''); return; }
     setErr(translateError(err));
   } finally { setBusy(false); }
 }

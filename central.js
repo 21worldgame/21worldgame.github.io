@@ -318,11 +318,13 @@ async function openPlayer(id) {
   }
   if (!users.length) await loadUsers();
   const u = users.find(x => x.user_id === id) || { user_id: id };
-  const [{ data: save }, { data: grants }, hist] = await Promise.all([
+  const [{ data: save }, { data: grants }, hist, { data: preso }] = await Promise.all([
     sb.from('saves').select('data, updated_at').eq('user_id', id).maybeSingle(),
     sb.from('admin_grants').select('id, kind, amount, note, created_at, applied_at').eq('user_id', id).order('created_at', { ascending: false }).limit(20),
     sb.from('save_history').select('id, saved_at, why, money, lands, chips, level, month, worth').eq('user_id', id).order('saved_at', { ascending: false }).limit(260).then(r => (r.error && /column/.test(r.error.message) ? sb.from('save_history').select('id, saved_at, why, money, lands').eq('user_id', id).order('saved_at', { ascending: false }).limit(260) : r)),
+    sb.from('presos').select('name, reason, at, confissao, confessou_at, solto_at').eq('user_id', id).is('solto_at', null).maybeSingle(),   // prisao.sql
   ]);
+  if (preso?.name && !u.name) u.name = preso.name;   // preso sai do ranking (perfil guardado em presos)
   const s = save?.data || {};
   const facts = [['dinheiro', brl(s.money)], ['fichas', int(s.chips)], ['nível', s.level ?? '—'], ['mês do jogo', s.month ?? '—'],
     ['terras', (s.lands || []).filter(l => l.own).length], ['gado', int((s.herd || []).reduce((a, h) => a + h.heads, 0))],
@@ -351,6 +353,17 @@ async function openPlayer(id) {
       <label class="field"><span>carta</span><textarea class="input" name="body" rows="8" minlength="10" maxlength="8000" required></textarea></label>
       <button class="btn btn--gold" type="submit">enviar carta</button>
     </form>
+    <h3>🚨 Polícia Federal</h3>
+    ${preso ? `<p class="ad-err">Preso desde ${when(preso.at)}: conta sem acesso, bens travados e fora do ranking.</p>
+      ${preso.confissao ? `<p><b>Confissão (${when(preso.confessou_at)}):</b> ${esc(preso.confissao)}</p>` : '<p class="muted small">Ainda não confessou.</p>'}
+      <div class="row"><button class="btn btn--gold" type="button" id="ap-solta-tudo">soltar e confiscar tudo (recomeça com R$ 10 mil)</button><button class="btn btn--glass" type="button" id="ap-solta">soltar com os bens</button></div>`
+    : `<p class="ad-help">Prende por tempo indeterminado: a conta não entra mais, os bens ficam travados, sai do ranking e na tela de entrar ele vê a cela com este texto e pode confessar. Linhas com "- " viram itens; a linha "Pena: ..." fecha em destaque.</p>
+      <form id="ap-prender" class="ad-carta"><label class="field"><span>o que a investigação apurou</span><textarea class="input" name="reason" rows="6" minlength="20" maxlength="4000" required>A Polícia Federal cumpriu mandado de prisão contra ${esc(u.name || 'o dono desta conta')}.
+O que a investigação apurou:
+- 
+Todos os bens estão apreendidos e a conta saiu do ranking.
+Pena: prisão por tempo indeterminado, sem fiança. A soltura só acontece se você assumir a fraude e devolver os bens.</textarea></label>
+      <button class="btn btn--danger" type="submit">prender</button></form>`}
     <h3>conta</h3>
     <div class="row">
       <form class="row" id="ap-rename"><label class="field"><span>renomear</span><input class="input" name="name" minlength="3" maxlength="18" value="${esc(u.name || '')}"></label><button class="btn btn--glass" type="submit">salvar nome</button></form>
@@ -417,7 +430,21 @@ async function openPlayer(id) {
     if (error) return fail(error, 'suspender');
     await log('ban', id, { reason: f.reason, days }); toast('Conta suspensa.'); await loadUsers(''); openPlayer(id);
   };
+  $('#ap-prender')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!confirm(`Prender ${u.name || 'este jogador'} por tempo indeterminado?`)) return;
+    const { data, error } = await sb.rpc('admin_prender', { p_user: id, p_reason: e.target.reason.value.trim() });
+    if (error || data !== 'ok') return fail(error || { message: data }, 'prender');
+    toast('Preso. A conta não entra mais.'); await loadUsers(''); openPlayer(id);
+  });
+  for (const [b, conf] of [['#ap-solta-tudo', true], ['#ap-solta', false]]) $(b)?.addEventListener('click', async () => {
+    if (!confirm(conf ? 'Soltar e confiscar tudo? Ele recomeça com R$ 10 mil e as marcas, a mina e o frigorífico voltam à venda.' : 'Soltar com todos os bens de volta?')) return;
+    const { data, error } = await sb.rpc('admin_soltar', { p_user: id, p_confiscar: conf });
+    if (error || data !== 'ok') return fail(error || { message: data }, 'soltar');
+    toast(conf ? 'Solto, com os bens confiscados.' : 'Solto.'); await loadUsers(''); openPlayer(id);
+  });
   $('#ap-unban')?.addEventListener('click', async () => {
+    if (preso) return toast('Preso pela Polícia Federal: use os botões de soltar.');
     const { error } = await sb.from('bans').delete().eq('user_id', id);
     if (error) return fail(error, 'reativar');
     await log('unban', id); toast('Conta reativada.'); await loadUsers(''); openPlayer(id);
