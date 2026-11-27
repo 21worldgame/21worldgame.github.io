@@ -56,7 +56,7 @@ async function enter(user) {
   $('#ad-who').textContent = `Conectado como ${user.email}`;
   show('vigia');
   pwBadge(); setInterval(pwBadge, 60000);
-  watchOnline();
+  watchOnline(); loadUsers();   // lista de jogadores já em memória: busca e fichas abrem na hora
 }
 // ---------- quem está online (presença em tempo real, sem tabela) ----------
 let online = [];
@@ -73,6 +73,12 @@ function renderOnline() {
   el.innerHTML = list.map(p => `<tr ${p.uid ? `data-user="${esc(p.uid)}"` : ''}><td><strong>${esc(p.name)}</strong></td><td>${p.uid ? '<span class="tag tag--green">conta logada</span> <small class="muted">clique para ver</small>' : '<span class="tag tag--gold">visitante sem conta</span>'}</td>
     <td class="num">${int(p.level)}</td><td class="num">${brl(p.worth || 0)}</td><td>${esc(tela(p.tab || ''))}</td><td>${p.mobile ? 'celular' : 'computador'}</td><td>${mins(p.since)}</td></tr>`).join('')
     || '<tr><td colspan="7" class="muted">Ninguém com o jogo aberto agora.</td></tr>';
+  // lateral: um por pessoa (o mesmo jogador em 2 aparelhos conta 1), contas logadas primeiro
+  const seen = new Set(), side = list.filter(p => { const k = p.uid || `v:${p.name}`; if (seen.has(k)) return false; seen.add(k); return true; }).sort((a, b) => !!b.uid - !!a.uid);
+  $('#ad-side-on-n').textContent = side.length;
+  $('#ad-side-on').innerHTML = side.map(p => `<button type="button" ${p.uid ? `data-pick="${esc(p.uid)}"` : 'disabled'} title="${esc(tela(p.tab || ''))} · ${p.mobile ? 'celular' : 'computador'} · há ${mins(p.since)}">
+    <i class="ad-dot${p.uid ? '' : ' ad-dot--off'}"></i><b>${esc(p.name)}</b><small>${esc(tela(p.tab || ''))}${p.mobile ? ' 📱' : ''}</small></button>`).join('') || '<p class="muted small">ninguém agora</p>';
+  if (!$('[data-panel="players"]').hidden) renderUsers();
 }
 // ---------- pedidos de senha ----------
 async function pwBadge() {
@@ -119,6 +125,7 @@ function show(tab) {
   window.scrollTo?.(0, 0);
 }
 document.querySelector('.ad-nav').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) show(b.dataset.tab); });
+document.querySelectorAll('.ad-nav button small').forEach(s => { s.parentElement.title = s.textContent; });   // menu compacto: a descrição vira dica ao passar o mouse
 
 // ---------- visão geral ----------
 async function loadOverview() {
@@ -153,18 +160,81 @@ document.addEventListener('click', async e => {
 }, true);
 
 // ---------- jogadores ----------
-async function loadUsers(q = $('#ad-q').value.trim()) {
-  const { data, error } = await sb.rpc('admin_users', { q, lim: 300 });
-  if (error) return fail(error, 'listar os jogadores');
-  users = data || [];
-  $('#ad-users').innerHTML = users.map(u => `<tr data-user="${u.user_id}" tabindex="0">
-    <td><strong>${esc(u.name || '(sem nome)')}</strong></td><td>${esc(u.email)}${u.confirmed ? '' : ' <span class="tag tag--gold">não confirmou</span>'}</td>
+// a lista inteira vem uma vez (e de novo a cada 2 min) e a busca filtra na memória: resultado a cada tecla, sem esperar o servidor
+const USERS_MAX = 1000;   // ponytail: teto do admin_users; com mais jogadores, a busca local completa com o servidor (findUsers)
+let usersAt = 0, usersP = null;
+async function loadUsers(force) {
+  if (!force && users.length && Date.now() - usersAt < 120000) return renderUsers();
+  usersP ??= sb.rpc('admin_users', { q: '', lim: USERS_MAX }).then(({ data, error }) => {
+    usersP = null;
+    if (error) return fail(error, 'listar os jogadores');
+    users = data || []; usersAt = Date.now(); renderUsers();
+  });
+  return usersP;
+}
+const fold = t => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function matchUsers(q, lim = 300) {
+  const f = fold(q.trim()); if (!f) return users.slice(0, lim);
+  const hit = []; for (const u of users) { const n = fold(u.name), m = fold(u.email); const r = n.startsWith(f) ? 0 : n.includes(f) ? 1 : m.includes(f) ? 2 : -1; if (r >= 0) hit.push([r, u]); }
+  return hit.sort((a, b) => a[0] - b[0]).slice(0, lim).map(x => x[1]);
+}
+// não achou na lista local (passou do teto): pergunta ao servidor e guarda junto
+async function findUsers(q) {
+  const { data } = await sb.rpc('admin_users', { q, lim: 50 });
+  const have = new Set(users.map(u => u.user_id)); for (const u of data || []) if (!have.has(u.user_id)) users.push(u);
+  return (data || []).length;
+}
+const onIds = () => new Set(online.map(p => p.uid).filter(Boolean));
+function renderUsers() {
+  const el = $('#ad-users'); if (!el) return;
+  const q = $('#ad-q').value, list = matchUsers(q), on = onIds();
+  $('#ad-q-n').textContent = `${list.length}${list.length >= 300 ? '+' : ''} de ${users.length}`;
+  el.innerHTML = list.map(u => `<tr data-user="${u.user_id}" tabindex="0">
+    <td>${on.has(u.user_id) ? '<i class="ad-dot" title="online agora"></i>' : ''}<strong>${esc(u.name || '(sem nome)')}</strong></td><td>${esc(u.email)}${u.confirmed ? '' : ' <span class="tag tag--gold">não confirmou</span>'}</td>
     <td class="num">${u.level ?? '—'}</td><td class="num">${u.worth != null ? brl(u.worth) : '—'}</td><td>${when(u.last_sign_in_at)}</td>
     <td>${u.banned ? `<span class="tag tag--red">suspenso</span>` : '<span class="tag tag--green">ativo</span>'}</td></tr>`).join('')
     || '<tr><td colspan="6" class="muted">Nenhum jogador encontrado.</td></tr>';
 }
-$('#ad-search').addEventListener('submit', e => { e.preventDefault(); loadUsers(); });
-document.addEventListener('click', e => { const r = e.target.closest('tr[data-user]'); if (r) openPlayer(r.dataset.user); });
+let qT;
+$('#ad-search').addEventListener('submit', e => e.preventDefault());
+$('#ad-q').addEventListener('input', () => {
+  renderUsers(); clearTimeout(qT);
+  const q = $('#ad-q').value.trim();
+  if (q.length >= 3 && users.length >= USERS_MAX && !matchUsers(q, 1).length) qT = setTimeout(() => findUsers(q).then(renderUsers), 300);
+});
+
+// busca rápida na lateral: "/" foca, digita, Enter abre a ficha do primeiro (setas escolhem), Esc limpa
+let qsSel = 0;
+function renderQs() {
+  const box = $('#ad-qs-res'), q = $('#ad-qs').value.trim();
+  if (!q) { box.hidden = true; return; }
+  const list = matchUsers(q, 8), on = onIds();
+  qsSel = Math.min(qsSel, Math.max(0, list.length - 1));
+  box.innerHTML = list.map((u, i) => `<button type="button" data-pick="${u.user_id}" class="${i === qsSel ? 'is-sel' : ''}">${on.has(u.user_id) ? '<i class="ad-dot"></i>' : ''}<b>${esc(u.name || '(sem nome)')}</b><small>${esc(u.email || '')}${u.banned ? ' · suspenso' : ''}</small></button>`).join('')
+    || '<p class="muted small">ninguém com esse nome</p>';
+  box.hidden = false;
+}
+$('#ad-qs').addEventListener('focus', () => { loadUsers(); renderQs(); });
+$('#ad-qs').addEventListener('input', () => {
+  qsSel = 0; renderQs(); clearTimeout(qT);
+  const q = $('#ad-qs').value.trim();
+  if (q.length >= 3 && users.length >= USERS_MAX && !matchUsers(q, 1).length) qT = setTimeout(() => findUsers(q).then(renderQs), 300);
+});
+$('#ad-qs').addEventListener('keydown', e => {
+  const btns = [...$('#ad-qs-res').querySelectorAll('[data-pick]')];
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); qsSel = (qsSel + (e.key === 'ArrowDown' ? 1 : -1) + btns.length) % Math.max(1, btns.length); renderQs(); }
+  else if (e.key === 'Enter') { e.preventDefault(); btns[qsSel]?.click(); }
+  else if (e.key === 'Escape') { e.target.value = ''; renderQs(); e.target.blur(); }
+});
+$('#ad-qs').addEventListener('blur', () => setTimeout(() => { $('#ad-qs-res').hidden = true; }, 150));
+document.addEventListener('keydown', e => {
+  if (e.key !== '/' || e.ctrlKey || e.metaKey || e.target.closest?.('input, textarea, select, [contenteditable]') || $('#ad-app').hidden) return;
+  e.preventDefault(); $('#ad-qs').focus();
+});
+document.addEventListener('click', e => {
+  const p = e.target.closest('[data-pick]'); if (p) { $('#ad-qs').value = ''; $('#ad-qs-res').hidden = true; return openPlayer(p.dataset.pick); }
+  const r = e.target.closest('tr[data-user]'); if (r) openPlayer(r.dataset.user);
+});
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches?.('tr[data-user]')) openPlayer(e.target.dataset.user); });
 
 // economia do jogador: de que é feito o patrimônio, o que ele faz, lucro/prejuízo por atividade e alertas
@@ -241,7 +311,12 @@ async function restoreTo(uid, histId, whenTxt, moneyTxt) {
 }
 
 async function openPlayer(id) {
-  if (!users.length) await loadUsers('');
+  const dlg = $('#ad-player');
+  if (!dlg.open) {   // abre na hora com o nome; o resto chega em seguida
+    const n = users.find(x => x.user_id === id)?.name || online.find(p => p.uid === id)?.name || '';
+    $('#ap-body').innerHTML = `<h2 id="ap-name">${esc(n || 'jogador')}</h2><p class="muted">abrindo a ficha...</p>`; dlg.showModal();
+  }
+  if (!users.length) await loadUsers();
   const u = users.find(x => x.user_id === id) || { user_id: id };
   const [{ data: save }, { data: grants }, hist] = await Promise.all([
     sb.from('saves').select('data, updated_at').eq('user_id', id).maybeSingle(),
@@ -829,7 +904,7 @@ async function loadVigia() {
     ]);
     OKS = Object.fromEntries(oks.map(o => [o.user_id, o]));
     BANS = Object.fromEntries(bans.filter(b => !b.until || Date.parse(b.until) > Date.now()).map(b => [b.user_id, b]));
-    KNOWN = users.length < 300 ? new Set(users.map(u => u.user_id)) : new Set();   // lista cortada em 300: não dá para saber quem foi excluído
+    KNOWN = users.length < USERS_MAX ? new Set(users.map(u => u.user_id)) : new Set();   // lista cortada no teto: não dá para saber quem foi excluído
     // fazenda de contas (30 dias) e dinheiro sem lançamento (diário, 7 dias)
     const UI = Object.fromEntries(users.map(u => [u.user_id, { name: u.name, created: u.created_at }]));
     const farm = AE.pixFarm(pix30, UI), F = Object.fromEntries(farm.map(f => [f.id, f])), FS = {};

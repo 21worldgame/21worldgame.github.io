@@ -32,7 +32,12 @@
   <!-- painel -->
   <div class="ad-app" id="ad-app" hidden>
     <aside class="ad-side">
-      <div class="ad-brand"><img src="assets/brand/logo-mark.svg" alt="" width="36" height="36"><span>21 world <b>admin</b></span></div>
+      <div class="ad-brand"><img src="assets/brand/logo-mark.svg" alt="" width="28" height="28"><span>21 world <b>admin</b></span></div>
+      <div class="ad-qs" role="search">
+        <label class="visually-hidden" for="ad-qs">buscar jogador</label>
+        <input class="input" id="ad-qs" placeholder="buscar jogador  ( / )" autocomplete="off" spellcheck="false">
+        <div class="ad-qs__res" id="ad-qs-res" hidden></div>
+      </div>
       <nav class="ad-nav" aria-label="seções do painel">
         <p class="ad-nav__grp">vigilância</p>
         <button class="is-on" data-tab="alertas">🚨 alertas de trapaça <span class="ad-badge" id="ad-vg-badge" hidden></span><small>fazenda de contas e sinais fortes</small></button>
@@ -52,9 +57,15 @@
         <button data-tab="vip">⚜️ VIP da cidade <span class="ad-badge" id="ad-vip-badge" hidden></span><small>Pix de apoio, liberar, usina, Discord</small></button>
         <button data-tab="registro">🗂️ registro do admin<small>tudo o que foi feito no painel</small></button>
       </nav>
-      <p class="muted small" id="ad-who"></p>
-      <button class="btn btn--glass btn--sm" id="ad-logout">sair</button>
-      <a class="btn btn--glass btn--sm" href="./" target="_blank" rel="noopener">abrir o jogo</a>
+      <div class="ad-on">
+        <p class="ad-nav__grp">online agora <span class="tag tag--green" id="ad-side-on-n">0</span></p>
+        <div class="ad-on__list" id="ad-side-on"></div>
+      </div>
+      <div class="ad-foot">
+        <p class="muted small" id="ad-who"></p>
+        <button class="btn btn--glass btn--xs" id="ad-logout">sair</button>
+        <a class="btn btn--glass btn--xs" href="./" target="_blank" rel="noopener">abrir o jogo</a>
+      </div>
     </aside>
 
     <main class="ad-main">
@@ -176,7 +187,7 @@
 
       <section data-panel="players" hidden>
         <div class="ad-head"><h2>jogadores</h2>
-          <form id="ad-search" class="row"><label class="visually-hidden" for="ad-q">buscar</label><input class="input" id="ad-q" placeholder="nome ou e-mail" autocomplete="off"><button class="btn btn--glass" type="submit">buscar</button></form></div>
+          <form id="ad-search" class="row"><label class="visually-hidden" for="ad-q">buscar</label><input class="input" id="ad-q" placeholder="filtrar por nome ou e-mail (na hora)" autocomplete="off" spellcheck="false"><span class="muted small" id="ad-q-n"></span></form></div>
         <div class="ad-tablewrap"><table>
           <thead><tr><th>jogador</th><th>e-mail</th><th class="num">nível</th><th class="num">patrimônio</th><th>último acesso</th><th>situação</th></tr></thead>
           <tbody id="ad-users"></tbody></table></div>
