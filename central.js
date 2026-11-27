@@ -104,10 +104,12 @@ for (const id of ['#ad-logout', '#ad-logout2']) $(id).addEventListener('click', 
 
 // ---------- navegação ----------
 // poucos menus: cada um junta várias partes do painel, uma embaixo da outra
-const MENU = { alertas: ['vigia', 'overview'], jogadores: ['players'], investigar: ['diario', 'terras', 'livros'], mundo: ['economy', 'rules', 'owners', 'news'], delegacia: ['bo'], pano: ['pano'], enviados: ['sent'], vip: ['vip'], pedidos: ['pro', 'passwords', 'log'] };
+// menus por categoria (v287): vigilância (alertas, Pix, atividade, pano) · jogadores · comunidade · mundo · receita
+const MENU = { alertas: ['vigia'], pix: ['pix'], atividade: ['atividade', 'overview'], jogadores: ['players'], investigar: ['diario', 'terras', 'livros'], mundo: ['economy', 'rules', 'owners', 'news'], delegacia: ['bo'], pano: ['pano'], enviados: ['sent'], vip: ['vip'], pedidos: ['pro', 'passwords'], registro: ['log'] };
 let tuneLoad = null;
 let vgAt = 0;   // vigilância lida há pouco: trocar de menu não relê tudo (cada leitura baixa vários MB); o botão atualizar relê
-const LOAD = { vigia: () => (vg && Date.now() - vgAt < 600000 ? drawVigia() : loadVigia()), overview: () => loadOverview(), players: () => loadUsers(), diario: () => { if (!dj) loadDiario(); }, terras: () => loadLands(),
+const vgLoad = () => (vg && Date.now() - vgAt < 600000 ? drawVigia() : loadVigia());
+const LOAD = { vigia: vgLoad, pix: vgLoad, atividade: vgLoad, overview: () => loadOverview(), players: () => loadUsers(), diario: () => { if (!dj) loadDiario(); }, terras: () => loadLands(),
   economy: () => { loadConfig(); loadEconomy(); }, rules: () => tuneLoad?.(), owners: () => loadOwners(), news: () => loadAnns(), bo: () => loadBo(), pano: () => (vg ? drawPano() : loadVigia()), sent: () => loadSent(), vip: () => loadVip(), pro: () => loadPro(), passwords: () => loadPw(), log: () => loadLog() };
 function show(tab) {
   const g = MENU[tab] ? tab : Object.keys(MENU).find(k => MENU[k].includes(tab)) || 'alertas';
@@ -812,7 +814,7 @@ async function loadVigia() {
   try {
     if (!users.length) await loadUsers('');
     const ago = d => new Date(Date.now() - d * 864e5).toISOString(), soft = p => p.catch(() => []);
-    const [saves, hist, rc, gifts, pix, pix30, diary, bans, oks, takes] = await Promise.all([
+    const [saves, hist, rc, gifts, pix, pix30, diary, bans, oks, takes, propay] = await Promise.all([
       pageAll(() => sb.from('saves').select('user_id, data, updated_at'), 'user_id'),
       soft(pageAll(() => sb.from('save_history').select('user_id, saved_at, money').gt('saved_at', ago(1)))),
       soft(pageAll(() => sb.from('receita_casos').select('user_id'))),
@@ -823,6 +825,7 @@ async function loadVigia() {
       soft(pageAll(() => sb.from('bans').select('user_id, reason, until'), 'user_id')),
       soft(pageAll(() => sb.from('vigia_ok').select('*'), 'user_id')),
       soft(pageAll(() => sb.from('admin_grants').select('user_id, amount, created_at').eq('kind', 'money').lt('amount', 0).gt('created_at', ago(30)))),
+      soft(pageAll(() => sb.from('pro_payments').select('payer, amount, memo, at, pro_contracts(pro_id, pro_name, client_name)').gt('at', ago(30)))),   // pagamento de contrato na Central = repasse disfarçado
     ]);
     OKS = Object.fromEntries(oks.map(o => [o.user_id, o]));
     BANS = Object.fromEntries(bans.filter(b => !b.until || Date.parse(b.until) > Date.now()).map(b => [b.user_id, b]));
@@ -839,7 +842,7 @@ async function loadVigia() {
       hist: (H[x.user_id] || []).map(h => ({ t: Date.parse(h.saved_at), money: Number(h.money) || 0 })), pixIn: Pin[x.user_id] || [], pixOut: Pout[x.user_id] || [],
       receita: (R[x.user_id] || []).length, gifts: Math.max(0, (Gf[x.user_id] || []).reduce((t, g) => (g.kind === 'reset' ? 0 : t + Number(g.amount)), 0)),   // envio desfeito (valor negativo) desconta; recomeço zera
       farm: F[x.user_id], farmSender: FS[x.user_id], gap: GP[x.user_id]?.gap || 0, gapN: GP[x.user_id]?.gapN || 0, gapPass: GP[x.user_id]?.gapPass || 0, gapOld: GP[x.user_id]?.gapOld || 0, gapOther: GP[x.user_id]?.gapOther || 0, gapList: GP[x.user_id]?.gapList || [], jump: JP[x.user_id] || 0, jumpAt: JA[x.user_id], jumpCloud: JC[x.user_id] || 0, rep: GP[x.user_id]?.rep }; });
-    vg = { ...AE.watch(players), pix, saves, farm, UI };
+    vg = { ...AE.watch(players), pix, pix30, propay, saves, farm, UI };
     st.textContent = `${players.length} contas analisadas às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
     await handled(takes);
     drawVigia(); loadRecursos();
@@ -882,12 +885,18 @@ function drawVigia() {
     || `<tr><td colspan="10" class="muted">${only ? 'Ninguém fora do normal agora.' : 'Nenhum jogador.'}</td></tr>`;
   const W0 = Object.fromEntries(R.map(r => [r.id, r.worth])), pair = {}, pk = p => [p.from_id, p.to_id].sort().join();
   for (const p of vg.pix) pair[pk(p)] = (pair[pk(p)] || 0) + 1;
-  $('#ad-vg-pix').innerHTML = vg.pix.slice(0, 200).map(p => { const v = Number(p.amount), age = (Date.parse(p.at) - Date.parse(vg.UI[p.from_id]?.created || '')) / 864e5;
-    const isNew = Number.isFinite(age) && age < AE.NEW_DAYS, start = v >= 5000 && v <= 20000, big = v > Math.max(100000, (W0[p.to_id] || 0) * 0.3), bad = isNew || start || big || pair[pk(p)] >= 3;
-    const tags = [isNew ? `<span class="tag tag--red">conta nova (${age < 1 ? `${Math.max(1, Math.round(age * 24))} h` : `${Math.floor(age)} dia(s)`} de criada)</span>` : '', start ? '<span class="tag tag--red">valor do dinheiro inicial</span>' : '',
+  const wk = Date.now() - 7 * 864e5, pq = ($('#ad-pix-q')?.value || '').trim().toLowerCase(), ponly = $('#ad-pix-only')?.checked;
+  const allPix = [...vg.pix, ...(vg.propay || []).filter(x => Date.parse(x.at) > wk).map(proPix)].sort((a, b) => (a.at < b.at ? 1 : -1));
+  const flagged = allPix.map(p => { const v = Number(p.amount), age = (Date.parse(p.at) - Date.parse(vg.UI[p.from_id]?.created || '')) / 864e5, noProf = !vg.UI[p.from_id];
+    const isNew = Number.isFinite(age) && age < AE.NEW_DAYS, start = v >= 5000 && v <= 20000, big = v > Math.max(100000, (W0[p.to_id] || 0) * 0.3);
+    return { p, v, age, noProf, isNew, start, big, bad: isNew || noProf || start || big || pair[pk(p)] >= 3 }; });
+  const pb = $('#ad-pix-badge'); if (pb) { const n = flagged.filter(f => f.bad).length; pb.textContent = n; pb.hidden = !n; }
+  drawPix(flagged);
+  $('#ad-vg-pix').innerHTML = flagged.filter(f => (!ponly || f.bad) && (!pq || `${f.p.from_name} ${f.p.to_name}`.toLowerCase().includes(pq))).slice(0, 300).map(({ p, v, age, noProf, isNew, start, big, bad }) => {
+    const tags = [noProf ? '<span class="tag tag--red">sem perfil / excluída</span>' : '', isNew ? `<span class="tag tag--red">conta nova (${age < 1 ? `${Math.max(1, Math.round(age * 24))} h` : `${Math.floor(age)} dia(s)`} de criada)</span>` : '', start ? '<span class="tag tag--red">valor do dinheiro inicial</span>' : '',
       pair[pk(p)] >= 3 ? `<span class="tag tag--gold">mesma dupla ${pair[pk(p)]}x</span>` : '', big ? '<span class="tag tag--gold">grande para quem recebeu</span>' : ''].join(' ');
     return `<tr${bad ? ' class="ad-alert"' : ''}><td>${when(p.at)}</td><td><a href="#" data-vg-user="${esc(p.from_id)}">${esc(p.from_name)}</a></td><td><a href="#" data-vg-user="${esc(p.to_id)}">${esc(p.to_name)}</a></td>
-      <td class="num"><b>${brl(p.amount)}</b></td><td>${p.kind === 'pagamento' ? 'pagamento' : 'Pix'} ${tags}</td><td>${esc(p.memo || '')}</td></tr>`; }).join('') || '<tr><td colspan="6" class="muted">Nenhum Pix nos últimos 7 dias.</td></tr>';
+      <td class="num"><b>${brl(p.amount)}</b></td><td>${p.kind === 'central' ? '<b>contrato na Central</b>' : p.kind === 'pagamento' ? 'pagamento' : 'Pix'} ${tags}</td><td>${esc(p.memo || '')}</td></tr>`; }).join('') || '<tr><td colspan="6" class="muted">Nenhum Pix ou pagamento com esse filtro nos últimos 7 dias.</td></tr>';
   const days = Array.from({ length: 7 }, (_, k) => new Date(Date.now() - 3 * 36e5 - (6 - k) * 864e5).toISOString().slice(0, 10));
   $('#ad-vg-play').innerHTML = [...R].filter(r => r.weekH > 0).sort((a, b) => b.weekH - a.weekH).slice(0, 30).map(r => `<tr><td><a href="#" data-vg-user="${esc(r.id)}">${esc(r.name)}</a>${on.has(r.id) ? ' <span class="tag tag--green">online</span>' : ''}</td>
     <td class="num">${hrs(r.weekH)}</td><td class="num">${hrs(r.todayH)}</td><td class="small">${days.map(d => hrs((r.s.play?.days?.[d] || 0) / 36e5)).join(' · ')}</td><td class="num">${hrs(r.playH)}</td></tr>`).join('')
@@ -897,6 +906,30 @@ function drawVigia() {
     .sort((a, b) => Math.abs(b.val) - Math.abs(a.val)).slice(0, 40);
   $('#ad-vg-moves').innerHTML = moves.map(e => `<tr><td><a href="#" data-vg-user="${esc(e.u)}">${esc(nm[e.u] || '?')}</a></td><td>${e.m}</td><td>${esc(e.txt)}</td><td class="num ${e.val < 0 ? 'bad' : 'good'}">${brl(e.val)}</td></tr>`).join('')
     || '<tr><td colspan="4" class="muted">Sem movimentos.</td></tr>';
+}
+// pagamento de contrato na Central no mesmo formato do Pix (de quem pagou para o profissional)
+const proPix = x => ({ from_id: x.payer, from_name: x.pro_contracts?.client_name || vg.UI[x.payer]?.name || '(sem perfil)', to_id: x.pro_contracts?.pro_id, to_name: x.pro_contracts?.pro_name || '?', amount: x.amount, memo: x.memo, at: x.at, kind: 'central' });
+// aba Pix: números do período, quem mais recebe (com os remetentes) e quem mais envia (30 dias, Pix + Central)
+function drawPix(flagged7) {
+  const all = [...(vg.pix30 || []), ...(vg.propay || []).map(proPix)], UI = vg.UI;
+  const ageOf = id => { const c = Date.parse(UI[id]?.created || ''); return Number.isFinite(c) ? (Date.now() - c) / 864e5 : null; };
+  const risky = id => !UI[id] || (ageOf(id) ?? 99) < AE.NEW_DAYS;
+  const chip = (id, name, extra = '') => `<a href="#" class="ad-chip${risky(id) ? ' ad-chip--red' : ''}" data-vg-user="${esc(id)}" title="${!UI[id] ? 'sem perfil / excluída' : `conta de ${Math.floor(ageOf(id))} dia(s)`}">${esc(name || '?')}${extra}</a>`;
+  const acc = (key, other) => { const m = {}; for (const p of all) { const k = p[key]; if (!k) continue; const g = (m[k] ||= { id: k, name: p[key === 'to_id' ? 'to_name' : 'from_name'], total: 0, n: 0, peers: {} });
+    g.total += Number(p.amount) || 0; g.n++; const o = (g.peers[p[other]] ||= { id: p[other], name: p[other === 'to_id' ? 'to_name' : 'from_name'], total: 0 }); o.total += Number(p.amount) || 0; } return Object.values(m).sort((a, b) => b.total - a.total); };
+  const IN = acc('to_id', 'from_id'), OUT = acc('from_id', 'to_id');
+  const newSenders = new Set(all.filter(p => risky(p.from_id)).map(p => p.from_id));
+  const tiles = [['Pix + pagamentos em 7 dias', `${int(flagged7.length)} · ${AE.brlShort(flagged7.reduce((t, f) => t + f.v, 0))}`], ['suspeitos em 7 dias', int(flagged7.filter(f => f.bad).length)],
+    ['contas que enviaram (30 d)', int(OUT.length)], ['contas novas ou sem perfil enviando', int(newSenders.size)], ['contas que receberam (30 d)', int(IN.length)],
+    ['contratos na Central (30 d)', `${int((vg.propay || []).length)} · ${AE.brlShort((vg.propay || []).reduce((t, x) => t + Number(x.amount), 0))}`]];
+  $('#ad-pix-tiles').innerHTML = tiles.map(([k, v], i) => `<div class="ad-tile${i === 1 || i === 3 ? ' ad-tile--red' : ''}"><span>${k}</span><strong>${v}</strong></div>`).join('');
+  $('#ad-pix-in').innerHTML = IN.slice(0, 40).map(g => { const ps = Object.values(g.peers).sort((a, b) => b.total - a.total), bad = ps.filter(x => risky(x.id)).length;
+    return `<tr${bad >= 2 ? ' class="ad-alert"' : ''}><td><a href="#" data-vg-user="${esc(g.id)}"><b>${esc(g.name)}</b></a>${bad ? ` <span class="tag tag--red">${bad} remetente(s) novo(s) / sem perfil</span>` : ''}</td><td class="num"><b>${brl(g.total)}</b></td><td class="num">${g.n}</td>
+      <td class="ad-chips">${ps.slice(0, 12).map(x => chip(x.id, x.name, ` <small>${AE.brlShort(x.total)}</small>`)).join('')}${ps.length > 12 ? ` <small class="muted">+${ps.length - 12}</small>` : ''}</td></tr>`; }).join('') || '<tr><td colspan="4" class="muted">Nenhum Pix em 30 dias.</td></tr>';
+  $('#ad-pix-out').innerHTML = OUT.slice(0, 40).map(g => { const a = ageOf(g.id), ps = Object.values(g.peers).sort((x, y) => y.total - x.total);
+    return `<tr${risky(g.id) ? ' class="ad-alert"' : ''}><td><a href="#" data-vg-user="${esc(g.id)}"><b>${esc(g.name)}</b></a></td><td>${!UI[g.id] ? '<span class="tag tag--red">sem perfil / excluída</span>' : a < AE.NEW_DAYS ? `<span class="tag tag--red">nova: ${a < 1 ? `${Math.max(1, Math.round(a * 24))} h` : `${Math.floor(a)} d`}</span>` : `${Math.floor(a)} d`}</td>
+      <td class="num"><b>${brl(g.total)}</b></td><td class="ad-chips">${ps.slice(0, 6).map(x => chip(x.id, x.name, ` <small>${AE.brlShort(x.total)}</small>`)).join('')}</td></tr>`; }).join('') || '<tr><td colspan="4" class="muted">Nenhum Pix em 30 dias.</td></tr>';
+  $('#ad-pix-st').textContent = `${int(all.length)} transferências em 30 dias · atualizado às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
 }
 // cartões de alerta: o mais grave primeiro, com o motivo em palavras e os botões para agir
 const certainty = s => (s >= 6 ? ['quase certeza', 'red'] : s >= 4 ? ['muito provável', 'red'] : ['vale conferir', 'gold']);
@@ -1200,6 +1233,9 @@ document.addEventListener('click', e => {
 $('#ad-vg-reload').addEventListener('click', loadVigia);
 $('#ad-vg-only').addEventListener('change', drawVigia);
 $('#ad-vg-q').addEventListener('input', drawVigia);
+$('#ad-pix-only')?.addEventListener('change', drawVigia);
+$('#ad-pix-q')?.addEventListener('input', drawVigia);
+$('#ad-pix-reload')?.addEventListener('click', loadVigia);
 // sem releitura automática: cada leitura baixa o save inteiro de todos os jogadores (estourava o tráfego do plano). Use o botão recarregar.
 document.addEventListener('click', async e => {
   const u = e.target.closest('[data-vg-user]'); if (u) { e.preventDefault(); return openPlayer(u.dataset.vgUser); }

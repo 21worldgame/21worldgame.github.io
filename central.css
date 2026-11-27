@@ -122,3 +122,16 @@ tr.ad-mark td { background: color-mix(in oklab, var(--hud-accent) 10%, transpare
 .ad-prev__note b { font-size: 15px; }
 .ad-prev__log td { white-space: normal !important; }
 .ad-full { display: grid; gap: 8px; margin-top: 12px; } .ad-full__f { flex-wrap: wrap; gap: 6px; align-items: center; } .ad-full__f .input { width: auto; }
+
+/* v287: menu por categoria e aba de Pix */
+.ad-nav__grp { margin: 14px 0 2px; padding: 0 12px; font: 700 11px/1 var(--font-display); letter-spacing: .14em; text-transform: uppercase; color: var(--hud-accent); opacity: .85; }
+.ad-nav__grp:first-child { margin-top: 0; }
+.ad-tile--red { border-color: oklch(68% 0.2 25 / .6); background: oklch(68% 0.2 25 / .12); }
+.ad-tile--red strong { color: oklch(78% 0.16 25); }
+.ad-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-lg); align-items: start; }
+.ad-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.ad-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; background: var(--glass); border: 1px solid var(--glass-edge); color: var(--color-ink); text-decoration: none; font-size: 12px; white-space: nowrap; }
+.ad-chip small { opacity: .75; }
+.ad-chip--red { border-color: oklch(68% 0.2 25 / .7); background: oklch(68% 0.2 25 / .18); color: oklch(85% 0.1 25); }
+@media (max-width: 80rem) { .ad-cols { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 56rem) { .ad-nav__grp { display: none; } }
