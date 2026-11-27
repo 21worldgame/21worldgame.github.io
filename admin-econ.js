@@ -171,6 +171,8 @@ export const gapCause = r => (/pass-claim/.test(r.acts || '') ? 'pass' : Date.pa
 // Renda que cai sozinha todo mês (arrendamento, rendimento, resgate de aplicação) não conta.
 export const REP_N = 10, REP_MIN = 20000, REP_WIN = 36e5;
 const AUTO = /^(arrendamento recebido|rendimento|resgate de investimento|juros|dividendos|lucro das empresas|aluguel)/;
+// entrada que vem junto com uma saída no mesmo clique: conta o líquido (comprar boi gordo e abater dá ~5%; o bruto disparava a PF à toa)
+const PAIR = { 'compra de # bois gordos para abate': 'abate de # bois no seu frigorífico' };
 export function diaryReport(rows, names = {}) {
   const P = {}, src = {}, gapBy = {}, chipBy = {}, jumps = [];
   const nm = id => names[id] || String(id).slice(0, 8);
@@ -193,11 +195,14 @@ export function diaryReport(rows, names = {}) {
       if (v > 0) p.in += v; else p.out -= v;
       const k = pattern(r.txt), S = (src[k] ??= { k, in: 0, out: 0, n: 0, players: {}, ex: r.txt }), Q = (p.src[k] ??= { k, net: 0, n: 0 });
       if (v > 0) S.in += v; else S.out -= v; S.n++; S.players[p.name] = (S.players[p.name] || 0) + v; Q.net += v; Q.n++;
+      if (v < 0 && PAIR[k]) { const w = (win[`${id}|${PAIR[k]}`] ??= []); w.push({ t: when(r), v, m: r.m, neg: true }); }   // custo da mesma operação entra no total
       if (v > 0 && !AUTO.test(k)) {   // janela de 1 h por jogador e ação: guarda a pior
         const w = (win[`${id}|${k}`] ??= []), t = when(r); w.push({ t, v, m: r.m }); while (t - w[0].t > REP_WIN) w.shift();
-        const tot = w.reduce((a, x) => a + x.v, 0), months = new Set(w.map(x => x.m)).size;
+        const pos = w.filter(x => !x.neg), n = pos.length, tot = w.reduce((a, x) => a + x.v, 0), months = new Set(pos.map(x => x.m)).size;
         // uma vez por mês do jogo é renda que cai sozinha (empresa, provedor, aluguel): só conta repetido várias vezes no mesmo mês
-        if (w.length >= REP_N && w.length > months * 2 && tot >= REP_MIN && (!p.rep || w.length > p.rep.n)) p.rep = { k, ex: r.txt, n: w.length, total: tot, at: r.at };
+        const gross = pos.reduce((a, x) => a + x.v, 0), paired = Object.values(PAIR).includes(k);
+        // compra e revenda com margem normal (abate dá ~5%) não é furo: só acusa se a margem passar de 15%
+        if (n >= REP_N && n > months * 2 && tot >= REP_MIN && !(paired && tot < gross * 0.15) && (!p.rep || n > p.rep.n)) p.rep = { k, ex: r.txt, n, total: tot, at: r.at };
       }
     }
     last[id] = r;

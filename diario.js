@@ -32,7 +32,10 @@ let loadM = null;
 export const atLoad = m => { if (loadM == null && m != null) loadM = m; };
 export function rebase(s, why = 'abriu o jogo', now = Date.now(), tab = '', uid = jr?.uid) {
   // abertura: o que entrou nesses meses vai junto (antes ficava como "já visto" e o painel acusava salto de dinheiro sem lançamento)
-  const late = why === 'abriu o jogo' && loadM != null ? (s.log || []).filter(e => e && typeof e === 'object' && (Number(e.m) || 0) > loadM) : [];
+  // e o que foi lançado desde que a página abriu (aposta do trader resolvida no carregamento cai no mesmo mês do save:
+  // Light Yagami 26/11 16:52, R$ 17 mi apareceram como "salto sem lançamento")
+  const t0 = typeof performance !== 'undefined' ? performance.timeOrigin : Infinity;
+  const late = why === 'abriu o jogo' ? (s.log || []).filter(e => e && typeof e === 'object' && ((loadM != null && (Number(e.m) || 0) > loadM) || Number(e.at) >= t0)) : [];
   loadM = Infinity;
   for (const e of s.log || []) if (e && typeof e === 'object') seen.add(e);
   const { money, chips, base } = snap(s, now, tab), sum = late.reduce((t, e) => t + Math.round(Number(e.val) || 0), 0);
