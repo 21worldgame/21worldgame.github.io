@@ -3931,3 +3931,26 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .cat--sair { margin-left: auto; opacity: .8; }
 .cat--sair:hover { opacity: 1; color: var(--color-error); }
 .mnav-sheet__acts { display: inline-flex; gap: 6px; }
+
+/* Jurídico (juridico.js): carta em papel timbrado, sempre clara (é papel), com tinta escura */
+.dlg--carta { width: min(40rem, calc(100% - 24px)); padding: 0; background: none; border: 0; box-shadow: none; }
+.ct { position: relative; padding: clamp(18px, 4vw, 36px); background: #fbf7ee; color: #1f2430; border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,.5); font: 400 1rem/1.6 Georgia, "Times New Roman", serif; border-top: 6px solid #7a1f2b; }
+.ct .muted { color: #5b6270; }
+.ct__head { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 2px solid #7a1f2b; }
+.ct__head b { display: block; font: 800 1.3rem/1 var(--font-display); letter-spacing: .14em; color: #7a1f2b; }
+.ct__head small { font: 600 .72rem/1.3 var(--font-body); text-transform: uppercase; letter-spacing: .08em; color: #5b6270; }
+.ct__seal { display: grid; place-items: center; width: 46px; height: 46px; flex: none; border-radius: 50%; background: #7a1f2b; font-size: 22px; box-shadow: 0 0 0 3px #fbf7ee, 0 0 0 5px #c9a227; }
+.ct__meta { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 12px 0 0; font: 500 .78rem/1.3 var(--font-body); color: #5b6270; }
+.ct__title { margin: 14px 0 6px; font: 700 1.35rem/1.25 Georgia, serif; color: #1f2430; text-transform: none; }
+.ct__to { margin: 10px 0; }
+.ct__body p { margin: 0 0 .8em; } .ct__body b { color: #7a1f2b; }
+.ct__sign { display: grid; margin-top: 18px; padding-top: 10px; border-top: 1px solid #d9d1bd; }
+.ct__sig { font: italic 400 1.7rem/1.1 "Brush Script MT", "Segoe Script", cursive; color: #1e3a8a; }
+.ct__sign small { font: 500 .74rem/1.3 var(--font-body); color: #5b6270; }
+.ct__stamp { position: absolute; top: 74px; right: 22px; padding: 3px 10px; border: 3px solid #15803d; border-radius: 6px; color: #15803d; font: 900 .9rem/1 var(--font-display); letter-spacing: .14em; transform: rotate(-10deg); opacity: .75; pointer-events: none; }
+.ct__acts { margin-top: 16px; }
+.ct__list { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
+.ct__list button { width: 100%; display: grid; gap: 2px; text-align: left; padding: 10px 12px; background: #fff; border: 1px solid #d9d1bd; border-radius: 8px; color: #1f2430; font: inherit; cursor: pointer; }
+.ct__list button:hover, .ct__list button:focus-visible { border-color: #7a1f2b; }
+.ct__list small { font: 500 .75rem/1.3 var(--font-body); color: #5b6270; } .ct__list em { color: #7a1f2b; font-style: normal; font-weight: 700; }
+@media (max-width: 600px) { .ct__stamp { top: 64px; right: 10px; font-size: .75rem; } }

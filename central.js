@@ -344,6 +344,13 @@ async function openPlayer(id) {
       <label class="field ad-grow"><span>mensagem para o jogador</span><input class="input" name="note" maxlength="200"></label>
       <button class="btn btn--gold" type="submit">enviar</button>
     </form>
+    <h3>⚖️ carta do jurídico</h3>
+    <p class="ad-help">Explica ao jogador o que aconteceu na conta, como uma carta da advogada do 21 World. Abre sozinha no jogo dele (em até 3 min se estiver jogando) e fica em <b>perfil &gt; jurídico</b>. Linha em branco separa parágrafo; <b>**texto**</b> fica em negrito.</p>
+    <form id="ap-carta" class="ad-carta">
+      <label class="field"><span>assunto</span><input class="input" name="title" minlength="3" maxlength="120" required placeholder="ex.: Sobre a venda do seu gado"></label>
+      <label class="field"><span>carta</span><textarea class="input" name="body" rows="8" minlength="10" maxlength="8000" required></textarea></label>
+      <button class="btn btn--gold" type="submit">enviar carta</button>
+    </form>
     <h3>conta</h3>
     <div class="row">
       <form class="row" id="ap-rename"><label class="field"><span>renomear</span><input class="input" name="name" minlength="3" maxlength="18" value="${esc(u.name || '')}"></label><button class="btn btn--glass" type="submit">salvar nome</button></form>
@@ -387,6 +394,13 @@ async function openPlayer(id) {
     await log(`grant_${f.kind}`, id, { amount, note: f.note });
     toast('Enviado! Se o jogador estiver online, cai na conta dele na hora.'); openPlayer(id);
     if (row?.id) watchGrant(row.id, id);
+  };
+  $('#ap-carta').onsubmit = async e => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(e.target));
+    const { error } = await sb.from('cartas').insert({ user_id: id, title: f.title.trim(), body: f.body.trim() });
+    if (error) return fail(error, 'enviar a carta (rodou supabase/juridico.sql?)');
+    await log('carta', id, { title: f.title }); toast('Carta enviada. Ela abre no jogo dele.'); e.target.reset();
   };
   $('#ap-rename').onsubmit = async e => {
     e.preventDefault();
