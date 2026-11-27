@@ -9,8 +9,10 @@ import { sync as proSync, openPro } from './pro-ui.js';
 
 const sb = () => Auth.sbClient(), me = () => Auth.account()?.id;
 const CB = 'https://api.exchange.coinbase.com/products/BTC-USD';
-const PAY = { 1: 1.55, 5: 1.65, 10: 1.72 };   // v285 (igual ao servidor); acerto só conta se andar mais de 0,02% (spread)
-const MSG = { login: 'Entre na sua conta.', banned: 'Conta bloqueada.', min: 'Valor abaixo do mínimo.', max: 'Máximo de R$ 500 mil por operação.',
+const PAY = { 1: 1.55, 5: 1.65, 10: 1.72 };   // v285 (igual ao servidor)
+export const SPREAD = { 1: 0.0005, 5: 0.0008, 10: 0.001 }, TIE = 0.0001;   // v297 (igual a tr_spread no servidor): chutando acerta ~23% a 29%
+const spTxt = m => `${(SPREAD[m] * 100).toFixed(2).replace('.', ',')}%`;
+const MSG = { login: 'Entre na sua conta.', banned: 'Conta bloqueada.', min: 'Valor abaixo do mínimo.', max: 'Máximo de R$ 100 mil por operação.', dia: 'Você já lucrou R$ 300 mil na mesa hoje: ela abre de novo amanhã.', auditoria: 'Auditoria da corretora: 5 acertos seguidos é improvável demais. A mesa abre de novo amanhã.',
   saldo: 'Saldo insuficiente na mesa. Deposite primeiro.', abertas: 'Você já tem 5 operações abertas.', rapido: 'Aguarde 5 segundos entre operações.',
   preco: 'A cotação real não respondeu agora. Tente de novo em instantes.', args: 'Operação inválida.', worth: 'Valor maior que o seu patrimônio.',
   limit: 'Muitas movimentações seguidas. Aguarde um minuto.', fee: 'A comissão vai de 5% a 20%.', notrader: 'Este jogador não oferece serviço de Trader na Central.',
@@ -74,7 +76,7 @@ export function candles(tf = 1, count = 60) {
   const last = out.at(-1); if (spot && last) { last.c = spot; last.h = Math.max(last.h, spot); last.l = Math.min(last.l, spot); }
   return out.slice(-count);
 }
-export const sizeHTML = (amt, dur) => `Acertou em ${dur} min: recebe <b class="good">${brl(Math.floor(amt * PAY[dur]))}</b> (${String(PAY[dur]).replace('.', ',')}x). Preço <b>real</b> do Bitcoin (Coinbase): a entrada é a cotação no clique e a operação vence no <b>fechamento de uma vela de 1 minuto</b> (entre ${dur} e ${dur + 1} min), com o preço real desse fechamento. Acerto conta se o preço andar mais de 0,02% para o seu lado; andou menos que isso para qualquer lado, é <b>empate e o valor volta</b>. Sai do <b>saldo da mesa</b> (deposite abaixo). De R$ 100 a R$ 500 mil por operação.`;
+export const sizeHTML = (amt, dur) => `Acertou em ${dur} min: recebe <b class="good">${brl(Math.floor(amt * PAY[dur]))}</b> (${String(PAY[dur]).replace('.', ',')}x). Preço <b>real</b> do Bitcoin (Coinbase): a entrada é a cotação no clique e a operação vence no <b>fechamento de uma vela de 1 minuto</b> (entre ${dur} e ${dur + 1} min), com o preço real desse fechamento. Acerto só conta se o preço andar <b>mais de ${spTxt(dur)}</b> para o seu lado (spread da corretora); andou menos que isso, você <b>perde</b>. Só com o preço parado (até 0,01%) é <b>empate e o valor volta</b>. Sai do <b>saldo da mesa</b> (deposite abaixo). De R$ 100 a R$ 100 mil por operação, lucro de até R$ 300 mil por dia.`;
 export const posHTML = () => openList();
 export const histHTML = () => { const d = trades.filter(t => t.status !== 'aberta' && !t.copy_id).slice(0, 15); return d.length ? d.map(row).join('') : '<li class="muted small">Sem operações encerradas.</li>'; };
 export function acctHTML() {
@@ -95,12 +97,13 @@ export async function openReal(side, stake, dur) {
 }
 const paintAcct = () => { const h = document.getElementById('mesa-acct'); if (h && !h.hidden && !h.contains(document.activeElement)) h.innerHTML = acctHTML(); };
 // lateral da mesa: ranking de traders (acertos e %) + meus copies
-const win = t => t.side * (spot - t.entry) / t.entry > 0.0002;   // igual ao servidor: precisa andar mais de 0,02%
-const tie = t => Math.abs(spot - t.entry) / t.entry <= 0.0002;   // praticamente parado: empate, devolve
+const win = t => t.side * (spot - t.entry) / t.entry > SPREAD[t.minutes];   // igual ao servidor: precisa passar o spread do tempo
+const tie = t => Math.abs(spot - t.entry) / t.entry <= TIE;   // parado: empate, devolve
+const near = t => t.side * (spot - t.entry) / t.entry > TIE;   // andou a favor, mas ainda não passou o spread (fechar assim perde)
 function row(t) {
   const exp = Date.parse(t.exp), left = Math.max(0, Math.ceil((exp - Date.now()) / 1000)), tag = t.side > 0 ? '▲ sobe' : '▼ desce';
   if (t.status === 'aberta') return `<li class="tr-p"><div><strong class="${t.side > 0 ? 'good' : 'bad'}">${tag} BTC real</strong><span class="muted small">entrada ${usd(t.entry)}${spot ? `, agora ${usd(spot)}` : ''}</span></div>
-    <div class="tr-pl ${spot && win(t) ? 'good' : spot && tie(t) ? 'gold' : 'bad'}">${spot && win(t) ? 'ganhando' : spot && tie(t) ? 'empate: devolve se fechar assim' : 'perdendo'}<small>${brl(t.stake)} em jogo</small></div>
+    <div class="tr-pl ${spot && win(t) ? 'good' : spot && (tie(t) || near(t)) ? 'gold' : 'bad'}">${spot && win(t) ? 'ganhando' : spot && tie(t) ? 'empate: devolve se fechar assim' : spot && near(t) ? `quase: precisa passar ${spTxt(t.minutes)}` : 'perdendo'}<small>${brl(t.stake)} em jogo</small></div>
     <div class="tr-timer"><b>${left ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` : '…'}</b><small>${left ? 'vence no fechamento do minuto' : 'conferindo o fechamento…'}</small></div></li>`;
   const won = t.status === 'ganhou';
   return `<li><span>${tag} BTC real ${t.minutes} min</span><span class="${won ? 'good' : t.status === 'devolvida' ? 'muted' : 'bad'}">${won ? '+' + brl(t.back - t.stake) : t.status === 'devolvida' ? (t.final ? 'empate: devolvido' : 'devolvida') : '−' + brl(t.stake)}</span></li>`;

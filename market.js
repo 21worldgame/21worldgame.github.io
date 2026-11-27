@@ -25,7 +25,8 @@ export const wins = (side, entry, final) => side * (final - entry) / entry > SPR
 export const ties = (entry, final) => Math.abs(final - entry) / entry <= SPREAD;
 // auditoria: 8 acertos seguidos é improvável demais (menos de 1 em 400 mesmo com sorte): a mesa fecha para o jogador até amanhã
 export const AUDIT_STREAK = 8;
-export const NO_OPEN = new Set(['btc']);   // BTC só no "BTC real" (preço de verdade, decidido no servidor)
+// v297: só o BTC real aceita operação. Os outros são uma conta fixa no código (quem copia sabe o futuro): ficam só na faixa de cotações
+export const NO_OPEN = new Set(Object.keys(ASSETS));
 const day = now => new Date(now - 3 * 36e5).toISOString().slice(0, 10);   // dia de Brasília
 export const dayGain = (s, now) => (s.trDay?.d === day(now) ? s.trDay.net : 0);
 
@@ -61,7 +62,7 @@ export const change = (asset, now, minutes = 60) => price(asset, now) / price(as
 
 export function open(s, { asset, side, stake, minutes }, now) {
   if (!ASSETS[asset]) return { err: 'ativo inválido.' };
-  if (NO_OPEN.has(asset)) return { err: 'o Bitcoin agora é só no BTC real (preço de verdade da Coinbase).' };
+  if (NO_OPEN.has(asset)) return { err: 'operação só no BTC real (preço de verdade da Coinbase).' };
   if (!DURATIONS.includes(minutes)) return { err: 'escolha 1, 5 ou 10 minutos.' };
   stake = Math.floor(Number(stake) || 0);
   if (stake < MIN_STAKE) return { err: `o valor mínimo é R$ ${MIN_STAKE}.` };
@@ -86,7 +87,8 @@ export function settle(s, now) {
     const final = price(t.asset, t.exp), win = wins(t.side, t.entry, final), tie = !win && ties(t.entry, final), back = win ? Math.round(t.stake * (t.pay ?? 1.85)) : tie ? t.stake : 0;   // sem pay = aberta antes da v199, quando tudo pagava 1,85x
     s.money += back; s.trades.splice(s.trades.indexOf(t), 1);
     const dd = day(t.exp); s.trDay = { d: dd, net: (s.trDay?.d === dd ? s.trDay.net : 0) + back - t.stake };
-    if (!tie) s.trStreak = win ? (s.trStreak || 0) + 1 : 0;   // empate não conta na sequência if (s.trStreak >= AUDIT_STREAK) { s.trAudit = dd; s.trStreak = 0; }
+    if (!tie) s.trStreak = win ? (s.trStreak || 0) + 1 : 0;   // empate não conta na sequência
+    if (s.trStreak >= AUDIT_STREAK) { s.trAudit = dd; s.trStreak = 0; }
     const r = { ...t, final, win, tie, back };
     s.trHist = [r, ...(s.trHist || [])].slice(0, 15);
     done.push(r);
