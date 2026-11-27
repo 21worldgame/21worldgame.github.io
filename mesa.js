@@ -53,7 +53,7 @@ async function reconcile() {
 async function price() {
   try {
     const r = await fetch(`${CB}/ticker`, { cache: 'no-store' }); if (r.ok) { spot = Number((await r.json()).price) || spot; }
-    if (Date.now() - seriesAt > 30000) { const c = await fetch(`${CB}/candles?granularity=60`, { cache: 'no-store' }); if (c.ok) { series = (await c.json()).reverse().map(x => ({ t: x[0] * 1000, l: x[1], h: x[2], o: x[3], c: x[4] })); spot0 = series.at(-60)?.c || series[0]?.c || 0; seriesAt = Date.now(); } }
+    if (Date.now() - seriesAt > 30000 || (Math.floor(Date.now() / 6e4) !== Math.floor(seriesAt / 6e4) && Date.now() % 6e4 > 4000)) { const c = await fetch(`${CB}/candles?granularity=60`, { cache: 'no-store' }); if (c.ok) { series = (await c.json()).reverse().map(x => ({ t: x[0] * 1000, l: x[1], h: x[2], o: x[3], c: x[4] })); spot0 = series.at(-60)?.c || series[0]?.c || 0; seriesAt = Date.now(); } }
   } catch {}
 }
 
@@ -69,10 +69,12 @@ export function candles(tf = 1, count = 60) {
   if (!series.length) return [];
   const out = []; for (const x of series) { const k = Math.floor(x.t / (tf * 6e4)) * tf * 6e4, l = out.at(-1);
     if (l && l.t === k) { l.h = Math.max(l.h, x.h); l.l = Math.min(l.l, x.l); l.c = x.c; } else out.push({ t: k, o: x.o, h: x.h, l: x.l, c: x.c }); }
+  const cur = Math.floor(Date.now() / (tf * 6e4)) * tf * 6e4;   // virou o minuto: a vela anterior fecha e nasce a nova
+  if (spot && out.length && out.at(-1).t < cur) { const p = out.at(-1).c; out.push({ t: cur, o: p, h: Math.max(p, spot), l: Math.min(p, spot), c: spot }); }
   const last = out.at(-1); if (spot && last) { last.c = spot; last.h = Math.max(last.h, spot); last.l = Math.min(last.l, spot); }
   return out.slice(-count);
 }
-export const sizeHTML = (amt, dur) => `Acertou em ${dur} min: recebe <b class="good">${brl(Math.floor(amt * PAY[dur]))}</b> (${String(PAY[dur]).replace('.', ',')}x). Preço <b>real</b> do Bitcoin (Coinbase): a entrada é a cotação no clique e o resultado é o fechamento real do minuto em que vence, liquidado pelo servidor. Só conta acerto se o preço andar mais de 0,02% para o seu lado. Sai do <b>saldo da mesa</b> (deposite abaixo). De R$ 100 a R$ 500 mil por operação.`;
+export const sizeHTML = (amt, dur) => `Acertou em ${dur} min: recebe <b class="good">${brl(Math.floor(amt * PAY[dur]))}</b> (${String(PAY[dur]).replace('.', ',')}x). Preço <b>real</b> do Bitcoin (Coinbase): a entrada é a cotação no clique e a operação vence no <b>fechamento de uma vela de 1 minuto</b> (entre ${dur} e ${dur + 1} min), com o preço real desse fechamento. Acerto conta se o preço andar mais de 0,02% para o seu lado; andou menos que isso para qualquer lado, é <b>empate e o valor volta</b>. Sai do <b>saldo da mesa</b> (deposite abaixo). De R$ 100 a R$ 500 mil por operação.`;
 export const posHTML = () => openList();
 export const histHTML = () => { const d = trades.filter(t => t.status !== 'aberta' && !t.copy_id).slice(0, 15); return d.length ? d.map(row).join('') : '<li class="muted small">Sem operações encerradas.</li>'; };
 export function acctHTML() {
@@ -93,14 +95,15 @@ export async function openReal(side, stake, dur) {
 }
 const paintAcct = () => { const h = document.getElementById('mesa-acct'); if (h && !h.hidden && !h.contains(document.activeElement)) h.innerHTML = acctHTML(); };
 // lateral da mesa: ranking de traders (acertos e %) + meus copies
-const win = t => t.side * (spot - t.entry) / t.entry > 0.0002;   // igual ao servidor: precisa andar mais de 0,02% (spread)
+const win = t => t.side * (spot - t.entry) / t.entry > 0.0002;   // igual ao servidor: precisa andar mais de 0,02%
+const tie = t => Math.abs(spot - t.entry) / t.entry <= 0.0002;   // praticamente parado: empate, devolve
 function row(t) {
   const exp = Date.parse(t.exp), left = Math.max(0, Math.ceil((exp - Date.now()) / 1000)), tag = t.side > 0 ? '▲ sobe' : '▼ desce';
   if (t.status === 'aberta') return `<li class="tr-p"><div><strong class="${t.side > 0 ? 'good' : 'bad'}">${tag} BTC real</strong><span class="muted small">entrada ${usd(t.entry)}${spot ? `, agora ${usd(spot)}` : ''}</span></div>
-    <div class="tr-pl ${spot && win(t) ? 'good' : spot && t.side * (spot - t.entry) > 0 ? 'gold' : 'bad'}">${spot && win(t) ? 'ganhando' : spot && t.side * (spot - t.entry) > 0 ? 'quase: falta passar o spread' : 'perdendo'}<small>${brl(t.stake)} em jogo</small></div>
-    <div class="tr-timer"><b>${left ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` : '…'}</b><small>${left ? `${t.minutes} min` : 'fechando o minuto'}</small></div></li>`;
+    <div class="tr-pl ${spot && win(t) ? 'good' : spot && tie(t) ? 'gold' : 'bad'}">${spot && win(t) ? 'ganhando' : spot && tie(t) ? 'empate: devolve se fechar assim' : 'perdendo'}<small>${brl(t.stake)} em jogo</small></div>
+    <div class="tr-timer"><b>${left ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` : '…'}</b><small>${left ? 'vence no fechamento do minuto' : 'conferindo o fechamento…'}</small></div></li>`;
   const won = t.status === 'ganhou';
-  return `<li><span>${tag} BTC real ${t.minutes} min</span><span class="${won ? 'good' : t.status === 'devolvida' ? 'muted' : 'bad'}">${won ? '+' + brl(t.back - t.stake) : t.status === 'devolvida' ? 'devolvida' : t.final && t.side * (t.final - t.entry) > 0 ? `−${brl(t.stake)} <small>(andou menos que o spread)</small>` : '−' + brl(t.stake)}</span></li>`;
+  return `<li><span>${tag} BTC real ${t.minutes} min</span><span class="${won ? 'good' : t.status === 'devolvida' ? 'muted' : 'bad'}">${won ? '+' + brl(t.back - t.stake) : t.status === 'devolvida' ? (t.final ? 'empate: devolvido' : 'devolvida') : '−' + brl(t.stake)}</span></li>`;
 }
 function sideHTML() {
   const list = rank.filter(r => r.ops >= 5).slice(0, 15), mine = copies.filter(c => c.follower === me() && c.status !== 'encerrado');
@@ -163,12 +166,13 @@ document.addEventListener('click', e => {
 document.addEventListener('change', e => { if (e.target.id === 'mesa-fee') act(async () => { if (await rpc('tr_set_fee', { p_pct: Number(e.target.value) })) { say('Comissão atualizada (vale para os copies novos).'); await load(); } }); });
 
 // ---------- ciclo: cotação a cada 3 s (Coinbase, fora da cota) e o servidor só ao abrir e a cada 30 s com operação aberta ----------
-let lastLoad = 0, rankLoad = 0;
+let lastLoad = 0, rankLoad = 0, lastSettle = 0;
 setInterval(async () => {
   if (!visible()) { ready = false; return; }   // outra tela ou aba escondida: nada de rede; ao voltar recarrega
   if (!ready) { ready = true; await Promise.all([load(), loadRank(true), price()]); paintSide(); paintAcct(); lastLoad = rankLoad = Date.now(); return; }
   await price();
-  const n = trades.filter(t => t.status === 'aberta').length;
+  const n = trades.filter(t => t.status === 'aberta').length, due = trades.some(t => t.status === 'aberta' && Date.parse(t.exp) < Date.now() - 6000);
+  if (due && Date.now() - lastSettle > 10000) { lastSettle = Date.now(); await sb().rpc('tr_settle_me').catch(() => {}); await load(); lastLoad = Date.now(); paintAcct(); paintSide(); return; }
   if (n && Date.now() - lastLoad > 30000) { lastLoad = Date.now(); await load(); if (trades.filter(t => t.status === 'aberta').length !== n) { paintAcct(); paintSide(); } }   // fechou: mostra o resultado
   if (Date.now() - rankLoad > 300000) { rankLoad = Date.now(); await loadRank(true); paintSide(); }
 }, 3000);

@@ -8,15 +8,15 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="21 World">
   <title>21 World</title>
-  <meta name="description" content="Mesas de 21 com amigos, corridas de galgos e uma economia de terras, gado e carros.">
+  <meta name="description" content="Comece do zero e construa seu império: fazenda, empresas, mercado ao vivo, mineração, clube de futebol e corridas, com os amigos e em tempo real.">
   <link rel="icon" type="image/svg+xml" href="assets/brand/logo-mark.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/brand/icon-32.png">
   <link rel="apple-touch-icon" href="assets/brand/icon-180.png">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#0f1220">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="21 World: cassino, corridas e futebol com os amigos">
-  <meta property="og:description" content="Blackjack de verdade, roleta, Aviator, corridas de galgos e cavalos, clube de futebol e fazenda. Moeda virtual, jogue grátis no navegador.">
+  <meta property="og:title" content="21 World: comece do zero e construa seu império com os amigos">
+  <meta property="og:description" content="Plante, crie gado, abra empresas, opere no mercado ao vivo, explore a mina de ouro, comande um clube e negocie com outros jogadores. Moeda virtual, grátis no navegador.">
   <meta property="og:image" content="https://21worldgame.github.io/assets/brand/og-image.png">
   <meta property="og:url" content="https://21worldgame.github.io/">
   <meta name="twitter:card" content="summary_large_image">
@@ -123,6 +123,7 @@
         <button type="button" data-cat="negocios"><svg><use href="#i-chart"/></svg>negócios</button>
         <button type="button" data-cat="voce"><svg><use href="#i-user"/></svg>você</button>
         <button type="button" data-cat="vip" class="cat--vip"><span aria-hidden="true">⚜️</span>VIP</button>
+        <button type="button" class="cat--sair" data-act="logout" title="sair da conta"><span aria-hidden="true">⎋</span>sair</button>
       </div>
       <div class="tabs" role="tablist">
         <button role="tab" id="t-inicio" data-tab="inicio" aria-controls="p-inicio" aria-selected="false" tabindex="-1"><svg><use href="#i-news"/></svg>notícias</button>
@@ -773,16 +774,16 @@
       <div class="lp__bg" aria-hidden="true"></div>
       <div class="lp__in">
         <p class="lp__kicker"><span class="lp__live" id="lp-live">jogadores online agora</span></p>
-        <h1 class="lp__h">Aposte alto.<br><span>Domine a cidade.</span></h1>
-        <p class="lp__sub">Sente na mesa de 21, gire a roleta, corra com seus cavalos, comande um time do Brasileirão e feche negócios com outros jogadores em tempo real. Você já começa com R$ 100 mil na mão.</p>
-        <ul class="lp__bonus"><li><b>R$ 10.000</b><span>para começar</span></li><li><b>mundo novo</b><span>todo mundo parte do zero</span></li><li><b>roleta diária</b><span>só prêmio bom</span></li></ul>
+        <h1 class="lp__h">Comece do zero.<br><span>Construa seu império.</span></h1>
+        <p class="lp__sub">Plante e colha, crie gado, abra empresas, opere no mercado ao vivo, explore a única mina de ouro da cidade, comande um clube do Brasileirão e feche negócios com outros jogadores em tempo real. Todo mundo começa com R$ 10 mil: o topo do ranking é de quem constrói melhor.</p>
+        <ul class="lp__bonus"><li><b>R$ 10.000</b><span>para começar</span></li><li><b>mundo novo</b><span>todo mundo parte do zero</span></li><li><b>prêmio diário</b><span>volte todo dia</span></li></ul>
         <div class="lp__cards">
-          <figure style="--img:url(assets/photo-blackjack.webp)"><figcaption>21 de cassino</figcaption></figure>
-          <figure style="--img:url(assets/photo-roulette.webp)"><figcaption>roleta</figcaption></figure>
-          <figure style="--img:url(assets/photo-horses.webp)"><figcaption>cavalos e galgos</figcaption></figure>
+          <figure style="--img:url(assets/farm-colheita.webp)"><figcaption>fazenda e colheita</figcaption></figure>
+          <figure style="--img:url(assets/biz/emporiotannat.webp)"><figcaption>suas empresas</figcaption></figure>
+          <figure style="--img:url(assets/mn-escav.webp)"><figcaption>mina de ouro</figcaption></figure>
           <figure style="--img:url(assets/photo-stadium.webp)"><figcaption>seu clube</figcaption></figure>
-          <figure style="--img:url(assets/car-huracan.webp)"><figcaption>carros com vantagens</figcaption></figure>
-          <figure style="--img:url(assets/photo-chips.webp)"><figcaption>trocas ao vivo</figcaption></figure>
+          <figure style="--img:url(assets/photo-horses.webp)"><figcaption>cavalos e galgos</figcaption></figure>
+          <figure style="--img:url(assets/car-huracan.webp)"><figcaption>garagem de luxo</figcaption></figure>
         </div>
         <p class="lp__fine">Dinheiro 100% virtual: sem depósito, sem saque, sem aposta real. Só para maiores de 18.</p>
       </div>
@@ -875,7 +876,7 @@
     <button type="button" data-mnav="inventario"><svg><use href="#i-bag"/></svg>inventário</button>
     <button type="button" data-mnav="menu" aria-expanded="false" aria-controls="mnav-sheet"><span class="mnav__dots" aria-hidden="true"></span>menu</button>
   </nav>
-  <div class="mnav-sheet" id="mnav-sheet" hidden><div class="mnav-sheet__in"><div class="mnav-sheet__head"><b>todas as áreas</b><button type="button" class="btn btn--glass btn--sm" data-mnav="close">fechar</button></div><div class="mnav-grid" id="mnav-grid"></div></div></div>
+  <div class="mnav-sheet" id="mnav-sheet" hidden><div class="mnav-sheet__in"><div class="mnav-sheet__head"><b>todas as áreas</b><span class="mnav-sheet__acts"><button type="button" class="btn btn--glass btn--sm" data-act="logout">⎋ sair</button><button type="button" class="btn btn--glass btn--sm" data-mnav="close">fechar</button></span></div><div class="mnav-grid" id="mnav-grid"></div></div></div>
   <!-- Resenha: chat de todos, fixo na lateral (computador) ou tela cheia (celular), estilo WhatsApp -->
   <aside class="rz" id="chat-box" aria-label="Resenha, conversa com os jogadores online">
     <button class="rz__rail" type="button" data-rz-min aria-label="abrir a resenha" title="abrir a resenha"><svg><use href="#i-chat"/></svg><span class="rz-badge" hidden></span><span class="rz__railt">Resenha</span></button>

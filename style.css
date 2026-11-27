@@ -1140,10 +1140,10 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 /* ===== tela de entrada (landing + login) ===== */
 .dlg--landing { width: min(1180px, 100vw - 24px); max-width: none; max-height: calc(100dvh - 24px); padding: 0; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(300px, 1fr); overflow: hidden; }
 .dlg--landing:not([open]) { display: none; }
-.dlg--landing::backdrop { background: #05060a url(assets/photo-vegas.webp) center/cover; }
+.dlg--landing::backdrop { background: #05060a url(assets/farm-soja.webp) center/cover; }
 .dlg--landing .au__panel { padding: 28px 28px 22px; overflow: auto; }
 .lp { position: relative; overflow: hidden; color: #fff; min-height: 100%; }
-.lp__bg { position: absolute; inset: 0; background: linear-gradient(160deg, rgba(8,6,14,.55), rgba(8,6,14,.92) 70%), url(assets/photo-slots.webp) center/cover; transform: scale(1.06); animation: lpZoom 22s ease-in-out infinite alternate; }
+.lp__bg { position: absolute; inset: 0; background: linear-gradient(160deg, rgba(8,6,14,.55), rgba(8,6,14,.92) 70%), url(assets/farm-colheita.webp) center/cover; transform: scale(1.06); animation: lpZoom 22s ease-in-out infinite alternate; }
 @keyframes lpZoom { to { transform: scale(1.16) translate(-1.5%, -1%); } }
 .lp__in { position: relative; padding: 34px 32px 24px; display: grid; gap: 14px; align-content: start; height: 100%; overflow: auto; }
 .lp__kicker { margin: 0; }
@@ -3925,3 +3925,8 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .mina-eq figcaption i { font-style: normal; font-weight: 700; }
 .mina-eq.is-own { box-shadow: inset 0 0 0 2px var(--hud-accent); }
 @media (max-width: 40rem) { .hdr-discord { display: none; } }   /* celular: o Discord fica no topo da Resenha */
+
+/* botão sair no menu (computador) e no menu do celular */
+.cat--sair { margin-left: auto; opacity: .8; }
+.cat--sair:hover { opacity: 1; color: var(--color-error); }
+.mnav-sheet__acts { display: inline-flex; gap: 6px; }

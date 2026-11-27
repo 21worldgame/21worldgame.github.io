@@ -21,6 +21,8 @@ export const MAX_STAKE = 20000, DAY_GAIN = 100000;   // v285: era 200 mil e 1 mi
 // acerto só conta se o preço andar pelo menos 0,02% para o seu lado (spread da corretora): parado ou quase parado, perde
 export const SPREAD = 0.0002;
 export const wins = (side, entry, final) => side * (final - entry) / entry > SPREAD;
+// v291: andou menos que o spread para qualquer lado = empate: devolve o valor (como nas corretoras)
+export const ties = (entry, final) => Math.abs(final - entry) / entry <= SPREAD;
 // auditoria: 8 acertos seguidos é improvável demais (menos de 1 em 400 mesmo com sorte): a mesa fecha para o jogador até amanhã
 export const AUDIT_STREAK = 8;
 export const NO_OPEN = new Set(['btc']);   // BTC só no "BTC real" (preço de verdade, decidido no servidor)
@@ -81,11 +83,11 @@ export function settle(s, now) {
       done.push({ ...t, old: true, back: t.margin || 0 }); continue;
     }
     if (now < t.exp) continue;
-    const final = price(t.asset, t.exp), win = wins(t.side, t.entry, final), back = win ? Math.round(t.stake * (t.pay ?? 1.85)) : 0;   // sem pay = aberta antes da v199, quando tudo pagava 1,85x
+    const final = price(t.asset, t.exp), win = wins(t.side, t.entry, final), tie = !win && ties(t.entry, final), back = win ? Math.round(t.stake * (t.pay ?? 1.85)) : tie ? t.stake : 0;   // sem pay = aberta antes da v199, quando tudo pagava 1,85x
     s.money += back; s.trades.splice(s.trades.indexOf(t), 1);
     const dd = day(t.exp); s.trDay = { d: dd, net: (s.trDay?.d === dd ? s.trDay.net : 0) + back - t.stake };
-    s.trStreak = win ? (s.trStreak || 0) + 1 : 0; if (s.trStreak >= AUDIT_STREAK) { s.trAudit = dd; s.trStreak = 0; }
-    const r = { ...t, final, win, back };
+    if (!tie) s.trStreak = win ? (s.trStreak || 0) + 1 : 0;   // empate não conta na sequência if (s.trStreak >= AUDIT_STREAK) { s.trAudit = dd; s.trStreak = 0; }
+    const r = { ...t, final, win, tie, back };
     s.trHist = [r, ...(s.trHist || [])].slice(0, 15);
     done.push(r);
   }

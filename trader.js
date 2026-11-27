@@ -30,10 +30,11 @@ function settleNow() {
   for (const r of done) {
     if (r.old) { note('trader: operação antiga com alavancagem encerrada, margem devolvida', r.back); continue; }
     const tk = MK.ASSETS[r.asset].ticker;
-    note(`trader: ${r.side > 0 ? 'sobe' : 'desce'} ${tk} ${r.minutes} min, ${r.win ? 'acertou' : 'errou'}`, r.back);
+    note(`trader: ${r.side > 0 ? 'sobe' : 'desce'} ${tk} ${r.minutes} min, ${r.win ? 'acertou' : r.tie ? 'empatou (devolvido)' : 'errou'}`, r.back);
     award('trade');
     if (r.win) { award('tradeWin'); sfx.play('stack', 0.6); confetti(35); say(`Acertou! ${tk} ${r.side > 0 ? 'subiu' : 'desceu'}: recebeu ${brl(r.back)}.`); }
-    else { const mv = (r.final / r.entry - 1) * r.side; say(mv > 0 ? `${tk} ${r.side > 0 ? 'subiu' : 'desceu'} só ${(mv * 100).toFixed(3).replace('.', ',')}%, menos que o spread de 0,02% da corretora. Perdeu ${brl(r.stake)}.` : `${tk} ${r.side > 0 ? 'não subiu' : 'não desceu'}. Perdeu ${brl(r.stake)}.`, true); }
+    else if (r.tie) say(`${tk} ficou praticamente parado (menos de 0,02%): empate, ${brl(r.stake)} de volta.`);
+    else say(`${tk} ${r.side > 0 ? 'não subiu' : 'não desceu'}. Perdeu ${brl(r.stake)}.`, true);
   }
   save(); G.render();
 }
@@ -94,15 +95,15 @@ function render() {
   $('#tr-ch').textContent = `${ch >= 0 ? '▲' : '▼'} ${Math.abs(ch).toFixed(2)}% em 1 h`;
   $('#tr-ch').className = ch >= 0 ? 'good' : 'bad';
   $('#tr-hl').textContent = `máx ${MK.fmt(cur, Math.max(...vis.map(c => c.h)))}  mín ${MK.fmt(cur, Math.min(...vis.map(c => c.l)))}  ${A.unit}`;
-  $('#tr-size').innerHTML = `Acertou em ${dur} min: recebe <b class="good">${brl(Math.round(amt * MK.payout(dur)))}</b> (${x(MK.payout(dur))}, lucro de ${Math.round((MK.payout(dur) - 1) * 100)}%). Quanto mais longo o tempo, mais paga: 1 min ${x(MK.payout(1))} · 5 min ${x(MK.payout(5))} · 10 min ${x(MK.payout(10))}. Errou, ficou igual ou andou menos de 0,02% (spread da corretora): perde ${brl(amt)}. Máximo de ${brl(MK.MAX_STAKE)} por operação e lucro de até ${brl(MK.DAY_GAIN)} por dia na mesa.`;
+  $('#tr-size').innerHTML = `Acertou em ${dur} min: recebe <b class="good">${brl(Math.round(amt * MK.payout(dur)))}</b> (${x(MK.payout(dur))}, lucro de ${Math.round((MK.payout(dur) - 1) * 100)}%). Quanto mais longo o tempo, mais paga: 1 min ${x(MK.payout(1))} · 5 min ${x(MK.payout(5))} · 10 min ${x(MK.payout(10))}. Andou menos de 0,02% para qualquer lado: empate, o valor volta. Errou: perde ${brl(amt)}. Máximo de ${brl(MK.MAX_STAKE)} por operação e lucro de até ${brl(MK.DAY_GAIN)} por dia na mesa.`;
   $('#tr-pos').innerHTML = G.S.trades.length ? G.S.trades.map(p => {
-    const cp = MK.price(p.asset, t), ahead = MK.wins(p.side, p.entry, cp), close = !ahead && p.side * (cp - p.entry) > 0;   // andou pouco: ainda dentro do spread
+    const cp = MK.price(p.asset, t), ahead = MK.wins(p.side, p.entry, cp), close = !ahead && MK.ties(p.entry, cp);   // praticamente parado: empate
     return `<li class="tr-p"><div><strong class="${p.side > 0 ? 'good' : 'bad'}">${p.side > 0 ? '▲ sobe' : '▼ desce'} ${MK.ASSETS[p.asset].ticker}</strong>
       <span class="muted small">entrada ${MK.fmt(p.asset, p.entry)}, agora ${MK.fmt(p.asset, cp)}</span></div>
-      <div class="tr-pl ${ahead ? 'good' : close ? 'gold' : 'bad'}">${ahead ? 'ganhando' : close ? 'quase: falta passar o spread' : 'perdendo'}<small>${brl(p.stake)} em jogo</small></div>
+      <div class="tr-pl ${ahead ? 'good' : close ? 'gold' : 'bad'}">${ahead ? 'ganhando' : close ? 'empate: devolve se fechar assim' : 'perdendo'}<small>${brl(p.stake)} em jogo</small></div>
       <div class="tr-timer"><b>${fmtLeft(p.exp - t)}</b><small>${p.minutes} min</small></div></li>`;
   }).join('') : '<li class="muted small">Nenhuma operação em andamento.</li>';
-  $('#tr-hist').innerHTML = G.S.trHist.length ? G.S.trHist.filter(h => h.exp).map(h => `<li><span>${h.side > 0 ? 'sobe' : 'desce'} ${esc(MK.ASSETS[h.asset]?.ticker || '')} ${h.minutes} min</span><span class="${h.win ? 'good' : 'bad'}">${h.win ? '+' + brl(h.back - h.stake) : '−' + brl(h.stake)}</span></li>`).join('') : '<li class="muted small">Sem operações encerradas.</li>';
+  $('#tr-hist').innerHTML = G.S.trHist.length ? G.S.trHist.filter(h => h.exp).map(h => `<li><span>${h.side > 0 ? 'sobe' : 'desce'} ${esc(MK.ASSETS[h.asset]?.ticker || '')} ${h.minutes} min</span><span class="${h.win ? 'good' : h.tie ? 'muted' : 'bad'}">${h.win ? '+' + brl(h.back - h.stake) : h.tie ? 'empate: devolvido' : '−' + brl(h.stake)}</span></li>`).join('') : '<li class="muted small">Sem operações encerradas.</li>';
   draw(vis);
 }
 
