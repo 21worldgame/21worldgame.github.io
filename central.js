@@ -1364,7 +1364,16 @@ async function loadVip() {
   const live = d => d && Date.parse(d) > Date.now();
   $('#ad-vip-list').innerHTML = (v.data || []).map(x => `<tr><td>${esc(x.name)}</td><td>${live(x.until) ? esc(x.tier) : '<span class="muted">pausado</span>'}</td><td>${when(x.until)}</td><td class="num">${int(x.months)}</td><td>${x.founder ? `nº ${x.founder} ${esc(x.street || '')}` : ''}</td><td>${esc(x.title || '')}</td>
     <td>${live(x.until) ? `<button class="btn btn--danger btn--xs" data-vip-rev="${esc(x.user_id)}">encerrar</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">ninguém ainda</td></tr>';
-  const M = m.data || {}; $('#ad-vip-pix').value = M.pix || ''; $('#ad-vip-discord').value = M.discord || ''; $('#ad-vip-goal').value = M.goal || 140; $('#ad-vip-q').value = M.poll?.q || ''; $('#ad-vip-opts').value = (M.poll?.opts || []).join('\n');
+  const M = m.data || {}; $('#ad-vip-open').checked = !!M.open; $('#ad-vip-open-st').innerHTML = M.open ? '<span class="tag tag--green">abertas</span>' : '<span class="tag tag--gold">em breve · pré-venda</span>';
+  const { data: pre } = await sb.from('vip_presale').select('*').order('at');
+  const pn = $('#ad-pre-n'); pn.textContent = (pre || []).length; pn.hidden = !(pre || []).length;
+  const PST = { novo: ['novo', 'red'], contatado: ['contatado', 'gold'], fechado: ['fechado', 'green'] };
+  $('#ad-pre').innerHTML = (pre || []).map((x, i) => `<tr${x.status === 'novo' ? ' class="ad-alert"' : ''}><td class="num">${i + 1}</td><td>${when(x.at)}</td><td><a href="#" data-vg-user="${esc(x.user_id)}"><b>${esc(x.name)}</b></a></td>
+    <td>${esc(VTIER[x.plan] || x.plan)} ${x.plan === 'mecenas' ? '' : VPER[x.months || 1] || ''}</td><td class="num">${brl(vprice(x.plan, x.months || 1, x.amount))}</td><td>${esc(x.contact || '—')}</td><td>${esc(x.note || '')}</td>
+    <td><span class="tag tag--${PST[x.status]?.[1] || 'gold'}">${PST[x.status]?.[0] || x.status}</span></td>
+    <td>${x.status !== 'contatado' ? `<button class="btn btn--glass btn--xs" data-pre-st="${x.id}" data-v="contatado">contatado</button>` : ''} ${x.status !== 'fechado' ? `<button class="btn btn--gold btn--xs" data-pre-st="${x.id}" data-v="fechado">fechado</button>` : ''} <button class="btn btn--danger btn--xs" data-pre-del="${x.id}">remover</button></td></tr>`).join('')
+    || '<tr><td colspan="9" class="muted">Ninguém na pré-venda ainda.</td></tr>';
+  $('#ad-vip-pix').value = M.pix || ''; $('#ad-vip-discord').value = M.discord || ''; $('#ad-vip-goal').value = M.goal || 140; $('#ad-vip-q').value = M.poll?.q || ''; $('#ad-vip-opts').value = (M.poll?.opts || []).join('\n');
   const P = M.poll; $('#ad-vip-res').textContent = P ? `votos: ${P.opts.map((o, i) => `${o} ${(v.data || []).filter(x => live(x.until) && x.vote_key === P.key && x.vote === i).length}`).join(' · ')}` : '';
 }
 async function vipGrant(uid, plan, months, amount, street) {
@@ -1373,7 +1382,9 @@ async function vipGrant(uid, plan, months, amount, street) {
   await log('vip', uid, `${plan} ${months} mês(es) R$ ${amount}${street ? ` rua ${street}` : ''}`); toast('VIP liberado: o selo aparece no jogo em até 10 min.'); loadVip();
 }
 document.addEventListener('click', async e => {
-  const b = e.target.closest('[data-vip-ok], [data-vip-no], [data-vip-rev], #ad-vip-go, #ad-vip-save, #ad-vip-reload'); if (!b) return;
+  const b = e.target.closest('[data-vip-ok], [data-vip-no], [data-vip-rev], [data-pre-st], [data-pre-del], #ad-vip-go, #ad-vip-save, #ad-vip-reload'); if (!b) return;
+  if (b.dataset.preSt) { const { error } = await sb.from('vip_presale').update({ status: b.dataset.v }).eq('id', Number(b.dataset.preSt)); if (error) return fail(error, 'marcar'); return loadVip(); }
+  if (b.dataset.preDel) { if (!confirm('Remover este pedido da pré-venda?')) return; const { error } = await sb.from('vip_presale').delete().eq('id', Number(b.dataset.preDel)); if (error) return fail(error, 'remover'); return loadVip(); }
   if (b.id === 'ad-vip-reload') return loadVip();
   if (b.dataset.vipOk) { const p = b.dataset.plan, m = Number(b.dataset.m) || 1, a = vprice(p, m, b.dataset.amt); const street = ['conselho', 'barao', 'imperador', 'mecenas'].includes(p) ? prompt('Nome da rua do conselheiro (pode deixar vazio: ele escolhe na aba VIP):', b.dataset.note || '') : null;
     if (!confirm(`Conferiu o Pix de ${brl(a)} no seu banco? Liberar ${VTIER[p] || p} ${VPER[m]} (${m} ${m === 1 ? 'mês' : 'meses'})?`)) return; return vipGrant(b.dataset.uid, p, m, a, street); }
@@ -1391,4 +1402,12 @@ document.addEventListener('click', async e => {
     const poll = q && opts.length >= 2 ? (same ? cur.poll : { key: String(Date.now()), q, opts }) : null;
     const { error } = await sb.from('vip_meta').update({ discord: $('#ad-vip-discord').value.trim(), pix: $('#ad-vip-pix').value.trim(), goal: Math.max(1, Number($('#ad-vip-goal').value) || 140), poll }).eq('id', 1);
     if (error) return fail(error, 'salvar'); await log('vip-usina', null, q || 'sem votação'); toast('Usina e votação salvas.'); loadVip(); }
+});
+
+// abrir ou fechar as vendas do VIP (fechado = "em breve" + pré-venda na aba VIP)
+$('#ad-vip-open')?.addEventListener('change', async e => {
+  const on = e.target.checked;
+  if (!confirm(on ? 'Abrir as vendas do VIP? A aba passa a mostrar a chave Pix e os planos para comprar.' : 'Voltar para "em breve" e pré-venda?')) { e.target.checked = !on; return; }
+  const { error } = await sb.from('vip_meta').update({ open: on }).eq('id', 1); if (error) { e.target.checked = !on; return fail(error, 'mudar as vendas'); }
+  await log('vip-vendas', null, on ? 'abertas' : 'pré-venda'); toast(on ? 'Vendas do VIP abertas.' : 'VIP em pré-venda.'); loadVip();
 });

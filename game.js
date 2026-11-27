@@ -834,7 +834,8 @@ function profileExtra(p, me) {
   const tr = p.trophies || [];
   const trophies = `<h3>troféus de patrimônio <small class="muted">${tr.length} de ${L.TROPHIES.length}</small></h3><div class="pf__troph">${L.TROPHIES.map((t, i) => { const pr = PK.PRESTIGE.find(x => x.min === t); return `<span class="troph${tr.includes(t) ? ' is-got' : ''}${i === 0 ? ' troph--selo' : ''}${pr ? ` troph--prest troph--${pr.id}` : ''}" title="${pr ? `${pr.trophy}: ${pr.title} (${mi(t)})` : `${i === 0 ? 'selo' : 'troféu'} de ${mi(t)}`}"><b>${pr ? pr.icon : i === 0 ? '🎖️' : '🏆'}</b><small>${mi(t)}</small></span>`; }).join('')}</div>`;
   const priv = me && VIP.isOn() ? `<div class="pf__acts"><button class="btn btn--glass btn--sm" data-act="toggle-private">${privOn(S()) ? '🔒 perfil privado (tornar público)' : '🔓 perfil público (tornar privado)'}</button> <small class="muted">exclusivo do VIP</small></div>` : me ? '<div class="pf__acts"><button class="btn btn--gold btn--sm" data-act="goto-vip">🔒 perfil privado é exclusivo do VIP</button></div>' : '';
-  if (p.private && !me) return { colecoes: trophies + '<p class="pf__private glass">🔒 Este jogador deixou o perfil privado. Só os troféus aparecem.</p>' };
+  // perfil privado é do VIP: só vale (e só mostra o aviso) para quem tem VIP ativo; cartão privado antigo de quem não é VIP espera ele abrir o jogo de novo
+  if (p.private && !me) return { colecoes: trophies + (VIP.isVip(p.name) ? '<p class="pf__private glass">🔒 Perfil privado (VIP). Só os troféus aparecem.</p>' : '<p class="pf__private glass">Os detalhes deste jogador aparecem assim que ele abrir o jogo de novo.</p>') };
   if (p.noCard) return { colecoes: trophies + '<p class="pf__private glass">Este jogador ainda está numa versão antiga do jogo. Os detalhes aparecem assim que ele abrir ou recarregar o jogo.</p>' };
   const biz = (p.biz || []).map(b => { const c = BIZ_LISTS[b.cat]?.[b.brand]; return c ? `<span class="pf__biz" style="--img:url(assets/biz/${b.brand}.webp)"><small>${esc(c.name)}</small></span>` : ''; }).join('');
   const tiles = [['empresas', (p.biz || []).length], ['contador', p.npc ? `${brl(CT.npcFee(p.worth))}/mês` : p.acct ? `contratado (${CT.PLANS[p.acct]?.label || p.acct})` : 'não tem'], ['mina de ouro', p.mina ? 'sim' : 'não'], ['galpões', p.wh || 0], ['granja', `${p.granja || 0} galpões`], ['suínos', `${p.suinos || 0} barracões`], ['cartas', p.cardsN || 0], ['clube', p.club || 'nenhum']]
@@ -872,8 +873,7 @@ function openProfile(pid, fetched) {
   if (!p && String(pid).startsWith('u:')) { Auth.profileCard(pid.slice(2)).then(r => r ? openProfile(pid, r) : say('Perfil indisponível agora.', true)); return; }
   if (!p) return say('Perfil indisponível: o jogador saiu.', true);
   if (p.npc && !p.trophies) p = { ...p, trophies: L.TROPHIES.filter(t => p.worth >= t) };
-  // os 10 mais ricos do mundo (jogadores do mundo) deixam o perfil privado, como quem tem conta pode fazer a partir de R$ 10 mi
-  if (p.npc && p.worth >= L.PRIVATE_MIN && !p.open) { p = { npc: true, id: p.id, name: p.name, look: p.look, level: p.level, rank: p.rank, worth: p.worth, trophies: p.trophies, private: true }; }   // igual ao privado de quem tem conta: só o básico e os troféus
+  // v288: jogadores do mundo não têm perfil privado (perfil privado agora é só do VIP)
   const me = pid === 'me', st = p.stats || {}, prTop = PK.prestigeTop(p.trophies);
   if (p.npc && !p.ach) p.ach = P.ACHIEVEMENTS.slice(0, p.achCount).map(a => a.id);
   const rate = st.hands ? Math.round((st.wins / st.hands) * 100) : 0;
@@ -1768,7 +1768,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 287;
+const APP_VERSION = 288;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

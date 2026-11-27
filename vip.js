@@ -41,7 +41,7 @@ const PERKS = {
   mecenas: [`Valor livre a partir de ${brl(MEC_MIN)} por mês`, 'Faixa MECENAS: a marca mais rara da cidade', 'Tudo do Imperador, sem disputar trono', 'Topo do Hall dos Mecenas, em ordem de apoio'],
 };
 
-let rows = [], meta = { pix: '', goal: 140, poll: null }, raised = 0, myReq = null, at = 0, loading = null, period = 1, pick = 'patrono', mecAmt = 1000;
+let rows = [], meta = { pix: '', goal: 140, poll: null, open: false }, raised = 0, myReq = null, myPre = null, preN = { n: 0, pos: 0 }, at = 0, loading = null, period = 1, pick = 'patrono', mecAmt = 1000;
 const byId = new Map(), byName = new Map();
 const live = v => !!v && v.tier && Date.parse(v.until) > Date.now();
 const rankOf = v => (live(v) ? TIERS[v.tier]?.rank || 0 : 0);
@@ -53,10 +53,14 @@ export async function load(force = false) {
     const sb = Auth.sbClient() || await Auth.sbReady(); if (!sb) return;
     const me = Auth.account()?.id;
     const [v, m, r, q] = await Promise.all([sb.from('vip').select('user_id, name, tier, until, months, streak, stamps, founder, street, title, color, vote_key, vote'),
-      sb.from('vip_meta').select('pix, goal, poll, discord').eq('id', 1).maybeSingle(), sb.rpc('vip_raised'),
+      sb.from('vip_meta').select('pix, goal, poll, discord, open').eq('id', 1).maybeSingle(), sb.rpc('vip_raised'),
       me ? sb.from('vip_req').select('id, plan, months, amount, at').eq('user_id', me).eq('done', false).maybeSingle() : Promise.resolve({ data: null })]);
     if (v.error) return;
     rows = v.data || []; meta = m.data || meta; raised = Number(r.data) || 0; myReq = q.data || null; at = Date.now();
+    if (!meta.open) {   // pré-venda: o pedido da pessoa e quantos já entraram (número real)
+      const [pr, pc] = await Promise.all([me ? sb.from('vip_presale').select('id, plan, months, amount, contact, note, at').eq('user_id', me).maybeSingle() : Promise.resolve({ data: null }), sb.rpc('vip_presale_count')]);
+      myPre = pr.data || null; preN = pc.data || preN;
+    }
     byId.clear(); byName.clear();
     for (const x of rows) { byId.set(x.user_id, x); if (x.name) byName.set(x.name.toLowerCase(), x); }
     remind(); syncMine(); hud();
@@ -79,6 +83,7 @@ export const title = key => { const v = find(key); return rankOf(v) >= 2 && v.ti
 // o próprio VIP: ativo? (perfil privado é do VIP) · vencimento gravado no save para o perfil voltar a público sozinho quando vencer
 const mineRow = () => byId.get(Auth.account()?.id);
 export const isOn = () => live(mineRow());
+export const isVip = key => live(find(key));   // perfil privado só vale para quem tem VIP ativo
 export const discord = () => (/^https:\/\/(discord\.gg|discord\.com)\//.test(meta.discord || '') ? meta.discord : '');
 function syncMine() { const v = mineRow(), u = v?.until || null; if (G.S && (G.S.vipUntil || null) !== u) { G.S.vipUntil = u; save(); } }
 const SHORT = { apoiador: 'VIP', patrono: 'VIP', magnata: 'VIP', conselho: 'VIP', barao: 'BLACK', imperador: 'IMPERADOR', mecenas: 'MECENAS' };
@@ -143,7 +148,7 @@ function draw() {
   el.innerHTML = `
   <header class="vip-hero">
     <div class="vip-hero__glow" aria-hidden="true"></div>
-    <p class="vip-kick">⚜️ Salão Nobre · VIP da cidade</p>
+    <p class="vip-kick">⚜️ Salão Nobre · VIP da cidade${meta.open ? '' : ' <span class="vip-soon">em breve · pré-venda aberta</span>'}</p>
     <h2 class="vip-title">Brilhe em <span>21 World</span></h2>
     <p class="vip-lead">Nick que brilha, selo que cresce a cada mês seguido, cadeira no Conselho e uma rua com o seu nome. Quem apoia mantém a <b>Usina 21</b> ligada e a cidade inteira vê.</p>
     <div class="vip-chips">
@@ -168,6 +173,22 @@ function draw() {
     </div>
   </section>` : ''}
 
+
+  ${meta.open ? '' : `<section class="vip-pre">
+    <div class="vip-pre__ribbon">PRÉ-VENDA</div>
+    <p class="vip-kick">🎟️ só para quem entrar agora</p>
+    <h3 class="vip-pre__title">Garanta seu lugar <span>antes de abrir</span></h3>
+    <p class="vip-lead">O VIP abre em breve. Quem entra na lista da pré-venda agora leva o que <b>nunca mais vai ser vendido</b>:</p>
+    <ul class="vip-pre__perks">
+      <li><span>🎟️</span><b>Selo Pioneiro VIP</b><small>exclusivo da pré-venda, só quem entrou na lista tem. Depois do lançamento ele some da loja.</small></li>
+      <li><span>🎁</span><b>+1 mês grátis</b><small>no primeiro plano que você ativar no lançamento.</small></li>
+      <li><span>🔒</span><b>Preço de lançamento congelado</b><small>por 12 meses, mesmo se o preço subir depois.</small></li>
+      <li><span>👑</span><b>Primeiro na fila</b><small>prioridade nas 21 cadeiras do Conselho e nos 3 tronos de Imperador na abertura.</small></li>
+      <li><span>✨</span><b>Mural dos Pioneiros</b><small>seu nome gravado na parede da Usina 21 como um dos primeiros apoiadores da cidade.</small></li>
+    </ul>
+    <div class="vip-pre__count"><b>${int(preN.n || 0)}</b><span>${(preN.n || 0) === 1 ? 'pessoa já entrou' : 'pessoas já entraram'} na pré-venda${myPre ? ` · você é o <b>nº ${int(preN.pos || 0)}</b>` : ''}</span></div>
+    <button class="btn btn--gold vip-cta" type="button" data-vip="gopre">${myPre ? '✅ você está na lista · ver meu pedido' : '🎟️ quero entrar na pré-venda'}</button>
+  </section>`}
   <section class="vip-plans-wrap">
     <div class="vip-plans-head"><h3>Escolha seu brilho</h3>
       <div class="vip-period" role="radiogroup" aria-label="período">${Object.entries(PERIODS).map(([m, P]) => `<button type="button" role="radio" aria-checked="${period === Number(m)}" class="${period === Number(m) ? 'is-on' : ''}" data-vip="period" data-m="${m}">${P.label}${P.off ? ` <small>${m === '12' ? '2 meses grátis' : `−${Math.round(P.off * 100)}%`}</small>` : ''}</button>`).join('')}</div></div>
@@ -179,7 +200,7 @@ function draw() {
       <p class="vip-plan__tot">${period > 1 ? `${brl(tot)} por ${period} meses` : 'renova todo mês'}</p>
       <div class="vip-plan__prev">${nickAs(k, k === mine?.tier ? mine.color : null)}</div>
       <ul>${PERKS[k].map(x => `<li>${esc(x)}</li>`).join('')}</ul>
-      <button class="btn ${k === 'patrono' || k === 'magnata' ? 'btn--gold' : 'btn--glass'} vip-plan__btn" type="button" data-vip="pick" data-plan="${k}"${k === 'conselho' && !free && !(on && mine.tier === 'conselho') ? ' disabled' : ''}>${cur ? 'renovar' : `quero ser ${T.name.split(' ')[0]}`}</button></article>`; }).join('')}</div>
+      <button class="btn ${k === 'patrono' || k === 'magnata' ? 'btn--gold' : 'btn--glass'} vip-plan__btn" type="button" data-vip="pick" data-plan="${k}"${meta.open && k === 'conselho' && !free && !(on && mine.tier === 'conselho') ? ' disabled' : ''}>${!meta.open ? '🎟️ quero na pré-venda' : cur ? 'renovar' : `quero ser ${T.name.split(' ')[0]}`}</button></article>`; }).join('')}</div>
     <p class="vip-fine">Assinatura: vale pelo período pago e vence. Avisamos 5 dias antes no jogo. Renovou até 7 dias depois de vencer, a sequência continua.</p>
   </section>
 
@@ -198,7 +219,7 @@ function draw() {
       : `<p class="vip-plan__price"><b>${brl(Math.round(priceOf(k, period) / period * 100) / 100)}</b><small>/mês</small></p><p class="vip-plan__tot">${period > 1 ? `${brl(priceOf(k, period))} por ${period} meses` : 'renova todo mês'}</p>`}
       <div class="vip-plan__prev">${nickAs(k, k === mine?.tier ? mine.color : null)}</div>
       <ul>${PERKS[k].map(x => `<li>${esc(x)}</li>`).join('')}</ul>
-      <button class="btn btn--gold vip-plan__btn" type="button" data-vip="pick" data-plan="${k}"${lim ? ' disabled' : ''}>${cur ? 'renovar' : `quero ser ${T.name}`}</button></article>`; }).join('')}</div>
+      <button class="btn btn--gold vip-plan__btn" type="button" data-vip="pick" data-plan="${k}"${meta.open && lim ? ' disabled' : ''}>${!meta.open ? '🎟️ quero na pré-venda' : cur ? 'renovar' : `quero ser ${T.name}`}</button></article>`; }).join('')}</div>
     <div class="vip-thrones">${thrones.map((v, i) => `<div class="${v ? 'is-on' : ''}"><span>👑 trono ${i + 1}</span>${v ? `<b class="${cls(v.user_id)}">${esc(v.name)}</b>` : '<small>livre este mês</small>'}</div>`).join('')}</div>
   </section>
 
@@ -229,7 +250,15 @@ function draw() {
       ${rankOf(mine) >= 4 ? `<label class="field"><span>nome da sua rua</span><input class="input" id="vip-street" maxlength="40" value="${esc(mine.street || '')}" placeholder="Avenida dos Pioneiros"></label>` : ''}
       <button class="btn btn--gold btn--sm" type="button" data-vip="style">salvar</button></div></section>` : ''}
 
-  <section class="vip-card vip-pay" id="vip-pay">
+  ${!meta.open ? `<section class="vip-card vip-pay vip-pay--pre" id="vip-pay">
+    <h3>🎟️ Entrar na pré-venda</h3>
+    ${!me ? '<p class="small">Entre na sua conta para entrar na pré-venda.</p>' : `${myPre ? `<p class="vip-wait">✅ Você está na lista da pré-venda (nº <b>${int(preN.pos || 0)}</b>): <b>${esc(TIERS[myPre.plan]?.name || myPre.plan)}</b>${TIERS[myPre.plan]?.free ? ` · ${brl(myPre.amount || MEC_MIN)}/mês` : ` · ${PERIODS[myPre.months || 1]?.label}`} desde ${dt(myPre.at)}. O prefeito entra em contato quando o VIP abrir. Pode trocar o plano abaixo.</p>` : ''}
+      <div class="vip-pay__sum"><span>${TIERS[pick].ico} <b>${TIERS[pick].name}</b> · ${TIERS[pick].free ? 'mensal, valor livre' : PERIODS[period].label}</span><b class="vip-pay__tot">${brl(priceOf(pick, period, mecAmt))}</b></div>
+      <div class="row"><label class="field"><span>WhatsApp ou e-mail para contato (opcional)</span><input class="input" id="vip-contact" maxlength="80" value="${esc(myPre?.contact || '')}" placeholder="(11) 9xxxx-xxxx"></label>
+        <label class="field"><span>recado (opcional)</span><input class="input" id="vip-note" maxlength="200" value="${esc(myPre?.note || '')}" placeholder="${TIERS[pick].rank >= 4 ? 'nome da rua que você quer' : 'alguma dúvida?'}"></label>
+        <button class="btn btn--gold vip-cta" type="button" data-vip="pre">${myPre ? 'atualizar meu pedido' : 'quero fazer parte da pré-venda'}</button></div>
+      <p class="small muted">Não paga nada agora. Quando o VIP abrir, o prefeito chama quem está na lista, na ordem de entrada, e as vantagens da pré-venda valem para você.</p>`}
+  </section>` : `<section class="vip-card vip-pay" id="vip-pay">
     <h3>💸 Ativar pelo Pix</h3>
     ${myReq ? `<p class="vip-wait">⏳ Pedido de <b>${esc(TIERS[myReq.plan]?.name || myReq.plan)}</b> (${TIERS[myReq.plan]?.free ? 'valor livre' : PERIODS[myReq.months || 1]?.label || 'mensal'}, ${brl(priceOf(myReq.plan, myReq.months || 1, myReq.amount))}) enviado em ${dt(myReq.at)}. Assim que o Pix for conferido, o seu brilho acende. <button class="btn btn--glass btn--xs" type="button" data-vip="cancel">cancelar pedido</button></p>`
       : me ? `<div class="vip-pay__sum"><span>${TIERS[pick].ico} <b>${TIERS[pick].name}</b> · ${TIERS[pick].free ? 'mensal, valor livre' : PERIODS[period].label}</span><b class="vip-pay__tot">${brl(priceOf(pick, period, mecAmt))}</b></div>
@@ -238,7 +267,7 @@ function draw() {
       <div class="row">${TIERS[pick].rank >= 4 ? '<label class="field"><span>nome da sua rua</span><input class="input" id="vip-note" maxlength="40" placeholder="Avenida dos Pioneiros"></label>' : '<label class="field"><span>recado (opcional)</span><input class="input" id="vip-note" maxlength="140" placeholder="ex.: comprovante às 14h20"></label>'}
         <button class="btn btn--gold vip-cta" type="button" data-vip="req"${meta.pix ? '' : ' disabled'}>já mandei o Pix</button></div>` : '<p class="small">Entre na sua conta para ativar o VIP.</p>'}
     <p class="small muted">Apoio é voluntário, vale pelo período pago e não volta como dinheiro no jogo. Menores de idade: peça para um responsável.</p>
-  </section>
+  </section>`}
 
   <section class="vip-card vip-wall"><h3>🏛️ Conselho da Cidade <small class="muted">${SEATS - free}/${SEATS} cadeiras · renova todo mês</small></h3>
     <ol class="vip-seats">${seats.map((v, i) => `<li class="${v ? 'is-on' : ''}"><span>${i + 1}</span>${v ? `<b class="${cls(v.user_id)}">${esc(v.name)}</b>${v.street ? `<small>🛣️ ${esc(v.street)}</small>` : ''}` : '<small>livre</small>'}</li>`).join('')}</ol>
@@ -259,12 +288,19 @@ document.addEventListener('click', async e => {
   const sb = Auth.sbClient(), act = b.dataset.vip;
   if (act === 'pick') { pick = b.dataset.plan; draw(); document.getElementById('vip-pay')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   if (act === 'period') { period = Number(b.dataset.m) || 1; draw(); return; }
+  if (act === 'gopre') { document.getElementById('vip-pay')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   if (act === 'amt') { mecAmt = Number(b.dataset.v) || MEC_MIN; pick = 'mecenas'; draw(); return; }
   if (act === 'copy') { try { await navigator.clipboard.writeText(meta.pix); say('Chave Pix copiada.'); } catch { say('Não deu para copiar: selecione a chave e copie.', true); } return; }
   if (!sb) return say('Entre na sua conta primeiro.', true);
   b.disabled = true;
   try {
-    if (act === 'req') {
+    if (act === 'pre') {
+      const row = { name: myName().slice(0, 40), plan: pick, months: TIERS[pick].free ? 1 : period, amount: TIERS[pick].free ? mecAmt : null,
+        contact: (document.getElementById('vip-contact')?.value || '').trim().slice(0, 80) || null, note: (document.getElementById('vip-note')?.value || '').trim().slice(0, 200) || null };
+      const { error } = myPre ? await sb.from('vip_presale').update(row).eq('id', myPre.id) : await sb.from('vip_presale').insert(row);
+      if (error) return say('Não deu para enviar agora. Tente de novo.', true);
+      say(myPre ? 'Pedido da pré-venda atualizado.' : `Você entrou na pré-venda do ${TIERS[pick].name}! O prefeito chama você quando o VIP abrir.`);
+    } else if (act === 'req') {
       const note = (document.getElementById('vip-note')?.value || '').trim().slice(0, 140);
       if (TIERS[pick].free && mecAmt < MEC_MIN) return say(`O Mecenas começa em ${brl(MEC_MIN)}.`, true);
       const { error } = await sb.from('vip_req').insert({ plan: pick, months: TIERS[pick].free ? 1 : period, amount: TIERS[pick].free ? mecAmt : null, note: note || null, name: myName().slice(0, 40) });

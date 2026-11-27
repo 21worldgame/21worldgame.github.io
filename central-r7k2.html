@@ -303,7 +303,12 @@
 
       <section data-panel="vip" hidden>
         <div class="ad-head"><h2>⚜️ VIP da cidade</h2><button class="btn btn--glass btn--sm" id="ad-vip-reload" type="button">atualizar</button> <span class="muted small" id="ad-vip-st"></span></div>
-        <p class="ad-help">O jogador manda o Pix para a sua chave e toca em "já mandei o Pix": o pedido aparece aqui. <b>Confira o Pix no seu banco</b> e toque em liberar. VIP é só selo, cor, título, mural e voto: não mexe em dinheiro do jogo. Valores: Apoiador R$ 5/mês, Patrono R$ 15/mês, Patrono anual R$ 150 (12 meses), Fundador R$ 50 (único, 21 vagas, leva 1 mês de Patrono).</p>
+        <p class="ad-help">O jogador manda o Pix para a sua chave e toca em "já mandei o Pix": o pedido aparece aqui. <b>Confira o Pix no seu banco</b> e toque em liberar. VIP é só selo, cor, título, mural e voto: não mexe em dinheiro do jogo. Valores por mês: Apoiador R$ 9,90 · Patrono R$ 24,90 · Magnata R$ 49,90 · Conselho R$ 89,90 (21 cadeiras) · Linha Black: Barão R$ 199 · Imperador R$ 499 (3 tronos) · Mecenas valor livre (mín. R$ 600). Trimestral −10%, anual 12 pelo preço de 10.</p>
+        <div class="ad-sheet ad-sheet--gold"><div class="ad-sheet__top"><b>vendas do VIP</b> <span id="ad-vip-open-st"></span>
+          <label class="check"><input type="checkbox" id="ad-vip-open"> <span>vendas abertas (desligado = "em breve" + pré-venda)</span></label></div></div>
+        <h3>🎟️ pré-venda <span class="ad-badge" id="ad-pre-n" hidden></span></h3>
+        <p class="ad-help">Quem preencheu "quero fazer parte da pré-venda" na aba VIP, na ordem de entrada. Prometido na tela: selo Pioneiro VIP exclusivo, +1 mês grátis no primeiro plano, preço congelado por 12 meses, prioridade nas cadeiras e tronos e nome no Mural dos Pioneiros.</p>
+        <div class="ad-tablewrap"><table><thead><tr><th>#</th><th>quando</th><th>jogador</th><th>plano</th><th class="num">valor</th><th>contato</th><th>recado</th><th>situação</th><th></th></tr></thead><tbody id="ad-pre"></tbody></table></div>
         <h3>pedidos esperando conferência</h3>
         <div class="ad-tablewrap"><table><thead><tr><th>quando</th><th>jogador</th><th>plano</th><th>recado</th><th></th></tr></thead><tbody id="ad-vip-req"></tbody></table></div>
         <h3>liberar na mão</h3>

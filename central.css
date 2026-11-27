@@ -135,3 +135,4 @@ tr.ad-mark td { background: color-mix(in oklab, var(--hud-accent) 10%, transpare
 .ad-chip--red { border-color: oklch(68% 0.2 25 / .7); background: oklch(68% 0.2 25 / .18); color: oklch(85% 0.1 25); }
 @media (max-width: 80rem) { .ad-cols { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 56rem) { .ad-nav__grp { display: none; } }
+.ad-sheet--gold { border-color: var(--hud-accent); }
