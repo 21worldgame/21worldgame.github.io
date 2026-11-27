@@ -51,18 +51,19 @@ export const ACC_PERKS = {
 };
 // teto de cada efeito somando TUDO (carros, terras, acessórios, coleções e prestígio). Sem teto, quem junta tudo dobra a economia dos outros.
 // v311: teto que dá para alcançar. Plantio (terras 5%), filhotes (coleção 5%) e ouro (capacete 1%) tinham teto acima de tudo o que existe.
-export const CAPS = { xp: 0.25, daily: 0.5, race: 0.3, ticket: 0.1, loan: -0.2, plant: -0.05, animais: -0.05, cattle: 0.08, frango: 0.08, suino: 0.08, grain: 0.08, laranja: 0.08, cana: 0.08, ouro: 0.01, biz: 0.08, casino: 0.02 };
+export const CAPS = { xp: 0.25, daily: 0.5, race: 0.3, ticket: 0.1, loan: -0.2, plant: -0.05, animais: -0.05, cattle: 0.08, frango: 0.08, suino: 0.08, grain: 0.08, laranja: 0.08, cana: 0.08, ouro: 0.01, biz: 0.07, casino: 0.02 };
 
 // escala da produção (v311): quem produz muito fecha contrato de volume e vende um pouco mais caro, como na vida real.
 // Antes frango, suíno, laranja e cana só tinham o acessório (2%) e o teto de 8% era inalcançável.
-// [unidade, quanto cada uma dá, teto da escala]
-export const SCALE = { frango: ['galpão da granja', 0.01, 0.06], suino: ['barracão de suínos', 0.01, 0.06], laranja: ['50 ha de pomar', 0.01, 0.06],
-  cana: ['100 ha de canavial', 0.01, 0.06], grain: ['200 ha de lavoura ou café em terra própria', 0.01, 0.05], biz: ['empresa', 0.02, 0.04] };
+// v312 (mais difícil): [o que conta, quantos para cada 1%, teto da escala]. Granja e suínos: 1% a cada 3 galpões (18 para os 6%);
+// pomar 150 ha, canavial 300 ha e lavoura própria 500 ha para cada 1% (900 ha, 1.800 ha e 2.500 ha no máximo); empresa 1% cada (no máximo 2).
+export const SCALE = { frango: ['galpões da granja', 3, 0.06], suino: ['barracões de suínos', 3, 0.06], laranja: ['ha de pomar', 150, 0.06],
+  cana: ['ha de canavial', 300, 0.06], grain: ['ha de lavoura ou café em terra própria', 500, 0.05], biz: ['empresa', 1, 0.02] };
 export function scaleBonuses(s) {
   const own = (s.lands || []).filter(l => l && l.own), ha = f => own.filter(f).reduce((t, l) => t + (Number(l.ha) || 0), 0);
-  const n = { frango: s.granja?.houses?.length || 0, suino: s.suinos?.barns?.length || 0, laranja: Math.floor(ha(l => l.orchard) / 50), cana: Math.floor(ha(l => l.cane) / 100),
-    grain: Math.floor(ha(l => l.use === 'lavoura' || l.use === 'café') / 200), biz: Object.values(s.biz || {}).reduce((t, a) => t + (Array.isArray(a) ? a.length : 0), 0) };
-  const out = {}; for (const [k, [, per, max]] of Object.entries(SCALE)) if (n[k]) out[k] = Math.min(max, n[k] * per);
+  const n = { frango: s.granja?.houses?.length || 0, suino: s.suinos?.barns?.length || 0, laranja: ha(l => l.orchard), cana: ha(l => l.cane),
+    grain: ha(l => l.use === 'lavoura' || l.use === 'café'), biz: Object.values(s.biz || {}).reduce((t, a) => t + (Array.isArray(a) ? a.length : 0), 0) };
+  const out = {}; for (const [k, [, size, max]] of Object.entries(SCALE)) { const p = Math.floor(n[k] / size) * 0.01; if (p) out[k] = Math.min(max, p); }
   return out;
 }
 // como chegar ao teto de um efeito: todas as fontes que existem no jogo (a página do personagem marca as que você já tem)
@@ -73,7 +74,7 @@ export function paths(k) {
   for (const [id, p] of Object.entries(CAR_PERKS)) if (p[k]) out.push({ src: 'car', id, v: p[k] });
   for (const [id, p] of Object.entries(ACC_PERKS)) if (p[k]) out.push({ src: 'acc', id, v: p[k] });
   if (LAND_HOW[k]) out.push({ src: 'land', txt: LAND_HOW[k] });
-  if (SCALE[k]) { const [u, per, max] = SCALE[k]; out.push({ src: 'scale', txt: `${Math.round(per * 100)}% por ${u}, até ${Math.round(max * 100)}%` }); }
+  if (SCALE[k]) { const [u, size, max] = SCALE[k]; out.push({ src: 'scale', txt: `1% a cada ${size.toLocaleString('pt-BR')} ${u}, até ${Math.round(max * 100)}%` }); }
   for (const [id, c] of Object.entries(SETS)) if (c.reward?.[k]) out.push({ src: 'coll', id, txt: `coleção ${c.name} completa`, v: c.reward[k] });
   for (const p of PRESTIGE) if (p.perk[k]) out.push({ src: 'prest', id: p.min, txt: `${p.icon} ${p.title} (patrimônio de R$ ${p.min >= 1e9 ? `${p.min / 1e9} bi` : `${p.min / 1e6} mi`})`, v: p.perk[k] });
   return out;
