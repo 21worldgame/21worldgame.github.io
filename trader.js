@@ -12,7 +12,7 @@ const fmtLeft = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${M
 
 export function initTrader() {
   G.S.trades ??= []; G.S.trHist ??= [];
-  $('#tr-assets').innerHTML = `<button class="tr-asset tr-asset--real" data-act="tr-asset" data-id="${MESA.REAL}"><strong>BTC real</strong><span id="tr-q-${MESA.REAL}"></span><small>ao vivo · copy</small></button>` + Object.entries(MK.ASSETS).filter(([k]) => !MK.NO_OPEN.has(k)).map(([k, a]) => `<button class="tr-asset" data-act="tr-asset" data-id="${k}"><strong>${a.ticker}</strong><span id="tr-q-${k}"></span></button>`).join('');
+  $('#tr-assets').innerHTML = Object.entries(MESA.COINS).map(([p, c]) => `<button class="tr-asset tr-asset--real" data-act="tr-asset" data-id="${p}"><strong>${c.tk}</strong><span id="tr-q-${p}"></span><small>real · copy</small></button>`).join('') + Object.entries(MK.ASSETS).filter(([k]) => !MK.NO_OPEN.has(k)).map(([k, a]) => `<button class="tr-asset" data-act="tr-asset" data-id="${k}"><strong>${a.ticker}</strong><span id="tr-q-${k}"></span></button>`).join('');
   pickAsset(cur); pickDur(dur);
   const cv = $('#tr-canvas');
   cv.addEventListener('mousemove', e => { const r = cv.getBoundingClientRect(); hover = { x: e.clientX - r.left, y: e.clientY - r.top }; draw(); });
@@ -39,8 +39,8 @@ function settleNow() {
   save(); G.render();
 }
 
-export function pickAsset(a) { cur = a; document.querySelectorAll('.tr-asset').forEach(b => b.classList.toggle('is-on', b.dataset.id === a)); const ac = $('#mesa-acct'); if (ac) { ac.hidden = a !== MESA.REAL; if (!ac.hidden) ac.innerHTML = MESA.acctHTML(); } render(); }
-const real = () => cur === MESA.REAL;
+export function pickAsset(a) { cur = a; MESA.setCoin(a); document.querySelectorAll('.tr-asset').forEach(b => b.classList.toggle('is-on', b.dataset.id === a)); const ac = $('#mesa-acct'); if (ac) { ac.hidden = !MESA.isReal(a); if (!ac.hidden) ac.innerHTML = MESA.acctHTML(); } render(); }
+const real = () => MESA.isReal(cur);
 const fmtP = v => (real() ? MESA.fmt(v) : MK.fmt(cur, v));
 const x = v => String(v).replace('.', ',') + 'x';
 // velas e tempo da operação andam juntos: mudar um muda o outro (o gráfico mostra o tempo que vale para a boleta)
@@ -73,11 +73,11 @@ function render() {
     const ch = MK.change(a, t, 60) * 100, q = $(`#tr-q-${a}`);
     if (q) { q.textContent = `${ch >= 0 ? '+' : ''}${ch.toFixed(2)}%`; q.className = ch >= 0 ? 'good' : 'bad'; }
   }
-  { const ch = MESA.change1h() * 100, q = $(`#tr-q-${MESA.REAL}`); if (q) { q.textContent = MESA.spotNow() ? `${ch >= 0 ? '+' : ''}${ch.toFixed(2)}%` : '…'; q.className = ch >= 0 ? 'good' : 'bad'; } }
+  for (const p of Object.keys(MESA.COINS)) { const ch = MESA.change1h(p) * 100, q = $(`#tr-q-${p}`); if (q) { q.textContent = MESA.spotNow(p) ? `${ch >= 0 ? '+' : ''}${ch.toFixed(2)}%` : '…'; q.className = ch >= 0 ? 'good' : 'bad'; } }
   const amt = Math.floor(Number($('[name="tr-amt"]').value) || 0);
   if (real()) {
     const vis = MESA.candles(tf, 60), px = MESA.spotNow(), ch = MESA.change1h() * 100;
-    $('#tr-name').textContent = 'Bitcoin real (BTC/USD · Coinbase)';
+    $('#tr-name').textContent = `${MESA.COINS[cur].name} real (${MESA.COINS[cur].tk}/USD · Coinbase)`;
     $('#tr-price').textContent = px ? MESA.fmt(px) : 'carregando…';
     $('#tr-price').className = `tr-price ${ch >= 0 ? 'good' : 'bad'}`;
     $('#tr-ch').textContent = `${ch >= 0 ? '▲' : '▼'} ${Math.abs(ch).toFixed(2)}% em 1 h`; $('#tr-ch').className = ch >= 0 ? 'good' : 'bad';
