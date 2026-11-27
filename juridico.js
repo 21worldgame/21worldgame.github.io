@@ -78,9 +78,22 @@ const LAW = [
 ];
 const STEPS = ['aviso', 'estorno', 'suspensão', 'prisão da conta'];
 // regras e informações: abas (lei e vantagens; o conteúdo das vantagens vem do jogo, G.vguiaHTML em game.js)
-const TABS = [['lei', '⚖️ lei do 21'], ['vantagens', '⚡ vantagens']];
-export function rules(tab = 'lei') {
+const TABS = [['lei', '⚖️ lei do 21'], ['vantagens', '⚡ vantagens'], ['mudou', '📰 o que mudou']];
+// "o que mudou": as reportagens do Jornal 21 (news.js), da mais nova para a mais antiga. Notícia nova entra aqui sozinha.
+const dia = at => new Date(at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+async function mudou() {
+  const { EDITORIAL } = await import('./news.js'), now = Date.now();
+  const list = EDITORIAL.filter(e => e.at <= now).sort((a, b) => b.at - a.at).slice(0, 25);
+  return `<p class="ct__lead">Tudo o que mudou no 21 World, como saiu no Jornal 21. A mais nova primeiro.</p>
+    <ol class="news-log">${list.map(e => `<li><time>${dia(e.at)}</time><b>${esc(e.title)}</b><p>${esc(e.lead.replace(/^Boa noite.s*/, ''))}</p></li>`).join('')}</ol>`;
+}
+export async function rules(tab = 'lei') {
   const d = box(), nav = `<nav class="rtabs" role="tablist">${TABS.map(([k, l]) => `<button type="button" role="tab" data-rtab="${k}" aria-selected="${k === tab}" class="${k === tab ? 'is-on' : ''}">${l}</button>`).join('')}</nav>`;
+  if (tab === 'mudou') {
+    d.innerHTML = `<article class="ct ct--law">${head}${nav}<h2 id="ct-t" class="ct__title">O que mudou</h2>${await mudou()}
+      <div class="row ct__acts"><button class="btn btn--gold" type="button" data-close>fechar</button></div></article>`;
+    if (!d.open) d.showModal(); d.scrollTop = 0; return;
+  }
   if (tab === 'vantagens' && G.vguiaHTML) {
     d.innerHTML = `<article class="ct ct--law">${head}${nav}<h2 id="ct-t" class="ct__title">Guia das vantagens</h2>${G.vguiaHTML()}
       <div class="row ct__acts"><button class="btn btn--gold" type="button" data-close>fechar</button></div></article>`;
