@@ -172,7 +172,6 @@ async function loadUsers(force) {
   });
   return usersP;
 }
-const fold = t => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 function matchUsers(q, lim = 300) {
   const f = fold(q.trim()); if (!f) return users.slice(0, lim);
   const hit = []; for (const u of users) { const n = fold(u.name), m = fold(u.email); const r = n.startsWith(f) ? 0 : n.includes(f) ? 1 : m.includes(f) ? 2 : -1; if (r >= 0) hit.push([r, u]); }
