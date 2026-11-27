@@ -63,7 +63,7 @@ const WH = new RegExp(`^(${Object.values(WAREHOUSES).map(w => esc(w.label)).join
 export const GROUPS = [
   ['impostos', 'impostos', /imposto de renda|pedágio dos mais ricos|grandes fortunas|contas mais caras|reembolso: imposto/],
   ['contador', 'contador', /^contador/],
-  ['negocios', 'empresas e galpões', null],
+  ['negocios', 'empresas e galpões', /^compra da marca |^provedor: |^venda de negócio/],   // investimento da empresa (marca, rede de fibra) no grupo dela, não em "outros"
   ['frigorifico', 'frigorífico (só a indústria)', /^frigorífico|construção do frigorífico|venda do frigorífico/],
   ['gado', 'gado', /boitel|confinamento|frigorífico|gado|bezerr|\bbois\b|\babate\b|cabeças/],
   ['granja', 'granja', /^granja/],

@@ -230,7 +230,7 @@ function takeRemote(row, msg = true) {
   if (row.restored) return forceRestore(row);
   if (dirty() && progressOf(G.S) > progressOf(row.data) * 1.001) { backup(G.S, 'versão deste aparelho (a nuvem chegou junto)'); }
   else if (dirty()) backup(G.S, 'mudanças deste aparelho antes de atualizar');
-  try { D.take(G.S, user?.id); } catch {}
+  try { D.discard(); } catch {}   // o que este aparelho fez e não gravou fica só na cópia: fora do diário
   adopt(row.data); try { D.rebase(G.S, 'pegou o save da nuvem (outro aparelho)', Date.now(), location.hash.slice(1), user?.id); } catch {} base = row.updated_at; setBaseData(row.data); pushed = G.S.savedAt || 0; lastPush = pushed; saveMeta(); syncedAt = Date.now(); G.render();
   if (msg) say('Atualizado com o que você fez no outro aparelho.');
 }
@@ -285,7 +285,7 @@ export async function push() {
       mergeRemote(row); return false;
     }
     base = res.data[0].updated_at; setBaseData(snap); pushed = stamp; lastPush = stamp; saveMeta(); syncedAt = Date.now();
-    D.flush(sb, user.id);
+    D.confirm(); D.flush(sb, user.id);
     try { bc?.send({ type: 'broadcast', event: 'saved', payload: { dev: DEV } })?.catch?.(() => {}); } catch {}   // avisa o outro aparelho na hora
     // perfil público: só regrava quando muda o que aparece (nome, nível, rank, visual) ou a cada 60 s (patrimônio do ranking)
     let row = profileRow(); const pk = JSON.stringify([row.name, row.level, row.rank, row.look]);

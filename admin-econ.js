@@ -41,12 +41,15 @@ export function activities(s) {
   return out;
 }
 
+// margem alta só é suspeita se o lucro já pagou o que foi investido na atividade (bem < 0 = compra de marca, rede, galpão...):
+// provedor tem margem de mês de ~50% (a rede de fibra conta como investimento) e leva ~50 meses para se pagar
+const paid = x => x.lucro + Math.min(0, x.bem || 0) > 0;
 // lucro e prejuízo por atividade (últimos `months` meses do mundo), com margem e alerta
 export function pnl(s, months = 36) {   // 36 = tudo o que o jogo guarda; janela curta engana (vende hoje a safra plantada antes)
   const r = results(s, (s.month || 0) - months + 1, s.month || 0);
   const rows = r.rows.map(x => {
     const margin = x.in > 0 ? x.lucro / x.in : null, exp = EXPECT[x.key];
-    return { ...x, margin, alert: exp != null && x.in >= ALERT_MIN && margin != null && margin > exp + ALERT_GAP };
+    return { ...x, margin, alert: exp != null && x.in >= ALERT_MIN && margin != null && margin > exp + ALERT_GAP && paid(x) };
   }).sort((a, b) => b.lucro - a.lucro);
   return { rows, in: r.in, out: r.out, lucro: r.lucro };
 }
@@ -74,12 +77,12 @@ export function economy(saves, months = 36) {
     tot.players++; tot.money += Number(s.money) || 0; tot.worth += L.netWorth({ ...blank, ...s });
     for (const x of pnl(s, months).rows) {
       const B = (by[x.key] ??= { key: x.key, label: GROUP_LABEL[x.key] || x.key, in: 0, out: 0, lucro: 0, players: 0, top: null });
-      B.in += x.in; B.out += x.out; B.lucro += x.lucro; B.players++;
+      B.in += x.in; B.out += x.out; B.lucro += x.lucro; B.bem = (B.bem || 0) + Math.min(0, x.bem || 0); B.players++;
       if (!B.top || x.lucro > B.top.lucro) B.top = { name, lucro: x.lucro };
     }
   }
   const rows = Object.values(by).map(B => { const margin = B.in > 0 ? B.lucro / B.in : null, exp = EXPECT[B.key];
-    return { ...B, margin, alert: exp != null && B.in >= ALERT_MIN && margin != null && margin > exp + ALERT_GAP }; }).sort((a, b) => b.lucro - a.lucro);
+    return { ...B, margin, alert: exp != null && B.in >= ALERT_MIN && margin != null && margin > exp + ALERT_GAP && paid(B) }; }).sort((a, b) => b.lucro - a.lucro);
   return { ...tot, rows };
 }
 

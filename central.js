@@ -956,7 +956,7 @@ async function loadVigia() {
       soft(pageAll(() => sb.from('admin_grants').select('user_id, kind, amount, created_at').in('kind', ['money', 'reset']).order('created_at'))),   // saldo líquido desde o último recomeço
       soft(pageAll(() => sb.from('pix').select('from_id, from_name, to_id, to_name, amount, memo, kind, at').gt('at', ago(7)).order('at', { ascending: false }))),
       soft(pageAll(() => sb.from('pix').select('from_id, from_name, to_id, to_name, amount, memo, at').gt('at', ago(30)))),
-      soft(pageAll(() => sb.from('diario').select('user_id, at, created, kind, txt, val, money, worth, acts, tab').in('kind', ['gap', 'inicio', 'log']).gt('at', ago(7)))),   // com 'log': o salto compara com o último lançamento, não com a abertura anterior
+      soft(pageAll(() => sb.from('diario').select('user_id, at, created, m, kind, txt, val, money, worth, acts, tab').in('kind', ['gap', 'inicio', 'log']).gt('at', ago(7)))),   // com 'log': o salto compara com o último lançamento, não com a abertura anterior
       soft(pageAll(() => sb.from('bans').select('user_id, reason, until'), 'user_id')),
       soft(pageAll(() => sb.from('vigia_ok').select('*'), 'user_id')),
       soft(pageAll(() => sb.from('admin_grants').select('user_id, amount, created_at').eq('kind', 'money').lt('amount', 0).gt('created_at', ago(30)))),

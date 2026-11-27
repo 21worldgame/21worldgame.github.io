@@ -39,8 +39,9 @@ export function rebase(s, why = 'abriu o jogo', now = Date.now(), tab = '', uid 
   loadM = Infinity;
   for (const e of s.log || []) if (e && typeof e === 'object') seen.add(e);
   const { money, chips, base } = snap(s, now, tab), sum = late.reduce((t, e) => t + Math.round(Number(e.val) || 0), 0);
-  jr = { money, chips, uid }; queue.push({ ...row(s, 'inicio', why, 0, base), money: money - sum });   // saldo de quando abriu
-  for (const e of [...late].reverse()) queue.push({ ...row(s, 'log', String(e.txt || '').slice(0, 300), Math.round(Number(e.val) || 0), base), m: e.m ?? s.month ?? 0 });
+  // ok: retrato do save que abriu (não é ação deste aparelho que possa ser descartada)
+  jr = { money, chips, uid }; queue.push({ ...row(s, 'inicio', why, 0, base), money: money - sum, ok: true });   // saldo de quando abriu
+  for (const e of [...late].reverse()) queue.push({ ...row(s, 'log', String(e.txt || '').slice(0, 300), Math.round(Number(e.val) || 0), base), m: e.m ?? s.month ?? 0, ok: true });
 }
 // o que é novo desde a última vez, e confere o caixa: tudo que mudou tem que estar no livro-caixa
 export function take(s, uid, now = Date.now(), tab = typeof location !== 'undefined' ? location.hash.slice(1) : '') {
@@ -58,12 +59,17 @@ export function take(s, uid, now = Date.now(), tab = typeof location !== 'undefi
   return rows;
 }
 export const pending = () => queue.length;
+// o save gravou na nuvem: o que está na fila aconteceu de verdade
+export const confirm = () => { for (const r of queue) r.ok = true; };
+// este aparelho descartou o que fez e ficou com a nuvem (outro aparelho fechou o mesmo mês): o que não gravou não aconteceu
+// (Light Yagami 27/11: dois aparelhos fechavam o mesmo mês e a receita da Viva Fibra entrava 2x no diário, não no caixa)
+export const discard = () => { queue = queue.filter(r => r.ok); };
 // manda a fila (depois que o save gravou); se falhar, tenta de novo no próximo save
 let sending = false;
 export async function flush(sb, uid) {
   if (sending || !queue.length || !sb || !uid) return;
   sending = true;
   const part = queue.filter(r => r.uid === uid).slice(0, 500); if (!part.length) { sending = false; return; }
-  try { const { error } = await sb.from('diario').insert(part.map(({ uid: u, ...r }) => ({ user_id: u, ...r }))); if (!error) queue = queue.filter(r => !part.includes(r)); }
+  try { const { error } = await sb.from('diario').insert(part.map(({ uid: u, ok, ...r }) => ({ user_id: u, ...r }))); if (!error) queue = queue.filter(r => !part.includes(r)); }
   catch {} finally { sending = false; }
 }
