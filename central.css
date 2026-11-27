@@ -136,3 +136,6 @@ tr.ad-mark td { background: color-mix(in oklab, var(--hud-accent) 10%, transpare
 @media (max-width: 80rem) { .ad-cols { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 56rem) { .ad-nav__grp { display: none; } }
 .ad-sheet--gold { border-color: var(--hud-accent); }
+.ad-det { margin-top: 6px; }
+.ad-det summary { cursor: pointer; color: var(--hud-accent); font-weight: 600; font-size: 13px; }
+.ad-det[open] summary { margin-bottom: 6px; }
