@@ -83,6 +83,9 @@ export function monthly(s) {
   const out = [];
   for (const c of [...s.contracts]) {
     if ((s.month || 1) < c.due) continue;
+    // a colheita que chega no mesmo fechamento do vencimento serve: a trading busca no armazém em vez de multar
+    // (Buu 27/11 18:36: 15.454 sacas de soja colhidas e multa de R$ 174 mil pelo contrato de 11.000 no mesmo instante)
+    if (ready(s, c.good) >= c.qty) { const r = deliver(s, c.id); out.push({ txt: `exportação no vencimento: ${c.qty.toLocaleString('pt-BR')} sacas de ${GOODS[c.good].label} entregues à ${c.trader} (a trading buscou no armazém)`, val: r.value, ok: true }); continue; }
     const fine = Math.round(c.qty * c.price * FINE);
     s.money -= fine; s.contracts = s.contracts.filter(x => x !== c);
     out.push({ txt: `multa: contrato de ${c.qty.toLocaleString('pt-BR')} sacas de ${GOODS[c.good].label} com a ${c.trader} venceu sem entrega`, val: -fine });
