@@ -126,13 +126,27 @@ const IMPROV = [['casa sede', 0.06], ['curral', 0.03], ['galpão', 0.04], ['cerc
 
 // ---------- lavoura ----------
 // custo = custo operacional por hectare (IMEA/Aprosoja-MS/Conab 2025-26: soja R$ 5,6 mil a 7,7 mil); yield = sacas por hectare.
-// Com os preços do Cepea de nov/2026 a margem fica: soja ~30%, milho ~25%, café ~33% ao ano
+// Com os preços do Cepea de nov/2026 a margem fica: soja ~30%, milho ~25%, café ~33% ao ano (com a janela de plantio da v302)
 // (até a v150 o custo era bem menor e a lavoura dava 70% a 250% de lucro por safra, muito acima da vida real)
+// sow = meses do ano em que dá para plantar (calendário agrícola do Brasil). v302: antes plantava o ano todo e a soja
+// emendava 2,4 safras por ano (~47% por safra, ~150% ao ano: o Basso foi de R$ 17 mi a R$ 41 mi em 12 h só replantando)
 export const CROPS = {
-  soja: { label: 'soja', cost: 6300, months: 5, yield: 60, good: 'soja' },   // uma safra de soja por ano na janela de chuva (+ milho safrinha no resto)     // sacas por hectare
-  milho: { label: 'milho', cost: 4800, months: 4, yield: 100, good: 'milho' },
-  cafe: { label: 'café', cost: 34000, months: 10, yield: 30, good: 'cafe' },   // ~R$ 1.130 por saca produzida   // arábica: uma safra por ano
+  soja: { label: 'soja', cost: 6300, months: 5, yield: 60, good: 'soja', sow: [9, 10, 11, 12], short: 'de setembro a dezembro', when: 'de setembro a dezembro, com a volta da chuva (no resto do ano é vazio sanitário contra a ferrugem)' },   // uma safra por ano; colhe de fevereiro a maio
+  milho: { label: 'milho', cost: 4800, months: 4, yield: 100, good: 'milho', sow: [1, 2, 3, 9, 10, 11], short: 'de janeiro a março ou de setembro a novembro', when: 'na safrinha (janeiro a março, depois da soja) ou no milho verão (setembro a novembro)' },
+  cafe: { label: 'café', cost: 34000, months: 10, yield: 30, good: 'cafe', sow: [10, 11, 12, 1, 2, 3], short: 'de outubro a março', when: 'de outubro a março, com as mudas pegando na chuva' },   // ~R$ 1.130 por saca produzida   // arábica: uma safra por ano
 };
+export const monthOfYear = m => ((Math.max(1, m) - 1) % 12) + 1;
+export const canSow = (crop, m) => CROPS[crop].sow.includes(monthOfYear(m));
+// meses até abrir a janela de plantio (0 = aberta agora)
+export const sowWait = (crop, m) => { for (let i = 0; i < 12; i++) if (canSow(crop, m + i)) return i; return 0; };
+// preço na época do ano: colheita cheia derruba, entressafra sobe (Cepea: soja ~10% mais barata em mar/abr que em out/nov).
+// Quem colhe sem armazém vende no fundo do ano; quem guarda vende na entressafra.
+export const SEASON = {
+  soja: { 2: 0.94, 3: 0.9, 4: 0.9, 5: 0.94, 8: 1.04, 9: 1.06, 10: 1.07, 11: 1.05 },
+  milho: { 6: 0.93, 7: 0.9, 8: 0.92, 11: 1.04, 12: 1.06, 1: 1.05 },
+  cafe: { 5: 0.95, 6: 0.92, 7: 0.92, 8: 0.95, 12: 1.04, 1: 1.05, 2: 1.04 },
+};
+export const season = (k, m) => SEASON[k]?.[monthOfYear(m)] ?? 1;
 // máquina emprestada a parceiro (lentTo) não trabalha para você; a que você pegou emprestada (amigos.tools) trabalha
 export const hasVehicle = (s, type) => (s.cars || []).some(c => !c.lentTo && CARS[c.model]?.type === type) || (s.amigos?.tools || []).some(t => t.type === type);
 export const rentNow = l => Math.round(l.value * (l.rate ?? RENT_PAY) * (1 + RENT_RAISE * Math.floor((l.age || 0) / 12)));
@@ -165,6 +179,7 @@ export function plant(s, land, crop, seg = false) {
   if (land.crop || land.leasedOut || land.orchard || land.cane) return 'esta terra já está ocupada.';
   const busy = pastureBusy(s, land); if (busy) return busy;
   if (!land.own && !hasVehicle(s, 'trator')) return 'terra arrendada só aceita lavoura de quem tem trator (a máquina e os insumos ficam por sua conta).';
+  if (!canSow(crop, s.month)) { const w = sowWait(crop, s.month); return `fora da época: ${CROPS[crop].label} se planta ${CROPS[crop].when}. Abre em ${w} ${w === 1 ? 'mês' : 'meses'}.`; }
   const cost = plantTotal(s, crop, land.ha, !land.own, seg);
   if (cost > s.money) return 'dinheiro insuficiente para o plantio.';
   s.money -= cost;
@@ -366,7 +381,8 @@ export function tick(s, rng = Math.random) {
   const add = (txt, val = 0) => { s.money += val; log.push({ m: s.month, txt, val: Math.round(val) }); };
 
   s.prev = { ...s.prices };
-  for (const k of Object.keys(s.prices)) { const b = ANCHOR[k] && ANCHOR[k] * (ECON[k] || 1) * cycleGood(k); let v = walk(b ? s.prices[k] + (b - s.prices[k]) * 0.1 : s.prices[k], rng, 0.06);   // ancorado: volta 10%/mês ao preço base, sem isso frango/ração derivavam sem limite e a granja virava prejuízo certo
+  for (const k of Object.keys(s.prices)) { const b = ANCHOR[k] && ANCHOR[k] * (ECON[k] || 1) * cycleGood(k) * season(k, s.month + 1); const sz = season(k, s.month + 1) / season(k, s.month), p0 = s.prices[k] * sz;   // a virada da estação vale no mês, não 10% por mês
+    let v = walk(b ? p0 + (b - p0) * 0.1 : p0, rng, 0.06);   // ancorado: volta 10%/mês ao preço base, sem isso frango/ração derivavam sem limite e a granja virava prejuízo certo
     if (b) v = Math.min(b * 1.25, Math.max(b * 0.8, v));   // faixa realista: save antigo já derivado volta no próximo mês
     s.prices[k] = v < 100 ? Math.round(v * 100) / 100 : Math.round(v); }   // preço pequeno (frango, ração) anda em centavos
   // terra acompanha o mercado: volta 10% por mês para o valor de laudo e oscila ±2% (antes subia 0,6% todo mês para sempre;
