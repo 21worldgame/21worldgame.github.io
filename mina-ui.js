@@ -37,6 +37,11 @@ const liveLine = () => !live.oz ? 'preço de reserva (sem internet)' : `US$ ${in
 const FLEET_ICO = { furar: '🔩', escavar: '🚜', carregar: '🏗️', transportar: '🚛' };
 const mine = () => owner.ok && owner.id && owner.id === Auth.account()?.id && G.S.mina;
 
+// fotos da frota da mina (cada máquina da loja 21 com a sua foto; com a frota do dono, mostra quantas ele tem)
+function gallery(f) {
+  return `<div class="mina-gal">${Object.entries(MI.EQUIP).map(([k, e]) => { const n = f ? (G.S.cars || []).filter(c => c.model === k).length : 0;
+    return `<figure class="mina-eq${n ? ' is-own' : ''}"><img src="assets/${e.img}.webp" alt="${esc(e.name)}" loading="lazy"><figcaption><b>${esc(MI.ROLES[e.role])}</b><small>${esc(e.name.split(' (')[0])} · ${int(e.t)} t/mês</small>${f ? `<i class="${n ? 'good' : 'bad'}">${n ? `${n} na mina` : 'não tem'}</i>` : `<i>${brl(e.price)}</i>`}</figcaption></figure>`; }).join('')}</div>`;
+}
 export function shopCard() {
   const s = G.S, taken = owner.ok && owner.id, isMe = mine();
   const status = !owner.loaded ? 'consultando o cartório…' : !owner.ok ? 'a mineradora está em vistoria: volta à venda em breve'
@@ -45,7 +50,8 @@ export function shopCard() {
     <div><span class="mina-tag">única no jogo inteiro</span><h3>${MI.MINE.name}</h3>
       <p class="muted small">Só existe uma mineradora no 21 World, com usina de ${int(MI.PLANT_T)} t por mês. Para minerar o dono precisa comprar a <b>frota na loja 21</b> (perfuratriz, escavadeira, pá-carregadeira e caminhões) e contratar equipes. Custos fixos de ${brl(MI.MINE.upkeep)} por mês + ${brl(MI.MINE.crew)} por equipe + diesel e explosivos por tonelada; paga CFEM e impostos sobre o ouro. O ouro é vendido pelo preço real do dia. Pode passar meses procurando veio. Quando acha um veio, cada mês de extração vale milhões.</p>
       <p class="small">${status}</p><p class="price">${brl(MI.MINE.price)}</p>
-      ${!owner.ok || taken ? '' : Auth.account() ? `<button class="btn btn--gold" data-mina="buy">comprar a mineradora</button>` : '<p class="small bad">Entre com uma conta para comprar a mina.</p>'}</div></article>`;
+      ${!owner.ok || taken ? '' : Auth.account() ? `<button class="btn btn--gold" data-mina="buy">comprar a mineradora</button>` : '<p class="small bad">Entre com uma conta para comprar a mina.</p>'}
+      <h5 class="mina-h">equipamentos da mina <small class="muted">(vendidos na loja 21, aba máquinas)</small></h5>${gallery(null)}</div></article>`;
 }
 export function ownCard() {
   if (!mine()) return '';
@@ -60,6 +66,7 @@ export function ownCard() {
       <span><small>preço do ouro</small><b>${brl(gp)}/kg</b></span><span><small>custo fixo do mês</small><b class="bad">${brl(fixed)}</b></span><span><small>veios achados</small><b>${m.found}</b></span></div>
     <p class="small muted">🌍 ${liveLine()}</p>
     <h5 class="mina-h">logística da mina <small class="muted">(a produção segue o elo mais fraco)</small></h5>
+    ${gallery(f)}
     <div class="mina-fleet">${['furar', 'escavar', 'carregar', 'transportar'].map(r => link(r, !!f[r])).join('')}
       <span class="mina-fl ${m.crews ? 'is-ok' : 'is-no'}">👷 equipes: <b>${m.crews} (${int(m.crews * MI.CREW_T)} t/mês)</b></span><span class="mina-fl is-ok">🏭 usina: <b>${int(MI.PLANT_T)} t/mês</b></span></div>
     <p class="small ${lack.length ? 'bad' : 'good'}">${lack.length ? `Faltam máquinas para extrair: <b>${esc(lack.join(', '))}</b>. Compre na loja 21 (aba máquinas) e elas entram na mina sozinhas.` : `Capacidade de hoje: <b>${int(cap.t)} t de minério por mês</b>, limitada por ${esc(cap.limit)}. Para produzir mais, solte esse gargalo.`} <button class="btn btn--glass btn--sm" type="button" data-tab-go="loja">ir à loja</button></p>

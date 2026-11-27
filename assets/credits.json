@@ -108,5 +108,45 @@
   "author": "USDAgov",
   "license": "Public domain",
   "page": "https://commons.wikimedia.org/wiki/File:Mike_Starkey_Soybean_Harvest_(52490323187).jpg"
+ },
+ "biz/serragaucha": {
+  "author": "Jon",
+  "license": "CC BY 2.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Wine_Cellar_at_Chateau_Kirwan.jpg"
+ },
+ "biz/portoimports": {
+  "author": "davitydave",
+  "license": "CC BY 2.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Wine_barrels_in_old_cellars_on_boards.jpg"
+ },
+ "biz/emporiotannat": {
+  "author": "Benoît Prieur",
+  "license": "CC0",
+  "page": "https://commons.wikimedia.org/wiki/File:Le_Brazier_Wine_Bar_-_cave.jpg"
+ },
+ "mn-escav": {
+  "author": "Calistemon",
+  "license": "CC BY-SA 4.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Hitachi_EX3500_digger_at_the_Sunrise_Dam_Gold_Mine_04.jpg"
+ },
+ "mn-carreg": {
+  "author": "Sanjuanl87",
+  "license": "CC BY-SA 4.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Rhino_Wheel_Loader_RWL163.jpg"
+ },
+ "mn-basc": {
+  "author": "High Contrast",
+  "license": "CC BY 3.0 de",
+  "page": "https://commons.wikimedia.org/wiki/File:Mercedes-Benz_Arocs_-_dump_truck_version_(1).JPG"
+ },
+ "mn-artic": {
+  "author": "Zandcee",
+  "license": "CC BY-SA 4.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Tamrock_dump_truck_(1).jpg"
+ },
+ "mn-perf": {
+  "author": "James St. John",
+  "license": "CC BY 2.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Drilling_rig_(Continental_Mine,_Butte,_Montana,_USA)_9.jpg"
  }
 }

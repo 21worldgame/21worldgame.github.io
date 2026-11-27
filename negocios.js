@@ -112,6 +112,15 @@ export const SECTORS = {
     desc: 'Os mais caros do setor: diárias altas, mas a folha, a manutenção e a energia não param. Férias de verão e de julho enchem os quartos.',
     brands: { copapalacio: { name: 'Copacabana Palácio', price: 85000000, color: '#f8fafc' }, fazzano: { name: 'Fazzano Hotéis', price: 60000000, color: '#78350f' }, tchai: { name: 'Tchai Resort', price: 34000000, color: '#065f46' } },
     units: { boutique: { label: 'hotel boutique (40 quartos)', price: 26000000, rev: 1500000, cost: 1000000 }, resort: { label: 'resort (200 quartos)', price: 92000000, rev: 5200000, cost: 3450000 } } },
+  // adegas: loja e wine bar vendem no balcão; a logística (centro de distribuição + vans e caminhões refrigerados) entrega para
+  // restaurantes, hotéis e clientes. Inverno (junho e julho) e fim de ano (dezembro) vendem mais vinho.
+  adega: { label: 'adegas e distribuidoras de vinho', one: 'adega', icon: '🍷', base: 0.86, max: 40, season: [6, 7, 12], seasonPull: 1.25,
+    desc: 'Adega de rua e wine bar vendem no balcão. A logística é outra frente: o centro de distribuição guarda 6 veículos, e cada van ou caminhão refrigerado entrega para restaurantes, hotéis e clientes. Inverno e fim de ano vendem mais.',
+    brands: { serragaucha: { name: 'Adega Serra Gaúcha', price: 7000000, color: '#7f1d1d' }, portoimports: { name: 'Porto & Douro Importadora', price: 18000000, color: '#581c87' },
+      emporiotannat: { name: 'Empório Tannat', price: 30000000, color: '#4c0519', units: ['winebar', 'cd', 'van', 'caminhao'] } },
+    units: { loja: { label: 'adega de rua', price: 1600000, rev: 105000, cost: 77000 }, winebar: { label: 'wine bar', price: 4200000, rev: 270000, cost: 198000 },
+      cd: { label: 'centro de distribuição (6 veículos)', price: 4500000, rev: 0, cost: 20000, slots: 6 }, van: { label: 'van de entrega', price: 260000, rev: 22000, cost: 16000, slot: 1 },
+      caminhao: { label: 'caminhão refrigerado', price: 850000, rev: 70000, cost: 51000, slot: 1 } } },
 };
 export const LEVELS = { popular: { label: 'preço popular', mult: 0.85, pull: 1.18 }, normal: { label: 'preço normal', mult: 1, pull: 1 }, premium: { label: 'preço premium', mult: 1.22, pull: 0.8 } };
 export const SECTOR_FIXED = 0.0012;   // sede, marketing e sistemas: % do preço da marca por mês
@@ -129,7 +138,7 @@ export function buyUnit(s, cat, id, t) {
 export function sellUnit(s, cat, id, t) {
   const S = SECTORS[cat], b = find(s, cat, id); if (!b) return { err: 'negócio não encontrado.' };
   const k = (b.units || []).findLastIndex(u => u.t === t); if (k < 0) return { err: 'você não tem essa unidade.' };
-  if (S.units[t].slots && slotsOf(cat, b).free < S.units[t].slots) return { err: 'tire os aviões / lanchas antes: eles ficariam sem vaga.' };
+  if (S.units[t].slots && slotsOf(cat, b).free < S.units[t].slots) return { err: 'tire antes o que ocupa as vagas (aviões, lanchas ou veículos): eles ficariam sem vaga.' };
   const v = unitValue(cat, b.units[k], s.month || 1); b.units.splice(k, 1); s.money += v; return { value: v };
 }
 // mês da rede: ocupação × faturamento cheio − custo fixo

@@ -20,13 +20,13 @@ export const spotBRLkg = (usdOz, usdBrl) => Math.round(usdOz / OZ * usdBrl * 100
 
 // ---------- frota (vendida na loja 21) ----------
 // t = toneladas de minério por mês que cada máquina aguenta; role = o elo da logística. Preços de tabela 2026 (aprox.).
-const eq = (name, role, t, price, perk) => ({ name, type: 'maquina', crop: 'ouro', cat: 'mineração', role, t, price, img: 'mina-ouro', hp: 0, top: 30, perk });
+const eq = (name, role, t, price, perk, img) => ({ name, type: 'maquina', crop: 'ouro', cat: 'mineração', role, t, price, img, hp: 0, top: 30, perk });   // foto de cada máquina (assets/mn-*.webp, Wikimedia Commons)
 export const EQUIP = {
-  mn_escav: eq('Caterpilar 320 GC (escavadeira hidráulica 20 t)', 'escavar', 3500, 1450000, 'escava 3.500 t de minério por mês'),
-  mn_carreg: eq('Caterpilar 950 GC (pá-carregadeira)', 'carregar', 4500, 1250000, 'carrega 4.500 t por mês nos caminhões'),
-  mn_basc: eq('Mercedez Arocs 3345 (caminhão basculante 6x4)', 'transportar', 2000, 820000, 'transporta 2.000 t por mês até a usina'),
-  mn_artic: eq('Volvu A40G (caminhão articulado 40 t)', 'transportar', 5000, 3900000, 'transporta 5.000 t por mês, mesmo em terreno ruim'),
-  mn_perf: eq('Sandvic Ranger DX (perfuratriz hidráulica)', 'furar', 6000, 2600000, 'fura e prepara 6.000 t por mês (e faz a sondagem do veio)'),
+  mn_escav: eq('Caterpilar 320 GC (escavadeira hidráulica 20 t)', 'escavar', 3500, 1450000, 'escava 3.500 t de minério por mês', 'mn-escav'),
+  mn_carreg: eq('Caterpilar 950 GC (pá-carregadeira)', 'carregar', 4500, 1250000, 'carrega 4.500 t por mês nos caminhões', 'mn-carreg'),
+  mn_basc: eq('Mercedez Arocs 3345 (caminhão basculante 6x4)', 'transportar', 2000, 820000, 'transporta 2.000 t por mês até a usina', 'mn-basc'),
+  mn_artic: eq('Volvu A40G (caminhão articulado 40 t)', 'transportar', 5000, 3900000, 'transporta 5.000 t por mês, mesmo em terreno ruim', 'mn-artic'),
+  mn_perf: eq('Sandvic Ranger DX (perfuratriz hidráulica)', 'furar', 6000, 2600000, 'fura e prepara 6.000 t por mês (e faz a sondagem do veio)', 'mn-perf'),
 };
 export const ROLES = { furar: 'perfuratriz', escavar: 'escavadeira', carregar: 'pá-carregadeira', transportar: 'caminhão' };
 // capacidade de cada elo (t/mês) somando as máquinas que o dono tem
