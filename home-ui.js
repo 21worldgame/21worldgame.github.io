@@ -12,6 +12,7 @@ import * as NG from './negocios.js';
 import * as PK from './perks.js';
 import { netWorth, TROPHIES } from './logic.js';
 import { editorial } from './news.js';
+import { copSVG } from './prisao.js';
 import * as CTR from './contratos.js';
 import { brl } from './store.js';
 import * as INVU from './invest-ui.js';
@@ -116,6 +117,17 @@ function panelHTML(s) {
       <section class="glass hbox"><h3>destaques do mundo</h3><ol class="htop" id="htop-live">${topHTML(top)}</ol>
         <p class="small muted" id="hclub-live">${clubTxt(club)}</p><button class="btn btn--glass btn--sm" type="button" data-tab-go="ranking">ver ranking</button></section></div>`;
 }
+// edição extra: reportagem marcada com extra vira capa de jornal no alto da página inicial enquanto está no ar
+function extraHTML() {
+  const e = editorial().filter(x => x.extra).at(-1); if (!e) return '';
+  const [kick, head] = e.title.includes(':') ? [e.title.slice(0, e.title.indexOf(':')), e.title.slice(e.title.indexOf(':') + 1).trim()] : ['urgente', e.title];
+  const dia = new Date(e.at).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  return `<article class="xp" aria-label="edição extra"><header class="xp__mast"><span>${esc(dia)}</span><b>GAZETA 21</b><span>EDIÇÃO EXTRA · R$ 2,00</span></header>
+    <p class="xp__kick">${esc(kick)}</p><h2 class="xp__h">${esc(head)}</h2>
+    <div class="xp__body"><figure class="xp__foto"><div class="xp__cop">${copSVG()}</div><i class="pz-grade" aria-hidden="true"></i><figcaption>Agente da Polícia Federal na operação desta ${esc(dia.split(',')[0])}.</figcaption></figure>
+      <p class="xp__txt">${esc(e.lead.replace(/^Boa noite.s*/, ''))}</p></div>
+    <footer class="xp__foot"><button class="btn btn--gold btn--sm" type="button" data-jornal>assistir no Jornal 21</button></footer></article>`;
+}
 // carrossel: troca a cada 7 s, pausa com o mouse em cima; números contam até o valor
 let heroT = 0, heroI = 0;
 function heroGo(i) { const ss = [...document.querySelectorAll('.hero__s')], ds = [...document.querySelectorAll('.hero__dots button')]; if (!ss.length) return; heroI = (i + ss.length) % ss.length; ss.forEach((x, k) => { x.classList.toggle('is-on', k === heroI); x.setAttribute('aria-hidden', String(k !== heroI)); }); ds.forEach((x, k) => x.classList.toggle('is-on', k === heroI)); }
@@ -132,6 +144,7 @@ export function render() {
   el.innerHTML = `
   <header class="portal__mast"><div><span class="portal__brand">21 World <b>Notícias</b></span><span class="portal__date">${esc(W.monthName(m))}, ano ${year} · edição de hoje</span></div>
     <span class="portal__live"><i></i> ao vivo</span></header>
+  ${extraHTML()}
   ${panelHTML(s)}
   <section class="gz" id="gz" aria-label="Gazeta 21, o jornal da cidade">${gazetaHTML()}</section>
   <div class="portal__top">${card(SOON[1], 'pn--hero')}<div class="portal__side">${card(SOON[2])}${card(SOON[3])}</div></div>
