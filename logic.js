@@ -154,7 +154,10 @@ export const rentCredit = l => Math.min((l.paid || 0) * RENT_CREDIT, l.value * R
 export const buyRentedPrice = l => Math.round(l.value - rentCredit(l));
 // máquinas próprias barateiam o plantio (não paga o serviço de terceiros). O trator vale o maior; o resto soma, com teto de 15% (vida real)
 // v272: desconto proporcional ao preço (antes o trator dava 10% por 650 mil e a colheitadeira 5% por 3,6 mi) e teto de 12% (era 15%)
-export const MACH_PLANT = { deere: 0.09, massey: 0.06, plantadeira: 0.03, colheitadeira: 0.05, autopropelido: 0.03, drone: 0.02 }, MACH_MAX = 0.12;
+// v308: pelo serviço que cada máquina tira de terceiros (soja ~R$ 6.300/ha): colheita terceirizada ~R$ 450/ha (7%), operações de trator
+// (preparo, transporte interno) ~R$ 250/ha (4%), plantio ~R$ 190/ha (3%), pulverização ~R$ 130-190/ha (2-3%). Antes o trator de R$ 690 mil dava 9%
+// e a colheitadeira de R$ 2,9 mi só 5%. Colheitadeira se paga em ~3.300 ha colhidos; trator em ~1.400 ha (vida real: 3 a 5 safras numa fazenda média).
+export const MACH_PLANT = { deere: 0.04, massey: 0.03, plantadeira: 0.03, colheitadeira: 0.07, autopropelido: 0.03, drone: 0.02 }, MACH_MAX = 0.12;
 export function machDiscount(s) {
   const own = new Set((s.cars || []).filter(c => !c.lentTo).map(c => c.model)); if ((s.amigos?.tools || []).some(t => t.type === 'trator')) own.add('deere');
   let d = Math.max(own.has('deere') ? MACH_PLANT.deere : 0, own.has('massey') ? MACH_PLANT.massey : 0);
@@ -193,7 +196,7 @@ export const CARS = {
   onix: { name: 'Chevrolé Ônyx', type: 'hatch', price: 100000, cat: 'popular', img: 'car-onix', hp: 116, top: 190 },
   hilux: { name: 'Toyoda Hilox', type: 'picape', price: 335000, cat: 'picape', img: 'car-hilux', hp: 204, top: 180 },
   sw4: { name: 'Toyoda SW5', type: 'suv', price: 420000, cat: 'SUV', img: 'car-sw4', hp: 204, top: 180 },
-  deere: { name: 'John Dear 6215', type: 'trator', price: 690000, cat: 'agrícola', img: 'car-deere', hp: 125, top: 40, perk: 'plantio 9% mais barato' },
+  deere: { name: 'John Dear 6215', type: 'trator', price: 690000, cat: 'agrícola', img: 'car-deere', hp: 125, top: 40, perk: 'plantio 4% mais barato e lavoura em terra arrendada' },
   scania: { name: 'Scanya R540 boiadeiro', type: 'caminhao', price: 1020000, cat: 'agrícola', img: 'car-scania', hp: 540, top: 110, perk: 'vende gado sem taxa de frete' },
   porsche: { name: 'Porshe 912 Carreira', type: 'esportivo', price: 990000, cat: 'esportivo', img: 'car-porsche', hp: 385, top: 293 },
   g63: { name: 'Mercedez G36 AMJ', type: 'suv', price: 2150000, cat: 'luxo', img: 'car-g63', hp: 585, top: 220 },
@@ -212,12 +215,12 @@ export const CARS = {
   x5: { name: 'BMV X5 M Competição', type: 'suv', price: 1250000, cat: 'luxo', img: 'car-x5', hp: 625, top: 290 },
   f296: { name: 'Ferrári 296 GTB', type: 'super', price: 4000000, cat: 'superesportivo', img: 'car-296', hp: 830, top: 330 },
   cullinan: { name: 'Rolz-Roice Culinã', type: 'suv', price: 6500000, cat: 'luxo', img: 'car-cullinan', hp: 571, top: 250 },
-  massey: { name: 'Massei Fergusom 4707', type: 'trator', price: 300000, cat: 'agrícola', img: 'maq-massey', hp: 75, top: 35, perk: 'plantio 6% mais barato (trator pequeno)' },
+  massey: { name: 'Massei Fergusom 4707', type: 'trator', price: 300000, cat: 'agrícola', img: 'maq-massey', hp: 75, top: 35, perk: 'plantio 3% mais barato e lavoura em terra arrendada (trator pequeno)' },
   drone: { name: 'Drone Agrás T50 (pulverização)', type: 'maquina', crop: 'graos', price: 180000, cat: 'lavoura', img: 'maq-drone', hp: 0, top: 40, perk: 'plantio 2% mais barato' },
   plantadeira: { name: 'Jondir 1770 plantadeira 16 linhas', type: 'maquina', crop: 'graos', price: 560000, cat: 'lavoura', img: 'maq-plantadeira', hp: 0, top: 15, perk: 'plantio 3% mais barato' },
   graneleiro: { name: 'Volvu FH bitrem graneleiro', type: 'maquina', crop: 'graos', price: 1150000, cat: 'lavoura', img: 'maq-graneleiro', hp: 540, top: 90, perk: 'vende soja, milho e café 1% mais caro (frete próprio)' },
   autopropelido: { name: 'Jactu Uniporte 3030 autopropelido', type: 'maquina', crop: 'graos', price: 1150000, cat: 'lavoura', img: 'maq-autopropelido', hp: 0, top: 30, perk: 'plantio 3% mais barato (pulverização própria)' },
-  colheitadeira: { name: 'John Dear S780 colheitadeira', type: 'maquina', crop: 'graos', price: 2900000, cat: 'lavoura', img: 'maq-colheitadeira', hp: 0, top: 25, perk: 'plantio 5% mais barato (colheita própria, sem pagar o serviço)' },
+  colheitadeira: { name: 'John Dear S780 colheitadeira', type: 'maquina', crop: 'graos', price: 2900000, cat: 'lavoura', img: 'maq-colheitadeira', hp: 0, top: 25, perk: 'plantio 7% mais barato (colheita própria, sem pagar o serviço)' },
   ...MINE_EQUIP,   // frota da mineradora (mina.js): vendida na loja 21
   veyron: { name: 'Bugati Veiron 61.4', type: 'super', price: 15000000, cat: 'hiperesportivo', img: 'car-veyron', hp: 1001, top: 407 },
 };
