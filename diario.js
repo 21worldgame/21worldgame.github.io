@@ -19,6 +19,13 @@ export function summarize(list) {
 }
 
 let queue = [], seen = new WeakSet(), jr = null;   // fora do save: marcar os lançamentos atrapalharia a junção de dois aparelhos
+// a fila vive na memória: recarregar a página antes do envio perdia os lançamentos (jhonatas 27/11 17:21: os 2 abates de R$ 19 mi
+// sumiram do diário e a central acusou "salto sem lançamento"). Guarda na aba ao sair e retoma ao abrir.
+// ponytail: se o envio da página velha terminar depois do pagehide, a linha entra 2x (raro); id por linha se aparecer.
+const QK = '21world.diarioq';
+try { const q = JSON.parse(sessionStorage.getItem(QK) || '[]'); if (Array.isArray(q)) queue = q.slice(-3000); sessionStorage.removeItem(QK); } catch {}
+const keep = () => { try { queue.length ? sessionStorage.setItem(QK, JSON.stringify(queue.slice(-3000))) : sessionStorage.removeItem(QK); } catch {} };
+if (typeof addEventListener !== 'undefined') { addEventListener('pagehide', keep); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') keep(); }); }
 const row = (s, kind, txt, val, base) => ({ ...base, uid: jr?.uid, m: s.month || 0, kind, txt, val });
 function snap(s, now, tab) {
   const money = Math.round(Number(s.money) || 0), chips = Math.round(Number(s.chips) || 0);
