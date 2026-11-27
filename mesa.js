@@ -93,13 +93,14 @@ export async function openReal(side, stake, dur) {
 }
 const paintAcct = () => { const h = document.getElementById('mesa-acct'); if (h && !h.hidden && !h.contains(document.activeElement)) h.innerHTML = acctHTML(); };
 // lateral da mesa: ranking de traders (acertos e %) + meus copies
+const win = t => t.side * (spot - t.entry) / t.entry > 0.0002;   // igual ao servidor: precisa andar mais de 0,02% (spread)
 function row(t) {
   const exp = Date.parse(t.exp), left = Math.max(0, Math.ceil((exp - Date.now()) / 1000)), tag = t.side > 0 ? '▲ sobe' : '▼ desce';
   if (t.status === 'aberta') return `<li class="tr-p"><div><strong class="${t.side > 0 ? 'good' : 'bad'}">${tag} BTC real</strong><span class="muted small">entrada ${usd(t.entry)}${spot ? `, agora ${usd(spot)}` : ''}</span></div>
-    <div class="tr-pl ${spot && t.side * (spot - t.entry) > 0 ? 'good' : 'bad'}">${spot && t.side * (spot - t.entry) > 0 ? 'ganhando' : 'perdendo'}<small>${brl(t.stake)} em jogo</small></div>
+    <div class="tr-pl ${spot && win(t) ? 'good' : spot && t.side * (spot - t.entry) > 0 ? 'gold' : 'bad'}">${spot && win(t) ? 'ganhando' : spot && t.side * (spot - t.entry) > 0 ? 'quase: falta passar o spread' : 'perdendo'}<small>${brl(t.stake)} em jogo</small></div>
     <div class="tr-timer"><b>${left ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` : '…'}</b><small>${left ? `${t.minutes} min` : 'fechando o minuto'}</small></div></li>`;
   const won = t.status === 'ganhou';
-  return `<li><span>${tag} BTC real ${t.minutes} min</span><span class="${won ? 'good' : t.status === 'devolvida' ? 'muted' : 'bad'}">${won ? '+' + brl(t.back - t.stake) : t.status === 'devolvida' ? 'devolvida' : '−' + brl(t.stake)}</span></li>`;
+  return `<li><span>${tag} BTC real ${t.minutes} min</span><span class="${won ? 'good' : t.status === 'devolvida' ? 'muted' : 'bad'}">${won ? '+' + brl(t.back - t.stake) : t.status === 'devolvida' ? 'devolvida' : t.final && t.side * (t.final - t.entry) > 0 ? `−${brl(t.stake)} <small>(andou menos que o spread)</small>` : '−' + brl(t.stake)}</span></li>`;
 }
 function sideHTML() {
   const list = rank.filter(r => r.ops >= 5).slice(0, 15), mine = copies.filter(c => c.follower === me() && c.status !== 'encerrado');

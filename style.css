@@ -3924,3 +3924,4 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .mina-eq figcaption small { opacity: .75; line-height: 1.25; }
 .mina-eq figcaption i { font-style: normal; font-weight: 700; }
 .mina-eq.is-own { box-shadow: inset 0 0 0 2px var(--hud-accent); }
+@media (max-width: 40rem) { .hdr-discord { display: none; } }   /* celular: o Discord fica no topo da Resenha */
