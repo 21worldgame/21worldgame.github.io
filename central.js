@@ -57,6 +57,7 @@ async function enter(user) {
   show('vigia');
   pwBadge(); setInterval(pwBadge, 60000);
   watchOnline(); loadUsers();   // lista de jogadores já em memória: busca e fichas abrem na hora
+  mesaBadge(); setInterval(mesaBadge, 300000);
 }
 // ---------- quem está online (presença em tempo real, sem tabela) ----------
 let online = [];
@@ -111,12 +112,12 @@ for (const id of ['#ad-logout', '#ad-logout2']) $(id).addEventListener('click', 
 // ---------- navegação ----------
 // poucos menus: cada um junta várias partes do painel, uma embaixo da outra
 // menus por categoria (v287): vigilância (alertas, Pix, atividade, pano) · jogadores · comunidade · mundo · receita
-const MENU = { alertas: ['vigia'], pix: ['pix'], atividade: ['atividade', 'overview'], jogadores: ['players'], investigar: ['diario', 'terras', 'livros'], mundo: ['economy', 'rules', 'owners', 'news'], delegacia: ['bo'], pano: ['pano'], enviados: ['sent'], vip: ['vip'], pedidos: ['pro', 'passwords'], registro: ['log'] };
+const MENU = { alertas: ['vigia'], pix: ['pix'], atividade: ['atividade', 'overview'], jogadores: ['players'], investigar: ['diario', 'terras', 'livros'], mundo: ['economy', 'rules', 'owners', 'news'], delegacia: ['bo'], pano: ['pano'], mesa: ['mesa'], enviados: ['sent'], vip: ['vip'], pedidos: ['pro', 'passwords'], registro: ['log'] };
 let tuneLoad = null;
 let vgAt = 0;   // vigilância lida há pouco: trocar de menu não relê tudo (cada leitura baixa vários MB); o botão atualizar relê
 const vgLoad = () => (vg && Date.now() - vgAt < 600000 ? drawVigia() : loadVigia());
 const LOAD = { vigia: vgLoad, pix: vgLoad, atividade: vgLoad, overview: () => loadOverview(), players: () => loadUsers(), diario: () => { if (!dj) loadDiario(); }, terras: () => loadLands(),
-  economy: () => { loadConfig(); loadEconomy(); }, rules: () => tuneLoad?.(), owners: () => loadOwners(), news: () => loadAnns(), bo: () => loadBo(), pano: () => (vg ? drawPano() : loadVigia()), sent: () => loadSent(), vip: () => loadVip(), pro: () => loadPro(), passwords: () => loadPw(), log: () => loadLog() };
+  economy: () => { loadConfig(); loadEconomy(); }, rules: () => tuneLoad?.(), owners: () => loadOwners(), news: () => loadAnns(), bo: () => loadBo(), pano: () => (vg ? drawPano() : loadVigia()), sent: () => loadSent(), vip: () => loadVip(), pro: () => loadPro(), passwords: () => loadPw(), log: () => loadLog(), mesa: () => loadMesa() };
 function show(tab) {
   const g = MENU[tab] ? tab : Object.keys(MENU).find(k => MENU[k].includes(tab)) || 'alertas';
   document.querySelectorAll('.ad-nav button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === g));
@@ -802,6 +803,38 @@ document.addEventListener('click', async e => {
 // ---------- vigilância (admin-econ.js watch): quem enriqueceu rápido demais, Pix, cassino, Receita, tempo jogado ----------
 const hrs = h => (h == null ? '—' : h < 1 ? `${Math.round(h * 60)} min` : `${h.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h`);
 // ordem por chave única: sem ela o banco devolve as páginas em ordem solta e a mesma linha vinha 2 vezes (o pano voltava com valores dobrados)
+// ---------- mesa de operações: bloqueios da corretora (tr_flags) e quem mais ganha (tr_trades) ----------
+const COIN_TK = { 'BTC-USD': 'BTC', 'ETH-USD': 'ETH', 'SOL-USD': 'SOL', 'XRP-USD': 'XRP', 'DOGE-USD': 'DOGE', 'LTC-USD': 'LTC' };
+const FLAG_TXT = { robo: 'robô', protecao: 'proteção', hora: '30/h' };
+async function mesaBadge() {   // bloqueios nas últimas 24 h
+  const { count, error } = await sb.from('tr_flags').select('id', { count: 'exact', head: true }).gt('at', new Date(Date.now() - 864e5).toISOString());
+  const b = $('#ad-mesa-badge'); b.textContent = count || ''; b.hidden = !!error || !count;
+}
+async function loadMesa() {
+  const st = $('#ad-mesa-st'); st.textContent = 'lendo...';
+  if (!users.length) await loadUsers();
+  const since = new Date(Date.now() - 7 * 864e5).toISOString(), hoje = new Date(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) + 'T00:00:00-03:00').toISOString();
+  const [tr, fl] = await Promise.all([pageAll(() => sb.from('tr_trades').select('*').gt('opened_at', since)).catch(e => (fail(e, 'ler as operações'), [])),
+    pageAll(() => sb.from('tr_flags').select('*').gt('at', since)).catch(() => null)]);
+  const mine = tr.filter(t => !t.copy_id), done = mine.filter(t => t.status !== 'aberta'), today = done.filter(t => t.opened_at >= hoje);
+  const house = today.reduce((a, t) => a + Number(t.stake) - Number(t.back), 0), wins = today.filter(t => t.status === 'ganhou').length, decided = today.filter(t => t.status !== 'devolvida').length;
+  $('#ad-mesa-tiles').innerHTML = [['operações hoje', int(today.length)], ['jogadores hoje', int(new Set(today.map(t => t.user_id)).size)], ['acertos hoje', decided ? `${Math.round(wins / decided * 100)}%` : '—'],
+    ['a casa ganhou hoje', brl(house)], ['abertas agora', int(mine.filter(t => t.status === 'aberta').length)], ['bloqueios 7 dias', fl ? int(fl.length) : '—']]
+    .map(([k, v]) => `<div class="ad-tile${k === 'a casa ganhou hoje' && house < 0 ? ' ad-tile--red' : ''}"><span>${k}</span><strong>${v}</strong></div>`).join('');
+  // bloqueios por jogador
+  const F = {}; for (const f of fl || []) { const r = (F[f.user_id] ??= { id: f.user_id, robo: 0, protecao: 0, hora: 0, last: f.at }); r[f.why] = (r[f.why] || 0) + 1; if (f.at > r.last) r.last = f.at; }
+  $('#ad-mesa-flags').innerHTML = fl == null ? '<tr><td colspan="5" class="muted">Tabela de bloqueios ainda não existe: rode o supabase/trader-v298.sql no SQL Editor.</td></tr>'
+    : Object.values(F).sort((a, b) => b.robo - a.robo || (b.last > a.last ? 1 : -1)).map(r => `<tr data-user="${esc(r.id)}"${r.robo ? ' class="ad-alert"' : ''}><td><b>${esc(pname(r.id))}</b></td><td class="num">${r.robo || ''}</td><td class="num">${r.protecao || ''}</td><td class="num">${r.hora || ''}</td><td>${when(r.last)}</td></tr>`).join('')
+      || '<tr><td colspan="5" class="muted">Ninguém barrado nos últimos 7 dias.</td></tr>';
+  // quem mais ganha: lucro, acertos (empate não conta) e moedas
+  const P = {}; for (const t of done) { const r = (P[t.user_id] ??= { id: t.user_id, n: 0, w: 0, d: 0, lucro: 0, max: 0, coins: new Set() });
+    r.n++; if (t.status !== 'devolvida') r.d++; if (t.status === 'ganhou') r.w++; r.lucro += Number(t.back) - Number(t.stake); r.max = Math.max(r.max, Number(t.stake)); r.coins.add(COIN_TK[t.asset] || 'BTC'); }
+  $('#ad-mesa-top').innerHTML = Object.values(P).sort((a, b) => b.lucro - a.lucro).slice(0, 40).map(r => { const pc = r.d ? r.w / r.d : 0, bad = r.d >= 10 && pc >= 0.4;
+    return `<tr data-user="${esc(r.id)}"${bad ? ' class="ad-alert"' : ''}><td><b>${esc(pname(r.id))}</b>${bad ? ' <span class="tag tag--red">acerta demais</span>' : ''}</td><td class="num">${r.n}</td><td class="num">${r.w} (${Math.round(pc * 100)}%)</td><td class="num">${sgn(r.lucro)}</td><td class="num">${brl(r.max)}</td><td>${[...r.coins].join(', ')}</td></tr>`; }).join('')
+    || '<tr><td colspan="6" class="muted">Nenhuma operação encerrada nos últimos 7 dias.</td></tr>';
+  st.textContent = `visto às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`; mesaBadge();
+}
+document.addEventListener('click', e => { if (e.target.closest('#ad-mesa-reload')) loadMesa(); });
 async function pageAll(q, key = 'id') { const out = []; for (let f = 0; ; f += 500) { const { data, error } = await q().order(key).range(f, f + 499); if (error) throw error; out.push(...(data || [])); if (!data || data.length < 500) return out; } }
 // ---------- diário: tudo o que cada jogador fez (diario.sql) ----------
 let dj = null;
