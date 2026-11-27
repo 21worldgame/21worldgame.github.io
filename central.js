@@ -1328,7 +1328,7 @@ async function loadVip() {
   const live = d => d && Date.parse(d) > Date.now();
   $('#ad-vip-list').innerHTML = (v.data || []).map(x => `<tr><td>${esc(x.name)}</td><td>${live(x.until) ? esc(x.tier) : '<span class="muted">pausado</span>'}</td><td>${when(x.until)}</td><td class="num">${int(x.months)}</td><td>${x.founder ? `nº ${x.founder} ${esc(x.street || '')}` : ''}</td><td>${esc(x.title || '')}</td>
     <td>${live(x.until) ? `<button class="btn btn--danger btn--xs" data-vip-rev="${esc(x.user_id)}">encerrar</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">ninguém ainda</td></tr>';
-  const M = m.data || {}; $('#ad-vip-pix').value = M.pix || ''; $('#ad-vip-goal').value = M.goal || 140; $('#ad-vip-q').value = M.poll?.q || ''; $('#ad-vip-opts').value = (M.poll?.opts || []).join('\n');
+  const M = m.data || {}; $('#ad-vip-pix').value = M.pix || ''; $('#ad-vip-discord').value = M.discord || ''; $('#ad-vip-goal').value = M.goal || 140; $('#ad-vip-q').value = M.poll?.q || ''; $('#ad-vip-opts').value = (M.poll?.opts || []).join('\n');
   const P = M.poll; $('#ad-vip-res').textContent = P ? `votos: ${P.opts.map((o, i) => `${o} ${(v.data || []).filter(x => live(x.until) && x.vote_key === P.key && x.vote === i).length}`).join(' · ')}` : '';
 }
 async function vipGrant(uid, plan, months, amount, street) {
@@ -1353,6 +1353,6 @@ document.addEventListener('click', async e => {
     const { data: cur } = await sb.from('vip_meta').select('poll').eq('id', 1).maybeSingle();
     const same = cur?.poll && cur.poll.q === q && JSON.stringify(cur.poll.opts) === JSON.stringify(opts);   // mudou a pergunta: votação nova, votos zeram
     const poll = q && opts.length >= 2 ? (same ? cur.poll : { key: String(Date.now()), q, opts }) : null;
-    const { error } = await sb.from('vip_meta').update({ pix: $('#ad-vip-pix').value.trim(), goal: Math.max(1, Number($('#ad-vip-goal').value) || 140), poll }).eq('id', 1);
+    const { error } = await sb.from('vip_meta').update({ discord: $('#ad-vip-discord').value.trim(), pix: $('#ad-vip-pix').value.trim(), goal: Math.max(1, Number($('#ad-vip-goal').value) || 140), poll }).eq('id', 1);
     if (error) return fail(error, 'salvar'); await log('vip-usina', null, q || 'sem votação'); toast('Usina e votação salvas.'); loadVip(); }
 });

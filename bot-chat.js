@@ -8,7 +8,7 @@ export const STYLES = ['educado', 'informal', 'amigo', 'chato'];
 const SPEED = [[8e3, 45e3], [60e3, 120e3], [120e3, 300e3], [300e3, 600e3]];
 export function persona(nick) {
   const x = hash(nick), s = (x >>> 4) % 100;
-  return { style: STYLES[x % 4], speed: SPEED[s < 30 ? 0 : s < 65 ? 1 : s < 85 ? 2 : 3], ignore: [0.12, 0.2, 0.08, 0.55][x % 4] };
+  return { style: STYLES[x % 4], speed: SPEED[s < 20 ? 0 : s < 55 ? 1 : s < 80 ? 2 : 3], ignore: [0.3, 0.4, 0.25, 0.65][x % 4] };   // v286: muitos nem respondem
 }
 
 const fold = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -24,54 +24,55 @@ export function intent(text) {
   return 'papo';
 }
 
+// v286: gente de verdade no privado responde curto, nem sempre e sem cara de atendente (nada de "em que posso ajudar")
 const L = {
   educado: {
-    oi: ['Olá! Tudo bem com você?', 'Oi, boa noite! Em que posso ajudar?', 'Olá, tudo certo por aqui. E com você?', 'Oi! Tudo ótimo, obrigado por perguntar.'],
-    oi2: ['Oi de novo!', 'Olá, estou por aqui.'],
-    negocio: ['Posso pensar, sim. Me mande uma proposta pela opção negociar no meu perfil.', 'Depende do valor. Faça uma proposta pelo meu perfil que eu avalio com calma.', 'No momento não estou vendendo, mas obrigado pelo interesse.', 'Tenho interesse. Qual valor você tem em mente?'],
-    dica: ['Cada um tem sua estratégia. Eu prefiro ir com calma e não arriscar tudo de uma vez.', 'Sinceramente, eu acompanho o livro-caixa e o contador antes de decidir qualquer coisa.', 'Prefiro não dar palpite, cada jogo é diferente. Mas paciência ajuda muito.'],
-    valeu: ['Por nada! Boa sorte por aí.', 'Disponha. Bom jogo!', 'Imagina, sempre que precisar.'],
-    risada: ['Haha, verdade.', 'Rs, pois é.', 'Haha, essa foi boa.'],
-    ofensa: ['Vamos manter o respeito, por favor.', 'Não precisa disso. Bom jogo para você.'],
-    pergunta: ['Boa pergunta. Não sei te dizer com certeza.', 'Acredito que sim, mas não tenho certeza.', 'Hmm, não sei dizer agora. Depois te falo.'],
-    papo: ['Entendi.', 'Interessante, não sabia disso.', 'Certo, faz sentido.', 'Pois é, o mundo está agitado hoje.'],
-    sumiu: ['Desculpe a demora, estava cuidando da fazenda.', 'Perdão, só vi agora.'],
+    oi: ['Oi, tudo bem?', 'Olá, tudo certo e você?', 'Oi! Tudo bem sim'],
+    oi2: ['Oi', 'Opa'],
+    negocio: ['No momento não, obrigado', 'Agora não estou negociando', 'Vou pensar, depois te falo'],
+    dica: ['Cada um joga de um jeito, vai com calma', 'Ainda estou aprendendo também', 'Não sei te dizer, sinceramente'],
+    valeu: ['De nada', 'Por nada', 'Imagina'],
+    risada: ['Haha', 'Rs'],
+    ofensa: ['Sem necessidade', 'Ok, bom jogo'],
+    pergunta: ['Não sei dizer', 'Acho que sim', 'Não tenho certeza'],
+    papo: ['Entendi', 'Ah sim', 'Verdade', 'Pois é'],
+    sumiu: ['Desculpa, só vi agora', 'Opa, estava ocupado'],
   },
   informal: {
-    oi: ['eae', 'fala tu', 'opa blz?', 'salve', 'eae mano suave?', 'fala ai'],
-    oi2: ['fala', 'opa', 'diz ai'],
-    negocio: ['qnto vc qr?', 'manda proposta no meu perfil ai', 'ta caro isso ai mano', 'faz mais barato q eu pego', 'agr n to vendendo nd', 'depende do preço kk'],
-    dica: ['sei la mano cada um faz o seu kk', 'eu vou no feeling', 'pergunta pro contador ai kkk', 'n sei te dizer, to perdido tb kkkk'],
-    valeu: ['tmj', 'nd', 'tmj mano', 'suave'],
-    risada: ['kkkkkkk', 'kkkk mt bom', 'slk kkkk', 'KKKKK'],
-    ofensa: ['ue', 'oloco', 'q isso mano', 'oxi', 'relaxa ai'],
-    pergunta: ['sei n', 'acho q sim', 'n faço ideia kk', 'pq?'],
-    papo: ['ss', 'boa', 'slk', 'dmr', 'pse', 'tendi'],
-    sumiu: ['foi mal tava na fazenda', 'opa vi agr', 'mals sumi'],
+    oi: ['eae', 'opa', 'salve', 'fala', 'eai blz?'],
+    oi2: ['fala', 'opa', 'oi'],
+    negocio: ['agr n', 'n to vendendo nd', 'sei la, dps vejo', 'n tenho'],
+    dica: ['sei la mano', 'to aprendendo tb kk', 'cada um faz o seu', 'n sei te dizer'],
+    valeu: ['tmj', 'nd', 'suave'],
+    risada: ['kkkkk', 'kkkk', 'kkk'],
+    ofensa: ['ue', 'oxi', 'q isso'],
+    pergunta: ['sei n', 'acho q sim', 'n sei'],
+    papo: ['ss', 'boa', 'pse', 'tendi', 'blz', 'hm'],
+    sumiu: ['vi agr', 'mals tava ocupado', 'foi mal sumi'],
   },
   amigo: {
-    oi: ['opaaa tudo bem?? 😄', 'oiii, bem vindo! precisando de algo é só chamar 🙌', 'eaaai, tudo certo? bora fazer negócio depois?', 'fala meu amigo!! 😁'],
-    oi2: ['opa de novo haha 😄', 'tô aqui sim!'],
-    negocio: ['bora negociar sim! manda no meu perfil que a gente acerta 🤝', 'pra você faço um precinho camarada haha', 'opa, interessa sim! me chama no negociar', 'agora não tenho, mas se aparecer te aviso 🙏'],
-    dica: ['olha, eu fui no meu ritmo e deu certo, vai com calma que dá bom 💪', 'o segredo é não desistir haha, tamo junto', 'cada um tem seu jeito, mas qualquer coisa me chama que eu te ajudo 😉'],
-    valeu: ['tmj demais!! 🙌', 'nada não, conta comigo 😄', 'imagina!! boa sorte aí 🍀'],
-    risada: ['kkkkkk muito bom 😂', 'hahahaha você é demais', 'KKKK rindo aqui 🤣'],
-    ofensa: ['eita, calma amigo haha', 'que isso, vamos jogar de boa 🙏'],
-    pergunta: ['acho que sim! mas confirma aí haha', 'boa pergunta! não sei te dizer não 😅', 'então, depende né haha'],
-    papo: ['massa demais!', 'verdade haha', 'que legal 😄', 'aí sim!!'],
-    sumiu: ['desculpa a demora!! tava no leilão 😅', 'foi mal, só vi agora!!'],
+    oi: ['opa tudo bem?', 'oii', 'eai tudo certo?', 'fala!'],
+    oi2: ['opa', 'oi de novo haha'],
+    negocio: ['agora nao, mas valeu', 'nao to vendendo nada agora', 'depois vejo isso'],
+    dica: ['vai com calma que da certo', 'eu tbm to aprendendo haha', 'cada um tem um jeito ne'],
+    valeu: ['nada!', 'tmj', 'imagina'],
+    risada: ['kkkkkk', 'hahaha', 'kkkk boa'],
+    ofensa: ['eita', 'calma ai haha'],
+    pergunta: ['acho que sim', 'nao sei te dizer', 'depende ne'],
+    papo: ['verdade', 'haha', 'boa', 'massa'],
+    sumiu: ['desculpa, so vi agora', 'foi mal a demora'],
   },
   chato: {
-    oi: ['oi', 'q foi', 'fala', 'hm', 'diga'],
-    oi2: ['de novo?', 'q'],
-    negocio: ['não vendo', 'caro', 'não tenho interesse', 'manda proposta e para de chamar no pv', 'nem a pau'],
-    dica: ['se vira', 'joga e aprende', 'não sou professor', 'pergunta pro contador'],
-    valeu: ['ok', 'blz', '👍'],
-    risada: ['ok', 'nem foi engraçado', 'aham'],
-    ofensa: ['tá', 'bloqueado', 'vai jogar'],
-    pergunta: ['sei lá', 'não', 'pergunta pra outro'],
-    papo: ['ok', 'e daí', 'aham', 'tá', 'to ocupado'],
-    sumiu: ['tava ocupado', 'agora vi'],
+    oi: ['oi', 'fala', 'q'],
+    oi2: ['q foi', 'hm'],
+    negocio: ['n', 'nao vendo', 'sem interesse'],
+    dica: ['sei la', 'joga ai', 'nao sei'],
+    valeu: ['ok', 'blz'],
+    risada: ['ok', 'aham'],
+    ofensa: ['ta', 'vlw'],
+    pergunta: ['sei la', 'nao'],
+    papo: ['ok', 'aham', 'ta'],
+    sumiu: ['tava ocupado', 'vi agr'],
   },
 };
 // erros de digitação de quem escreve rápido (só informal e amigo, às vezes)
@@ -87,8 +88,8 @@ export function reply(p, text, ctx = {}, r = Math.random) {
   let texts = [pick(r, S[key] || S.papo)];
   const [a, b] = ctx.engaged ? [4e3, Math.min(60e3, p.speed[1])] : p.speed;
   const delay = Math.round(a + r() * (b - a));
-  if (delay > 180e3 && r() < 0.6) texts.unshift(pick(r, S.sumiu));   // demorou: pede desculpa antes
-  if ((p.style === 'informal' || p.style === 'amigo') && r() < 0.25 && it !== 'ofensa') texts.push(pick(r, S.papo));   // às vezes manda em duas mensagens
+  if (delay > 180e3 && r() < 0.3) texts.unshift(pick(r, S.sumiu));   // demorou: pede desculpa antes
+  if (p.style === 'informal' && r() < 0.1 && it !== 'ofensa') texts.push(pick(r, S.papo));   // raramente em duas mensagens
   if (p.style === 'informal' || p.style === 'amigo') texts = texts.map(t => typo(t, r));
   return { texts: [...new Set(texts)], delay };
 }
@@ -96,8 +97,8 @@ export function reply(p, text, ctx = {}, r = Math.random) {
 // fala da Geral no jeito da pessoa (sempre igual para todos: só depende do nick e da frase)
 export function styleLine(nick, t) {
   const { style } = persona(nick), x = hash(nick + t);
-  if (style === 'educado') return (t[0].toUpperCase() + t.slice(1)).replace(/\bvc\b/g, 'você').replace(/\bqm\b/g, 'quem').replace(/\bpq\b/g, 'porque').replace(/\bq\b/g, 'que').replace(/\s*(kkk+|rs)\s*/gi, ' ').trim().replace(/([^.!?…\p{Extended_Pictographic}])$/u, '$1.');
+  if (style === 'educado') return (t[0].toUpperCase() + t.slice(1)).replace(/\bvc\b/g, 'você').replace(/\bqm\b/g, 'quem').replace(/\bpq\b/g, 'porque').replace(/\bq\b/g, 'que').replace(/\s*(kkk+|rs)\s*/gi, ' ').trim();
   if (style === 'chato') return (x % 3 ? t : `${t}. ${['aff', 'pff', 'enfim'][x % 3]}`).replace(/[!]+/g, '').replace(/\s*\p{Extended_Pictographic}/gu, '');
-  if (style === 'amigo') return x % 2 ? `${t} ${['😄', '🙌', '🤝', '😁', '🔥'][x % 5]}` : `${t}!!`;
+  if (style === 'amigo') return x % 5 === 0 ? `${t} ${['😄', '😅', '🙏'][x % 3]}` : t;   // v286: emoji só às vezes
   return t.replace(/(@\S+)|[^@]+/g, (m, at) => (at ? m : m.toLowerCase())).replace(/\bvoce\b/g, 'vc').replace(/\bque\b/g, 'q').replace(/\bnao\b/g, 'n');
 }

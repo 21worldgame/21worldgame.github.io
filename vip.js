@@ -53,7 +53,7 @@ export async function load(force = false) {
     const sb = Auth.sbClient() || await Auth.sbReady(); if (!sb) return;
     const me = Auth.account()?.id;
     const [v, m, r, q] = await Promise.all([sb.from('vip').select('user_id, name, tier, until, months, streak, stamps, founder, street, title, color, vote_key, vote'),
-      sb.from('vip_meta').select('pix, goal, poll').eq('id', 1).maybeSingle(), sb.rpc('vip_raised'),
+      sb.from('vip_meta').select('pix, goal, poll, discord').eq('id', 1).maybeSingle(), sb.rpc('vip_raised'),
       me ? sb.from('vip_req').select('id, plan, months, amount, at').eq('user_id', me).eq('done', false).maybeSingle() : Promise.resolve({ data: null })]);
     if (v.error) return;
     rows = v.data || []; meta = m.data || meta; raised = Number(r.data) || 0; myReq = q.data || null; at = Date.now();
@@ -79,6 +79,7 @@ export const title = key => { const v = find(key); return rankOf(v) >= 2 && v.ti
 // o próprio VIP: ativo? (perfil privado é do VIP) · vencimento gravado no save para o perfil voltar a público sozinho quando vencer
 const mineRow = () => byId.get(Auth.account()?.id);
 export const isOn = () => live(mineRow());
+export const discord = () => (/^https:\/\/(discord\.gg|discord\.com)\//.test(meta.discord || '') ? meta.discord : '');
 function syncMine() { const v = mineRow(), u = v?.until || null; if (G.S && (G.S.vipUntil || null) !== u) { G.S.vipUntil = u; save(); } }
 const SHORT = { apoiador: 'VIP', patrono: 'VIP', magnata: 'VIP', conselho: 'VIP', barao: 'BLACK', imperador: 'IMPERADOR', mecenas: 'MECENAS' };
 // HUD: coroa em cima do avatar e faixa "VIP" embaixo do nível, na cor do plano

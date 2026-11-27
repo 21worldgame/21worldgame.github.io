@@ -91,18 +91,20 @@ function drawPeople() {
   const g = lastOf('all'), tv = NEWS.history().at?.(-1);
   let html = f ? '' : row('all', icon('#'), 'Geral', g ? `${esc(g.mine ? 'você' : g.name)}: ${esc(g.text)}` : 'conversa de todo mundo', g?.at, unread.get('all') || 0)
     + row('tv', icon('<i class="tv__dot"></i>'), 'TV 21', tv ? esc(`${tv.name} ${tv.what}`) : 'últimas notícias do mundo', 0, 0);
-  const ranked = list.filter(p => !f || p.name.toLowerCase().includes(f)).map(p => ({ p, last: lastOf(p.id) }))
-    .sort((a, b) => (b.last?.at || 0) - (a.last?.at || 0) || a.p.name.localeCompare(b.p.name));
-  html += `<li class="rz__sec">online agora · ${f ? ranked.length : NPC.onlineTotal(Live.now())}</li>`;
-  html += ranked.map(({ p, last }) => row(p.id, mini(p.look, p.name), p.name, typing.has(p.id) ? '<i class="rz__typing">digitando...</i>' : last ? esc(`${last.mine ? 'você: ' : ''}${last.text}`) : `nível ${p.level} · toque para conversar`, last?.at, unread.get(p.id) || 0, '<i class="rz__dot" aria-label="online"></i>')).join('')
-    || `<li class="rz__empty">Ninguém com esse nome online.</li>`;
+  // v286: só as conversas que existem de verdade (sem a lista de todo mundo online, que entregava os jogadores do mundo)
+  const convs = [...new Set(msgs.filter(m => m.conv !== 'all').map(m => m.conv))].map(c => ({ c, last: lastOf(c), p: who(c) }))
+    .filter(x => !f || (x.p?.name || x.last?.name || '').toLowerCase().includes(f)).sort((a, b) => (b.last?.at || 0) - (a.last?.at || 0));
+  if (convs.length) html += `<li class="rz__sec">conversas</li>` + convs.map(({ c, last, p }) => { const nm = p?.name || (last.mine ? last.toName : last.name) || 'jogador';
+    return row(c, mini(p?.look, nm), nm, typing.has(c) ? '<i class="rz__typing">digitando...</i>' : esc(`${last.mine ? 'você: ' : ''}${last.text}`), last?.at, unread.get(c) || 0, p ? '<i class="rz__dot" aria-label="online"></i>' : ''); }).join('');
+  else if (f) html += `<li class="rz__empty">Nenhuma conversa com esse nome.</li>`;
+  else html += `<li class="rz__empty">Toque no nome de alguém na Geral (PV) ou no perfil para conversar no privado.</li>`;
   el.innerHTML = html;
 }
 // fileira de quem está online no topo da Geral (toque para abrir o privado); só redesenha se a lista mudar
 let stripKey = '';
 function drawStrip() {
   const el = $('#rz-strip'); if (!el) return;
-  el.hidden = conv !== 'all'; if (el.hidden) return;
+  el.hidden = true; return;   // v286: sem a fileira de todo mundo online
   const list = people().sort((a, b) => (b.peer ? 1 : 0) - (a.peer ? 1 : 0) || b.level - a.level), key = list.map(p => p.id).join();
   if (key === stripKey) return; stripKey = key;
   el.innerHTML = `<span class="rz__strip-t">online agora · ${NPC.onlineTotal(Live.now())}</span><div class="rz__strip-row">${list.map(p => `<button type="button" class="rz__chip" data-conv="${esc(p.id)}" title="conversar com ${esc(p.name)}">${mini(p.look, p.name)}<i class="rz__dot"></i><small>${esc(p.name)}</small></button>`).join('')}</div>`;
@@ -230,3 +232,11 @@ $('#chat-form')?.addEventListener('submit', send);
 $('#rz-q')?.addEventListener('input', e => { q = e.target.value; drawPeople(); });
 docked.addEventListener('change', draw);
 openConv('all', false);   // abre na Geral; "‹" mostra todas as conversas
+
+// Discord da comunidade (link no painel admin, vip_meta.discord)
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-discord]'); if (!b) return;
+  e.preventDefault();
+  const url = VIP.discord();
+  if (url) window.open(url, '_blank', 'noopener'); else say('O Discord da comunidade abre em breve.');
+});

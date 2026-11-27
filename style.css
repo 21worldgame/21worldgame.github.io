@@ -3907,3 +3907,10 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .mesa-rk__v { display: grid; justify-items: end; gap: 2px; }
 .mesa-copy { padding: var(--space-md); border-radius: 12px; background: color-mix(in srgb, var(--hud-accent) 8%, transparent); display: grid; gap: var(--space-sm); margin: var(--space-sm) 0; }
 @media (max-width: 64rem) { .tr-grid:has(.mesa-side) { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; } .tr-grid:has(.mesa-side) > .tr-chart { grid-row: auto; } .tr-grid:has(.mesa-side) > .mesa-side { grid-column: auto; max-height: none; } .tr-grid:has(.mesa-side) #tr-canvas { height: 380px; } }
+
+/* Discord ao lado da resenha (chat-ui.js) */
+.hdr-discord { padding-inline: 10px; color: #8ea1ff; }
+.hdr-discord:hover { color: #fff; background: #5865f2; }
+.ico-discord { width: 18px; height: 18px; display: block; }
+.rz__discord { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; color: #8ea1ff; background: oklch(100% 0 0 / .06); margin-left: 6px; }
+.rz__discord:hover { color: #fff; background: #5865f2; }
