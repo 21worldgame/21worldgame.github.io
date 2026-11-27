@@ -31,6 +31,7 @@ export function validateLogin({ email, password }) {
 }
 
 const MAP = [
+  [/banned/i, 'Conta presa pela Polícia Federal (Operação Espelho): fraude com robô e contas laranja na mesa de operações. Os bens estão apreendidos. A soltura só acontece se você assumir a fraude e devolver os bens: fale com a administração no Discord.'],
   [/captcha/i, 'A verificação do Cloudflare (não sou robô) falhou. Recarregue a página e tente de novo.'],
   [/invalid login credentials/i, 'E-mail ou senha incorretos.'],
   [/email not confirmed/i, 'Confirme seu e-mail pelo link que enviamos antes de entrar.'],
