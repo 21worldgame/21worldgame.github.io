@@ -1237,7 +1237,8 @@ const ACTS = {
   'st-enter'(id) { SUI.enter(id); },
   'stable-close'() { SUI.closeRace(); },
   wipe() {
-    if (!confirm('Apagar seu save e seu perfil da nuvem e sair? Isso não pode ser desfeito. Para apagar também o cadastro (e-mail), peça ao administrador.')) return;
+    // digitar APAGAR: um clique + OK apagou a conta de R$ 30 mi do jhonatas (27/11 20:55) e ele voltou do zero
+    if ((prompt('Isso APAGA a sua conta inteira (dinheiro, terras, empresas, nível) e não pode ser desfeito.\n\nPara confirmar, digite APAGAR:') || '').trim().toUpperCase() !== 'APAGAR') return say('Nada foi apagado.');
     Auth.wipe();
   },
   'close-daily'() { $('#dlg-daily').close(); },
@@ -1793,7 +1794,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 321;
+const APP_VERSION = 322;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;
