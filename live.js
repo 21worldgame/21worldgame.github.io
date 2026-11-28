@@ -221,7 +221,7 @@ async function applyGrants(sb) {
   if (e2 || !rows?.length) return;
   for (const g of rows) {
     const amt = Number(g.amount) || 0, why = g.note ? `: ${g.note}` : '';
-    const org = (g.note || '').match(/^(Receita Federal|Banco Central|Polícia Federal):\s*/);   // aviso imersivo: órgão do jogo, sem "administrador"
+    const org = (g.note || '').match(/^(Receita Federal|Banco Central|Polícia Federal|Câmara de Comércio Exterior|Jurídico 21 World):\s*/);   // aviso imersivo: órgão do jogo, sem "administrador"
     if (g.kind === 'money' && org) { G.S.money += amt; note(g.note, amt); if (amt < 0) G.S.log[0].gid = g.id; badge(org[1], g.note.slice(org[0].length), 'mission'); continue; }   // aviso da Receita no livro-caixa
     if (g.kind === 'money') { G.S.money += amt; note(`ajuste do administrador${why}`, amt); if (amt < 0) G.S.log[0].gid = g.id; badge('Administrador', `${amt >= 0 ? 'Você recebeu' : 'Foram retirados'} ${brl(Math.abs(amt))}${why}.`, 'mission'); }
     if (g.kind === 'chips') { G.S.chips = Math.max(0, G.S.chips + amt); note(`fichas do administrador${why}`); badge('Administrador', `${amt >= 0 ? '+' : ''}${int(amt)} fichas${why}.`, 'mission'); }

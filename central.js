@@ -1329,7 +1329,7 @@ document.addEventListener('click', async e => {
 setInterval(() => { if (sb && !$('#ad-app').hidden) loadSent(true); }, 60000);   // badge de pendentes e entrega atualizando sozinhos
 // recursos: o jogador contestou um desconto pelo livro-caixa (recursos.sql). Aceitar devolve o valor; negar manda a resposta.
 let RECS = [];
-const ORG_RE = /^(Receita Federal|Banco Central|Polícia Federal):/;   // avisos imersivos (o jogo mostra sem "administrador")
+const ORG_RE = /^(Receita Federal|Banco Central|Polícia Federal|Câmara de Comércio Exterior|Jurídico 21 World):/;   // avisos imersivos (o jogo mostra sem "administrador")
 async function loadRecursos() {
   const { data, error } = await sb.from('recursos').select('*').order('at', { ascending: false }).limit(80);
   if (error) { $('#ad-rec').innerHTML = ''; return; }
