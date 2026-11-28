@@ -546,7 +546,7 @@ tbody tr:hover { background: color-mix(in oklab, var(--color-ink) 4%, transparen
 .dlg { width: min(44rem, calc(100% - 32px)); max-height: calc(100vh - 48px); padding: var(--space-xl); border: 1px solid var(--glass-edge); border-radius: 20px; background: linear-gradient(160deg, var(--color-paper-3), var(--color-paper-2)); color: var(--color-ink); box-shadow: 0 40px 80px -30px var(--shade), 0 0 60px -20px var(--glow-gold); }
 .dlg[open] { animation: pop2 400ms var(--ease-spring) both; }
 .dlg::backdrop { background: color-mix(in oklab, var(--shade) 70%, transparent); backdrop-filter: blur(4px); }
-.dlg__x { position: absolute; top: var(--space-md); right: var(--space-md); }
+.dlg__x { position: sticky; top: 0; float: right; z-index: 3; margin: -8px -8px 8px 12px; }   /* flutua: o texto contorna o botão em vez de ficar embaixo dele */
 .dlg h2 { margin-bottom: var(--space-2xs); }
 .pf__head { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: var(--space-lg); align-items: center; }
 .pf__avatar { width: 140px; height: 140px; border-radius: 50%; overflow: hidden; background: radial-gradient(circle at 50% 30%, color-mix(in oklab, var(--hud-accent) 30%, var(--color-paper-3)), var(--color-paper)); box-shadow: 0 0 0 3px var(--hud-accent), 0 0 30px var(--glow-gold); }
@@ -3647,7 +3647,6 @@ button, [data-act], [data-tab], .btn, .opt, .subtab { touch-action: manipulation
 .dlg--pro { width: min(52rem, calc(100% - 32px)); }
 .dlg--pro h3 { margin: 16px 0 6px; }
 @media (max-width: 40rem) { .pro-ph { flex-direction: column; text-align: center; } .pro-ph .pro-seals { justify-content: center; } }
-.dlg--pro > .dlg__x { position: sticky; top: 0; float: right; z-index: 3; margin: -8px -8px 0 8px; }
 
 /* aviso da Polícia Federal (Receita, R$ 300 mil/dia): agente com quepe e letreiro piscando */
 .dlg--pf { width: min(560px, calc(100vw - 20px)); padding: 0; overflow: hidden; border: 1px solid rgba(59,130,246,.55); background: linear-gradient(180deg, #0b1020, #05070d); box-shadow: 0 0 0 1px rgba(239,68,68,.25), 0 30px 80px -20px rgba(59,130,246,.5); }
