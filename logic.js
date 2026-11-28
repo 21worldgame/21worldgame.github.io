@@ -316,7 +316,11 @@ export const carsValue = s => (s.cars || []).reduce((a, c) => a + c.value, 0);
 export const heads = s => s.herd.reduce((a, h) => a + (h?.heads || 0), 0);
 export const BOITEL_COST = 95, BOITEL_GAIN = 22;   // R$ por cabeça por mês e kg por mês no confinamento
 export const YIELD = 0.52; // rendimento de carcaça: a arroba do boi gordo é sobre a carcaça, não o peso vivo
-export const arrobas = kg => (kg * YIELD) / KG_ARROBA;
+// boi tem peso adulto: depois de 450 kg engorda cada vez menos e para em 600 kg (boi passado do ponto só come pasto).
+// Até a v323 engordava 18 kg por mês para sempre: o Basso tinha 2.935 bois de 1.263 kg e 1.443 kg (~R$ 20 mi de peso que não existe).
+export const KG_READY = 450, KG_MAX = 600;
+export const gain = (kg, base) => Math.max(0, Math.ceil(base * Math.min(1, (KG_MAX - kg) / (KG_MAX - KG_READY))));
+export const arrobas = kg => (Math.min(kg, KG_MAX) * YIELD) / KG_ARROBA;
 export const herdValue = s => s.herd.reduce((a, h) => a + (h ? h.heads * arrobas(h.kg || 0) * (s.prices.arroba || 0) : 0), 0);
 export const debt = s => s.loans.reduce((a, l) => a + l.bal, 0);
 // ---------- banco da casa com capacidade limitada (clientes de alto patrimônio) ----------
@@ -396,7 +400,7 @@ export function tick(s, rng = Math.random) {
   // gado: engorda no pasto; o excedente come ração
   const cap = capacity(s), n = heads(s), over = Math.max(0, n - cap);
   // sem pasto próprio o gado vai para o confinamento terceirizado (boitel): paga por cabeça e engorda bem (dá para começar sem terra)
-  for (const h of s.herd) h.kg += n <= cap ? 18 : Math.round((cap * 18 + over * BOITEL_GAIN) / n);
+  for (const h of s.herd) h.kg = Math.min(KG_MAX, h.kg + gain(h.kg, n <= cap ? 18 : (cap * 18 + over * BOITEL_GAIN) / n));
   if (over) add(`confinamento terceirizado (boitel) de ${over} cabeças`, -over * BOITEL_COST);
 
   for (const l of s.lands) {
