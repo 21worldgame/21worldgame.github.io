@@ -3,7 +3,9 @@
 import * as Auth from './auth.js';
 import { G, esc, say } from './store.js';
 
-const proto = c => `JUR-${new Date(c.at).getFullYear()}/${String(c.id).padStart(5, '0')}`;
+// carta assinada por delegado (signer com "Polícia Federal") sai no papel da PF: brasão, inquérito e carimbo vermelho
+const isPF = c => /Polícia Federal/i.test(c.signer || '');
+const proto = c => `${isPF(c) ? 'IPL' : 'JUR'}-${new Date(c.at).getFullYear()}/${String(c.id).padStart(5, '0')}`;
 const day = at => new Date(at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 // texto do admin: linha em branco separa parágrafo, **assim** vira negrito (tudo escapado antes)
 const fmt = t => esc(t).split(/\n\s*\n/).map(p => `<p>${p.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>')}</p>`).join('');
@@ -16,17 +18,19 @@ function box() {
   dlg.addEventListener('click', e => { if (e.target.closest('[data-close]') || e.target === dlg) dlg.close(); });
   return dlg;
 }
+const headPF = `<div class="ct__head"><span class="ct__seal" aria-hidden="true">🚨</span><div><b>POLÍCIA FEDERAL</b><small>Superintendência no 21 World · Delegacia de Crimes contra a Ordem Econômica</small></div></div>`;
 const head = `<div class="ct__head"><span class="ct__seal" aria-hidden="true">⚖️</span><div><b>21 WORLD</b><small>Departamento Jurídico · Atendimento ao Jogador</small></div></div>`;
 
 function letter(c, name) {
   const d = box();
-  d.innerHTML = `<article class="ct">${head}
-    <p class="ct__meta"><span>Protocolo <b>${proto(c)}</b></span><span>${day(c.at)}</span></p>
+  const pf = isPF(c), who = (c.signer || '').replace(/\s*[·,-]\s*Polícia Federal.*$/i, '');
+  d.innerHTML = `<article class="ct${pf ? ' ct--pf' : ''}">${pf ? headPF : head}
+    <p class="ct__meta"><span>${pf ? 'Inquérito' : 'Protocolo'} <b>${proto(c)}</b></span><span>${day(c.at)}</span></p>
     <h2 id="ct-t" class="ct__title">${esc(c.title)}</h2>
     <p class="ct__to">Prezado(a) <b>${esc(name)}</b>,</p>
     <div class="ct__body">${fmt(c.body)}</div>
-    <div class="ct__sign"><span class="ct__sig">${esc(c.signer)}</span><small>${esc(c.signer)} · Advogada do 21 World · OAB/21 nº 0421</small></div>
-    <span class="ct__stamp" aria-hidden="true">ANALISADO</span>
+    <div class="ct__sign"><span class="ct__sig">${esc(pf ? who : c.signer)}</span><small>${pf ? `${esc(who)} · Delegado de Polícia Federal · Matrícula 21.0457` : `${esc(c.signer)} · Advogada do 21 World · OAB/21 nº 0421`}</small></div>
+    <span class="ct__stamp" aria-hidden="true">${pf ? 'INQUÉRITO CONCLUÍDO' : 'ANALISADO'}</span>
     <div class="row ct__acts"><button class="btn btn--gold" type="button" data-close>li e entendi</button><button class="btn btn--glass" type="button" data-carta-mine>todas as cartas</button></div>
   </article>`;
   if (!d.open) d.showModal();
