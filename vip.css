@@ -62,7 +62,7 @@
 .vip-plan--patrono { --c: oklch(85% 0.15 85); } .vip-plan--magnata { --c: oklch(80% 0.14 220); } .vip-plan--conselho { --c: oklch(72% 0.2 320); }
 .vip-plan--magnata, .vip-plan--conselho { background: linear-gradient(180deg, color-mix(in oklch, var(--c) 22%, transparent), oklch(15% 0.04 290 / .9)); }
 .vip-plan--magnata::before, .vip-plan--conselho::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none;
-  background: conic-gradient(from var(--a, 0deg), var(--c), transparent 30%, #fff8 40%, transparent 55%, var(--c)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: vip-border 6s linear infinite; }
+  background: conic-gradient(from var(--vip-ang, 0deg), var(--c), transparent 30%, #fff8 40%, transparent 55%, var(--c)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: vip-border 6s linear infinite; }
 .vip-plan__tag { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 4px 12px; border-radius: 999px; font: 700 12px/1 var(--font-display); letter-spacing: .06em; text-transform: uppercase;
   background: linear-gradient(90deg, var(--vip-gold-2), var(--vip-gold)); color: oklch(18% 0.04 70); box-shadow: 0 6px 16px -6px var(--vip-gold); }
 .vip-plan__tag--lux { background: linear-gradient(90deg, oklch(70% 0.15 220), oklch(85% 0.1 200)); }
@@ -158,7 +158,7 @@
 .vip-plans--black { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 10px; }
 .vip-plan--black { --c: oklch(84% 0.13 85); background: linear-gradient(180deg, #17140c, #050505) !important; box-shadow: inset 0 0 0 1px oklch(80% 0.13 85 / .45); }
 .vip-plan--black::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none;
-  background: conic-gradient(from var(--a, 0deg), #6b4f12, #f6e27a, #fff8d8 15%, #6b4f12 35%, transparent 50%, #d4a72c 80%, #6b4f12); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: vip-border 5s linear infinite; }
+  background: conic-gradient(from var(--vip-ang, 0deg), #6b4f12, #f6e27a, #fff8d8 15%, #6b4f12 35%, transparent 50%, #d4a72c 80%, #6b4f12); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: vip-border 5s linear infinite; }
 .vip-plan--black h4 { background: linear-gradient(90deg, #d4a72c, #fff3b0, #d4a72c); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 1.6rem; text-transform: uppercase; letter-spacing: .06em; }
 .vip-plan--imperador { transform: translateY(-6px); box-shadow: inset 0 0 0 1px oklch(85% 0.14 85 / .8), 0 24px 60px -20px oklch(80% 0.14 85 / .6); }
 .vip-plan--black .vip-plan__tag { background: linear-gradient(90deg, #8a6a1f, #f6e27a); color: #120d02; }
@@ -206,8 +206,8 @@
 @keyframes vip-float { 50% { transform: translateY(-4px); } }
 @keyframes vip-pulse { 50% { opacity: .65; } }
 @keyframes vip-crown { 50% { transform: translateX(-50%) rotate(6deg) translateY(-1px); } }
-@property --a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
-@keyframes vip-border { to { --a: 360deg; } }
+@property --vip-ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; } /* nome próprio: --a registrado como ângulo apagava a cor do escudo dos times (aposta-ui usa --a para cor) */
+@keyframes vip-border { to { --vip-ang: 360deg; } }
 
 @media (max-width: 1100px) { .vip-plans { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-lg); } }
 @media (max-width: 900px) { .vip-plans--black { grid-template-columns: minmax(0, 1fr); } .vip-plan--imperador { transform: none; } }
