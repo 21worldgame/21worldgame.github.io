@@ -672,7 +672,7 @@ function renderContratos(s) {
     const arm = F.ready >= c.qty ? '' : F.spaceShort ? `<small class="sf-arm bad">📦 <b>falta armazém:</b> o contrato precisa de ${t1(F.needT)} t e só cabem mais ${int(F.room)} sacas (${t1(F.roomT)} t livres de ${t1(F.capT)} t). Compre ou alugue um galpão na aba negócios: colheita sem espaço é vendida na hora com desconto e <b>não conta</b> para o contrato.</small>`
       : `<small class="sf-arm">📦 para entregar, as sacas precisam estar no seu armazém: este contrato ocupa ${t1(F.needT)} t e você tem ${t1(F.roomT)} t livres.</small>`;
     const verdict = F.ready >= c.qty ? '<b class="good">✔ já tem tudo no armazém</b>' : F.spaceShort && F.ready + F.field + F.lost >= c.qty ? '<b class="bad">⚠️ a colheita dá, mas não cabe no armazém</b>' : F.ok ? `<b class="good">✔ dá para cumprir</b> <small class="muted">${F.safe ? '' : '(se o clima ajudar)'}</small>`
-      : F.inTime ? `<b class="bad">faltam ≈ ${int(F.need)} sacas</b> <small class="muted">plante ≈ ${int(F.ha)} ha de ${CTR.GOODS[c.good].label} (${brl(F.cost)}): colhe em ${F.growMonths} meses</small>`
+      : F.inTime ? `<b class="bad">faltam ≈ ${int(F.need)} sacas</b> <small class="muted">plante ≈ ${int(F.ha)} ha de ${CTR.GOODS[c.good].label} (${brl(F.cost)}): ${F.wait ? `a janela de plantio abre em ${F.wait} ${F.wait === 1 ? 'mês' : 'meses'}, colhe em ${F.growMonths}` : `colhe em ${F.growMonths} meses`}</small>`
       : `<b class="bad">faltam ≈ ${int(F.need)} sacas</b> <small class="muted">${CTR.GOODS[c.good].label} leva ${F.growMonths} meses para colher: só com o que já está plantado ou no armazém</small>`;
     return `<div class="sf-fit"><span class="sf-fit__bar" aria-hidden="true"><i class="is-ready" style="width:${(a * 100).toFixed(1)}%"></i><i class="is-field" style="width:${(b * 100).toFixed(1)}%"></i></span>
       <small>até o prazo você terá <b>${int(F.have)}</b> de ${int(c.qty)} sacas (${int(F.ready)} no armazém${F.field ? ` + ≈ ${int(F.field)} da lavoura` : ''}${F.lost ? `; ≈ ${int(F.lost)} sacas da lavoura não cabem no armazém e serão vendidas na colheita` : ''})</small>${verdict}${arm}</div>`; };
@@ -1794,7 +1794,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.q
 // ---------- aviso de atualização: quando uma versão nova é publicada, todos veem o pedido para recarregar ----------
 // O GitHub Pages marca todos os arquivos com a hora da publicação (Last-Modified); se ela muda, saiu versão nova.
 // Versão do código. Para avisar todo mundo, suba o número aqui E no version.json (só em atualização importante).
-const APP_VERSION = 325;
+const APP_VERSION = 326;
 G.appV = APP_VERSION;   // vai junto no save (auth.js): versão antiga do jogo não grava por cima de save mais novo
 let updateShown = false, updateMsg = '';
 let checking = false, quickNext = false;

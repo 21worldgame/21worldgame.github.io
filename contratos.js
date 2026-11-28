@@ -2,7 +2,7 @@
 // Igual na vida real (contrato a termo): o preço fica travado no aceite, a entrega tem prazo e quem não entrega paga multa.
 // Só vale produção própria (rastreabilidade): sacas compradas no mercado não podem ser entregues (senão era só comprar e revender).
 // As ofertas mudam a cada mês do mundo e são as mesmas para todos os jogadores.
-import { CROPS, RENT_SHARE, plantCost } from './logic.js';
+import { CROPS, RENT_SHARE, plantCost, sowWait } from './logic.js';
 import { room, capacity, UNIT_KG } from './negocios.js';
 export const TRADERS = ['Cargil 21', 'Bungê', 'Cofco China 21', 'Luis Dreifus', 'Amaggy Grãos'];
 export const GOODS = { soja: { label: 'soja', min: 2000, max: 24000, step: 500 }, milho: { label: 'milho', min: 3000, max: 40000, step: 1000 }, cafe: { label: 'café', min: 150, max: 2400, step: 50 } };
@@ -72,9 +72,10 @@ export function forecast(s) {
 export function fit(s, c, monthsLeft = c.months) {
   const f = forecast(s)[c.good], by = f.fields.filter(x => x.left <= monthsLeft).reduce((t, x) => t + x.mid, 0);
   const free = room(s, c.good), fits = Math.min(by, free), have = f.ready + fits;
-  const crop = CROPS[CROP_OF[c.good]], need = Math.max(0, c.qty - have), ha = need ? Math.ceil(need / crop.yield) : 0;
+  const crop = CROPS[CROP_OF[c.good]], wait = sowWait(CROP_OF[c.good], s.month || 1), need = Math.max(0, c.qty - have), ha = need ? Math.ceil(need / crop.yield) : 0;
   const kg = UNIT_KG[c.good] || 60, spaceShort = Math.max(0, c.qty - f.ready - free);   // sacas do contrato que não têm onde ficar
-  return { ready: f.ready, field: fits, lost: by - fits, have, need, ha, cost: ha ? plantCost(s, CROP_OF[c.good], ha) : 0, growMonths: crop.months, inTime: crop.months <= monthsLeft, ok: have >= c.qty, safe: f.ready + Math.min(free, Math.round(by * LO)) >= c.qty,
+  return { ready: f.ready, field: fits, lost: by - fits, have, need, ha, cost: ha ? plantCost(s, CROP_OF[c.good], ha) : 0, growMonths: wait + crop.months, wait, inTime: wait + crop.months <= monthsLeft,   // fora da época conta a espera até a janela de plantio (v303)
+    ok: have >= c.qty, safe: f.ready + Math.min(free, Math.round(by * LO)) >= c.qty,
     room: free, roomT: free * kg / 1000, capT: capacity(s), needT: c.qty * kg / 1000, spaceShort, spaceShortT: spaceShort * kg / 1000 };
 }
 // fechamento do mês: contrato vencido sem entrega paga multa de 10% do valor
@@ -86,9 +87,13 @@ export function monthly(s) {
     // a colheita que chega no mesmo fechamento do vencimento serve: a trading busca no armazém em vez de multar
     // (Buu 27/11 18:36: 15.454 sacas de soja colhidas e multa de R$ 174 mil pelo contrato de 11.000 no mesmo instante)
     if (ready(s, c.good) >= c.qty) { const r = deliver(s, c.id); out.push({ txt: `exportação no vencimento: ${c.qty.toLocaleString('pt-BR')} sacas de ${GOODS[c.good].label} entregues à ${c.trader} (a trading buscou no armazém)`, val: r.value, ok: true }); continue; }
-    const fine = Math.round(c.qty * c.price * FINE);
+    // faltou parte: a trading leva o que tem da sua colheita e a multa é só sobre o que faltou (antes era tudo ou nada:
+    // faltando 1 saca, nada era entregue e a multa vinha sobre o contrato inteiro)
+    const have = ready(s, c.good), miss = c.qty - have, fine = Math.round(miss * c.price * FINE);
+    if (have > 0) { s.stock[c.good] -= have; s.colhido[c.good] -= have; const v = Math.round(have * c.price); s.money += v; s.ctxDone = [...(s.ctxDone || []), c.id].slice(-30);
+      out.push({ txt: `exportação parcial no vencimento: ${have.toLocaleString('pt-BR')} de ${c.qty.toLocaleString('pt-BR')} sacas de ${GOODS[c.good].label} entregues à ${c.trader}`, val: v, ok: true }); }
     s.money -= fine; s.contracts = s.contracts.filter(x => x !== c);
-    out.push({ txt: `multa: contrato de ${c.qty.toLocaleString('pt-BR')} sacas de ${GOODS[c.good].label} com a ${c.trader} venceu sem entrega`, val: -fine });
+    out.push({ txt: `multa: ${have > 0 ? `faltaram ${miss.toLocaleString('pt-BR')} sacas do contrato` : `contrato de ${c.qty.toLocaleString('pt-BR')} sacas`} de ${GOODS[c.good].label} com a ${c.trader}${have > 0 ? ' (10% só sobre o que faltou)' : ' venceu sem entrega'}`, val: -fine });
   }
   return out;
 }
