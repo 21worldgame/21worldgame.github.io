@@ -2,6 +2,8 @@
 import { SRV } from './cfg.js';
 import { captcha } from './turnstile.js';
 import * as W from './world.js';
+// mês do mundo como o jogador vê: 'jul/97' (o número cru 1159 não diz nada a ninguém)
+const mesW = m => (Number(m) > 0 ? `${W.monthName(m).slice(0, 3)}/${W.yearOf(m)}` : '—');
 import { LISTS as BIZ, CAT_KEYS } from './negocios.js';
 import { GROUPS, groupOf } from './contador.js';
 import { lostLands } from './land-check.js';
@@ -254,7 +256,7 @@ function econHTML(s) {
     <p class="small muted">Total: entrou ${brl(p.in)}, saiu ${brl(p.out)}, lucro ${brl(p.lucro)}. Compra e venda de bens (terras, galpões, empresas) não entram como lucro.</p>
     ${pnlTable(p.rows)}
     <h4>maiores lançamentos do livro-caixa</h4>
-    <div class="ad-tablewrap"><table><thead><tr><th>mês</th><th>o quê</th><th class="num">valor</th></tr></thead><tbody>${AE.bigMoves(s).map(l => `<tr><td>${l.m ?? ''}</td><td>${esc(l.txt)}</td><td class="num ${l.val < 0 ? 'bad' : 'good'}">${brl(l.val)}</td></tr>`).join('')}</tbody></table></div>`;
+    <div class="ad-tablewrap"><table><thead><tr><th>mês</th><th>o quê</th><th class="num">valor</th></tr></thead><tbody>${AE.bigMoves(s).map(l => `<tr><td>${mesW(l.m)}</td><td>${esc(l.txt)}</td><td class="num ${l.val < 0 ? 'bad' : 'good'}">${brl(l.val)}</td></tr>`).join('')}</tbody></table></div>`;
   } catch (e) { console.error(e); return '<p class="ad-err">Não deu para analisar a economia deste save.</p>'; }
 }
 // saúde da economia: todos os jogadores somados por atividade
@@ -326,7 +328,7 @@ async function openPlayer(id) {
   ]);
   if (preso?.name && !u.name) u.name = preso.name;   // preso sai do ranking (perfil guardado em presos)
   const s = save?.data || {};
-  const facts = [['dinheiro', brl(s.money)], ['fichas', int(s.chips)], ['nível', s.level ?? '—'], ['mês do jogo', s.month ?? '—'],
+  const facts = [['dinheiro', brl(s.money)], ['fichas', int(s.chips)], ['nível', s.level ?? '—'], ['data do jogo', s.month ? W.dateLabel(s.month) : '—'],
     ['terras', (s.lands || []).filter(l => l.own).length], ['gado', int((s.herd || []).reduce((a, h) => a + h.heads, 0))],
     ['carros', (s.cars || []).length], ['animais de corrida', (s.stable?.animals || []).length], ['mãos de 21', int(s.stats?.hands)], ['clube de futebol', s.fut?.club ? esc(s.fut.club) : '—'],
     ['empresas', CAT_KEYS.filter(c => c !== 'usinas').reduce((t, c) => t + (s.biz?.[c] || []).length, 0)], ['usinas', (s.biz?.usinas || []).length], ['mina de ouro', s.mina ? 'sim' : 'não'],
@@ -491,7 +493,7 @@ const world = () => W.sanitize(cfg.world || W.DEFAULT);
 function showWorld() {
   const w = world(), f = $('#ad-world');
   f.min.value = +(w.monthMs / 60000).toFixed(2);
-  $('#ad-world-now').textContent = `Mês ${W.current(w)} do mundo. Cada mês dura ${+(w.monthMs / 60000).toFixed(2)} min reais de dia e ${+(w.nightMs / 60000).toFixed(2)} min de madrugada (01:00 às 09:00)${W.isNight() ? ', agora é madrugada' : ''}; o próximo chega em ${W.fmt(W.msLeft(w))}.`;
+  $('#ad-world-now').textContent = `Agora é ${W.dateLabel(W.current(w))} no mundo. Cada mês dura ${+(w.monthMs / 60000).toFixed(2)} min reais de dia e ${+(w.nightMs / 60000).toFixed(2)} min de madrugada (01:00 às 09:00)${W.isNight() ? ', agora é madrugada' : ''}; o próximo chega em ${W.fmt(W.msLeft(w))}.`;
 }
 async function saveWorld(next, what) {
   const data = { ...cfg, world: next };
@@ -625,7 +627,7 @@ function drawFull() {
     <details><summary>por categoria</summary><div class="ad-tablewrap"><table><thead><tr><th>categoria</th><th class="num">lançamentos</th><th class="num">entrou</th><th class="num">saiu</th><th class="num">saldo</th></tr></thead><tbody>
     ${Object.entries(by).sort((a, b) => (b[1].in - b[1].out) - (a[1].in - a[1].out)).map(([k, v]) => `<tr><td>${esc(k === 'gap' ? '⚠️ dinheiro sem lançamento' : flName(k))}</td><td class="num">${int(v.n)}</td><td class="num">${brl(v.in)}</td><td class="num">${brl(v.out)}</td><td class="num">${brl(v.in + v.out)}</td></tr>`).join('')}</tbody></table></div></details>
     <div class="ad-tablewrap ad-ledger"><table><thead><tr><th>quando</th><th>mês</th><th>categoria</th><th>lançamento</th><th class="num">valor</th><th class="num">caixa depois</th></tr></thead><tbody>
-    ${R.slice(0, FL.shown).map(r => `<tr class="${r.kind === 'gap' ? 'ad-mark' : ''}"><td>${dtm(r.at)}</td><td>${r.m ?? '—'}</td><td>${esc(r.kind === 'gap' ? '⚠️ sem lançamento' : flName(r.g))}</td><td>${esc(r.txt)}</td><td class="num ${r.val < 0 ? 'neg' : ''}">${r.val ? brl(r.val) : ''}</td><td class="num">${r.money != null ? brl(r.money) : '—'}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">Nada com esses filtros.</td></tr>'}</tbody></table></div>
+    ${R.slice(0, FL.shown).map(r => `<tr class="${r.kind === 'gap' ? 'ad-mark' : ''}"><td>${dtm(r.at)}</td><td>${mesW(r.m)}</td><td>${esc(r.kind === 'gap' ? '⚠️ sem lançamento' : flName(r.g))}</td><td>${esc(r.txt)}</td><td class="num ${r.val < 0 ? 'neg' : ''}">${r.val ? brl(r.val) : ''}</td><td class="num">${r.money != null ? brl(r.money) : '—'}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">Nada com esses filtros.</td></tr>'}</tbody></table></div>
     ${R.length > FL.shown ? `<p><button type="button" class="btn btn--glass btn--sm" data-fl-more>mostrar mais (${int(R.length - FL.shown)} restantes)</button></p>` : ''}
     <p class="muted small">"caixa depois" é o caixa no momento em que o jogo enviou o lançamento (lançamentos do mesmo envio mostram o mesmo caixa).</p>`;
 }
@@ -634,7 +636,7 @@ document.addEventListener('click', e => {
   const f = e.target.closest('[data-full-ledger]'); if (f) return loadFull(f.dataset.fullLedger);
   if (e.target.closest('[data-fl-more]')) { FL.shown += 500; return drawFull(); }
   if (e.target.closest('[data-fl-csv]') && FL) {
-    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, csv = ['quando;mês;categoria;lançamento;valor;caixa depois', ...fullRows().map(r => [dtm(r.at), r.m ?? '', r.kind === 'gap' ? 'sem lançamento' : flName(r.g), r.txt, r.val ?? 0, r.money ?? ''].map(q).join(';'))].join('\n');
+    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, csv = ['quando;mês;categoria;lançamento;valor;caixa depois', ...fullRows().map(r => [dtm(r.at), r.m ? mesW(r.m) : '', r.kind === 'gap' ? 'sem lançamento' : flName(r.g), r.txt, r.val ?? 0, r.money ?? ''].map(q).join(';'))].join('\n');
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })); a.download = `livro-caixa-${(users.find(u => u.user_id === FL.id)?.name || FL.id).replace(/[^\w-]+/g, '_')}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   }
 });
@@ -644,7 +646,7 @@ function ledger(s) {
   for (const e of log) { const k = g(e); (by[k] ??= { n: 0, in: 0, out: 0 }).n++; if (e.val > 0) by[k].in += e.val; else by[k].out += e.val || 0; }
   const name = k => GROUPS.find(x => x[0] === k)?.[1] || k;
   const chips = Object.entries(by).sort((a, b) => b[1].n - a[1].n).map(([k, v]) => `<button type="button" class="btn btn--glass btn--sm" data-ledger="${esc(k)}">${esc(name(k))} <small>(${v.n})</small></button>`).join(' ');
-  const rows = log.map(e => `<tr data-g="${esc(g(e))}"><td>${e.at ? `${dtm(e.at)}<br>` : ''}<small class="muted">${e.m ? `${W.monthName(e.m)}, ano ${W.yearOf(e.m)} (mês ${e.m})` : '—'}</small></td><td>${esc(name(g(e)))}</td><td>${esc(e.txt)}</td><td class="num ${e.val < 0 ? 'neg' : ''}">${e.val ? brl(e.val) : ''}</td></tr>`).join('');
+  const rows = log.map(e => `<tr data-g="${esc(g(e))}"><td>${e.at ? `${dtm(e.at)}<br>` : ''}<small class="muted">${e.m ? W.dateLabel(e.m) : '—'}</small></td><td>${esc(name(g(e)))}</td><td>${esc(e.txt)}</td><td class="num ${e.val < 0 ? 'neg' : ''}">${e.val ? brl(e.val) : ''}</td></tr>`).join('');
   const sum = Object.entries(by).map(([k, v]) => `<tr><td>${esc(name(k))}</td><td class="num">${v.n}</td><td class="num">${brl(v.in)}</td><td class="num">${brl(v.out)}</td><td class="num">${brl(v.in + v.out)}</td></tr>`).join('');
   return `<h3>livro-caixa por categoria <small class="muted">(últimos ${log.length} lançamentos do save)</small></h3>
     <div class="ad-tablewrap"><table><thead><tr><th>categoria</th><th class="num">lançamentos</th><th class="num">entrou</th><th class="num">saiu</th><th class="num">saldo</th></tr></thead><tbody>${sum || '<tr><td colspan="5" class="muted">Sem lançamentos.</td></tr>'}</tbody></table></div>
@@ -686,7 +688,7 @@ async function scanLands() {
   } catch (e) { fail(e, 'analisar as contas'); st.textContent = ''; } finally { $('#ad-scan').disabled = false; }
 }
 function drawScan() {
-  $('#ad-scan-out').innerHTML = found.map((f, i) => `<tr><td><a href="#" data-user="${esc(f.user_id)}">${esc(pname(f.user_id))}</a></td><td>${esc(f.land)}</td><td>${f.month ?? '—'}</td><td class="num">${f.paid ? brl(f.paid) : '<small class="muted">recebida em troca</small>'}</td>
+  $('#ad-scan-out').innerHTML = found.map((f, i) => `<tr><td><a href="#" data-user="${esc(f.user_id)}">${esc(pname(f.user_id))}</a></td><td>${esc(f.land)}</td><td>${mesW(f.month)}</td><td class="num">${f.paid ? brl(f.paid) : '<small class="muted">recebida em troca</small>'}</td>
     <td>${f.done ? '<small class="muted">devolvido</small>' : f.paid ? `<button class="btn btn--gold btn--sm" data-refund="${i}">devolver ${brl(f.paid)}</button>` : ''}</td></tr>`).join('')
     || '<tr><td colspan="5" class="muted">Nenhuma terra sumida encontrada.</td></tr>';
 }
@@ -973,7 +975,7 @@ function drawTimeline() {
   const kind = $('#ad-dj-kind').value, min = Number($('#ad-dj-min').value) || 0, q = $('#ad-dj-q').value.trim().toLowerCase();
   const list = dj.rows.filter(r => (!kind || r.kind === kind) && Math.abs(Number(r.val) || 0) >= min && (!q || `${r.txt} ${r.acts} ${actsText(r.acts)} ${r.tab}`.toLowerCase().includes(q))).slice(0, 1500);
   const tag = { gap: '<span class="tag tag--red">sem lançamento</span> ', fichas: '<span class="tag tag--gold">fichas</span> ', inicio: '<span class="tag tag--green">sessão</span> ' };
-  $('#ad-dj-tl').innerHTML = list.map(r => `<tr><td>${hm(r.at)}</td><td>${esc(djName(r.user_id))}</td><td>${esc(tela(r.tab || ''))}</td><td class="num">${r.m ?? ''}</td><td>${tag[r.kind] || ''}${esc(r.txt)}</td><td class="num">${r.val ? sgn(Number(r.val)) : ''}</td>
+  $('#ad-dj-tl').innerHTML = list.map(r => `<tr><td>${hm(r.at)}</td><td>${esc(djName(r.user_id))}</td><td>${esc(tela(r.tab || ''))}</td><td class="num">${mesW(r.m)}</td><td>${tag[r.kind] || ''}${esc(r.txt)}</td><td class="num">${r.val ? sgn(Number(r.val)) : ''}</td>
     <td class="num">${brl(r.money)}</td><td class="num">${int(r.chips)}</td><td class="num">${brl(r.worth)}</td><td><small>${esc(actsText(r.acts))}</small></td></tr>`).join('') || '<tr><td colspan="10" class="muted">Nada com esse filtro.</td></tr>';
 }
 $('#ad-dj-load').addEventListener('click', loadDiario);
@@ -1238,7 +1240,7 @@ document.addEventListener('click', e => {
       <div class="ad-prev__note"><b>${esc(org)}</b><span>${esc(body)}</span></div>
       <p class="muted small">livro-caixa</p>
       <table class="ad-xl ad-prev__log"><thead><tr><th>mês</th><th>lançamento</th><th class="num">valor</th></tr></thead>
-        <tbody><tr><td class="num">${month || '—'}</td><td>${esc(t)} <span class="btn btn--glass btn--xs">recorrer</span></td><td class="num bad">${brl(-amt)}</td></tr></tbody></table>
+        <tbody><tr><td class="num">${mesW(month)}</td><td>${esc(t)} <span class="btn btn--glass btn--xs">recorrer</span></td><td class="num bad">${brl(-amt)}</td></tr></tbody></table>
       <p class="small">Caixa: <b>${Number.isFinite(cash) ? brl(cash) : '—'}</b> → <b class="${Number.isFinite(cash) && cash - amt < 0 ? 'bad' : ''}">${Number.isFinite(cash) ? brl(cash - amt) : '—'}</b> (sai quando o jogo dele sincronizar)</p>
       <div class="row"><button class="btn btn--glass" type="button" data-back>voltar e editar</button><button class="btn btn--danger" value="ok">enviar desconto de ${brl(amt)}</button></div>`;
     edit.hidden = true; prev.hidden = false;
