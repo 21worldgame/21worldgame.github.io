@@ -206,7 +206,7 @@
 @keyframes vip-float { 50% { transform: translateY(-4px); } }
 @keyframes vip-pulse { 50% { opacity: .65; } }
 @keyframes vip-crown { 50% { transform: translateX(-50%) rotate(6deg) translateY(-1px); } }
-@property --vip-ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; } /* nome próprio: --a registrado como ângulo apagava a cor do escudo dos times (aposta-ui usa --a para cor) */
+@property --vip-ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }   /* nome próprio: --a registrado como ângulo apagava a cor do escudo dos times (aposta-ui usa --a para cor) */
 @keyframes vip-border { to { --vip-ang: 360deg; } }
 
 @media (max-width: 1100px) { .vip-plans { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-lg); } }
@@ -228,3 +228,4 @@
 .vip-more { margin-top: 14px; } .vip-more > summary { cursor: pointer; padding: 12px 16px; border-radius: 14px; background: var(--glass-2, rgba(255,255,255,.05)); border: 1px solid var(--glass-edge, rgba(255,255,255,.1)); font-weight: 700; list-style: none; }
 .vip-more > summary::before { content: '▸ '; } .vip-more[open] > summary::before { content: '▾ '; } .vip-more[open] > summary { margin-bottom: 12px; }
 @media (max-width: 40rem) { .vip-pre--slim { grid-template-columns: 1fr; } }
+.vip-plans-wrap > .vip-black { margin-bottom: 22px; }   /* Linha Black no topo da escolha: respiro para a etiqueta dos planos de baixo */

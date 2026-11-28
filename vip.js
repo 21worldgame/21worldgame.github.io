@@ -182,19 +182,7 @@ function draw() {
   <section class="vip-plans-wrap">
     <div class="vip-plans-head"><h3>Escolha seu brilho</h3>
       <div class="vip-period" role="radiogroup" aria-label="período">${Object.entries(PERIODS).map(([m, P]) => `<button type="button" role="radio" aria-checked="${period === Number(m)}" class="${period === Number(m) ? 'is-on' : ''}" data-vip="period" data-m="${m}">${P.label}${P.off ? ` <small>${m === '12' ? '2 meses grátis' : `−${Math.round(P.off * 100)}%`}</small>` : ''}</button>`).join('')}</div></div>
-    <div class="vip-plans">${Object.entries(TIERS).filter(([, T]) => !T.black).map(([k, T]) => { const tot = priceOf(k, period), cur = on && mine.tier === k;
-      return `<article class="vip-plan vip-plan--${k}${pick === k ? ' is-pick' : ''}">
-      ${k === 'patrono' ? '<span class="vip-plan__tag">mais escolhido</span>' : k === 'magnata' ? '<span class="vip-plan__tag vip-plan__tag--lux">✨ mais brilho</span>' : k === 'conselho' ? `<span class="vip-plan__tag vip-plan__tag--hot">${free ? `restam ${free} de ${SEATS} este mês` : 'cadeiras ocupadas'}</span>` : ''}
-      <div class="vip-plan__ico">${T.ico}</div><h4>${T.name}</h4>
-      <p class="vip-plan__price"><b>${brl(Math.round(tot / period * 100) / 100)}</b><small>/mês</small></p>
-      <p class="vip-plan__tot">${period > 1 ? `${brl(tot)} por ${period} meses` : 'renova todo mês'}</p>
-      <div class="vip-plan__prev">${nickAs(k, k === mine?.tier ? mine.color : null)}</div>
-      <ul>${PERKS[k].map(x => `<li>${esc(x)}</li>`).join('')}</ul>
-      <button class="btn ${k === 'patrono' || k === 'magnata' ? 'btn--gold' : 'btn--glass'} vip-plan__btn" type="button" data-vip="pick" data-plan="${k}"${meta.open && k === 'conselho' && !free && !(on && mine.tier === 'conselho') ? ' disabled' : ''}>${!meta.open ? '🎟️ quero na pré-venda' : cur ? 'renovar' : `quero ser ${T.name.split(' ')[0]}`}</button></article>`; }).join('')}</div>
-    <p class="vip-fine">Vale pelo período pago e vence. Avisamos 5 dias antes; renovou em até 7 dias, a sequência continua.</p>
-  </section>
-
-  <section class="vip-black">
+    <section class="vip-black">
     <div class="vip-black__shine" aria-hidden="true"></div>
     <h3 class="vip-black__title">Linha <span>Black</span> <small>preto e ouro, pouquíssimos na cidade</small></h3>
     <div class="vip-plans vip-plans--black">${Object.entries(TIERS).filter(([, T]) => T.black).map(([k, T]) => { const cur = on && mine.tier === k, lim = k === 'imperador' && !tFree && !cur;
@@ -209,6 +197,18 @@ function draw() {
       <ul>${PERKS[k].map(x => `<li>${esc(x)}</li>`).join('')}</ul>
       <button class="btn btn--gold vip-plan__btn" type="button" data-vip="pick" data-plan="${k}"${meta.open && lim ? ' disabled' : ''}>${!meta.open ? '🎟️ quero na pré-venda' : cur ? 'renovar' : `quero ser ${T.name}`}</button></article>`; }).join('')}</div>
   </section>
+    <div class="vip-plans">${Object.entries(TIERS).filter(([, T]) => !T.black).map(([k, T]) => { const tot = priceOf(k, period), cur = on && mine.tier === k;
+      return `<article class="vip-plan vip-plan--${k}${pick === k ? ' is-pick' : ''}">
+      ${k === 'patrono' ? '<span class="vip-plan__tag">mais escolhido</span>' : k === 'magnata' ? '<span class="vip-plan__tag vip-plan__tag--lux">✨ mais brilho</span>' : k === 'conselho' ? `<span class="vip-plan__tag vip-plan__tag--hot">${free ? `restam ${free} de ${SEATS} este mês` : 'cadeiras ocupadas'}</span>` : ''}
+      <div class="vip-plan__ico">${T.ico}</div><h4>${T.name}</h4>
+      <p class="vip-plan__price"><b>${brl(Math.round(tot / period * 100) / 100)}</b><small>/mês</small></p>
+      <p class="vip-plan__tot">${period > 1 ? `${brl(tot)} por ${period} meses` : 'renova todo mês'}</p>
+      <div class="vip-plan__prev">${nickAs(k, k === mine?.tier ? mine.color : null)}</div>
+      <ul>${PERKS[k].map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+      <button class="btn ${k === 'patrono' || k === 'magnata' ? 'btn--gold' : 'btn--glass'} vip-plan__btn" type="button" data-vip="pick" data-plan="${k}"${meta.open && k === 'conselho' && !free && !(on && mine.tier === 'conselho') ? ' disabled' : ''}>${!meta.open ? '🎟️ quero na pré-venda' : cur ? 'renovar' : `quero ser ${T.name.split(' ')[0]}`}</button></article>`; }).join('')}</div>
+    <p class="vip-fine">Vale pelo período pago e vence. Avisamos 5 dias antes; renovou em até 7 dias, a sequência continua.</p>
+  </section>
+
 
   ${poll ? `<section class="vip-card vip-poll"><h3>🗳️ Carga do mês: quem decide são os VIPs</h3><p>${esc(poll.q || 'Qual novidade chega primeiro?')}</p>
     <ul>${poll.opts.map((o, i) => `<li><button class="vip-opt${mine?.vote_key === poll.key && mine?.vote === i ? ' is-mine' : ''}" type="button" data-vip="vote" data-i="${i}"${canVote ? '' : ' disabled'}>
